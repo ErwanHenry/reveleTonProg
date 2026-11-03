@@ -1,0 +1,12 @@
+{
+  "url_initiale": "https://www.data.gouv.fr/api/1/datasets/r/06237c53-76bd-4224-9805-418e125f0493",
+  "url_finale": "https://2027etmoi.fr/data/candidats.json",
+  "etag": "\"43cd7765d0e892886967e943ceaa3d9e-ssl\"",
+  "fetched_at": "2026-11-03T17:22:47+01:00",
+  "sha256": "9f2fbc7930c00796e7992d7468806e095bec2e0782d6ae2d2df2582a36367e50",
+  "bytes": 62986,
+  "mise_a_jour": "2026-10-28",
+  "rows": 59,
+  "licence": "Licence Ouverte 2.0",
+  "producteur": "2027 et moi (https://2027etmoi.fr)"
+}

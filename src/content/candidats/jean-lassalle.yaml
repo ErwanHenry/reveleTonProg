@@ -1,0 +1,22 @@
+version_schema: 1
+id: jean-lassalle
+prenom: Jean
+nom: Lassalle
+nom_tri: Lassalle
+parti: Résistons !
+parti_source:
+  type: parti
+  url: https://resistons-france.fr/
+  date_consultation: 2026-10-28
+ids_externes:
+  2027etmoi: lassalle
+statuts:
+  - code: pressenti
+    date: 2026-07-10
+    source:
+      type: presse
+      titre: franceinfo
+      url: https://www.franceinfo.fr/elections/presidentielle/presidentielle-2027-jean-lassalle-lance-une-cagnotte-pour-pouvoir-etre-de-nouveau-candidat-a-l-election_8102522.html
+      date_publication: 2026-07-10
+      date_consultation: 2026-10-28
+    statut_relecture: brouillon

@@ -1,0 +1,23 @@
+version_schema: 1
+id: bruno-retailleau
+prenom: Bruno
+nom: Retailleau
+nom_tri: Retailleau
+parti: Les Républicains
+parti_source:
+  type: parti
+  url: https://republicains.fr/
+  date_consultation: 2026-10-28
+site_officiel: https://www.avecretailleau.fr/
+ids_externes:
+  2027etmoi: retailleau
+statuts:
+  - code: declare
+    date: 2026-04-19
+    source:
+      type: parti
+      titre: Les Républicains
+      url: https://republicains.fr/actualites/2026/04/20/bruno-retailleau-largement-designe-comme-candidat-des-republicains-pour-lelection-presidentielle/
+      date_publication: 2026-04-19
+      date_consultation: 2026-10-28
+    statut_relecture: brouillon

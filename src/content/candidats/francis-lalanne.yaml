@@ -1,0 +1,18 @@
+version_schema: 1
+id: francis-lalanne
+prenom: Francis
+nom: Lalanne
+nom_tri: Lalanne
+parti: null
+ids_externes:
+  2027etmoi: lalanne
+statuts:
+  - code: declare
+    date: 2026-08-19
+    source:
+      type: presse
+      titre: franceinfo
+      url: https://www.franceinfo.fr/elections/presidentielle/presidentielle-2027-le-chanteur-francis-lalanne-officiellement-candidat-premier-meeting-vendredi-a-paris_8153588.html
+      date_publication: 2026-08-19
+      date_consultation: 2026-10-28
+    statut_relecture: brouillon

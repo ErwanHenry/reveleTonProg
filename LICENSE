@@ -73,4 +73,10 @@ conditions fixées par leurs auteurs.
 
 Le jeu de données data.gouv.fr « statuts sourcés » des candidats conserve sa
 propre Licence Ouverte 2.0 et son obligation d'attribution à la source
-amont. Les modalités de mention seront détaillées en phase 3.
+amont.
+
+Source : 2027 et moi (https://2027etmoi.fr), jeu de données « Candidatures à
+l'élection présidentielle 2027 — statuts sourcés » publié sur data.gouv.fr
+(https://www.data.gouv.fr/datasets/candidatures-a-lelection-presidentielle-2027-statuts-sources),
+données mises à jour le 28/10/2026, Licence Ouverte 2.0. Le détail de ce qui
+est réutilisé est dans data/import/ATTRIBUTION.md.

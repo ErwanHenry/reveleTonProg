@@ -1,0 +1,22 @@
+version_schema: 1
+id: dominique-de-villepin
+prenom: Dominique
+nom: de Villepin
+nom_tri: Villepin
+parti: La France humaniste
+parti_source:
+  type: parti
+  url: https://www.lafrancehumaniste.fr/
+  date_consultation: 2026-10-28
+ids_externes:
+  2027etmoi: villepin
+statuts:
+  - code: pressenti
+    date: 2026-10-23
+    source:
+      type: presse
+      titre: "LCP — Présidentielle : Dominique de Villepin annonce avoir « dépassé la barre des 300 signatures »"
+      url: https://lcp.fr/actualites/presidentielle-dominique-de-villepin-annonce-avoir-depasse-la-barre-des-300-signatures
+      date_publication: 2026-10-23
+      date_consultation: 2026-10-28
+    statut_relecture: brouillon

@@ -1,0 +1,19 @@
+version_schema: 1
+id: lucie-castets
+prenom: Lucie
+nom: Castets
+nom_tri: Castets
+parti: null
+ids_externes:
+  2027etmoi: castets
+statuts:
+  - code: renonce
+    motif: non_candidat
+    date: 2026-01-30
+    source:
+      type: presse
+      titre: Orange / AFP
+      url: https://actu.orange.fr/politique/presidentielle-2027-lucie-castets-assure-ne-pas-etre-candidate-magic-CNT000002n5bJm.html
+      date_publication: 2026-01-30
+      date_consultation: 2026-09-22
+    statut_relecture: brouillon

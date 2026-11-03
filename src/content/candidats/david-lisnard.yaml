@@ -1,0 +1,23 @@
+version_schema: 1
+id: david-lisnard
+prenom: David
+nom: Lisnard
+nom_tri: Lisnard
+parti: Nouvelle Énergie
+parti_source:
+  type: parti
+  url: https://www.unenouvelleenergie.fr/
+  date_consultation: 2026-10-28
+site_officiel: https://lisnard2027.fr
+ids_externes:
+  2027etmoi: lisnard
+statuts:
+  - code: declare
+    date: 2026-03-31
+    source:
+      type: presse
+      titre: LCP
+      url: https://lcp.fr/actualites/je-suis-candidat-david-lisnard-quitte-lr-et-relance-le-debat-sur-une-primaire-a-droite
+      date_publication: 2026-03-31
+      date_consultation: 2026-10-28
+    statut_relecture: brouillon

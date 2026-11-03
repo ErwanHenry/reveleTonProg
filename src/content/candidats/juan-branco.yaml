@@ -1,0 +1,23 @@
+version_schema: 1
+id: juan-branco
+prenom: Juan
+nom: Branco
+nom_tri: Branco
+parti: Sans étiquette (soutenu par Les Ruches)
+parti_source:
+  type: candidat
+  url: https://ruches.org/
+  date_consultation: 2026-10-28
+site_officiel: https://ruches.org/
+ids_externes:
+  2027etmoi: branco
+statuts:
+  - code: declare
+    date: 2025-12-19
+    source:
+      type: presse
+      titre: Sud Radio
+      url: https://www.sudradio.fr/sud-radio/lavocat-juan-branco-candidat-a-la-presidentielle
+      date_publication: 2025-12-19
+      date_consultation: 2026-10-28
+    statut_relecture: brouillon

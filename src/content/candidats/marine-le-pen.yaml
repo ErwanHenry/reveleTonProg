@@ -1,0 +1,22 @@
+version_schema: 1
+id: marine-le-pen
+prenom: Marine
+nom: Le Pen
+nom_tri: Le Pen
+parti: Rassemblement national
+parti_source:
+  type: parti
+  url: https://rassemblementnational.fr/
+  date_consultation: 2026-10-28
+ids_externes:
+  2027etmoi: le-pen
+statuts:
+  - code: declare
+    date: 2026-07-07
+    source:
+      type: presse
+      titre: franceinfo
+      url: https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/ineligibilite-peine-de-prison-pourquoi-la-condamnation-de-marine-le-pen-a-ete-reduite-en-appel_8098121.html
+      date_publication: 2026-07-07
+      date_consultation: 2026-10-28
+    statut_relecture: brouillon

@@ -1,0 +1,19 @@
+version_schema: 1
+id: clementine-autain
+prenom: Clémentine
+nom: Autain
+nom_tri: Autain
+parti: null
+ids_externes:
+  2027etmoi: autain
+statuts:
+  - code: renonce
+    motif: retrait
+    date: 2026-07-11
+    source:
+      type: presse
+      titre: franceinfo
+      url: https://www.franceinfo.fr/elections/presidentielle/presidentielle-la-deputee-clementine-autain-retire-sa-candidature-denoncant-l-empilement-des-candidatures-a-gauche_8103848.html
+      date_publication: 2026-07-11
+      date_consultation: 2026-09-22
+    statut_relecture: brouillon

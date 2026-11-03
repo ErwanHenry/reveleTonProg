@@ -1,0 +1,22 @@
+version_schema: 1
+id: antoine-mikolajczak
+prenom: Antoine
+nom: Mikolajczak
+nom_tri: Mikolajczak
+parti: Équinoxe
+parti_source:
+  type: parti
+  url: https://parti-equinoxe.fr/
+  date_consultation: 2026-10-28
+ids_externes:
+  2027etmoi: mikolajczak
+statuts:
+  - code: declare
+    date: 2026-07-12
+    source:
+      type: presse
+      titre: JHM
+      url: https://jhm.fr/sous-la-banniere-dequinoxe-antoine-mikolajczak-brigue-la-presidence-de-la-republique/
+      date_publication: 2026-07-12
+      date_consultation: 2026-10-28
+    statut_relecture: brouillon

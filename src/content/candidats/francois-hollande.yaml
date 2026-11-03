@@ -1,0 +1,18 @@
+version_schema: 1
+id: francois-hollande
+prenom: François
+nom: Hollande
+nom_tri: Hollande
+parti: null
+ids_externes:
+  2027etmoi: hollande
+statuts:
+  - code: pressenti
+    date: 2026-08-28
+    source:
+      type: presse
+      titre: France 24 / AFP
+      url: https://www.france24.com/fr/info-en-continu/20260828-hollande-continue-de-d%C3%A9cliner-la-primaire-et-table-sur-un-moment-de-v%C3%A9rit%C3%A9-en-d%C3%A9cembre
+      date_publication: 2026-08-28
+      date_consultation: 2026-10-28
+    statut_relecture: brouillon

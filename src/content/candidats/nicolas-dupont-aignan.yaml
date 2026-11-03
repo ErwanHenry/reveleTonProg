@@ -1,0 +1,23 @@
+version_schema: 1
+id: nicolas-dupont-aignan
+prenom: Nicolas
+nom: Dupont-Aignan
+nom_tri: Dupont-Aignan
+parti: Debout la France
+parti_source:
+  type: parti
+  url: https://www.debout-la-france.fr/
+  date_consultation: 2026-10-28
+site_officiel: https://www.dupontaignan.fr/
+ids_externes:
+  2027etmoi: dupont-aignan
+statuts:
+  - code: declare
+    date: 2026-09-19
+    source:
+      type: presse
+      titre: franceinfo
+      url: https://www.franceinfo.fr/politique/nicolas-dupont-aignan/je-serai-le-seul-candidat-qui-propose-de-sortir-de-l-union-europeenne-dit-nicolas-dupont-aignan-qui-se-lance-dans-sa-quatrieme-campagne-presidentielle_8201024.html
+      date_publication: 2026-09-19
+      date_consultation: 2026-10-28
+    statut_relecture: brouillon

@@ -1,0 +1,19 @@
+version_schema: 1
+id: jordan-bardella
+prenom: Jordan
+nom: Bardella
+nom_tri: Bardella
+parti: null
+ids_externes:
+  2027etmoi: bardella
+statuts:
+  - code: renonce
+    motif: non_candidat
+    date: 2026-07-07
+    source:
+      type: presse
+      titre: RTS
+      url: https://www.rts.ch/info/monde/2026/article/marine-le-pen-sera-candidate-a-la-presidentielle-de-2027-29297057.html
+      date_publication: 2026-07-07
+      date_consultation: 2026-09-22
+    statut_relecture: brouillon

@@ -1,0 +1,18 @@
+version_schema: 1
+id: bruno-le-maire
+prenom: Bruno
+nom: Le Maire
+nom_tri: Le Maire
+parti: null
+ids_externes:
+  2027etmoi: le-maire
+statuts:
+  - code: pressenti
+    date: 2026-06-22
+    source:
+      type: presse
+      titre: LCP
+      url: https://lcp.fr/actualites/presidentielle-2027-bruno-le-maire-dira-en-octobre-s-il-est-candidat-437967
+      date_publication: 2026-06-22
+      date_consultation: 2026-10-28
+    statut_relecture: brouillon

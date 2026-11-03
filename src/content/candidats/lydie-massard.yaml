@@ -1,0 +1,22 @@
+version_schema: 1
+id: lydie-massard
+prenom: Lydie
+nom: Massard
+nom_tri: Massard
+parti: Union démocratique bretonne
+parti_source:
+  type: parti
+  url: https://www.udb.bzh/
+  date_consultation: 2026-10-28
+ids_externes:
+  2027etmoi: massard
+statuts:
+  - code: pressenti
+    date: 2026-04-02
+    source:
+      type: presse
+      titre: Le Télégramme
+      url: https://www.letelegramme.fr/morbihan/pontivy-56300/la-pontivyenne-lydie-massard-candidate-a-la-primaire-de-la-gauche-pour-la-prochaine-presidentielle-7017809.php
+      date_publication: 2026-04-02
+      date_consultation: 2026-10-28
+    statut_relecture: brouillon

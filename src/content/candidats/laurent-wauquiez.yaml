@@ -1,0 +1,19 @@
+version_schema: 1
+id: laurent-wauquiez
+prenom: Laurent
+nom: Wauquiez
+nom_tri: Wauquiez
+parti: null
+ids_externes:
+  2027etmoi: wauquiez
+statuts:
+  - code: renonce
+    motif: non_candidat
+    date: 2026-07
+    source:
+      type: presse
+      titre: Public Sénat
+      url: https://www.publicsenat.fr/actualites/politique/main-tendue-de-laurent-wauquiez-a-edouard-philippe-cest-le-retour-de-la-droite-la-plus-bete-du-monde-tacle-le-camp-de-bruno-retailleau
+      date_publication: 2026-07
+      date_consultation: 2026-09-22
+    statut_relecture: brouillon

@@ -1,0 +1,22 @@
+version_schema: 1
+id: selma-labib
+prenom: Selma
+nom: Labib
+nom_tri: Labib
+parti: NPA-Révolutionnaires
+parti_source:
+  type: parti
+  url: https://npa-revolutionnaires.org/
+  date_consultation: 2026-10-28
+ids_externes:
+  2027etmoi: labib
+statuts:
+  - code: declare
+    date: 2026-06-17
+    source:
+      type: parti
+      titre: NPA-Révolutionnaires
+      url: https://npa-revolutionnaires.org/sur-rtl-presidentielle-2027-selma-labib-officiellement-candidate-pour-le-npa-revolutionnaires/
+      date_publication: 2026-06-17
+      date_consultation: 2026-10-28
+    statut_relecture: brouillon

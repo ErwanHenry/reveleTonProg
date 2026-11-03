@@ -1,0 +1,19 @@
+version_schema: 1
+id: boris-vallaud
+prenom: Boris
+nom: Vallaud
+nom_tri: Vallaud
+parti: null
+ids_externes:
+  2027etmoi: vallaud
+statuts:
+  - code: renonce
+    motif: ralliement
+    date: 2026-08-27
+    source:
+      type: presse
+      titre: franceinfo
+      url: https://www.franceinfo.fr/elections/presidentielle/boris-vallaud-fait-le-choix-de-soutenir-raphael-glucksmann-pour-la-primaire-de-la-gauche-en-vue-de-la-presidentielle-2027_8165114.html
+      date_publication: 2026-08-27
+      date_consultation: 2026-09-22
+    statut_relecture: brouillon

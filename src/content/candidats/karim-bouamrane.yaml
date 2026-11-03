@@ -1,0 +1,18 @@
+version_schema: 1
+id: karim-bouamrane
+prenom: Karim
+nom: Bouamrane
+nom_tri: Bouamrane
+parti: null
+ids_externes:
+  2027etmoi: bouamrane
+statuts:
+  - code: declare
+    date: 2026-08-26
+    source:
+      type: presse
+      titre: CNews
+      url: https://www.cnews.fr/france/2026-08-26/presidentielle-2027-karim-bouamrane-ne-participera-pas-la-primaire-socialiste
+      date_publication: 2026-08-26
+      date_consultation: 2026-10-28
+    statut_relecture: brouillon

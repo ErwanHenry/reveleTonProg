@@ -1,0 +1,23 @@
+version_schema: 1
+id: raphael-glucksmann
+prenom: Raphaël
+nom: Glucksmann
+nom_tri: Glucksmann
+parti: Place publique
+parti_source:
+  type: parti
+  url: https://place-publique.eu/
+  date_consultation: 2026-10-28
+site_officiel: https://glucks2027.fr/
+ids_externes:
+  2027etmoi: glucksmann
+statuts:
+  - code: declare
+    date: 2026-10-11
+    source:
+      type: presse
+      titre: "LCP — Primaire socialiste : vainqueur dès le 1er tour, Raphaël Glucksmann sera le candidat de la gauche sociale-démocrate à la présidentielle"
+      url: https://lcp.fr/actualites/primaire-socialiste-vainqueur-des-le-1er-tour-raphael-glucksmann-sera-le-candidat-de-la
+      date_publication: 2026-10-11
+      date_consultation: 2026-10-28
+    statut_relecture: brouillon

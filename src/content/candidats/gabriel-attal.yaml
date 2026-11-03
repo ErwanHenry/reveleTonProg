@@ -1,0 +1,23 @@
+version_schema: 1
+id: gabriel-attal
+prenom: Gabriel
+nom: Attal
+nom_tri: Attal
+parti: Renaissance
+parti_source:
+  type: parti
+  url: https://parti-renaissance.fr/
+  date_consultation: 2026-10-28
+site_officiel: https://attalpresident.fr/
+ids_externes:
+  2027etmoi: attal
+statuts:
+  - code: declare
+    date: 2026-05-22
+    source:
+      type: presse
+      titre: LCP
+      url: https://lcp.fr/actualites/presidentielle-2027-gabriel-attal-officialise-sa-candidature-436721
+      date_publication: 2026-05-22
+      date_consultation: 2026-10-28
+    statut_relecture: brouillon

@@ -1,0 +1,24 @@
+version_schema: 1
+id: jerome-guedj
+prenom: Jérôme
+nom: Guedj
+nom_tri: Guedj
+parti: Parti socialiste
+parti_source:
+  type: candidat
+  url: https://www.jeromeguedj2027.fr/
+  date_consultation: 2026-10-12
+site_officiel: https://www.jeromeguedj2027.fr/
+ids_externes:
+  2027etmoi: guedj
+statuts:
+  - code: renonce
+    motif: elimine_primaire
+    date: 2026-10-11
+    source:
+      type: presse
+      titre: "LCP — Primaire socialiste : vainqueur dès le 1er tour, Raphaël Glucksmann sera le candidat de la gauche sociale-démocrate à la présidentielle"
+      url: https://lcp.fr/actualites/primaire-socialiste-vainqueur-des-le-1er-tour-raphael-glucksmann-sera-le-candidat-de-la
+      date_publication: 2026-10-11
+      date_consultation: 2026-10-12
+    statut_relecture: brouillon

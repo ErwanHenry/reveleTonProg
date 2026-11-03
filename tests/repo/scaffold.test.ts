@@ -33,6 +33,7 @@ describe('scaffold Node 24', () => {
       validate: 'node scripts/validate.ts',
       migrate: 'node scripts/migrate.ts',
       ids: 'node scripts/ids.ts',
+      'import:datagouv': 'node scripts/import-datagouv.ts',
       check: 'astro check',
       test: 'TZ=Europe/Paris node --test "tests/**/*.test.ts"',
       build: 'astro build',
