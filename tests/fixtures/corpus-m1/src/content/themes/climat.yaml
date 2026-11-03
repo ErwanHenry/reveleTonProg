@@ -1,0 +1,10 @@
+version_schema: 1
+id: climat
+nom: Climat
+ordre: 6
+sous_themes:
+  - id: energie
+    nom: Énergie
+statut_relecture: publie
+relecteur: Erwan Henry
+date_relecture: 2026-10-22

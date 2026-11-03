@@ -1,0 +1,11 @@
+version_schema: 1
+id: ecole
+nom: École
+ordre: 2
+prioritaire_aine: false
+sous_themes:
+  - id: cantine
+    nom: Cantine
+statut_relecture: relu
+relecteur: Erwan Henry
+date_relecture: 2026-10-23

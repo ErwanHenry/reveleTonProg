@@ -1,0 +1,15 @@
+version_schema: 1
+id: nina-pressentie
+prenom: Nina
+nom: Pressentie
+nom_tri: Pressentie
+parti: null
+statuts:
+  - code: pressenti
+    date: 2026-10-05
+    source:
+      type: presse
+      titre: Article fictif
+      url: https://journal-fictif.exemple.invalid/nina-pressentie
+      date_consultation: 2026-10-06
+    statut_relecture: brouillon

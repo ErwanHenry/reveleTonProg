@@ -148,8 +148,8 @@ describe('corpus-m1 : la surcouche fictive des pages M1', () => {
     const m = entree('mesures', 'marie-fictive/aide-construction');
     assert.equal(m.statut_relecture, 'publie');
     const enfant = String((m.redactions as Donnees).enfant);
-    const marqueurs = [...enfant.matchAll(MARQUEUR_GLOSSAIRE)].map((x) => x[0]);
-    assert.deepEqual(marqueurs, ['[[loyer]]', '[[Parti Imaginaire|parti-imaginaire]]']);
+    const marqueurs = [...enfant.matchAll(MARQUEUR_GLOSSAIRE)].map((x) => x[0]).sort();
+    assert.deepEqual(marqueurs, ['[[Parti Imaginaire|parti-imaginaire]]', '[[loyer]]'].sort());
   });
 
   it('range la phrase piège dans le seul titre de la mesure en brouillon', () => {

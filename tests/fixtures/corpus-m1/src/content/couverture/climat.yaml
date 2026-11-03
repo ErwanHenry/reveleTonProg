@@ -1,0 +1,26 @@
+version_schema: 1
+id: climat
+theme: climat
+cases:
+  - candidat: marie-fictive
+    etat: non_precise
+    verifie_le: 2026-10-24
+    verifie_par: Erwan Henry
+    sources_consultees:
+      - marie-fictive-programme
+  - candidat: jean-imaginaire
+    etat: non_precise
+    verifie_le: 2026-10-24
+    verifie_par: Erwan Henry
+    sources_consultees:
+      - programme-commun-fictif
+  - candidat: elise-erard
+    etat: non_precise
+    verifie_le: 2026-10-24
+    verifie_par: Erwan Henry
+    sources_consultees:
+      - programme-commun-fictif
+  - candidat: paul-de-villefranche
+    etat: programme_non_publie
+    verifie_le: 2026-10-24
+    verifie_par: Erwan Henry

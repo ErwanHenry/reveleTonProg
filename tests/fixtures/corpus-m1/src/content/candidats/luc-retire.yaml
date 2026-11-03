@@ -1,0 +1,33 @@
+version_schema: 1
+id: luc-retire
+prenom: Luc
+nom: Retiré
+nom_tri: Retiré
+parti: Parti Imaginaire
+parti_source:
+  type: parti
+  titre: Page de présentation du Parti Imaginaire
+  url: https://parti-imaginaire.exemple.invalid/presentation
+  date_consultation: 2026-10-20
+statuts:
+  - code: declare
+    date: 2026-09-10
+    source:
+      type: candidat
+      titre: Annonce de candidature (fictive)
+      url: https://luc-retire.exemple.invalid/candidature
+      date_consultation: 2026-09-11
+    statut_relecture: relu
+    relecteur: Erwan Henry
+    date_relecture: 2026-09-12
+  - code: renonce
+    motif: retrait
+    date: 2026-10-25
+    source:
+      type: candidat
+      titre: Communiqué de retrait (fictif)
+      url: https://luc-retire.exemple.invalid/retrait
+      date_consultation: 2026-10-25
+    statut_relecture: relu
+    relecteur: Erwan Henry
+    date_relecture: 2026-10-26
