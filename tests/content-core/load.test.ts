@@ -1,7 +1,7 @@
 import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { checkContained, listContentFiles, loadAll, parseYaml, validateYamlText } from '../../src/lib/content-core/load.ts';
@@ -228,6 +228,28 @@ describe('loadAll', () => {
     const statuts = marie?.data.statuts as { date: unknown }[];
     assert.equal(typeof statuts[1]?.date, 'string');
     assert.equal(statuts[1]?.date, '2026-10-15');
+  });
+
+  it('WR-03 : mesure déplacée vers un autre candidat ou renommée : ID_CHEMIN_INCOHERENT', () => {
+    const root = tmpRoot();
+    cpSync(FIXTURE_ROOT, root, { recursive: true });
+    const from = path.join(root, 'src', 'content', 'mesures', 'marie-fictive', 'encadrement-loyers.yaml');
+    const to = path.join(root, 'src', 'content', 'mesures', 'jean-imaginaire', 'autre-nom.yaml');
+    mkdirSync(path.dirname(to), { recursive: true });
+    renameSync(from, to);
+    const res = loadAll(root, OPTS);
+    const bad = res.diagnostics.filter((d) => d.code === 'ID_CHEMIN_INCOHERENT');
+    assert.deepEqual(bad.map((d) => d.pointer).sort(), ['/candidat', '/id']);
+    assert.ok(bad.every((d) => d.file === to && d.line > 1), JSON.stringify(bad));
+    assert.ok(!res.entries.some((e) => e.collection === 'mesures'));
+  });
+
+  it('WR-03 : candidat dont le nom de fichier diffère de l’id : ID_CHEMIN_INCOHERENT sur /id', () => {
+    const root = tmpRoot();
+    put(root, 'candidats/autre-nom.yaml', FIXTURE_TEXT);
+    const res = loadAll(root, OPTS);
+    assert.deepEqual(res.diagnostics.map((d) => [d.code, d.pointer]), [['ID_CHEMIN_INCOHERENT', '/id']]);
+    assert.equal(res.entries.length, 0);
   });
 
   it('un candidat invalide : diagnostics triés, aucune entrée', () => {

@@ -5,6 +5,7 @@ import type { Document } from 'yaml';
 import { hasSchema, validateData } from './ajv.ts';
 import { COLLECTIONS, COLLECTION_NAMES } from './collections.ts';
 import type { CollectionName } from './collections.ts';
+import { pointerToPos } from './diagnostics.ts';
 import type { Diagnostic } from './diagnostics.ts';
 
 // Un seul chemin de parsing pour la CLI, la CI et Astro (DATA-07) : schéma YAML 1.2 "core"
@@ -87,11 +88,36 @@ export function validateYamlText(
   text: string,
   file: string,
   opts: LoadOptions,
-): { data: unknown; diagnostics: Diagnostic[] } {
+): { data: unknown; diagnostics: Diagnostic[]; doc: Document.Parsed; lc: LineCounter } {
   const parsed = parseYaml(text, file);
-  if (parsed.diagnostics.some((d) => d.severity === 'error')) return { data: parsed.data, diagnostics: parsed.diagnostics };
-  const diagnostics = validateData(opts.schemasDir, schemaName, parsed.data, { file, doc: parsed.doc, lc: parsed.lc });
-  return { data: parsed.data, diagnostics };
+  const { doc, lc } = parsed;
+  if (parsed.diagnostics.some((d) => d.severity === 'error')) return { data: parsed.data, diagnostics: parsed.diagnostics, doc, lc };
+  const diagnostics = validateData(opts.schemasDir, schemaName, parsed.data, { file, doc, lc });
+  return { data: parsed.data, diagnostics, doc, lc };
+}
+
+/**
+ * Invariants entre un fichier et son emplacement : l'id déclaré est celui du chemin et, pour une
+ * mesure, `candidat` est le dossier parent. Sans cela, déplacer un fichier rattacherait en silence
+ * une mesure au mauvais candidat (getMesuresDe filtre sur data.candidat, getEntry sur l'id du chemin).
+ */
+function checkPathCoherence(
+  f: { collection: CollectionName; id: string; file: string },
+  data: Record<string, unknown>,
+  doc: Document.Parsed,
+  lc: LineCounter,
+): Diagnostic[] {
+  const out: Diagnostic[] = [];
+  const at = (pointer: string, message: string): void => {
+    const pos = pointerToPos(doc, lc, pointer, 'key');
+    out.push({ code: 'ID_CHEMIN_INCOHERENT', severity: 'error', file: f.file, line: pos.line, col: pos.col, pointer, message });
+  };
+  if (data.id !== f.id) at('/id', `l'identifiant « ${String(data.id)} » ne correspond pas au chemin du fichier (attendu : « ${f.id} »)`);
+  if (f.collection === 'mesures') {
+    const dossier = f.id.slice(0, f.id.indexOf('/'));
+    if (data.candidat !== dossier) at('/candidat', `le candidat « ${String(data.candidat)} » ne correspond pas au dossier du fichier (attendu : « ${dossier} »)`);
+  }
+  return out;
 }
 
 const isCollection = (name: string): name is CollectionName => (COLLECTION_NAMES as readonly string[]).includes(name);
@@ -220,8 +246,10 @@ export function loadAll(contentRoot: string, opts: LoadOptions): LoadResult {
       continue;
     }
     const res = validateYamlText(schemaName, read.text, f.file, opts);
-    diagnostics.push(...res.diagnostics);
-    if (!res.diagnostics.some((d) => d.severity === 'error')) {
+    const own = [...res.diagnostics];
+    if (!own.some((d) => d.severity === 'error')) own.push(...checkPathCoherence(f, res.data as Record<string, unknown>, res.doc, res.lc));
+    diagnostics.push(...own);
+    if (!own.some((d) => d.severity === 'error')) {
       entries.push({ collection: f.collection, id: f.id, file: f.file, data: res.data as Record<string, unknown> });
     }
   }
