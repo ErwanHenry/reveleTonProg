@@ -61,11 +61,9 @@ const ids = candidats.map((f) => f.id);
 
 // Le verrou est lu avec les mêmes garde-fous que le contenu : ni lien symbolique, ni hors racine.
 function lireLock(): IdsLock | undefined {
-  try {
-    lstatSync(lockPath);
-  } catch {
-    return undefined;
-  }
+  // Seule l'absence (ENOENT) vaut « pas de verrou » ; toute autre erreur (EACCES, ENOTDIR, EIO)
+  // se propage et fait échouer la commande : sinon `--write` réécrirait ids.lock en perdant des ids.
+  if (lstatSync(lockPath, { throwIfNoEntry: false }) === undefined) return undefined;
   const read = readContained(contentRoot, lockPath);
   if ('diagnostic' in read) return fail([read.diagnostic]);
   return lireIdsLock(read.text);

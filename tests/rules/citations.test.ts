@@ -19,6 +19,7 @@ const TEXTE = 'Nous encadrerons les loyers dans toutes les villes de plus de 50 
 
 const CODES = new Set([
   'CHIFFRE_HORS_SOURCE',
+  'CHIFFRE_DETAILLE_HORS_SOURCE',
   'NOMBRE_LETTRES_HORS_SOURCE',
   'CITATION_HORS_SOURCE',
   'TEXTE_SOURCE_HORS_ARCHIVE',
@@ -74,6 +75,20 @@ describe('REGLE-04 : chiffres', () => {
     );
   });
 
+  it('WR-03 : détaillé, un chiffre absent de la source avertit (la décision acceptée réserve l’erreur à résumé, enfant, aîné)', () => {
+    comparer(
+      citations([r(MESURE, 'La mesure concernerait toutes les villes de plus de 50 000 habitants.', 'La mesure concernerait toutes les villes de plus de 30 000 habitants.')]),
+      [warn('CHIFFRE_DETAILLE_HORS_SOURCE', '/redactions/detaille')],
+    );
+  });
+
+  it('WR-03 : titre, un chiffre absent de la source avertit', () => {
+    comparer(
+      citations([r(MESURE, 'Encadrement des loyers dans les villes moyennes (fictif)', 'Baisse de 30 % des loyers (fictif)')]),
+      [warn('CHIFFRE_DETAILLE_HORS_SOURCE', '/titre')],
+    );
+  });
+
   it('aîné : un chiffre absent de la source échoue', () => {
     comparer(
       citations([r(MESURE, "Cette règle s'appliquerait dans toutes les villes de plus de 50 000 habitants.", "Cette règle s'appliquerait dans toutes les villes de plus de 30 000 habitants.")]),
@@ -108,10 +123,34 @@ describe('REGLE-04 : chiffres', () => {
     comparer(d, [err('CHIFFRAGE_HORS_ARCHIVE', '/chiffrage/texte')]);
   });
 
-  it('un chiffre présent seulement dans le détaillé n’est pas vérifié (question ouverte 9)', () => {
+  it('WR-08 : la source en lettres (« cinquante mille ») établit « 50 000 » en chiffres', () => {
+    const d = citations([r(MESURE, 'de plus de 50 000 habitants, avec un plafond', 'de plus de cinquante mille habitants, avec un plafond')]).filter(
+      (x) => x.code === 'CHIFFRE_HORS_SOURCE' || x.code === 'NOMBRE_LETTRES_HORS_SOURCE',
+    );
+    comparer(d, []);
+  });
+
+  it('WR-08 : la source en chiffres établit un nombre en lettres de la rédaction', () => {
+    const d = citations([r(MESURE, 'Marie Fictive propose de plafonner les loyers dans les villes de plus de 50 000 habitants.', 'Marie Fictive propose de plafonner les loyers dans les villes de plus de cinquante mille habitants.')]).filter(
+      (x) => x.code === 'CHIFFRE_HORS_SOURCE' || x.code === 'NOMBRE_LETTRES_HORS_SOURCE',
+    );
+    comparer(d, []);
+  });
+
+  it('WR-08 : « deux millions » en lettres dans la source, « 2 millions » dans le résumé', () => {
+    const d = citations([
+      r(MESURE, 'de plus de 50 000 habitants, avec un plafond', 'de plus de deux millions habitants, avec un plafond'),
+      r(MESURE, 'plafonner les loyers dans les villes de plus de 50 000 habitants. Le préfet', 'plafonner les loyers dans les villes de plus de 2 millions habitants. Le préfet'),
+    ]).filter((x) => x.code === 'CHIFFRE_HORS_SOURCE' && x.pointer === '/redactions/resume');
+    comparer(d, []);
+  });
+
+  it('WR-08 : un nombre en lettres de valeur différente reste signalé', () => {
     comparer(
-      tous([r(MESURE, 'La mesure concernerait toutes les villes de plus de 50 000 habitants.', 'La mesure concernerait toutes les villes de plus de 30 000 habitants.')]),
-      [],
+      citations([r(MESURE, 'Marie Fictive propose de plafonner les loyers dans les villes de plus de 50 000 habitants.', 'Marie Fictive propose de plafonner les loyers dans les villes de plus de soixante mille habitants.')]).filter(
+        (x) => x.code === 'NOMBRE_LETTRES_HORS_SOURCE',
+      ),
+      [warn('NOMBRE_LETTRES_HORS_SOURCE', '/redactions/resume')],
     );
   });
 
@@ -190,10 +229,22 @@ describe('REGLE-05 : texte_source et archive', () => {
     return `${TEXTE} ${Array.from({ length: n }, () => 'alpha').join(' ')}`;
   };
 
-  it('texte_source de 121 mots, fidèle à l’archive : seul avertissement TROP_LONG', () => {
+  it('WR-04 : texte_source de 121 mots, fidèle à l’archive : TROP_LONG est une erreur en production', () => {
     const t = long(121);
     assert.equal(countWords(t), 121);
-    comparer(avecArchive([r(MESURE, `texte_source: ${TEXTE}`, `texte_source: ${t}`)], `\n\n${t}\n`), [warn('TEXTE_SOURCE_TROP_LONG', '/texte_source')]);
+    comparer(avecArchive([r(MESURE, `texte_source: ${TEXTE}`, `texte_source: ${t}`)], `\n\n${t}\n`), [err('TEXTE_SOURCE_TROP_LONG', '/texte_source')]);
+  });
+
+  it('WR-04 : le même texte_source n’est qu’un avertissement en preview', () => {
+    const t = long(121);
+    const racine = construireRacine(spec([r(MESURE, `texte_source: ${TEXTE}`, `texte_source: ${t}`)], { mode: 'preview' }));
+    const fichier = path.join(racine, ARCHIVE);
+    appendFileSync(fichier, `\n\n${t}\n`);
+    const sha = createHash('sha256').update(readFileSync(fichier)).digest('hex');
+    const src = path.join(racine, SOURCE);
+    writeFileSync(src, readFileSync(src, 'utf8').replace(SHA, sha));
+    const res = loadAll(racine, { schemasDir: SCHEMAS_DIR, mode: 'preview' });
+    assert.deepEqual(res.diagnostics.filter((d) => d.code === 'TEXTE_SOURCE_TROP_LONG').map((d) => d.severity), ['warning']);
   });
 
   it('texte_source de 120 mots, fidèle à l’archive : aucun diagnostic', () => {

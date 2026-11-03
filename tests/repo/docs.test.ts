@@ -131,6 +131,11 @@ describe('docs/ARCHITECTURE.md (phase 2)', () => {
     }
     assert.equal(HYPOTHESES.length, 12);
   });
+
+  it('WR-10 : la dette « sondage encore affiché pendant une fenêtre » est consignée comme différée', () => {
+    assert.match(architecture, /Dette différée[^\n]*WR-10/);
+    assert.match(HYPOTHESES.find((h) => h.id === 'A10')?.choix ?? '', /dette différée/);
+  });
 });
 
 describe('docs/RUNBOOK.md', () => {

@@ -46,12 +46,15 @@ const neutralite: EntryRule = {
   id: 'neutralite',
   run(e) {
     const out: Finding[] = [];
+    // CR-03 : « … » n'exempte un mot que si la citation est vérifiée contre texte_source, ce que
+    // seule la collection mesures permet (CITATION_HORS_SOURCE) ; ailleurs, aucune exemption.
+    const opts = { exempterCitations: e.collection === 'mesures' };
     for (const { pointer, texte } of champsEditoriaux(e)) {
       if (CARACTERES_SUSPECTS.test(texte.normalize('NFC'))) {
         out.push({
           code: 'CARACTERE_SUSPECT',
           pointer,
-          message: 'le texte contient un caractère de contrôle bidirectionnel ou d’une écriture non latine (grec, cyrillique), qui pourrait masquer un mot interdit.',
+          message: 'le texte contient un caractère invisible, de contrôle bidirectionnel, d’une écriture non latine (grec, cyrillique…) imitant une lettre latine ou un chiffre non ASCII, qui pourrait masquer un mot interdit ou un nombre.',
         });
       }
       const affiche = cleanText(sansMarqueurs(texte));
@@ -62,14 +65,14 @@ const neutralite: EntryRule = {
           message: 'guillemets français « » non équilibrés : un « sans » (ou l’inverse) ne peut pas exempter le reste du texte.',
         });
       }
-      for (const mot of motsInterdits(texte)) {
+      for (const mot of motsInterdits(texte, opts)) {
         out.push({
           code: 'MOT_INTERDIT',
           pointer,
           message: `mot interdit « ${citer(mot)} » : écrire de façon neutre, ou le placer entre guillemets s’il figure mot pour mot dans la source.`,
         });
       }
-      for (const verbe of verbesConnotes(texte)) {
+      for (const verbe of verbesConnotes(texte, opts)) {
         out.push({
           code: 'VERBE_CONNOTE',
           severity: 'warning',

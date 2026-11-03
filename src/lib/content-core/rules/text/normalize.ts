@@ -3,7 +3,10 @@ import { MARQUEUR_GLOSSAIRE } from '../config.ts';
 // Couche texte française (Phase 2). Module PUR : aucun import node:, importable par Astro.
 
 const SPACE_LIKE = /[\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]/g; // NBSP, espaces fines, insécables fines...
-const INVISIBLE = /[\u00AD\u200B-\u200D\u2060\uFEFF]/g; // trait d'union conditionnel, largeur nulle, BOM
+// Tout caractère de format (Cf : marques bidi, opérateurs invisibles, étiquettes, trait d'union
+// conditionnel, largeur nulle, BOM), tout usage privé (Co) et les « remplisseurs » qui ne sont pas
+// des Cf (CR-01) : aucun ne doit pouvoir se glisser à l'intérieur d'un mot interdit.
+const INVISIBLE = /[\p{Cf}\p{Co}\u034F\u115F\u1160\u17B4\u17B5\u180E\u3164\uFE00-\uFE0F\uFFA0]/gu;
 const APOSTROPHES = /[\u2018\u2019\u201B\u02BC\u2032`\u00B4]/g;
 const DIGIT_GROUP = /(?<![\d.,])(\d{1,3})((?: \d{3})+)(?!\d)/g;
 

@@ -53,6 +53,9 @@ export function fenetreDe(iso: string): (typeof FENETRES_BLOCAGE)[number] | unde
 const sondage: EntryRule = {
   id: 'sondage',
   run(e: LoadedEntry): Finding[] {
+    // CR-02 : la règle ne vaut que pour les sondages ; une source (date_publication) ou toute
+    // autre collection n'est pas un sondage publié.
+    if (e.collection !== 'sondages') return [];
     const out: Finding[] = [];
 
     if (typeof e.data.date_publication === 'string') {
@@ -84,7 +87,8 @@ const sondage: EntryRule = {
       }
 
       if (tour === 1) {
-        const duel = h.scores.length === DUEL.scores && sommeScores >= DUEL.sommeMin * 100;
+        // WR-07 : deux scores dont la somme est quasi complète, ou avec peu d'« autres » (blanc/nul).
+        const duel = h.scores.length === DUEL.scores && (sommeScores >= DUEL.sommeMin * 100 || centiemes(h.autresPct) < DUEL.autresMax * 100);
         if (duel || DUEL.motif.test(h.nom)) {
           out.push({
             code: 'SONDAGE_TOUR2_EN_TOUR1',

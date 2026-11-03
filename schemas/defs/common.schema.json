@@ -11,7 +11,7 @@
     "dateHeure":       { "type": "string", "format": "date-time" },
     "urlHttps":        { "type": "string", "format": "https-url" },
     "sha256":          { "type": "string", "pattern": "^[a-f0-9]{64}$" },
-    "texte":           { "type": "string", "minLength": 1 },
+    "texte":           { "type": "string", "minLength": 1, "maxLength": 5000 },
     "statutRelecture": { "enum": ["brouillon", "relu", "publie"] },
     "archive": {
       "type": "object",

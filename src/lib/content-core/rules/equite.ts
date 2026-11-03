@@ -1,13 +1,28 @@
 import { PERIMETRE_EQUITE } from './config.ts';
 import type { CorpusRule, Finding } from './types.ts';
 
-// REGLE-08 : équité. Sur un thème publié, tout candidat déclaré ou primaire (dernier statut de
-// statuts[], quel que soit son statut de relecture : hypothèse A6, fail-closed) a soit une mesure
-// publiée, soit une case de couverture. C'est la seule règle qui lit le mode : erreur en production,
-// avertissement en preview.
+// REGLE-08 : équité. Sur un thème publié, tout candidat déclaré ou primaire (statut le plus récent de
+// statuts[] par date, quel que soit son statut de relecture : hypothèse A6, fail-closed) a soit une mesure
+// publiée, soit une case de couverture. Erreur en production, avertissement en
+// preview (comme TEXTE_SOURCE_TROP_LONG).
 
 const tableau = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
 const objet = (v: unknown): Record<string, unknown> => (v !== null && typeof v === 'object' ? (v as Record<string, unknown>) : {});
+
+/**
+ * Statut le plus récent par date, pas le dernier de la liste (WR-12) : ni le schéma ni une règle
+ * n'imposent l'ordre chronologique, et en insérer un en tête ou en fin ne doit pas changer le
+ * périmètre en silence. Les dates ISO (AAAA-MM ou AAAA-MM-JJ) se comparent comme des chaînes ; à date
+ * égale, le dernier de la liste l'emporte.
+ */
+function statutLePlusRecent(statuts: unknown): Record<string, unknown> | undefined {
+  let meilleur: Record<string, unknown> | undefined;
+  for (const brut of tableau(statuts)) {
+    const s = objet(brut);
+    if (meilleur === undefined || String(s.date ?? '') >= String(meilleur.date ?? '')) meilleur = s;
+  }
+  return meilleur;
+}
 
 export const regleEquite: CorpusRule = {
   id: 'equite',
@@ -22,8 +37,7 @@ export const regleEquite: CorpusRule = {
     const perimetre = ctx.corpus
       .de('candidats')
       .filter((c) => {
-        const statuts = tableau(c.data.statuts);
-        const dernier = objet(statuts[statuts.length - 1]).code;
+        const dernier = statutLePlusRecent(c.data.statuts)?.code;
         return (PERIMETRE_EQUITE as readonly unknown[]).includes(dernier);
       })
       .map((c) => c.id)

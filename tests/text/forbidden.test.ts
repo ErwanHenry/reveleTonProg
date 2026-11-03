@@ -55,3 +55,33 @@ describe('verbesConnotes', () => {
     assert.deepEqual(verbesConnotes('Le texte dit « admet » ici'), []);
   });
 });
+
+describe('CR-01 : caractères invisibles et de format dans un mot interdit', () => {
+  // Points de code que l'ancienne liste INVISIBLE ne retirait pas.
+  const cps: [string, number][] = [
+    ['LRM', 0x200e],
+    ['RLM', 0x200f],
+    ['ALM', 0x061c],
+    ['opérateur invisible', 0x2061],
+    ['opérateur invisible', 0x2062],
+    ['séparateur voyelle mongol', 0x180e],
+    ['remplisseur hangul', 0x3164],
+    ['étiquette', 0xe0041],
+    ['usage privé', 0xe000],
+    ['joiner combinant', 0x034f],
+    ['sélecteur de variante', 0xfe0f],
+    ['remplisseur hangul demi-chasse', 0xffa0],
+  ];
+  for (const [nom, cp] of cps) {
+    it(`U+${cp.toString(16).toUpperCase()} (${nom}) ne masque pas « extrême » ni « enfin »`, () => {
+      const c = String.fromCodePoint(cp);
+      assert.equal(motsInterdits(`un texte ext${c}rême ici`).length, 1);
+      assert.equal(motsInterdits(`un texte en${c}fin ici`).length, 1);
+    });
+  }
+  it('un verbe connoté en lettres pleine chasse ou avec un invisible est détecté', () => {
+    assert.deepEqual(verbesConnotes('Elle ｐｒｏｍｅｔ que oui'), ['promet']);
+    assert.deepEqual(verbesConnotes('Elle pro\u200Emet que oui'), ['promet']);
+    assert.deepEqual(verbesConnotes('Elle pro\uFE0Fmet que oui'), ['promet']);
+  });
+});

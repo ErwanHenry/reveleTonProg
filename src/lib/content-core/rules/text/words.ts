@@ -3,7 +3,7 @@ import { cleanText, mergeDigitGroups } from './normalize.ts';
 // Mots français : le même découpage sert à compter (REGLE-03) et à chercher les mots interdits
 // (REGLE-02), pour qu'un « l'extrême » ne passe pas entre les deux. Module PUR.
 
-const ELISION = /^(?:[ldjnsctm]|qu|jusqu|lorsqu|puisqu|quoiqu)'(?=\p{L})/iu; // aujourd'hui, presqu'île, quelqu'un restent entiers
+export const ELISION = /^(?:[ldjnsctm]|qu|jusqu|lorsqu|puisqu|quoiqu)'(?=\p{L})/iu; // aujourd'hui, presqu'île, quelqu'un restent entiers
 const segmenter = new Intl.Segmenter('fr', { granularity: 'word' });
 
 /** Mots français : Intl.Segmenter + élisions séparées (l'école = 2) + groupes de chiffres fusionnés (1 500 000 = 1). */

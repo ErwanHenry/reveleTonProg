@@ -38,6 +38,30 @@ describe('extractNumbers : valeurs canoniques', () => {
     assert.deepEqual(extractNumbers('en 2027 500 personnes'), ['2027', '500']);
   });
 
+  it('CR-04 : chiffres pleine chasse et arabo-indiens valent les chiffres ASCII', () => {
+    assert.deepEqual(extractNumbers('plus de ２０００ postes'), ['2000']);
+    assert.deepEqual(extractNumbers('plus de ٥٠٠ postes'), ['500']);
+    assert.deepEqual(extractNumbers('plus de ۱۲۳ postes'), ['123']);
+    assert.deepEqual(extractNumbers('plus de ५०० postes'), ['500']);
+  });
+
+  it('CR-04 : unité ou ordinal collé au nombre', () => {
+    assert.deepEqual(extractNumbers('50k postes'), ['50000']);
+    assert.deepEqual(extractNumbers('100M€ de plus'), ['100000000']);
+    assert.deepEqual(extractNumbers('10es et 1ers'), ['10', '1']);
+    assert.deepEqual(extractNumbers('50kg et 20cl'), ['50', '20']);
+    assert.deepEqual(extractNumbers('100m de long'), ['100']);
+  });
+
+  it('CR-04 : 3 Md€ = 3 milliards, 2,5 Mds = 2,5 milliards', () => {
+    assert.deepEqual(extractNumbers('3 Md€'), extractNumbers('3 milliards'));
+    assert.deepEqual(extractNumbers('3 Md€'), ['3000000000']);
+    assert.deepEqual(extractNumbers('2,5 Mds'), ['2500000000']);
+    assert.deepEqual(extractNumbers('1 Mrd d’euros'), ['1000000000']);
+    assert.deepEqual(extractNumbers('3 M€'), ['3000000']);
+    assert.deepEqual(extractNumbers('2 M. Dupont'), ['2']);
+  });
+
   it('canonical() ne passe pas par un flottant', () => {
     assert.equal(canonical('0,1', 'million'), '100000');
     assert.equal(canonical('12345678901234567890'), '12345678901234567890');
@@ -48,6 +72,12 @@ describe('extractNumbers : valeurs canoniques', () => {
 describe('extractNumberWords : nombres en lettres', () => {
   it('trois, cinquante et millions sont extraits', () => {
     assert.deepEqual(extractNumberWords('trois villes, cinquante communes et des millions'), ['trois', 'cinquante', 'millions']);
+  });
+  it('WR-04 : moitié, double, triple, tiers, quart, -aines et ordinaux en lettres sont extraits', () => {
+    assert.deepEqual(
+      extractNumberWords('La moitié, le double, le triple, un tiers, un quart, une trentaine, une soixantaine, la deuxième, le second, le premier'),
+      ['moitie', 'double', 'triple', 'tiers', 'quart', 'trentaine', 'soixantaine', 'deuxieme', 'second', 'premier'],
+    );
   });
   it('un et une sont des articles, « pour cent » est exclu', () => {
     assert.deepEqual(extractNumberWords('un loyer, une ville'), []);

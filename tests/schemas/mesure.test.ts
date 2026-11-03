@@ -58,6 +58,17 @@ describe('mesure : cas valides', () => {
   for (const [name, text] of ok) it(name, () => expectOk('mesure', text));
 });
 
+describe('mesure : longueur maximale des textes (WR-09)', () => {
+  it('un texte de 5000 caractères est accepté', () => {
+    expectOk('mesure', swap(PUBLIE, 'resume: Encadrer les loyers dans les villes moyennes.', `resume: ${'a'.repeat(5000)}`));
+  });
+  it('un texte de 5001 caractères est refusé (SCHEMA_MAXLENGTH)', () => {
+    expectErrors('mesure', swap(PUBLIE, 'resume: Encadrer les loyers dans les villes moyennes.', `resume: ${'a'.repeat(5001)}`), [
+      { code: 'SCHEMA_MAXLENGTH', pointer: '/redactions/resume' },
+    ]);
+  });
+});
+
 describe('mesure : cas invalides', () => {
   const sansEnfant = without(PUBLIE, '  enfant: Le prix des loyers ne pourra plus monter trop haut.\n');
   const sansAine = without(PUBLIE, '  aine: Le montant du loyer serait limité dans les villes moyennes.\n');

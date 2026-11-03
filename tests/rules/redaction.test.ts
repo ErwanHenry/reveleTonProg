@@ -95,10 +95,54 @@ describe('redaction : MOT_INTERDIT champ par champ', () => {
   });
 });
 
+describe('redaction : champs libres affichés (WR-05)', () => {
+  const SONDAGE = 'src/content/sondages/sondage-fictif-1.yaml';
+  const CANDIDAT = 'src/content/candidats/marie-fictive.yaml';
+  it('sondage : institut, commanditaire et nom d’hypothèse sont scannés', () => {
+    const d = diag([
+      r(SONDAGE, 'institut: Institut Fictif', 'institut: Institut extrême'),
+      r(SONDAGE, 'commanditaire: Média Fictif', 'commanditaire: Média populiste'),
+      r(SONDAGE, 'nom: Hypothèse fictive A', 'nom: Hypothèse irresponsable'),
+    ]);
+    assert.deepEqual(d.map((x) => [x.code, x.pointer]).sort(), [
+      ['MOT_INTERDIT', '/commanditaire'],
+      ['MOT_INTERDIT', '/hypotheses/0/nom'],
+      ['MOT_INTERDIT', '/institut'],
+    ]);
+  });
+  it('mesure : source_localisation est scanné', () => {
+    const d = diag([r(MESURE, 'source_localisation: page 3 (fictive)', 'source_localisation: page courageuse')]);
+    assert.deepEqual(d.map((x) => [x.code, x.pointer]), [['MOT_INTERDIT', '/source_localisation']]);
+  });
+  it('candidat : mandats_en_cours est scanné', () => {
+    const d = diag([r(CANDIDAT, 'prenom: Marie', 'prenom: Marie\nmandats_en_cours:\n  - Députée extrémiste')]);
+    assert.deepEqual(d.map((x) => [x.code, x.pointer]), [['MOT_INTERDIT', '/mandats_en_cours/0']]);
+  });
+  it('thème : mots_cles est scanné', () => {
+    const d = diag([r(THEME, 'ordre: 1', 'ordre: 1\nmots_cles:\n  - loyer\n  - enfin')]);
+    assert.deepEqual(d.map((x) => [x.code, x.pointer]), [['MOT_INTERDIT', '/mots_cles/1']]);
+  });
+});
+
 describe('redaction : exemptions', () => {
   it('texte_source n’est jamais examiné', () => {
     const d = diag([r(MESURE, 'chaque année par le préfet.\nsource:', 'chaque année par le préfet. Enfin, extrême.\nsource:')]);
     assert.deepEqual(d, []);
+  });
+
+  it('CR-03 : hors mesures, « … » n’exempte pas un mot interdit (glossaire)', () => {
+    const d = diag([r(GLOSSAIRE, 'Le loyer est la somme', 'Le loyer est « extrême » et « populiste », la somme')]);
+    assert.deepEqual(d.map((x) => [x.code, x.pointer]), [['MOT_INTERDIT', '/definition'], ['MOT_INTERDIT', '/definition']]);
+  });
+
+  it('CR-03 : hors mesures, « … » n’exempte pas un mot interdit (journal)', () => {
+    const d = diag([r(JOURNAL, "Ajout d'une mesure", "Ajout d'une mesure « irresponsable »")]);
+    assert.deepEqual(d.map((x) => [x.code, x.pointer]), [['MOT_INTERDIT', '/resume']]);
+  });
+
+  it('CR-03 : hors mesures, « … » n’exempte pas un verbe connoté (thème)', () => {
+    const d = diag([r(THEME, 'nom: Logement', 'nom: Logement « promet »')]);
+    assert.deepEqual(d.map((x) => [x.code, x.severite, x.pointer]), [['VERBE_CONNOTE', 'warning', '/nom']]);
   });
 
   it('un mot interdit entre guillemets équilibrés est exempté', () => {
@@ -127,6 +171,20 @@ describe('redaction : guillemets, verbes, caractères suspects', () => {
     const d = diag([r(MESURE, 'Marie Fictive propose de plafonner les loyers', 'Marie Fictive propose de plafonner les loy\u0435rs')]);
     assert.deepEqual(d.map((x) => [x.code, x.severite, x.pointer]), [['CARACTERE_SUSPECT', 'error', '/redactions/resume']]);
   });
+
+  for (const [nom, c] of [['LRM', '\u200E'], ['ALM', '\u061C'], ['séparateur mongol', '\u180E'], ['remplisseur hangul', '\u3164'], ['étiquette', '\u{E0041}'], ['i sans point', 'ı'], ['petite capitale', 'ᴇ']] as const) {
+    it(`CR-01 : ${nom} dans un mot est une erreur CARACTERE_SUSPECT`, () => {
+      const d = diag([r(MESURE, 'Marie Fictive propose de plafonner les loyers', `Marie Fictive propose de plafonner les loy${c}ers`)]);
+      assert.deepEqual(d.map((x) => [x.code, x.pointer]), [['CARACTERE_SUSPECT', '/redactions/resume']]);
+    });
+  }
+
+  for (const [nom, c] of [['pleine chasse', '２'], ['arabo-indien', '٥']] as const) {
+    it(`CR-04 : un chiffre ${nom} est une erreur CARACTERE_SUSPECT`, () => {
+      const d = diag([r(MESURE, 'Marie Fictive propose de plafonner les loyers', `Marie Fictive propose de plafonner les loyers de ${c}0`)]);
+      assert.deepEqual(d.map((x) => [x.code, x.pointer]), [['CARACTERE_SUSPECT', '/redactions/resume']]);
+    });
+  }
 
   it('un contrôle bidirectionnel (U+202E) est une erreur', () => {
     const d = diag([r(MESURE, 'Encadrement des loyers', 'Encadrement des \u202Eloyers')]);

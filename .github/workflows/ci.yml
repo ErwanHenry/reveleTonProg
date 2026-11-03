@@ -10,7 +10,8 @@ permissions:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Sur main, ne jamais annuler : un push annulé ne serait jamais comparé à son commit de base (ids.lock).
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   TZ: Europe/Paris
@@ -57,17 +58,23 @@ jobs:
         run: |
           set -eu
           if [ "$EVENT_NAME" = "pull_request" ]; then
-            BASE=$(git merge-base "origin/${BASE_REF}" HEAD || true)
+            # Échec fermé : sans commit de base, une PR qui retire un id passerait sans comparaison.
+            BASE=$(git merge-base "origin/${BASE_REF}" HEAD) || { echo "::error::merge-base avec origin/${BASE_REF} introuvable : impossible de comparer ids.lock."; exit 1; }
+            if [ -z "$BASE" ]; then
+              echo "::error::merge-base vide : impossible de comparer ids.lock."
+              exit 1
+            fi
           else
             BASE="$PUSH_BEFORE"
-          fi
-          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
-            echo "Pas de commit de base (première poussée de la branche) : comparaison ignorée."
-            exit 0
+            # Seule la création d'une branche (avant = 40 zéros) n'a pas de commit de base.
+            if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+              echo "Création de branche (pas de commit de base) : comparaison ignorée."
+              exit 0
+            fi
           fi
           if ! git cat-file -e "${BASE}^{commit}" 2>/dev/null; then
-            echo "::warning::Commit de base ${BASE} introuvable (réécriture d'historique ?) : comparaison de ids.lock ignorée."
-            exit 0
+            echo "::error::Commit de base ${BASE} introuvable (réécriture d'historique ?) : comparaison de ids.lock impossible, la CI échoue plutôt que de la sauter."
+            exit 1
           fi
           if ! git cat-file -e "${BASE}:ids.lock" 2>/dev/null; then
             echo "ids.lock n'existe pas dans le commit de base ${BASE} (introduction du fichier) : comparaison ignorée."
