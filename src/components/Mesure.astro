@@ -1,4 +1,5 @@
 ---
+import BadgeBrouillon from './BadgeBrouillon.astro';
 import { sansMarqueurs } from '../lib/content-core/rules/text/normalize.ts';
 import { LIBELLES_NIVEAUX, NIVEAUX, formatDate } from '../lib/corpus/index.ts';
 import type { VueMesure } from '../lib/corpus/index.ts';
@@ -23,7 +24,10 @@ const lienGithub = lienIssue(config.depot, mesure.id);
 const manque = "Cette version n'est pas encore rédigée ; voici la version En bref.";
 ---
 <article class="mesure" id={vue.ancre} data-statut-relecture={mesure.statut_relecture}>
-  <Titre class="mesure-titre">{mesure.titre}</Titre>
+  <div class="mesure-entete">
+    <Titre class="mesure-titre">{mesure.titre}</Titre>
+    <BadgeBrouillon texte={vue.badge} />
+  </div>
   {NIVEAUX.map((niveau) => (
     <div class="redaction" data-niveau={niveau}>
       <p class="etiquette">{LIBELLES_NIVEAUX[niveau]}</p>

@@ -1,0 +1,9 @@
+---
+interface Props {
+  /** Libellé de la pastille (BADGES) ; `null` quand le contenu est publié : rien n'est rendu. */
+  texte: string | null;
+}
+
+const { texte } = Astro.props;
+---
+{texte !== null && <span class="badge" data-badge>{texte}</span>}

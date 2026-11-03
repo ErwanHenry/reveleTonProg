@@ -227,6 +227,13 @@ main[data-theme] {
 }
 
 /* Page thème */
+.theme-entete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+
 .theme-titre {
   color: var(--theme);
 }
@@ -303,9 +310,41 @@ main[data-theme] {
   hyphens: auto;
 }
 
-.mesure-titre {
+.mesure-entete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
   margin: 0 0 0.5rem;
+}
+
+.mesure-titre {
+  margin: 0;
   font-size: var(--t-label);
+}
+
+/* Pastille de brouillon (aperçu uniquement) : du texte, jamais la couleur seule */
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  background: var(--panneau);
+  border: 2px dashed var(--encre);
+  border-radius: 4px;
+  color: var(--encre);
+  font-size: var(--t-label);
+  font-weight: 600;
+}
+
+/* Bandeau de l'aperçu : la classe de style est distincte de la classe repérée par checkDist */
+.bandeau-apercu {
+  padding: 0.5rem 1rem;
+  background: var(--panneau);
+  border-bottom: 2px dashed var(--encre);
+  color: var(--encre);
+  font-size: var(--t-corps);
+  font-weight: 600;
+  text-align: center;
 }
 
 .redaction {

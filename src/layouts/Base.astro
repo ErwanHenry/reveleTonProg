@@ -30,6 +30,9 @@ const corpus = await getCorpus();
         <a class="site-nom" href="/">reveleTonProg</a>
       </div>
     </header>
+    {corpus.mode === 'preview' && (
+      <div class="banniere-preview bandeau-apercu">Version de prévisualisation : contenus non relus, ne pas diffuser.</div>
+    )}
     <slot />
     {avecSignalement && (
       <div class="conteneur">
