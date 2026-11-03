@@ -303,10 +303,33 @@ describe('checkDist : structure et texte', () => {
     assert.match(r.messages.join(' '), /extrême/);
     const exemptions = [
       '<p>Il dit <q data-citation>extrême</q>.</p>',
+      '<blockquote data-citation><p>« extrême »</p></blockquote>',
+      '<div class="source"><p>Source primaire : <span data-citation>Programme extrême</span></p></div>',
       '<ul data-liste-mots-interdits><li>extrême</li></ul>',
       '<p>Le candidat parle d’une « mesure extrême » dans le programme.</p>',
     ];
     for (const corps of exemptions) assert.deepEqual(verifier(distPropre({ 'index.html': page({ corps }) })).codes, [], corps);
+  });
+
+  it('WR-06 : mots interdits dans les attributs title, aria-label, alt et les meta description', () => {
+    for (const corps of ['<p title="une mesure extrême">t</p>', '<button aria-label="enfin !">x</button>', '<img src="/_astro/a.css" alt="populiste">']) {
+      exactement('MOT_INTERDIT', { 'index.html': page({ corps }) });
+    }
+    exactement('MOT_INTERDIT', { 'index.html': page({ head: '<meta name="description" content="Un programme irresponsable">' }) });
+    exactement('MOT_INTERDIT', { 'index.html': page({ head: '<meta property="og:description" content="courageux">' }) });
+    // Un attribut dans une citation exemptée reste exempté avec le reste du sous-arbre.
+    const ok = page({ corps: '<blockquote data-citation><p title="extrême">« x »</p></blockquote>' });
+    assert.deepEqual(verifier(distPropre({ 'index.html': ok })).codes, []);
+  });
+
+  it('WR-06 : data-citation n’exempte que les vraies citations (blockquote, q) et le titre de source', () => {
+    for (const corps of [
+      '<p data-citation>Une mesure extrême.</p>',
+      '<div data-citation><p>Une mesure extrême.</p></div>',
+      '<span data-citation>extrême</span>',
+    ]) {
+      exactement('MOT_INTERDIT', { 'index.html': page({ corps }) });
+    }
   });
 
   it('MOT_INTERDIT : jamais dans <script> ni <style> (le texte brut y est ignoré)', () => {

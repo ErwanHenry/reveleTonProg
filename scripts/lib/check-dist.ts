@@ -346,12 +346,23 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
     }
 
     // texte visible : un espace entre deux nœuds de texte pour ne jamais recoller des blocs
-    const texteHors = (exclure: (n: Noeud) => boolean): string => {
+    const ATTRIBUTS_TEXTE = ['title', 'aria-label', 'alt'] as const;
+    const texteHors = (exclure: (n: Noeud) => boolean, avecAttributs = false): string => {
       const morceaux: string[] = [];
       const visiter = (n: Noeud): void => {
         for (const e of n.enfants) {
           if (typeof e === 'string') morceaux.push(e);
-          else if (!exclure(e)) visiter(e);
+          else if (!exclure(e)) {
+            if (avecAttributs) {
+              for (const a of ATTRIBUTS_TEXTE) if (e.attrs[a] !== undefined) morceaux.push(e.attrs[a]);
+              // description et métadonnées de partage (og:description, twitter:title…) : lues par les moteurs et les réseaux
+              if (e.tag === 'meta' && e.attrs.content !== undefined && (e.attrs.name !== undefined || e.attrs.property !== undefined)) {
+                const nom = (e.attrs.name ?? e.attrs.property ?? '').toLowerCase();
+                if (nom !== 'viewport' && nom !== 'robots' && nom !== 'theme-color') morceaux.push(e.attrs.content);
+              }
+            }
+            visiter(e);
+          }
         }
       };
       visiter(racine);
@@ -360,7 +371,19 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
     const code = (n: Noeud): boolean => n.tag === 'script' || n.tag === 'style';
     const visible = texteHors(code);
     if (visible.includes('[[')) signaler('MARQUEUR_RESIDUEL', rel, 'marqueur « [[ » résiduel dans le texte visible (glossaire non résolu)');
-    const horsCitations = texteHors((n) => code(n) || n.attrs['data-citation'] !== undefined || n.attrs['data-liste-mots-interdits'] !== undefined);
+    // Exemptions étroites : la citation verbatim du candidat (blockquote ou q portant data-citation), le titre
+    // d'une source primaire (span data-citation dans un bloc .source : c'est un titre, pas une rédaction) et la
+    // liste des mots interdits de la page Méthode. Un data-citation posé ailleurs n'exempte rien.
+    const dansSource = (n: Noeud): boolean => {
+      for (let p = n.parent; p !== null; p = p.parent) if (aClasse(p, 'source')) return true;
+      return false;
+    };
+    const exempte = (n: Noeud): boolean =>
+      code(n) ||
+      ((n.tag === 'blockquote' || n.tag === 'q') && n.attrs['data-citation'] !== undefined) ||
+      (n.tag === 'span' && n.attrs['data-citation'] !== undefined && dansSource(n)) ||
+      n.attrs['data-liste-mots-interdits'] !== undefined;
+    const horsCitations = texteHors(exempte, true);
     for (const mot of motsInterdits(horsCitations)) signaler('MOT_INTERDIT', rel, `mot interdit hors citation : « ${mot} »`);
 
     // structure de page
