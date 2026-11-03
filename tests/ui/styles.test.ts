@@ -248,6 +248,15 @@ describe('styles : niveaux de lecture', () => {
     }
   });
 
+  it('les étiquettes de niveau passent à la ligne au lieu de déborder (320 px, texte 160 %)', () => {
+    const label = reglesNiveaux.find((x) => x.selecteur === '.niveau label');
+    assert.ok(label, 'règle .niveau label absente');
+    assert.equal(decl(label, 'min-inline-size'), '0');
+    assert.equal(decl(label, 'overflow-wrap'), 'anywhere');
+    const niveau = reglesNiveaux.find((x) => x.selecteur === '.niveau');
+    assert.equal(decl(niveau!, 'min-inline-size'), '0');
+  });
+
   it('le focus clavier est dessiné sur l’étiquette (input:focus-visible + label)', () => {
     const r = reglesNiveaux.find((x) => /input:focus-visible \+ label/.test(x.selecteur) && decl(x, 'outline') !== undefined);
     assert.ok(r, 'outline sur input:focus-visible + label absent');

@@ -63,6 +63,7 @@ html[data-js-niveau] .aide-sansjs {
 .niveau {
   position: relative;
   display: flex;
+  min-inline-size: 0;
 }
 
 /* Le radio natif est superposé, transparent mais jamais display: none : il reste focalisable et cliquable */
@@ -91,7 +92,10 @@ html[data-js-niveau] .aide-sansjs {
   font-size: var(--t-label);
   font-weight: 600;
   line-height: 1.2;
-  overflow-wrap: break-word;
+  /* Texte à 160 % sur 320 px : l'étiquette passe à la ligne au lieu de dépasser sa colonne */
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+  hyphens: auto;
 }
 
 /* Pastille : creuse (non choisi), pleine (choisi) : l'état ne repose pas sur la seule couleur */
