@@ -42,17 +42,56 @@ describe('corpus-valide : le corpus fictif complet', () => {
     }
   });
 
-  it('toutes les URL https ont un hôte en .invalid (aucune personne réelle)', () => {
+  it('toutes les URL https ont un hôte en .invalid (aucune personne réelle), sauf l\'enveloppe wayback_url', () => {
     let seen = 0;
     for (const e of result.entries) {
       deepWalk(e.data, `${e.collection}/${e.id}`, (v, where) => {
         if (typeof v !== 'string' || !v.startsWith('https://')) return;
         seen++;
         assert.ok(URL.canParse(v), `URL illisible à ${where}`);
-        assert.ok(new URL(v).hostname.endsWith('.invalid'), `hôte non fictif à ${where} : ${v}`);
+        const host = new URL(v).hostname;
+        if (where.endsWith('.wayback_url')) {
+          // Seule exception : web.archive.org, à condition que l'URL enveloppée soit fictive.
+          assert.equal(host, 'web.archive.org', `hôte wayback inattendu à ${where} : ${v}`);
+          const m = /^https:\/\/web\.archive\.org\/web\/[0-9]{14}\/(https:\/\/.+)$/.exec(v);
+          assert.ok(m?.[1] && URL.canParse(m[1]), `URL enveloppée illisible à ${where} : ${v}`);
+          assert.ok(new URL(m[1]).hostname.endsWith('.invalid'), `URL enveloppée non fictive à ${where} : ${v}`);
+          return;
+        }
+        assert.ok(host.endsWith('.invalid'), `hôte non fictif à ${where} : ${v}`);
       });
     }
     assert.ok(seen > 0, 'aucune URL https dans le corpus : le test ne vérifie rien');
+  });
+
+  it('toute source citée par une mesure publiée a une archive.wayback_url', () => {
+    const publiees = result.entries.filter((e) => e.collection === 'mesures' && e.data.statut_relecture === 'publie');
+    assert.ok(publiees.length > 0, 'aucune mesure publiée dans le corpus');
+    for (const m of publiees) {
+      const source = result.entries.find((e) => e.collection === 'sources' && e.id === m.data.source);
+      assert.ok(source, `source introuvable pour ${m.id}`);
+      const archive = source.data.archive as { wayback_url?: string } | undefined;
+      assert.ok(archive?.wayback_url, `wayback_url manquante pour la source ${source.id}`);
+    }
+  });
+
+  it('ids.lock liste exactement les candidats, triés', () => {
+    const lock = readFileSync(path.join(FIXTURE_ROOT, 'ids.lock'), 'utf8')
+      .split('\n')
+      .filter((l) => l !== '' && !l.startsWith('#'));
+    const candidats = result.entries.filter((e) => e.collection === 'candidats').map((e) => e.id);
+    assert.deepEqual(lock, ['jean-imaginaire', 'marie-fictive']);
+    assert.deepEqual(lock, [...candidats].sort());
+  });
+
+  it('la rédaction enfant de marie-fictive/encadrement-loyers n\'a aucune phrase de plus de 15 mots', () => {
+    const mesure = result.entries.find((e) => e.collection === 'mesures' && e.id === 'marie-fictive/encadrement-loyers');
+    assert.ok(mesure);
+    const enfant = (mesure.data.redactions as { enfant: string }).enfant;
+    for (const phrase of enfant.split(/[.!?]/)) {
+      const mots = phrase.split(/\s+/).filter((m) => m !== '');
+      assert.ok(mots.length <= 15, `phrase de ${mots.length} mots : ${phrase.trim()}`);
+    }
   });
 
   it('chaque archive de source existe et son sha256 correspond (extrait versionné)', () => {

@@ -1,0 +1,6 @@
+# Les extraits d'archives sont hachés octet par octet (sha256) : aucune conversion de fin de ligne.
+archives/** -text
+tests/fixtures/**/archives/** -text
+# ids.lock est comparé ligne à ligne : toujours LF.
+ids.lock text eol=lf
+**/ids.lock text eol=lf
