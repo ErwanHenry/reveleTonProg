@@ -4,6 +4,7 @@ import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { PIEGES_DIR, comparer, construireRacine, executerPiege, lirePiege, nettoyerRacines } from '../helpers/overlay.ts';
 import type { PiegeSpec } from '../helpers/overlay.ts';
+import { CATALOGUE } from '../../src/lib/content-core/rules/config.ts';
 
 after(() => nettoyerRacines());
 
@@ -85,9 +86,22 @@ describe('pièges §12 : rejeu', () => {
   }
 });
 
-// Complété par la tâche 3 : le préfixe de code de chaque dossier existe dans CATALOGUE.
 describe('pièges §12 : cohérence avec le catalogue', () => {
-  it('à compléter', () => {
-    assert.ok(true);
-  });
+  const codes = new Set(CATALOGUE.map((c) => c.code));
+  for (const nom of dossiers) {
+    it(`${nom} : le code du dossier existe dans CATALOGUE`, () => {
+      const m = NOM_DOSSIER.exec(nom);
+      assert.ok(m, `nom de dossier invalide : ${nom}`);
+      assert.ok(codes.has(m[1] ?? ''), `code « ${m[1]} » absent de CATALOGUE`);
+    });
+    it(`${nom} : un piège canonique attend au moins un diagnostic de son propre code`, () => {
+      const m = NOM_DOSSIER.exec(nom);
+      if (m?.[2] !== undefined) return; // variante (ex. cas négatif) : libre
+      const spec = lirePiege(path.join(PIEGES_DIR, nom));
+      assert.ok(
+        spec.attendu.some((a) => a.code === m?.[1]),
+        `le piège canonique ${nom} doit attendre au moins un item ${m?.[1]}`,
+      );
+    });
+  }
 });
