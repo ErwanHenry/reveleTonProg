@@ -19,7 +19,7 @@ export function parseSnapshotLocation(location: string, base = 'https://web.arch
   } catch {
     return null;
   }
-  const m = SNAPSHOT.exec(url);
+  const m = url.match(SNAPSHOT);
   if (m?.[1] === undefined) return null;
   const ts = m[1];
   const [a, mo, j, h, mi, s] = [ts.slice(0, 4), ts.slice(4, 6), ts.slice(6, 8), ts.slice(8, 10), ts.slice(10, 12), ts.slice(12, 14)].map(Number) as [

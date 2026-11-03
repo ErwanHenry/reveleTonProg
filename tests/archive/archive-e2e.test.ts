@@ -28,7 +28,7 @@ const ENV_GIT = {
 };
 
 const tmpDirs: string[] = [];
-const git = (cwd: string, ...args: string[]): string => execFileSync('git', args, { cwd, encoding: 'utf8', env: { ...process.env, ...ENV_GIT } });
+const git = (cwd: string, ...args: string[]): string => execFileSync('git', args, { cwd, encoding: 'utf8', env: { ...process.env, ...ENV_GIT }, stdio: ['ignore', 'pipe', 'pipe'] });
 
 function lancer(args: string[], env: Record<string, string> = {}): SpawnSyncReturns<string> {
   const base: Record<string, string> = { PATH: process.env.PATH ?? '', HOME: os.tmpdir(), TZ: 'Europe/Paris', LANG: 'C.UTF-8', ...ENV_GIT };
@@ -61,6 +61,32 @@ function listeFichiers(dossier: string): string[] {
   return out.sort();
 }
 
+function pdftotextDisponible(): boolean {
+  return spawnSync('pdftotext', ['-v'], { stdio: 'ignore' }).error === undefined;
+}
+
+/** PDF d'une page en police Helvetica, table xref exacte ; texte ASCII sans parenthèse ni barre oblique inverse. */
+function pdfMinimal(lignes: string[]): Buffer {
+  const flux = `BT /F1 10 Tf 40 780 Td 14 TL ${lignes.map((l) => `(${l}) Tj T*`).join(' ')} ET`;
+  const objets = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>',
+    `<< /Length ${flux.length} >>\nstream\n${flux}\nendstream`,
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+  ];
+  let pdf = '%PDF-1.4\n';
+  const positions: number[] = [];
+  objets.forEach((o, i) => {
+    positions.push(pdf.length);
+    pdf += `${i + 1} 0 obj\n${o}\nendobj\n`;
+  });
+  const debutXref = pdf.length;
+  pdf += `xref\n0 ${objets.length + 1}\n0000000000 65535 f \n${positions.map((p) => `${String(p).padStart(10, '0')} 00000 n \n`).join('')}`;
+  pdf += `trailer\n<< /Size ${objets.length + 1} /Root 1 0 R >>\nstartxref\n${debutXref}\n%%EOF\n`;
+  return Buffer.from(pdf, 'latin1');
+}
+
 const sha = (octets: Buffer | string): string => createHash('sha256').update(octets).digest('hex');
 const sortie = (r: SpawnSyncReturns<string>): string => `status=${r.status}\n--- stdout\n${r.stdout}\n--- stderr\n${r.stderr}`;
 
@@ -87,7 +113,7 @@ describe('archive-source : chaîne complète archiver puis valider (hors réseau
 
   before(() => {
     ({ base, racine, remote } = nouveauMonde());
-    execFileSync('git', ['init', '--bare', '--quiet', '-b', 'main', remote], { env: { ...process.env, ...ENV_GIT } });
+    execFileSync('git', ['init', '--bare', '--quiet', '-b', 'main', remote], { env: { ...process.env, ...ENV_GIT }, stdio: ['ignore', 'pipe', 'pipe'] });
     // Un premier commit pour que `git pull --rebase` ait une branche à suivre.
     const amorce = path.join(base, 'amorce');
     git(base, 'clone', '--quiet', remote, amorce);
@@ -272,6 +298,33 @@ describe('archive-source : chaîne complète archiver puis valider (hors réseau
     assert.equal(sha(readFileSync(path.join(racine, a.extrait ?? ''))), a.sha256);
     const apres = loadAll(racine, { schemasDir: SCHEMAS_DIR, mode: 'preview' });
     assert.ok(apres.diagnostics.some((d) => d.code === 'TEXTE_SOURCE_HORS_ARCHIVE'), 'la mesure citée doit être revérifiée');
+  });
+
+  it('capture un PDF (pdftotext) : texte extrait, binaire .pdf dans le dépôt privé', { skip: !pdftotextDisponible() }, () => {
+    const lignes = Array.from({ length: 14 }, (_, i) => `Ligne ${i + 1} du programme fictif : nous financerons des mesures imaginaires sans valeur reelle.`);
+    lignes.splice(3, 0, 'Nous encadrerons les loyers dans toutes les villes de plus de 50 000 habitants.');
+    const pdf = path.join(base, 'programme-fictif.pdf');
+    writeFileSync(pdf, pdfMinimal(lignes));
+    const args = [
+      'https://marie-fictive.exemple.invalid/programme.pdf',
+      '--file', pdf,
+      '--candidat', 'marie-fictive',
+      '--source-id', 'marie-fictive-pdf',
+      '--type', 'programme',
+      '--auteur', 'candidat',
+      '--titre', 'Programme fictif (PDF)',
+      '--date-publication', '2026-10-05',
+      '--capture-le', '2026-11-03T10:00:00+01:00',
+      '--root', racine,
+    ];
+    const r = lancer(args, { RTP_ARCHIVES_DIR: clone });
+    assert.equal(r.status, 0, sortie(r));
+    const src = parse(readFileSync(path.join(racine, 'src', 'content', 'sources', 'marie-fictive-pdf.yaml'), 'utf8'), { schema: 'core' }) as { archive: Record<string, string> };
+    const texte = readFileSync(path.join(racine, src.archive.extrait ?? ''), 'utf8');
+    assert.ok(texte.includes('Nous encadrerons les loyers dans toutes les villes de plus de 50 000 habitants.'));
+    const binSha = sha(readFileSync(pdf));
+    assert.equal(src.archive.binaire_sha256, binSha);
+    assert.ok(existsSync(path.join(clone, 'marie-fictive', `${binSha.slice(0, 12)}.pdf`)));
   });
 
   it('--sync-private : rien à pousser, code 0', () => {

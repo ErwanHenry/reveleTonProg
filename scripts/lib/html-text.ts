@@ -34,10 +34,10 @@ function jeuDeCaracteres(contentType: string | undefined, octets: Uint8Array): s
   if (octets.length >= 3 && octets[0] === 0xef && octets[1] === 0xbb && octets[2] === 0xbf) return 'utf-8';
   if (octets.length >= 2 && octets[0] === 0xff && octets[1] === 0xfe) return 'utf-16le';
   if (octets.length >= 2 && octets[0] === 0xfe && octets[1] === 0xff) return 'utf-16be';
-  const entete = contentType === undefined ? null : /charset\s*=\s*["']?\s*([A-Za-z0-9_:.-]+)/i.exec(contentType);
+  const entete = contentType === undefined ? null : contentType.match(/charset\s*=\s*["']?\s*([A-Za-z0-9_:.-]+)/i);
   if (entete?.[1] !== undefined) return entete[1];
   const debut = new TextDecoder('latin1').decode(octets.subarray(0, 4096));
-  const meta = /<meta[^>]{0,400}?charset\s*=\s*["']?\s*([A-Za-z0-9_:.-]+)/i.exec(debut);
+  const meta = debut.match(/<meta[^>]{0,400}?charset\s*=\s*["']?\s*([A-Za-z0-9_:.-]+)/i);
   return meta?.[1] ?? 'utf-8';
 }
 
