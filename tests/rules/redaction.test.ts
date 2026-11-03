@@ -101,6 +101,21 @@ describe('redaction : exemptions', () => {
     assert.deepEqual(d, []);
   });
 
+  it('CR-03 : hors mesures, « … » n’exempte pas un mot interdit (glossaire)', () => {
+    const d = diag([r(GLOSSAIRE, 'Le loyer est la somme', 'Le loyer est « extrême » et « populiste », la somme')]);
+    assert.deepEqual(d.map((x) => [x.code, x.pointer]), [['MOT_INTERDIT', '/definition'], ['MOT_INTERDIT', '/definition']]);
+  });
+
+  it('CR-03 : hors mesures, « … » n’exempte pas un mot interdit (journal)', () => {
+    const d = diag([r(JOURNAL, "Ajout d'une mesure", "Ajout d'une mesure « irresponsable »")]);
+    assert.deepEqual(d.map((x) => [x.code, x.pointer]), [['MOT_INTERDIT', '/resume']]);
+  });
+
+  it('CR-03 : hors mesures, « … » n’exempte pas un verbe connoté (thème)', () => {
+    const d = diag([r(THEME, 'nom: Logement', 'nom: Logement « promet »')]);
+    assert.deepEqual(d.map((x) => [x.code, x.severite, x.pointer]), [['VERBE_CONNOTE', 'warning', '/nom']]);
+  });
+
   it('un mot interdit entre guillemets équilibrés est exempté', () => {
     const d = diag([r(MESURE, 'Marie Fictive propose de plafonner les loyers', 'Marie Fictive propose de plafonner « enfin » les loyers')]);
     assert.deepEqual(d, []);
