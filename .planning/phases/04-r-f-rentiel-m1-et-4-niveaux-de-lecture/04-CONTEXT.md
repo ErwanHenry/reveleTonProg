@@ -28,6 +28,9 @@ Pages thème et candidat statiques (M1), bascule 4 niveaux sans JS (radios + `:h
 - Une couleur dominante par thème (palette contrastée AA, fond neutre) ; jamais de couleur associée à un candidat ou un parti
 - Interface en français, vouvoiement neutre
 
+### Contact (Erwan 2026-11-03)
+- Adresse publique dans `config/site.yml` (`contact: contact@domaine-a-definir.invalid` placeholder), remplacée au lot 3 quand le domaine est acheté ; aucune adresse personnelle publiée ; lien « signaler une erreur » = mailto vers cette valeur + issue GitHub
+
 ### Claude's Discretion
 - Palette exacte, espacements, structure des composants, URL (`/themes/<id>/`, `/candidats/<id>/` recommandé)
 
