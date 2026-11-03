@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { CATALOGUE, HYPOTHESES } from '../../src/lib/content-core/rules/config.ts';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const read = (f: string): string => fs.readFileSync(path.join(ROOT, f), 'utf8');
@@ -69,6 +70,20 @@ describe('README', () => {
   });
 });
 
+describe('README (phase 2)', () => {
+  it('documente les modes de validation et le verrou des identifiants', () => {
+    for (const needle of [
+      'npm run validate -- --mode preview',
+      '--mode production',
+      'RTP_MODE',
+      'npm run ids -- --write',
+      'npm run ids -- --check',
+    ]) {
+      assert.ok(readme.includes(needle), `README doit contenir « ${needle} »`);
+    }
+  });
+});
+
 describe('docs/ARCHITECTURE.md', () => {
   it('a un diagramme Mermaid avec content-core', () => {
     const block = architecture.match(/```mermaid\n([\s\S]*?)```/);
@@ -108,6 +123,31 @@ describe('docs/RUNBOOK.md', () => {
   it('documente l’action utilisateur dans les réglages GitHub', () => {
     assert.ok(runbook.includes('Dependabot alerts'));
     assert.ok(runbook.includes('Settings > Code security'));
+  });
+});
+
+describe('docs/RUNBOOK.md (phase 2)', () => {
+  it('a les sections du validateur', () => {
+    for (const heading of [
+      'Codes du validateur',
+      'Verrouiller un identifiant de candidat',
+      'Ajouter un piège',
+      "Faux positif d'une règle",
+      'Mode preview',
+    ]) {
+      assert.match(runbook, new RegExp(`^#{2,4} ${heading}$`, 'm'), `titre manquant : ${heading}`);
+    }
+  });
+
+  it('mentionne chaque code du catalogue au moins une fois', () => {
+    const manquants = CATALOGUE.map((e) => e.code).filter((code) => !runbook.includes(`\`${code}\``));
+    assert.deepEqual(manquants, [], `codes absents du RUNBOOK : ${manquants.join(', ')}`);
+  });
+
+  it('explique le verrou append-only vérifié par la CI et les commandes associées', () => {
+    for (const needle of ['npm run ids -- --write', 'npm run ids -- --check', '--base', 'attendu.json', 'RTP_MODE']) {
+      assert.ok(runbook.includes(needle), `RUNBOOK doit contenir « ${needle} »`);
+    }
   });
 });
 

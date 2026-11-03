@@ -43,9 +43,18 @@ Commandes complémentaires :
 ```bash
 npm run check                  # astro check : types des .astro et des scripts
 npm run migrate -- --check     # le contenu est-il au dernier schéma ?
+npm run ids -- --check         # les identifiants de candidats sont-ils tous verrouillés ?
 npm run preview                # sert dist/ en local
 npm run dev                    # http://localhost:4321
 ```
+
+### Règles éditoriales, mode de validation et identifiants
+
+`npm run validate` applique les règles éditoriales (source primaire archivée, mots interdits, longueurs, chiffres et citations, sondages, équité) et indique pour chaque refus le fichier, la ligne et un code stable ; la liste des codes et la marche à suivre sont dans le [runbook](./docs/RUNBOOK.md#codes-du-validateur).
+
+- **Mode `production` (défaut)** : toutes les règles bloquent. **C'est le seul mode de la CI**, qui passe `--mode production` à chaque étape `validate`.
+- **Mode `preview`** (poste local, pour rédiger pas à pas) : `npm run validate -- --mode preview`. Seule l'équité entre candidats devient un avertissement ; tout le reste continue de bloquer. Même effet avec `RTP_MODE=preview npm run validate` ; le drapeau `--mode` l'emporte sur `RTP_MODE`, et une valeur inconnue est refusée.
+- **Verrouiller l'identifiant d'un candidat** : dès qu'un fichier `candidats/<id>.yaml` existe, lancer `npm run ids -- --write` pour l'ajouter à `ids.lock` (fichier à ajout seul), puis commiter les deux. Ne jamais renommer ni supprimer une ligne : la CI compare `ids.lock` au commit de base et refuse toute ligne retirée.
 
 ### Racine du contenu : `RTP_CONTENT_ROOT`
 
