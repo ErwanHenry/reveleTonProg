@@ -1,6 +1,6 @@
 ---
 import BadgeBrouillon from './BadgeBrouillon.astro';
-import { sansMarqueurs } from '../lib/content-core/rules/text/normalize.ts';
+import TexteEnfant from './TexteEnfant.astro';
 import { LIBELLES_NIVEAUX, NIVEAUX, formatDate } from '../lib/corpus/index.ts';
 import type { VueMesure } from '../lib/corpus/index.ts';
 import { resolveContentRoot } from '../lib/content-core/root.ts';
@@ -41,7 +41,7 @@ const manque = "Cette version n'est pas encore rédigée ; voici la version En b
       {niveau === 'enfant' && (
         mesure.redactions.enfant === undefined
           ? <><p>{manque}</p><p>{mesure.redactions.resume}</p></>
-          : <p>{sansMarqueurs(mesure.redactions.enfant)}</p>
+          : <p><TexteEnfant texte={mesure.redactions.enfant} prefixe={vue.ancre} /></p>
       )}
       {niveau === 'aine' && (
         mesure.redactions.aine === undefined

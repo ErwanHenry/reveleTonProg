@@ -1,0 +1,22 @@
+---
+// Texte « Pour les enfants » : chaque mot du glossaire devient un bouton (soulignement pointillé) suivi,
+// dans le HTML, de sa définition en popover natif. Une définition par occurrence, juste après son mot :
+// un lecteur d'écran la trouve dans l'ordre de lecture. Sans JavaScript (API Popover).
+// Les segments sont rendus en JSX, jamais en HTML brut : Astro échappe tout le texte du contenu.
+import '../styles/enfant.css';
+import { segmenter } from '../lib/corpus/enfant.ts';
+import { formatDate, getCorpus } from '../lib/corpus/index.ts';
+
+interface Props {
+  texte: string;
+  /** Préfixe des identifiants de popover : l'ancre de la mesure, pour que les ids restent uniques dans la page. */
+  prefixe: string;
+}
+
+const { texte, prefixe } = Astro.props;
+const corpus = await getCorpus();
+const segments = segmenter(texte, corpus.glossaire, prefixe);
+---
+{segments.map((s) => s.type === 'terme'
+  ? <><button type="button" class="terme" popovertarget={s.popId}>{s.affiche}</button><span id={s.popId} popover class="definition">{s.definition}{s.source !== undefined && <>{' '}<span class="definition-source">Définition donnée par {s.source.titre}, <time datetime={s.source.date}>{formatDate(s.source.date)}</time>.</span></>}</span></>
+  : s.texte)}

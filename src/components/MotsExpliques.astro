@@ -1,0 +1,35 @@
+---
+// Liste « Mots expliqués » : chaque mot distinct de la page avec sa définition, par ordre alphabétique.
+// Affichée au niveau « Pour les enfants » seulement (enfant.css). C'est aussi le chemin d'accès aux
+// définitions quand le navigateur ne gère pas les popovers : la phrase d'aide n'apparaît alors que dans ce cas.
+import '../styles/enfant.css';
+import { formatDate } from '../lib/corpus/index.ts';
+import type { EntreeGlossaire } from '../lib/corpus/types.ts';
+
+interface Props {
+  termes: readonly EntreeGlossaire[];
+}
+
+const { termes } = Astro.props;
+---
+{termes.length > 0 && (
+  <>
+    <p class="mots-aide-repli">Votre navigateur n'affiche pas les définitions au clic. Elles sont réunies dans la liste « Mots expliqués » en bas de page.</p>
+    <details class="mots-expliques">
+      <summary>Mots expliqués ({termes.length})</summary>
+      <dl>
+        {termes.map((t) => (
+          <>
+            <dt>{t.libelle}</dt>
+            <dd>
+              {t.definition}
+              {t.type === 'parti' && t.source !== undefined && (
+                <span class="definition-source">Définition donnée par {t.source.titre ?? t.libelle}, <time datetime={t.source.date_consultation}>{formatDate(t.source.date_consultation)}</time>.</span>
+              )}
+            </dd>
+          </>
+        ))}
+      </dl>
+    </details>
+  </>
+)}

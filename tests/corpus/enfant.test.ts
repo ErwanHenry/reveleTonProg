@@ -1,7 +1,11 @@
 // Segmenteur du texte « Pour les enfants » (src/lib/corpus/enfant.ts) : pur, sans Astro ni node:.
-import { describe, it } from 'node:test';
+import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { loadAll } from '../../src/lib/content-core/load.ts';
 import { segmenter, termesDe } from '../../src/lib/corpus/enfant.ts';
+import { construireCorpus } from '../../src/lib/corpus/vue.ts';
+import { materialiserCorpusM1, nettoyerCorpusM1 } from '../helpers/corpus-m1.ts';
+import { SCHEMAS_DIR } from '../helpers/validate-yaml.ts';
 import type { EntreeGlossaire } from '../../src/lib/corpus/types.ts';
 import { slugGlossaire as depuisNormalize } from '../../src/lib/content-core/rules/text/normalize.ts';
 import { slugGlossaire as depuisReferences } from '../../src/lib/content-core/rules/references.ts';
@@ -130,5 +134,68 @@ describe('slugGlossaire déplacé dans le module texte pur', () => {
     assert.equal(depuisNormalize('Énergie solaire'), 'energie-solaire');
     assert.equal(depuisReferences('Énergie solaire'), 'energie-solaire');
     assert.equal(depuisReferences, depuisNormalize);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Sur le corpus fictif corpus-m1 : ce que la page thème « logement » rendra (le build n'est pas lancé ici)
+// ---------------------------------------------------------------------------
+
+describe('sur le corpus fictif corpus-m1', () => {
+  let corpus: ReturnType<typeof construireCorpus>;
+
+  before(() => {
+    const res = loadAll(materialiserCorpusM1(), { schemasDir: SCHEMAS_DIR, mode: 'production' });
+    const de = <T>(collection: string): T[] => res.entries.filter((e) => e.collection === collection).map((e) => e.data as unknown as T);
+    corpus = construireCorpus(
+      {
+        themes: de('themes'),
+        candidats: de('candidats'),
+        mesures: de('mesures'),
+        sources: de('sources'),
+        couverture: de('couverture'),
+        glossaire: de('glossaire'),
+      },
+      'production',
+    );
+  });
+  after(nettoyerCorpusM1);
+
+  it("le texte enfant de marie-fictive donne le parti puis le loyer, avec des ids propres à l'ancre de la mesure", () => {
+    const vue = corpus.mesures.find((m) => m.mesure.id === 'marie-fictive/aide-construction');
+    assert.ok(vue, 'mesure absente du corpus de production');
+    assert.equal(vue.ancre, 'm-marie-fictive-aide-construction');
+    const segs = segmenter(vue.mesure.redactions.enfant ?? '', corpus.glossaire, vue.ancre);
+    const termes = segs.flatMap((s) => (s.type === 'terme' ? [s] : []));
+    assert.deepEqual(
+      termes.map((t) => [t.affiche, t.id, t.popId]),
+      [
+        ['Parti Imaginaire', 'parti-imaginaire', 'def-m-marie-fictive-aide-construction-1'],
+        ['loyer', 'loyer', 'def-m-marie-fictive-aide-construction-2'],
+      ],
+    );
+    assert.deepEqual(termes[0]?.source, { titre: 'Page de présentation du Parti Imaginaire', date: '2026-10-20' });
+    assert.equal(termes[1]?.source, undefined);
+    assert.match(termes[1]?.definition ?? '', /^Le loyer est la somme d'argent/);
+    // chaque terme est entouré de texte : ni début ni fin de phrase collés à un bouton
+    segs.forEach((s, i) => {
+      if (s.type === 'terme') assert.ok(segs[i - 1]?.type === 'texte' && segs[i + 1]?.type === 'texte');
+    });
+  });
+
+  it('la liste de la page « logement » compte 2 mots : loyer puis Parti Imaginaire', () => {
+    const logement = corpus.mesures.filter((m) => m.mesure.theme === 'logement');
+    assert.ok(logement.length >= 2);
+    assert.deepEqual(
+      termesDe(logement, corpus.glossaire).map((t) => t.libelle),
+      ['loyer', 'Parti Imaginaire'],
+    );
+  });
+
+  it('chaque texte enfant du corpus se segmente sans erreur (tous les marqueurs se résolvent)', () => {
+    for (const vue of corpus.mesures) {
+      const segs = segmenter(vue.mesure.redactions.enfant ?? '', corpus.glossaire, vue.ancre);
+      assert.ok(segs.every((s) => s.type === 'texte' || !s.definition.includes('[[')));
+    }
   });
 });
