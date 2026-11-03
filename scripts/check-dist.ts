@@ -13,6 +13,7 @@ const USAGE = `Usage : node scripts/check-dist.ts [--dist <dossier>] [--root <do
   --root <dossier>        racine du contenu, pour le nombre de cellules attendu (défaut : RTP_CONTENT_ROOT, sinon le corpus fictif de test)
   --mode preview|production  mode du build contrôlé (défaut : RTP_MODE, sinon production)
   --format text|github    text (défaut) ou annotations GitHub Actions en plus
+  RTP_DEPLOIEMENT=1 (job de déploiement) : un contact provisoire (.invalid) devient une erreur au lieu d'un avertissement.
   Code de sortie : 0 sans erreur, 1 si au moins une erreur, 2 si les arguments ou le mode sont invalides.
 `;
 
@@ -50,7 +51,8 @@ if (!fs.existsSync(dist) || !fs.statSync(dist).isDirectory()) usageError(`Dossie
 const contentRoot = values.root !== undefined ? path.resolve(projectRoot, values.root) : resolveContentRoot(projectRoot, process.env);
 
 const attendues = cellulesAttendues(contentRoot, projectRoot, mode);
-const constats = checkDist(dist, { mode, cellulesParTheme: attendues });
+const deploiement = process.env.RTP_DEPLOIEMENT === '1';
+const constats = checkDist(dist, { mode, cellulesParTheme: attendues, deploiement });
 
 for (const c of constats) console.log(`${c.code} ${safe(c.fichier)} : ${safe(c.message)}`);
 if (format === 'github') {

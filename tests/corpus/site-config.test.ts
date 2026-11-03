@@ -29,6 +29,13 @@ describe('loadSiteConfig', () => {
     assert.deepEqual(cfg, { contact: 'contact@domaine-a-definir.invalid', depot: 'ErwanHenry/reveleTonProg', contactProvisoire: true });
   });
 
+  it('WR-03 : RTP_DEPLOIEMENT=1 refuse le contact provisoire, accepte un domaine réel', () => {
+    const provisoire = projet('contact: contact@domaine-a-definir.invalid\ndepot: ErwanHenry/reveleTonProg\n');
+    assert.throws(() => loadSiteConfig(provisoire, { RTP_DEPLOIEMENT: '1' }), /RTP_DEPLOIEMENT/);
+    assert.equal(loadSiteConfig(provisoire, {}).contactProvisoire, true);
+    assert.equal(loadSiteConfig(projet('contact: bonjour@exemple.fr\ndepot: ErwanHenry/reveleTonProg\n'), { RTP_DEPLOIEMENT: '1' }).contactProvisoire, false);
+  });
+
   it('un domaine réel n’est pas provisoire', () => {
     const cfg = loadSiteConfig(projet('contact: bonjour@exemple.fr\ndepot: ErwanHenry/reveleTonProg\n'));
     assert.equal(cfg.contactProvisoire, false);

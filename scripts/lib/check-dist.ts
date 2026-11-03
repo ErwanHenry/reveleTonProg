@@ -7,7 +7,7 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 import { loadAll } from '../../src/lib/content-core/load.ts';
 import { PERIMETRE_EQUITE } from '../../src/lib/content-core/rules/config.ts';
-import { statutLePlusRecent } from '../../src/lib/content-core/rules/equite.ts';
+import { statutRetenu } from '../../src/lib/content-core/rules/equite.ts';
 import { motsInterdits } from '../../src/lib/content-core/rules/text/forbidden.ts';
 import type { Mode } from '../../src/lib/content-core/rules/types.ts';
 import { schemasDirOf } from '../../src/lib/content-core/root.ts';
@@ -45,6 +45,9 @@ export const CODES_CHECK_DIST = [
   'H1_NOMBRE',
   'MARQUEUR_RESIDUEL',
   'DIST_VIDE',
+  'CONTACT_PROVISOIRE',
+  'META_REFRESH',
+  'BASE_INTERDITE',
 ] as const;
 export type CodeCheckDist = (typeof CODES_CHECK_DIST)[number];
 
@@ -60,6 +63,8 @@ export interface OptionsCheckDist {
   mode: Mode;
   /** Nombre de cellules attendu par thème visible (sans elle, CELLULES_INCOHERENTES et THEME_INATTENDU sont inactifs). */
   cellulesParTheme?: ReadonlyMap<string, number> | Readonly<Record<string, number>>;
+  /** Vrai pour un contrôle avant déploiement (RTP_DEPLOIEMENT=1) : un contact `.invalid` devient une erreur, sinon un avertissement. */
+  deploiement?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -68,8 +73,11 @@ export interface OptionsCheckDist {
 
 const SCHEMA = /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i;
 
-/** Valeur d'attribut telle que la lit un navigateur : sans espaces de bord ni tabulations/retours internes. */
-const nettoyerUrl = (v: string): string => v.replace(/[\t\n\r]/g, '').trim();
+/**
+ * Valeur d'attribut telle que la lit un navigateur : sans tabulations/retours internes, ni
+ * caractères de contrôle C0 ou espaces de bord (« \u0001javascript:… » est lu comme « javascript:… »).
+ */
+const nettoyerUrl = (v: string): string => v.replace(/[\t\n\r]/g, '').replace(/^[\u0000-\u0020]+|[\u0000-\u0020]+$/g, '');
 const estAbsolue = (v: string): boolean => SCHEMA.test(nettoyerUrl(v));
 
 const posix = (p: string): string => p.split(path.sep).join('/');
@@ -92,7 +100,7 @@ const dansDist = (dist: string, abs: string): boolean => abs === dist || abs.sta
 
 /**
  * Nombre de cellules attendu sur la page de chaque thème visible dans `mode` : tout thème publié
- * (tous en preview) montre une cellule par candidat du périmètre d'équité (statut le plus récent
+ * (tous en preview) montre une cellule par candidat du périmètre d'équité (statut retenu, ADR-041 :
  * `declare` ou `primaire`). Calculé depuis le contenu brut, indépendamment du view-model des pages.
  */
 export function cellulesAttendues(contentRoot: string, projectRoot: string, mode: Mode): Map<string, number> {
@@ -100,7 +108,7 @@ export function cellulesAttendues(contentRoot: string, projectRoot: string, mode
   const perimetre = entries.filter(
     (e) =>
       e.collection === 'candidats' &&
-      (PERIMETRE_EQUITE as readonly unknown[]).includes(statutLePlusRecent(e.data.statuts)?.code),
+      (PERIMETRE_EQUITE as readonly unknown[]).includes(statutRetenu(e.data.statuts, mode)?.code),
   ).length;
   const out = new Map<string, number>();
   for (const e of entries) {
@@ -125,11 +133,11 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
   const racineDist = path.resolve(dist);
   const constats: Constat[] = [];
   const vus = new Set<string>();
-  const signaler = (code: CodeCheckDist, fichier: string, message: string): void => {
+  const signaler = (code: CodeCheckDist, fichier: string, message: string, severite: Constat['severite'] = 'erreur'): void => {
     const cle = `${code}\u0000${fichier}\u0000${message}`;
     if (vus.has(cle)) return;
     vus.add(cle);
-    constats.push({ code, severite: 'erreur', fichier, message });
+    constats.push({ code, severite, fichier, message });
   };
 
   const fichiers = lister(racineDist);
@@ -249,6 +257,13 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
           signaler('SCRIPT_NON_BLOQUANT', rel, `<script src="${nettoyerUrl(n.attrs.src)}"> doit rester bloquant (ni type=module, ni async, ni defer)`);
         }
       }
+      for (const nom of Object.keys(n.attrs)) {
+        if (/^on/i.test(nom)) signaler('SCRIPT_EN_LIGNE', rel, `gestionnaire d'événement en ligne « ${nom.slice(0, 30)} » sur <${n.tag}> interdit (CSP script-src 'self')`);
+      }
+      if (n.tag === 'meta' && (n.attrs['http-equiv'] ?? '').toLowerCase() === 'refresh') {
+        signaler('META_REFRESH', rel, `<meta http-equiv="refresh"> interdit (redirection hors de contrôle) : ${(n.attrs.content ?? '').slice(0, 60)}`);
+      }
+      if (n.tag === 'base') signaler('BASE_INTERDITE', rel, '<base> interdit : il réécrit tous les liens relatifs de la page');
       if (n.tag === 'style') signaler('STYLE_EN_LIGNE', rel, "<style> interdit : la feuille de style doit être un fichier du site (CSP style-src 'self')");
       if (n.attrs.style !== undefined) signaler('STYLE_EN_LIGNE', rel, `attribut style sur <${n.tag}> interdit (CSP style-src 'self')`);
     }
@@ -257,7 +272,25 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
     for (const n of tous) {
       if (n.tag !== 'a' || n.attrs.href === undefined) continue;
       const href = nettoyerUrl(n.attrs.href);
-      if (href === '' || /^(?:mailto|tel):/i.test(href)) continue;
+      if (/^mailto:/i.test(href)) {
+        const adresse = href.slice('mailto:'.length).split('?')[0] ?? '';
+        let decode = adresse;
+        try {
+          decode = decodeURIComponent(adresse);
+        } catch {
+          // pourcentage mal formé : on garde l'adresse brute
+        }
+        if (decode.trim().toLowerCase().endsWith('.invalid')) {
+          signaler(
+            'CONTACT_PROVISOIRE',
+            rel,
+            `contact provisoire (.invalid) : ${decode.slice(0, 60)}`,
+            opts.deploiement === true ? 'erreur' : 'avertissement',
+          );
+        }
+        continue;
+      }
+      if (href === '') continue;
       if (/^javascript:/i.test(href)) {
         signaler('LIEN_EXTERNE_NON_PROTEGE', rel, `lien javascript: interdit : ${href.slice(0, 60)}`);
       } else if (href.startsWith('//')) {
@@ -268,7 +301,10 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
         if (!(n.attrs.rel ?? '').toLowerCase().split(/\s+/).includes('noopener')) {
           signaler('LIEN_EXTERNE_NON_PROTEGE', rel, `lien externe sans rel="noopener noreferrer" : ${href.slice(0, 80)}`);
         }
-      } else if (!SCHEMA.test(href)) {
+      } else if (SCHEMA.test(href)) {
+        // Liste blanche : seuls https:, mailto: et les liens relatifs passent (data:, vbscript:, ftp:, file:, blob:, tel:…).
+        signaler('LIEN_EXTERNE_NON_PROTEGE', rel, `schéma de lien non autorisé (https:, mailto: ou lien relatif seulement) : ${href.slice(0, 60)}`);
+      } else {
         const c = cible(rel, href);
         if (c === undefined) signaler('LIEN_INTERNE_CASSE', rel, `lien interne vers une page absente du dist : ${href.slice(0, 80)}`);
         else if (c.frag !== '' && c.rel.endsWith('.html')) {
@@ -310,12 +346,23 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
     }
 
     // texte visible : un espace entre deux nœuds de texte pour ne jamais recoller des blocs
-    const texteHors = (exclure: (n: Noeud) => boolean): string => {
+    const ATTRIBUTS_TEXTE = ['title', 'aria-label', 'alt'] as const;
+    const texteHors = (exclure: (n: Noeud) => boolean, avecAttributs = false): string => {
       const morceaux: string[] = [];
       const visiter = (n: Noeud): void => {
         for (const e of n.enfants) {
           if (typeof e === 'string') morceaux.push(e);
-          else if (!exclure(e)) visiter(e);
+          else if (!exclure(e)) {
+            if (avecAttributs) {
+              for (const a of ATTRIBUTS_TEXTE) if (e.attrs[a] !== undefined) morceaux.push(e.attrs[a]);
+              // description et métadonnées de partage (og:description, twitter:title…) : lues par les moteurs et les réseaux
+              if (e.tag === 'meta' && e.attrs.content !== undefined && (e.attrs.name !== undefined || e.attrs.property !== undefined)) {
+                const nom = (e.attrs.name ?? e.attrs.property ?? '').toLowerCase();
+                if (nom !== 'viewport' && nom !== 'robots' && nom !== 'theme-color') morceaux.push(e.attrs.content);
+              }
+            }
+            visiter(e);
+          }
         }
       };
       visiter(racine);
@@ -324,7 +371,19 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
     const code = (n: Noeud): boolean => n.tag === 'script' || n.tag === 'style';
     const visible = texteHors(code);
     if (visible.includes('[[')) signaler('MARQUEUR_RESIDUEL', rel, 'marqueur « [[ » résiduel dans le texte visible (glossaire non résolu)');
-    const horsCitations = texteHors((n) => code(n) || n.attrs['data-citation'] !== undefined || n.attrs['data-liste-mots-interdits'] !== undefined);
+    // Exemptions étroites : la citation verbatim du candidat (blockquote ou q portant data-citation), le titre
+    // d'une source primaire (span data-citation dans un bloc .source : c'est un titre, pas une rédaction) et la
+    // liste des mots interdits de la page Méthode. Un data-citation posé ailleurs n'exempte rien.
+    const dansSource = (n: Noeud): boolean => {
+      for (let p = n.parent; p !== null; p = p.parent) if (aClasse(p, 'source')) return true;
+      return false;
+    };
+    const exempte = (n: Noeud): boolean =>
+      code(n) ||
+      ((n.tag === 'blockquote' || n.tag === 'q') && n.attrs['data-citation'] !== undefined) ||
+      (n.tag === 'span' && n.attrs['data-citation'] !== undefined && dansSource(n)) ||
+      n.attrs['data-liste-mots-interdits'] !== undefined;
+    const horsCitations = texteHors(exempte, true);
     for (const mot of motsInterdits(horsCitations)) signaler('MOT_INTERDIT', rel, `mot interdit hors citation : « ${mot} »`);
 
     // structure de page

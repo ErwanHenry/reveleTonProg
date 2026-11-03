@@ -54,18 +54,18 @@
 
 ### Référentiel M1 (M1)
 
-- [ ] **M1-01**: Le visiteur ouvre une page thème et voit tous les candidats du périmètre, chacun avec ses mesures ou un état vide typé et daté (« Non précisé dans les sources consultées le … », « Programme non publié à ce jour »)
-- [ ] **M1-02**: Le visiteur ouvre une page candidat (59 personnalités) et voit ses mesures par thème, son statut en texte avec date et source, et son parti tel que revendiqué
-- [ ] **M1-03**: Le visiteur navigue thème → candidat et candidat → thème par liens croisés
-- [ ] **M1-04**: Chaque mesure affiche sa source primaire (titre, date de consultation, lien original, lien vers la copie archivée) et un lien « signaler une erreur »
-- [ ] **M1-05**: Le visiteur bascule entre résumé, détaillé, enfant et aîné sans rechargement, y compris sans JavaScript (radios + `:has()`), seul le niveau actif étant lu par les lecteurs d'écran
-- [ ] **M1-06**: Le choix de niveau est mémorisé en localStorage et restauré sans flash au chargement suivant (amélioration progressive)
-- [ ] **M1-07**: Les candidats sont en ordre alphabétique (`nom_tri`, collation française) par défaut ; le visiteur peut demander un ordre aléatoire (JS, Fisher-Yates, retiré à chaque chargement, mode mémorisé) ; sans JS l'ordre reste alphabétique avec explication
-- [ ] **M1-08**: Les cartes candidats ont une taille fixe (première mesure + « N autres mesures »), une ligne de couverture en tête de thème, et les candidats `renonce` dans une section repliée ; aucune photo, pictogramme neutre identique
-- [ ] **M1-09**: Le niveau Aîné affiche une police plus grande (≥ 20 px, cibles ≥ 44 px) et un bloc « ce qui me concerne » qui met en tête les thèmes retraites, santé, dépendance, succession, logement
-- [ ] **M1-10**: Le niveau Enfant affiche des mots soulignés qui ouvrent une définition en une phrase au clic ou au focus (Popover API), plus une liste « Mots expliqués » en repli
-- [ ] **M1-11**: Une build `RTP_MODE=preview` montre les brouillons avec un badge « brouillon, non relu » ; la build production n'affiche que `publie` et ne contient aucun brouillon
-- [ ] **M1-12**: Chaque page indique sa date de dernière mise à jour
+- [x] **M1-01**: Le visiteur ouvre une page thème et voit tous les candidats du périmètre, chacun avec ses mesures ou un état vide typé et daté (« Non précisé dans les sources consultées le … », « Programme non publié à ce jour »)
+- [x] **M1-02**: Le visiteur ouvre une page candidat (59 personnalités) et voit ses mesures par thème, son statut en texte avec date et source, et son parti tel que revendiqué
+- [x] **M1-03**: Le visiteur navigue thème → candidat et candidat → thème par liens croisés
+- [x] **M1-04**: Chaque mesure affiche sa source primaire (titre, date de consultation, lien original, lien vers la copie archivée) et un lien « signaler une erreur »
+- [x] **M1-05**: Le visiteur bascule entre résumé, détaillé, enfant et aîné sans rechargement, y compris sans JavaScript (radios + `:has()`), seul le niveau actif étant lu par les lecteurs d'écran
+- [x] **M1-06**: Le choix de niveau est mémorisé en localStorage et restauré sans flash au chargement suivant (amélioration progressive)
+- [x] **M1-07**: Les candidats sont en ordre alphabétique (`nom_tri`, collation française) par défaut ; le visiteur peut demander un ordre aléatoire (JS, Fisher-Yates, retiré à chaque chargement, mode mémorisé) ; sans JS l'ordre reste alphabétique avec explication
+- [x] **M1-08**: Les cartes candidats ont une taille fixe (première mesure + « N autres mesures »), une ligne de couverture en tête de thème, et les candidats `renonce` dans une section repliée ; aucune photo, pictogramme neutre identique
+- [x] **M1-09**: Le niveau Aîné affiche une police plus grande (≥ 20 px, cibles ≥ 44 px) et un bloc « ce qui me concerne » qui met en tête les thèmes retraites, santé, dépendance, succession, logement
+- [x] **M1-10**: Le niveau Enfant affiche des mots soulignés qui ouvrent une définition en une phrase au clic ou au focus (Popover API), plus une liste « Mots expliqués » en repli
+- [x] **M1-11**: Une build `RTP_MODE=preview` montre les brouillons avec un badge « brouillon, non relu » ; la build production n'affiche que `publie` et ne contient aucun brouillon
+- [x] **M1-12**: Chaque page indique sa date de dernière mise à jour
 
 ### Pages institutionnelles (INST)
 
@@ -76,7 +76,7 @@
 
 ### Qualité et livraison (QUAL)
 
-- [ ] **QUAL-01**: Un contrôle post-build échoue si une page dépasse 500 Ko bruts ou 100 Ko gzip, charge une ressource tierce, contient un mot interdit hors liste Méthode, affiche une mesure sans source datée, colle des mots (espaces inline perdues), ou a un nombre de cellules ≠ nombre de candidats du thème
+- [x] **QUAL-01**: Un contrôle post-build échoue si une page dépasse 500 Ko bruts ou 100 Ko gzip, charge une ressource tierce, contient un mot interdit hors liste Méthode, affiche une mesure sans source datée, colle des mots (espaces inline perdues), ou a un nombre de cellules ≠ nombre de candidats du thème
 - [ ] **QUAL-02**: Un test Playwright vérifie le fonctionnement sans JS (lecture et bascule de niveau), le parcours clavier complet et zéro violation axe WCAG 2.2 AA sérieuse ou critique
 - [ ] **QUAL-03**: Un test Playwright en 4G lente simulée (150 ms RTT, 1,6 Mbps) sur la page la plus lourde servie compressée mesure un chargement < 1 s
 - [ ] **QUAL-04**: Le mode « très gros texte » (160 %) et `prefers-reduced-motion` sont respectés, contraste AA sur tous les thèmes
@@ -165,23 +165,23 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CONT-04 | Phase 3 | Pending |
 | CONT-05 | Phase 3 | Pending |
 | CONT-06 | Phase 3 | Pending |
-| M1-01 | Phase 4 | Pending |
-| M1-02 | Phase 4 | Pending |
-| M1-03 | Phase 4 | Pending |
-| M1-04 | Phase 4 | Pending |
-| M1-05 | Phase 4 | Pending |
-| M1-06 | Phase 4 | Pending |
-| M1-07 | Phase 4 | Pending |
-| M1-08 | Phase 4 | Pending |
-| M1-09 | Phase 4 | Pending |
-| M1-10 | Phase 4 | Pending |
-| M1-11 | Phase 4 | Pending |
-| M1-12 | Phase 4 | Pending |
+| M1-01 | Phase 4 | Complete |
+| M1-02 | Phase 4 | Complete |
+| M1-03 | Phase 4 | Complete |
+| M1-04 | Phase 4 | Complete |
+| M1-05 | Phase 4 | Complete |
+| M1-06 | Phase 4 | Complete |
+| M1-07 | Phase 4 | Complete |
+| M1-08 | Phase 4 | Complete |
+| M1-09 | Phase 4 | Complete |
+| M1-10 | Phase 4 | Complete |
+| M1-11 | Phase 4 | Complete |
+| M1-12 | Phase 4 | Complete |
 | INST-01 | Phase 5 | Pending |
 | INST-02 | Phase 5 | Pending |
 | INST-03 | Phase 5 | Pending |
 | INST-04 | Phase 5 | Pending |
-| QUAL-01 | Phase 4 | Pending |
+| QUAL-01 | Phase 4 | Complete |
 | QUAL-02 | Phase 5 | Pending |
 | QUAL-03 | Phase 5 | Pending |
 | QUAL-04 | Phase 5 | Pending |

@@ -189,7 +189,7 @@ export default function candidat(ctx: ContexteSite): void {
       assert.ok(txt(lignes[4] as Noeud).includes('Ne se présente pas · 25 octobre 2026'));
     });
 
-    it('/themes/ : tuiles logement et climat (pas ecole), 4 candidats chacune', () => {
+    it('/themes/ : tuiles logement et climat (pas ecole), 3 candidats chacune', () => {
       const { arbre } = page(production().outDir, 'themes/index.html');
       assert.equal(txt(trouver(arbre, (n) => n.tag === 'h1')[0] as Noeud), 'Les thèmes');
       const tuiles = trouver(arbre, (n) => n.tag === 'li' && n.attrs['data-theme'] !== undefined);
@@ -198,7 +198,7 @@ export default function candidat(ctx: ContexteSite): void {
         ['logement', 'climat'],
       );
       assert.equal(lien(tuiles[0] as Noeud, 'Logement').attrs.href, '/themes/logement/');
-      for (const t of tuiles) assert.ok(txt(t).includes('4 candidats'), txt(t));
+      for (const t of tuiles) assert.ok(txt(t).includes('3 candidats'), txt(t));
       assert.deepEqual(
         liens(nav(arbre)).map((l) => l.attrs['aria-current']),
         ['page', undefined],

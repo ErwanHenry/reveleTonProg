@@ -1,8 +1,8 @@
 import { PERIMETRE_EQUITE } from './config.ts';
-import type { CorpusRule, Finding } from './types.ts';
+import type { CorpusRule, Finding, Mode } from './types.ts';
 
 // REGLE-08 : équité. Sur un thème publié, tout candidat déclaré ou primaire (statut le plus récent de
-// statuts[] par date, quel que soit son statut de relecture : hypothèse A6, fail-closed) a soit une mesure
+// statuts[] par date, parmi les statuts relus ou publiés en production, tous en preview : ADR-041) a soit une mesure
 // publiée, soit une case de couverture. Erreur en production, avertissement en
 // preview (comme TEXTE_SOURCE_TROP_LONG).
 
@@ -24,6 +24,18 @@ export function statutLePlusRecent(statuts: unknown): Record<string, unknown> | 
   return meilleur;
 }
 
+const RELUS = ['relu', 'publie'];
+
+/**
+ * Statut qui fait foi dans `mode` (ADR-041) : le plus récent des statuts relus ou publiés en production
+ * (un brouillon ne change jamais qui figure sur une page publiée), le plus récent de tous en preview.
+ * C'est LA définition partagée par le validateur, le view-model des pages et `check-dist`.
+ */
+export function statutRetenu(statuts: unknown, mode: Mode): Record<string, unknown> | undefined {
+  const liste = tableau(statuts);
+  return statutLePlusRecent(mode === 'production' ? liste.filter((s) => RELUS.includes(String(objet(s).statut_relecture))) : liste);
+}
+
 export const regleEquite: CorpusRule = {
   id: 'equite',
   run(ctx) {
@@ -37,7 +49,7 @@ export const regleEquite: CorpusRule = {
     const perimetre = ctx.corpus
       .de('candidats')
       .filter((c) => {
-        const dernier = statutLePlusRecent(c.data.statuts)?.code;
+        const dernier = statutRetenu(c.data.statuts, ctx.mode)?.code;
         return (PERIMETRE_EQUITE as readonly unknown[]).includes(dernier);
       })
       .map((c) => c.id)

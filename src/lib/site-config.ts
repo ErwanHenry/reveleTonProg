@@ -27,7 +27,7 @@ function erreur(detail: string): Error {
 }
 
 /** Lit et valide `config/site.yml` ; lève une Error qui nomme le fichier si quoi que ce soit cloche. */
-export function loadSiteConfig(projectRoot: string = process.cwd()): SiteConfig {
+export function loadSiteConfig(projectRoot: string = process.cwd(), env: NodeJS.ProcessEnv = process.env): SiteConfig {
   const racine = path.resolve(projectRoot);
   const connue = memo.get(racine);
   if (connue !== undefined) return connue;
@@ -58,6 +58,11 @@ export function loadSiteConfig(projectRoot: string = process.cwd()): SiteConfig 
   if (typeof depot !== 'string' || !RE_DEPOT.test(depot)) throw erreur('« depot » doit avoir la forme propriétaire/dépôt (ex. ErwanHenry/reveleTonProg)');
 
   const cfg: SiteConfig = { contact, depot, contactProvisoire: contact.toLowerCase().endsWith('.invalid') };
+  // Garde de déploiement (WR-03) : le job de déploiement du lot 3 positionne RTP_DEPLOIEMENT=1 ; un
+  // contact provisoire ne doit alors jamais partir en ligne (canal de correction mort).
+  if (cfg.contactProvisoire && env.RTP_DEPLOIEMENT === '1') {
+    throw erreur('contact provisoire (.invalid) refusé quand RTP_DEPLOIEMENT=1 : renseigner une vraie adresse avant de déployer');
+  }
   if (cfg.contactProvisoire && !avertie) {
     avertie = true;
     console.warn('contact provisoire (.invalid) : à remplacer au lot 3');

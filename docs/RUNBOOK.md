@@ -149,8 +149,8 @@ Le mode `preview` ne sert qu'en local, pour rédiger un thème sans avoir encore
 | `POIDS_GZIP` | page de plus de 100 000 octets compressés | idem ; c'est la limite qui mord en premier |
 | `SCRIPT_TROP_LOURD` | script de plus de 2048 octets | réduire le script |
 | `RESSOURCE_TIERCE` | ressource chargée depuis un autre site | héberger la ressource dans le dépôt ou la retirer |
-| `LIEN_EXTERNE_NON_PROTEGE` | lien externe sans `rel="noopener noreferrer"` | ajouter le `rel` |
-| `SCRIPT_EN_LIGNE` | `<script>` avec un corps | passer par un fichier dans `src/scripts/` |
+| `LIEN_EXTERNE_NON_PROTEGE` | lien externe sans `rel="noopener noreferrer"`, ou schéma autre que `https:`, `mailto:` et lien relatif | ajouter le `rel`, ou remplacer le lien |
+| `SCRIPT_EN_LIGNE` | `<script>` avec un corps, ou gestionnaire `on…=` en attribut | passer par un fichier dans `src/scripts/` |
 | `SCRIPT_DATA_URI` | script en `data:` | idem |
 | `SCRIPT_NON_BLOQUANT` | script d'ordre ou de niveau en `async`/`defer`/`module` | le remettre bloquant dans `<head>` |
 | `STYLE_EN_LIGNE` | attribut `style=` | utiliser une classe CSS |
@@ -167,6 +167,11 @@ Le mode `preview` ne sert qu'en local, pour rédiger un thème sans avoir encore
 | `H1_NOMBRE` | zéro ou plusieurs `h1` | un seul `h1` par page |
 | `MARQUEUR_RESIDUEL` | marqueur de gabarit resté dans le HTML | corriger le rendu |
 | `DIST_VIDE` | aucun HTML dans `dist/` | construire d'abord le site |
+| `META_REFRESH` | `<meta http-equiv="refresh">` dans une page | retirer la redirection ; en faire une règle du serveur |
+| `BASE_INTERDITE` | `<base>` dans une page | le retirer : il réécrit tous les liens relatifs |
+| `CONTACT_PROVISOIRE` | lien `mailto:` en `.invalid` (contact de `config/site.yml` pas encore remplacé) | avertissement en CI ; erreur quand `RTP_DEPLOIEMENT=1` : renseigner un vrai contact |
+
+**Garde de déploiement (contact).** Tant que le domaine n'est pas acheté, `config/site.yml` garde `contact@domaine-a-definir.invalid` et la CI passe avec un avertissement. Le job de déploiement du lot 3 doit définir `RTP_DEPLOIEMENT=1` : le build (`astro build`) échoue alors si le contact finit par `.invalid`, et `check-dist` signale `CONTACT_PROVISOIRE` en erreur.
 
 ### Archiver une source
 

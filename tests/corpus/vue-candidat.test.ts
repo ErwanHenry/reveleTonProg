@@ -71,10 +71,8 @@ describe('pageCandidat : production', () => {
     const p = corpus().pageCandidat('paul-de-villefranche');
     assert.equal(p.statut, null);
     assert.equal(p.badgeStatut, null);
-    assert.deepEqual(
-      p.sections.map((s) => s.theme.theme.id),
-      ['logement', 'climat'],
-    );
+    // Hors périmètre en production tant que son statut « declare » n'est pas relu (ADR-041) : pas de section.
+    assert.deepEqual(p.sections, []);
   });
 
   it('Nina (pressentie, hors périmètre) : aucune section', () => {

@@ -114,7 +114,7 @@ describe('vue : production', () => {
         ['elise-erard', 'non_precise'],
         ['marie-fictive', 'mesures'],
         ['jean-imaginaire', 'programme_non_publie'],
-        ['paul-de-villefranche', 'programme_non_publie'],
+        // paul-de-villefranche : statut « declare » encore en brouillon, hors périmètre en production (ADR-041)
       ],
     );
     const marie = t.cellules[1]!;
@@ -140,8 +140,8 @@ describe('vue : production', () => {
   it('lève une erreur nommant le thème et le candidat quand ni mesure visible ni case', () => {
     const b = copie();
     const couv = b.couverture.find((x) => x.theme === 'logement')!;
-    couv.cases = couv.cases.filter((x) => x.candidat !== 'paul-de-villefranche');
-    assert.throws(() => construireCorpus(b, 'production'), /logement.*paul-de-villefranche/);
+    couv.cases = couv.cases.filter((x) => x.candidat !== 'jean-imaginaire');
+    assert.throws(() => construireCorpus(b, 'production'), /logement.*jean-imaginaire/);
     assert.doesNotThrow(() => construireCorpus(b, 'preview'));
   });
 
@@ -157,15 +157,15 @@ describe('vue : production', () => {
   it('renonces = luc-retire ; un renoncement non relu bascule dans les autres personnalités', () => {
     const c = construireCorpus(brut, 'production');
     assert.deepEqual(ids(c.theme('logement').renonces.map((v) => v.donnees)), ['luc-retire']);
-    assert.equal(c.theme('logement').autresPersonnalites, 1);
-    assert.equal(c.theme('climat').autresPersonnalites, 1);
+    // nina (pressentie, brouillon) et paul (déclaré mais pas encore relu) : autres personnalités en production (ADR-041)
+    assert.equal(c.theme('logement').autresPersonnalites, 2);
+    assert.equal(c.theme('climat').autresPersonnalites, 2);
 
     const b = copie();
     const luc = b.candidats.find((x) => x.id === 'luc-retire') as Candidat;
     luc.statuts[1]!.statut_relecture = 'brouillon';
-    const c2 = construireCorpus(b, 'production');
-    assert.deepEqual(c2.theme('logement').renonces, []);
-    assert.equal(c2.theme('logement').autresPersonnalites, 2);
+    // Le renoncement n'est pas relu : en production Luc reste « déclaré » et doit donc avoir une case (WR-01, ADR-041).
+    assert.throws(() => construireCorpus(b, 'production'), /logement.*luc-retire/);
     // En preview, le renoncement (même brouillon) est affiché.
     assert.deepEqual(ids(construireCorpus(b, 'preview').theme('logement').renonces.map((v) => v.donnees)), ['luc-retire']);
   });
@@ -215,11 +215,11 @@ describe('vue : couverture, dates, libellés', () => {
     const prod = construireCorpus(brut, 'production');
     assert.equal(
       phraseCouverture(prod.theme('logement').couverture),
-      "Sur ce thème, 1 candidat sur 4 a une position publiée, 1 n'a rien de précisé dans les sources consultées, 2 n'ont pas publié de programme.",
+      "Sur ce thème, 1 candidat sur 3 a une position publiée, 1 n'a rien de précisé dans les sources consultées, 1 n'a pas publié de programme.",
     );
     assert.equal(
       phraseCouverture(prod.theme('climat').couverture),
-      "Sur ce thème, 0 candidat sur 4 a une position publiée, 3 n'ont rien de précisé dans les sources consultées, 1 n'a pas publié de programme.",
+      "Sur ce thème, 0 candidat sur 3 a une position publiée, 3 n'ont rien de précisé dans les sources consultées.",
     );
     const prev = construireCorpus(brut, 'preview');
     assert.equal(
@@ -278,5 +278,28 @@ describe('vue : couverture, dates, libellés', () => {
     assert.equal(LIBELLES_STATUT.declare, 'Candidature déclarée');
     assert.equal(LIBELLES_MOTIF.retrait, 'retrait de la candidature');
     assert.deepEqual(BADGES, { brouillon: 'brouillon, non relu', relu: 'relu, pas encore publié' });
+  });
+});
+
+describe('WR-01 : périmètre et statut affiché partagent la même définition (ADR-041)', () => {
+  it('production : un renoncement en brouillon plus récent ne retire pas un candidat relu de la grille', () => {
+    const b = copie();
+    const elise = b.candidats.find((x) => x.id === 'elise-erard') as Candidat;
+    elise.statuts = [...elise.statuts, { ...structuredClone(elise.statuts[0]!), code: 'renonce' as const, date: '2099-01-01', statut_relecture: 'brouillon' as const }];
+    const prod = construireCorpus(b, 'production').candidat('elise-erard');
+    assert.equal(prod.perimetre, true);
+    assert.equal(prod.statutAffiche?.code, 'declare');
+    const prev = construireCorpus(b, 'preview').candidat('elise-erard');
+    assert.equal(prev.perimetre, false);
+    assert.equal(prev.statutAffiche?.code, 'renonce');
+  });
+
+  it('production : un déclaré en brouillon plus récent ne fait pas entrer dans la grille un candidat relu « renonce »', () => {
+    const b = copie();
+    const luc = b.candidats.find((x) => x.id === 'luc-retire') as Candidat;
+    luc.statuts = [...luc.statuts, { ...structuredClone(luc.statuts[0]!), code: 'declare' as const, date: '2099-01-01', statut_relecture: 'brouillon' as const }];
+    const prod = construireCorpus(b, 'production').candidat('luc-retire');
+    assert.equal(prod.perimetre, false);
+    assert.equal(prod.statutAffiche?.code, 'renonce');
   });
 });

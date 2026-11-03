@@ -133,6 +133,20 @@ describe('ci.yml : job verifier', () => {
     }
   });
 
+  it('WR-04 : construit et contrôle aussi le corpus réel, en production puis en preview', () => {
+    const steps = ci.jobs.verifier.steps;
+    const trouver = (cmd: string): number => steps.findIndex((s) => s.run?.trim() === cmd);
+    const iBuildReel = trouver('npm run build -- --outDir dist-reel');
+    const iCheckReel = trouver('npm run check-dist -- --dist dist-reel --mode production');
+    const iBuildPrev = trouver('npm run build -- --outDir dist-preview');
+    const iCheckPrev = trouver('npm run check-dist -- --dist dist-preview --mode preview');
+    assert.ok(iBuildReel >= 0 && iBuildReel < iCheckReel && iCheckReel < iBuildPrev && iBuildPrev < iCheckPrev);
+    assert.ok(iBuildReel > steps.findIndex((s) => s.run?.trim() === 'npm run check-dist'), 'après le contrôle du corpus fictif');
+    for (const i of [iBuildReel, iCheckReel, iBuildPrev, iCheckPrev]) assert.equal(steps[i]?.env?.RTP_CONTENT_ROOT, '.');
+    assert.equal(steps[iBuildPrev]?.env?.RTP_MODE, 'preview');
+    assert.equal(steps[iBuildReel]?.env?.RTP_MODE, undefined);
+  });
+
   it('valide et migre aussi le corpus réel (RTP_CONTENT_ROOT=.)', () => {
     const real = (cmd: string) =>
       ci.jobs.verifier.steps.some((s) => s.run?.trim().startsWith(cmd) && s.env?.RTP_CONTENT_ROOT === '.');
@@ -147,7 +161,8 @@ describe('ci.yml : job verifier', () => {
       assert.ok(s.run?.includes('--mode production'), `mode non épinglé : ${s.run}`);
       assert.ok(s.run?.includes('--format github'), `annotations absentes : ${s.run}`);
     }
-    assert.ok(!/RTP_MODE/.test(ciRaw), 'la CI ne doit pas dépendre de RTP_MODE');
+    // RTP_MODE n'est admis que sur l'étape de build preview du corpus réel (WR-04), jamais sur validate.
+    for (const s of validations) assert.ok(s.env?.RTP_MODE === undefined, 'validate ne doit pas dépendre de RTP_MODE');
   });
 
   it('ids.lock est comparé au commit de base (ajout seul), valeurs d’événement passées par env', () => {

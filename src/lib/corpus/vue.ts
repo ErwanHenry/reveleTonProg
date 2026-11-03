@@ -3,7 +3,7 @@
 // Le mode est un paramètre : seul `index.ts` lit l'environnement. Aucune horloge : toutes les dates
 // viennent des données.
 import { PERIMETRE_EQUITE } from '../content-core/rules/config.ts';
-import { statutLePlusRecent } from '../content-core/rules/equite.ts';
+import { statutLePlusRecent, statutRetenu } from '../content-core/rules/equite.ts';
 import type {
   Candidat,
   CaseCouverture,
@@ -215,8 +215,7 @@ export function phraseCouverture(c: CompteCouverture): string {
  * relu n'est jamais présenté comme un fait), `null` s'il n'y en a aucun. Preview : le plus récent.
  */
 export function statutAffiche(c: Candidat, mode: Mode): StatutEntree | null {
-  const candidats = mode === 'production' ? c.statuts.filter((s) => s.statut_relecture === 'relu' || s.statut_relecture === 'publie') : c.statuts;
-  return (statutLePlusRecent(candidats) as unknown as StatutEntree | undefined) ?? null;
+  return (statutRetenu(c.statuts, mode) as unknown as StatutEntree | undefined) ?? null;
 }
 
 function badgeDe(statut: StatutRelecture): string | null {
@@ -248,7 +247,8 @@ export function construireCorpus(brut: Brut, mode: Mode): Corpus {
         nomAffiche: `${c.prenom} ${c.nom}`,
         parti: c.parti,
         rang,
-        perimetre: (PERIMETRE_EQUITE as readonly string[]).includes(statutRecent.code),
+        // Même définition que le statut affiché et que le validateur (ADR-041).
+        perimetre: (PERIMETRE_EQUITE as readonly string[]).includes(statutAffiche(c, mode)?.code ?? ''),
         statutRecent,
         statutAffiche: statutAffiche(c, mode),
         donnees: c,

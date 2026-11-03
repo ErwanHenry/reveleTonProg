@@ -252,7 +252,7 @@ Les ADR techniques de la phase 1 (sans D-n) vont de l'ADR-017 à l'ADR-026 ; ceu
   - **A3** : `relu` traité comme `publie` pour `PHRASE_ENFANT_LONGUE` (erreur) ; seul `brouillon` rétrograde en avertissement. Risque faible.
   - **A4** : `LONGUEUR_HORS_BORNES` est une erreur quel que soit le statut. Risque moyen : les brouillons collectés par agents en phase 3 doivent déjà respecter les bornes.
   - **A5** : un candidat absent de `ids.lock` est une erreur (`ID_NON_VERROUILLE`). Risque faible : un seul geste, `npm run ids -- --write`.
-  - **A6** : le périmètre d'équité se lit sur le statut le plus récent par date de `statuts[]` (à date égale, le dernier de la liste), quel que soit son statut de relecture. Risque moyen : un statut `declare` en brouillon bloque un thème publié tant que le candidat n'est pas couvert.
+  - **A6** (amendée par ADR-041) : le périmètre d'équité se lit sur le statut le plus récent par date de `statuts[]` (à date égale, le dernier de la liste), parmi les statuts relus ou publiés en production, tous en preview.
   - **A7** : un duel au premier tour = exactement deux scores dont la somme atteint au moins 99 ou dont « autres » est sous 5 %, ou un nom évoquant le second tour (deuxième tour, ballottage, finale, T2) ; seuils et motif en configuration. Risque moyen (heuristique) : deux scores avec 5 % ou plus d'« autres » restent admis au premier tour, car le corpus fictif n'a que deux candidats. Verrouillé par un piège et des variantes négatives.
   - **A8** : une fenêtre de blocage inclut son début et exclut sa fin (20h00 pile autorisé). Risque faible : une seconde d'ambiguïté.
   - **A9** : GitHub limite les annotations à 10 erreurs et 10 avertissements par étape ; le journal texte reste complet. Risque faible : n'affecte que l'affichage.
@@ -296,6 +296,11 @@ Les ADR techniques de la phase 1 (sans D-n) vont de l'ADR-017 à l'ADR-026 ; ceu
 - **Contexte** : le choix du niveau doit marcher sans JavaScript, et l'ordre des candidats ne doit jamais suivre les sondages.
 - **Décision** : le niveau est un groupe de boutons radio dont `:has(:checked)` pilote l'affichage en CSS pur, avec `autocomplete="off"` pour que le navigateur ne restaure pas un état contradictoire ; un petit script mémorise `rtp:niveau`. L'ordre par défaut est alphabétique ; l'ordre aléatoire (Fisher-Yates) n'existe que sur demande, avec JavaScript, mémorisé dans `rtp:ordre`.
 - **Conséquence** : sans JavaScript, tout fonctionne sauf la mémoire du niveau et l'ordre aléatoire, annoncé comme tel.
+
+### ADR-041 : une seule définition du statut qui fait foi (périmètre d'équité et statut affiché)
+- **Contexte** : la revue de la phase 4 (WR-01, WR-02) a trouvé deux notions de « statut actuel » : le périmètre d'équité retenait le plus récent de tous les statuts, brouillons compris, alors que la page affichait le plus récent des statuts relus ou publiés. Un brouillon pouvait donc changer qui figure dans la grille tout en laissant la page dire l'inverse.
+- **Décision** : en production, le statut qui fait foi est le plus récent des statuts dont `statut_relecture` vaut `relu` ou `publie` (cohérent avec ADR-036 A1 : un statut relu est montré comme un fait, sans pastille). En preview, c'est le plus récent de tous. Cette définition est la fonction `statutRetenu` de `content-core/rules/equite.ts`, utilisée par la règle d'équité REGLE-08, par le view-model (`statutAffiche` et `perimetre`) et par `cellulesAttendues` de `check-dist`. Ce n'est donc plus fail-closed sur les brouillons (ancienne hypothèse A6) : un brouillon n'oblige plus à couvrir un candidat et n'en retire aucun.
+- **Conséquence** : validateur, pages et contrôle post-build ne peuvent plus diverger ; les tests Phase 2 sur les brouillons ajoutés en dernier ont été déplacés en preview (là où le brouillon compte) et complétés par leur contrepartie en production.
 
 ## Dépendances externes critiques
 

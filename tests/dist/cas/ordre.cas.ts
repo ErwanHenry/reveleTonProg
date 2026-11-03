@@ -149,7 +149,7 @@ export default function ordre(ctx: ContexteSite): void {
       assert.equal(norm(texte(trouver(cartes[0] as Noeud, (n) => aClasse(n, 'cellule-nom'))[0] as Noeud)), 'Élise Érard');
       assert.deepEqual(
         cartes.map((c) => c.attrs['data-rang']),
-        ['0', '1', '2', '5'],
+        ['0', '1', '2'],
       );
     });
 
