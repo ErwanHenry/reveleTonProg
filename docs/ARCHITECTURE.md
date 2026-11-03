@@ -10,7 +10,13 @@ flowchart LR
     A[archives/ extraits .txt]
     subgraph Core[src/lib/content-core]
       CC[load, ajv, diagnostics, migrate]
+      subgraph Regles[rules/ : trois niveaux, config.ts exportable]
+        RF[règles de fichier<br/>champs non importables]
+        RE[règles d'entrée<br/>neutralité, longueurs, chiffres,<br/>citations, sondages]
+        RC[règles de corpus<br/>sources, archives, références,<br/>ids.lock, équité]
+      end
     end
+    K[rules/config.ts<br/>CATALOGUE, HYPOTHESES,<br/>listes et seuils]
     V[scripts/validate.ts<br/>CI et poste local]
     M[scripts/migrate.ts<br/>runner de migrations]
     L[astro-loader.ts<br/>loader Astro d'objets]
@@ -18,6 +24,13 @@ flowchart LR
   PR[(Dépôt privé reveleTonProg-archives<br/>PDF et HTML rendu)]
   C --> CC
   S --> CC
+  CC -->|après Ajv : Finding| RF
+  RF --> RE
+  RE --> RC
+  K -.-> RF
+  K -.-> RE
+  K -.-> RC
+  RC -->|Diagnostic fichier:ligne:code| V
   CC --> V
   CC --> M
   CC --> L
@@ -39,7 +52,9 @@ Le module `content-core` est la seule implémentation de « lire un fichier YAML
 | Contenu | Candidats, thèmes, mesures (4 rédactions), sources, couverture, glossaire, journal, sondages | YAML | Dépôt Git |
 | Schémas | Source de vérité de la forme des données | JSON Schema 2020-12 | Dépôt Git |
 | content-core | Chargement YAML, validation Ajv, diagnostics fichier:ligne:colonne, migrations | TypeScript natif (Node 24) | Dépôt Git |
-| Validation | `scripts/validate.ts` (CI et local), `scripts/migrate.ts` | Node, Ajv, yaml | CI GitHub Actions |
+| Règles éditoriales | `content-core/rules/` : trois niveaux (fichier, entrée, corpus), codes stables, `config.ts` exportable pour la page Méthode | TypeScript natif | Dépôt Git |
+| Validation | `scripts/validate.ts` (CI et local, `--mode`), `scripts/migrate.ts`, `scripts/ids.ts` (verrou des identifiants) | Node, Ajv, yaml | CI GitHub Actions |
+| Pièges §12 | `tests/fixtures/pieges/<CODE>/attendu.json`, rejoués sur une copie de `corpus-valide` | `node:test` | CI GitHub Actions |
 | Site | Pages thème / candidat, bascule de niveau | Astro statique | Caddy (VPS) |
 | Archives | Extraits `.txt` des sources (public), binaires (privé) | Fichiers + dépôt privé | Dépôt Git / `reveleTonProg-archives` |
 | Collecte | Notices sondages, statuts candidats | Script Node cron | VPS (lot 5) |
@@ -62,7 +77,7 @@ Le module `content-core` est la seule implémentation de « lire un fichier YAML
 | D-12 | ADR-015 | Pas de photos |
 | D-13 | ADR-016 | Historique Git et convention de contenu |
 
-Les ADR techniques de la phase 1 (sans D-n) vont de l'ADR-017 à l'ADR-026.
+Les ADR techniques de la phase 1 (sans D-n) vont de l'ADR-017 à l'ADR-026 ; ceux de la phase 2 (règles éditoriales et pièges) de l'ADR-027 à l'ADR-033.
 
 ## Décisions clés (ADR courts)
 
@@ -195,6 +210,53 @@ Les ADR techniques de la phase 1 (sans D-n) vont de l'ADR-017 à l'ADR-026.
 - **Contexte** : `gitleaks-action` est sous licence propriétaire depuis la v2.
 - **Décision** : le binaire gitleaks 8.30.1 est téléchargé en CI avec son sha256 épinglé, vérifié par `sha256sum -c` avant extraction, puis lance `gitleaks git` sur tout l'historique.
 - **Conséquence** : Dependabot ne met pas ce pin à jour ; la revue mensuelle d'hygiène le fait (voir le runbook).
+
+### ADR-027 : trois niveaux de règles, une seule voie vers le diagnostic
+- **Contexte** : les règles éditoriales ne se réduisent pas à la forme d'un fichier : certaines lisent un fichier, d'autres une entrée validée, d'autres tout le corpus (références, équité, `ids.lock`).
+- **Décision** : `loadAll` appelle, après Ajv, des règles de **fichier** (document YAML, même invalide), d'**entrée** (une entrée valide) et de **corpus** (une fois, sur l'ensemble). Une règle renvoie des `Finding` ; le moteur seul les convertit en `Diagnostic` (position par pointeur JSON ou ligne explicite). Une règle qui plante donne `REGLE_ECHEC` et la validation échoue : jamais de passage en silence. Tous les seuils, listes et le catalogue des codes vivent dans `rules/config.ts`, module pur exportable pour la page Méthode.
+- **Conséquence** : CI et loader Astro appliquent les mêmes règles ; une règle ajoutée ne touche ni le schéma ni le CLI ; chaque code est catalogué et testé.
+
+### ADR-028 : mode de validation fail-closed, seule l'équité en dépend
+- **Contexte** : rédiger un thème candidat par candidat laisse des trous d'équité transitoires, qui ne doivent pas bloquer le travail local mais jamais la publication.
+- **Décision** : `--mode preview|production`, puis `RTP_MODE`, puis `production` par défaut ; une valeur inconnue est une erreur d'usage (code 2). Seules `EQUITE_CANDIDAT_MANQUANT` et `EQUITE_COUVERTURE_INCOHERENTE` passent en avertissement en preview. La CI passe `--mode production` à chaque étape `validate`, vérifié par `tests/repo/ci.test.ts`.
+- **Conséquence** : un oubli de réglage ne peut qu'aggraver la sévérité ; le build Astro et le CLI résolvent le mode par la même fonction.
+
+### ADR-029 : pièges de données en surcouche, comparaison exacte
+- **Contexte** : le cahier des charges §12 exige sept données piégées qui doivent échouer ; une fixture fautive par piège dupliquerait le corpus et dériverait.
+- **Décision** : un piège est un `attendu.json` (patches `remplacer` appliqués une seule fois, `supprimer`, fichiers de surcouche) rejoué sur une copie temporaire de `corpus-valide`, avec égalité d'ensembles exacte sur (code, sévérité, fichier, pointeur) et ligne optionnelle. Un test de couverture échoue si un piège §12 manque, si un code n'est jamais testé ou si `config.ts` cesse d'être exportable.
+- **Conséquence** : un piège qui passe, qui disparaît ou qui produit un diagnostic de trop casse `npm test` ; des variantes `--…-ok` figent les faux positifs corrigés.
+
+### ADR-030 : syllabes comptées par heuristique calibrée sur Lexique 3.83, sans textstat
+- **Contexte** : l'indice Kandel-Moles de la rédaction enfant exige un décompte de syllabes français ; les paquets npm de lisibilité sont anglophones, textstat est en Python.
+- **Décision** : une heuristique maison d'une trentaine de lignes, dont le résultat est figé par une table d'environ 170 mots tirés de Lexique 3.83 (CC BY-SA 4.0, crédité dans le test) et par des exceptions connues documentées. Aucune dépendance ajoutée. L'indice reste un avertissement (seuil 80), la longueur de phrase (15 mots) est l'erreur.
+- **Conséquence** : calibrage reproductible et auditable ; si l'écart devient trop grand, `hyphen` pourra le remplacer avec sa propre justification (DIFF-01).
+
+### ADR-031 : `ids.lock` en ajout seul, contrôlé par le script et par la CI
+- **Contexte** : une URL de candidat est permanente ; renommer ou supprimer un identifiant casse les liens, et supprimer la ligne **avec** le fichier du candidat échappe à une vérification locale.
+- **Décision** : `<racine>/ids.lock` liste les identifiants triés, un par ligne ; `npm run ids -- --write` ne fait qu'ajouter et refuse toute disparition ; `--check` compare le verrou aux candidats ; en CI, une étape dédiée lance `npm run ids -- --check --base <ids.lock du commit de base>` (branche cible d'une pull request, ou commit précédent d'un push) et échoue avec `ID_VERROUILLE_DISPARU` pour toute ligne retirée.
+- **Conséquence** : la suppression silencieuse d'un candidat verrouillé est bloquée avant fusion ; l'importeur de la phase 3 réutilise la même routine d'ajout.
+
+### ADR-032 : chaque chiffre et chaque citation remontent à l'archive, mot pour mot
+- **Contexte** : une rédaction simplifiée peut inventer un chiffre ou déguiser une phrase en citation entre « », et un `texte_source` ou un `chiffrage` peut ne pas être dans la source réellement archivée.
+- **Décision** : tout nombre de résumé, enfant et aîné doit figurer dans `texte_source` ou `chiffrage.texte` (comparaison décimale canonique, sans flottant ; nombres en lettres en avertissement) ; chaque `« … »` d'un champ éditorial doit être dans `texte_source` ; `texte_source` et `chiffrage.texte` doivent être dans l'extrait archivé (casse et ponctuation ignorées, accents significatifs). Le chiffrage n'est cru qu'une fois lui-même retrouvé dans l'archive. Le filtre de mots interdits n'exempte un passage entre « » que parce que ce passage est vérifié.
+- **Conséquence** : aucun chiffre ni citation ne peut entrer sans source primaire archivée ; une archive déjà signalée cassée n'ajoute pas d'erreurs en cascade.
+
+### ADR-033 : hypothèses P2-A1 à P2-A12, choix par défaut fail-closed
+- **Contexte** : douze points n'étaient pas tranchés par les décisions de l'éditeur ; chacun a reçu un défaut, consigné dans `HYPOTHESES` (`rules/config.ts`) pour que la page Méthode et la relecture puissent les citer.
+- **Décision** : les défauts et leur risque si le choix est mauvais :
+  - **A1** : environ 170 couples mot/syllabes de Lexique 3.83 figés dans un test, avec crédit. Risque faible (des faits, un extrait minime) ; sinon régénérer la table à la main.
+  - **A2** : syntaxe `[[affiché]]` ou `[[affiché|id]]` pour le glossaire, remplacée par son texte avant tout décompte. Risque moyen : la phase 4 peut en choisir une autre ; seuls `references.ts` et un pré-traitement changent.
+  - **A3** : `relu` traité comme `publie` pour `PHRASE_ENFANT_LONGUE` (erreur) ; seul `brouillon` rétrograde en avertissement. Risque faible.
+  - **A4** : `LONGUEUR_HORS_BORNES` est une erreur quel que soit le statut. Risque moyen : les brouillons collectés par agents en phase 3 doivent déjà respecter les bornes.
+  - **A5** : un candidat absent de `ids.lock` est une erreur (`ID_NON_VERROUILLE`). Risque faible : un seul geste, `npm run ids -- --write`.
+  - **A6** : le périmètre d'équité se lit sur le dernier `statuts[]`, quel que soit son statut de relecture. Risque moyen : un statut `declare` en brouillon bloque un thème publié tant que le candidat n'est pas couvert.
+  - **A7** : un duel au premier tour = exactement deux scores de somme au moins 99, ou un nom évoquant le second tour ; seuils en configuration. Risque moyen (heuristique), verrouillé par un piège et des variantes négatives.
+  - **A8** : une fenêtre de blocage inclut son début et exclut sa fin (20h00 pile autorisé). Risque faible : une seconde d'ambiguïté.
+  - **A9** : GitHub limite les annotations à 10 erreurs et 10 avertissements par étape ; le journal texte reste complet. Risque faible : n'affecte que l'affichage.
+  - **A10** : les bornes 00h00 et 20h00 viennent du cahier des charges (§6), pas du texte de l'article 11 de la loi 77-808. Risque faible : le cahier des charges fait foi.
+  - **A11** : « mot pour mot » = casse et ponctuation ignorées, accents significatifs. Risque moyen : une lecture plus stricte rejetterait plus de citations ; il suffit de resserrer `tokens()`.
+  - **A12** : seuil Kandel-Moles à 80, avertissement seulement, même si la fixture saine a demandé une retouche. Risque faible : la calibration est renvoyée à DIFF-01.
+- **Conséquence** : tout changement de défaut passe par `HYPOTHESES` et `rules/config.ts`, relu en pull request, avec un piège qui fige le nouveau comportement.
 
 ## Dépendances externes critiques
 
