@@ -1,0 +1,15 @@
+version_schema: 1
+id: paul-de-villefranche
+prenom: Paul
+nom: de Villefranche
+nom_tri: Villefranche
+parti: null
+statuts:
+  - code: declare
+    date: 2026-10-19
+    source:
+      type: presse
+      titre: Article fictif
+      url: https://journal-fictif.exemple.invalid/paul-de-villefranche
+      date_consultation: 2026-10-20
+    statut_relecture: brouillon

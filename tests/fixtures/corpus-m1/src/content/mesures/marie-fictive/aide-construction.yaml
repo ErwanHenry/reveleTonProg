@@ -1,0 +1,20 @@
+version_schema: 1
+id: marie-fictive/aide-construction
+candidat: marie-fictive
+theme: logement
+sous_theme: construction
+titre: Aide à la construction dans les zones tendues (fictif)
+texte_source: Nous soutiendrons la construction de logements dans les zones où la demande est forte.
+source: marie-fictive-programme
+source_localisation: page 4 (fictive)
+redactions:
+  resume: Marie Fictive propose de soutenir la construction de logements dans les zones où la demande est forte.
+  detaille: >-
+    Dans son programme fictif, Marie Fictive prévoit de soutenir la construction de logements. Le texte précise que ce soutien viserait les zones où la demande est forte. Autrement dit, ce sont les territoires où beaucoup de personnes cherchent un logement qui seraient concernés. Le programme indique aussi que les modalités de ce soutien seraient définies après concertation avec les élus locaux. Dans l'extrait étudié, il ne donne ni le montant du soutien, ni la liste des zones concernées. Il ne précise pas non plus qui bénéficierait de ce soutien, ni à quelle date il commencerait. Cette mesure est différente de l'encadrement des loyers, présenté dans une autre mesure du même programme.
+  enfant: >-
+    Marie Fictive est membre du [[Parti Imaginaire|parti-imaginaire]]. Elle veut aider à construire des logements. Cela concerne les zones où beaucoup de gens cherchent à se loger. Dans ces zones, on a besoin de plus de logements. Chaque logement loué demande de payer un [[loyer]]. Le programme explique les détails plus tard, avec les élus locaux.
+  aine: >-
+    Marie Fictive propose de soutenir la construction de logements. Ce soutien concernerait les zones où la demande de logements est forte, c'est-à-dire les endroits où il est difficile de trouver un logement. Le programme indique que les modalités seront définies après une concertation avec les élus locaux. Il ne précise pas encore le montant du soutien, ni la liste des zones concernées. Le texte ne dit pas non plus à quelle date cette mesure commencerait.
+statut_relecture: publie
+relecteur: Erwan Henry
+date_relecture: 2026-10-26

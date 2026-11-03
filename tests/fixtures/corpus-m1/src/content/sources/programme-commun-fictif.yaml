@@ -1,0 +1,16 @@
+version_schema: 1
+id: programme-commun-fictif
+type: programme
+auteur: coalition
+candidats:
+  - elise-erard
+  - jean-imaginaire
+titre: Programme commun fictif d'Élise Érard et Jean Imaginaire
+url: https://programme-commun.exemple.invalid/programme
+date_publication: 2026-10
+date_consultation: 2026-10-24
+archive:
+  extrait: archives/programme-commun-fictif/c3107ed7287b.txt
+  sha256: c3107ed7287b072c38461027ac295a334cfcdd7076821cbaf9a78a0bb465e2b5
+  capture_le: 2026-10-24T10:00:00+02:00
+  wayback_url: https://web.archive.org/web/20261024100000/https://programme-commun.exemple.invalid/programme
