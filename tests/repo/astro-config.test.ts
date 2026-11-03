@@ -12,6 +12,8 @@ const mod = (await import(pathToFileURL(path.join(ROOT, 'astro.config.mjs')).hre
     trailingSlash?: string;
     image?: { service?: { entrypoint?: string } };
     devToolbar?: { enabled?: boolean };
+    build?: { inlineStylesheets?: string };
+    vite?: { build?: { assetsInlineLimit?: number } };
   };
 };
 const config = mod.default;
@@ -31,6 +33,11 @@ describe('astro.config.mjs', () => {
 
   it('service d\'images noop', () => {
     assert.equal(config.image?.service?.entrypoint, 'astro/assets/services/noop');
+  });
+
+  it("assets toujours externes : assetsInlineLimit 0 et inlineStylesheets 'never' (CSP sans 'unsafe-inline', Pitfall 2)", () => {
+    assert.strictEqual(config.vite?.build?.assetsInlineLimit, 0);
+    assert.strictEqual(config.build?.inlineStylesheets, 'never');
   });
 
   it('trailingSlash always et barre de dev désactivée', () => {

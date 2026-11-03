@@ -1,0 +1,44 @@
+---
+import '../styles/base.css';
+import { formatDate, getCorpus } from '../lib/corpus/index.ts';
+
+interface Props {
+  titre: string;
+  description: string;
+  /** Date ISO maximale des contenus affichés sur la page ; `undefined` si rien n'est publié. */
+  miseAJour: string | undefined;
+}
+
+const { titre, description, miseAJour } = Astro.props;
+const corpus = await getCorpus();
+---
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{titre}</title>
+    <meta name="description" content={description} />
+    {corpus.mode === 'preview' && <meta name="robots" content="noindex" />}
+  </head>
+  <body>
+    <a class="skip-link" href="#contenu">Aller au contenu</a>
+    <header class="entete">
+      <div class="conteneur">
+        <a class="site-nom" href="/">reveleTonProg</a>
+      </div>
+    </header>
+    <slot />
+    <footer class="pied">
+      <div class="conteneur">
+        {miseAJour === undefined ? (
+          <p data-mise-a-jour>Aucun contenu publié pour le moment.</p>
+        ) : (
+          <p data-mise-a-jour>Dernière mise à jour des contenus de cette page : <time datetime={miseAJour}>{formatDate(miseAJour)}</time>.</p>
+        )}
+        <p><span>Ce site</span>
+n'utilise aucun cookie et n'appelle aucun service extérieur.</p>
+      </div>
+    </footer>
+  </body>
+</html>

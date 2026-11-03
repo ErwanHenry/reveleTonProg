@@ -1,0 +1,22 @@
+---
+import { formatDate } from '../lib/corpus/index.ts';
+import type { VueCellule } from '../lib/corpus/index.ts';
+
+interface Props {
+  cellule: VueCellule;
+}
+
+const { cellule } = Astro.props;
+const date = cellule.verifieLe;
+const titres = cellule.sourcesConsultees.map((s) => s.titre);
+---
+<p class="vide" data-etat={cellule.etat}>
+  {cellule.etat === 'non_precise' && date !== undefined && (
+    <>Non précisé dans les sources consultées le <time datetime={date}>{formatDate(date)}</time>.</>
+  )}
+  {cellule.etat === 'programme_non_publie' && date !== undefined && (
+    <>Programme non publié à ce jour. Vérifié le <time datetime={date}>{formatDate(date)}</time>.</>
+  )}
+  {cellule.etat === 'non_verifie' && <>Case non vérifiée : à compléter avant publication.</>}
+</p>
+{titres.length > 0 && <p class="vide-sources">Sources consultées : {titres.join(', ')}.</p>}
