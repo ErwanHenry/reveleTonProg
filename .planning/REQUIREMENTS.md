@@ -45,8 +45,8 @@
 
 ### Contenu pilote (CONT)
 
-- [ ] **CONT-01**: Un script importe le dataset data.gouv « statuts sourcés » (instantané + sha256 + date), écarte `bloc` et `propositions`, mappe les statuts et produit un diff relisible
-- [ ] **CONT-02**: Les 59 personnalités du dataset ont une fiche candidat valide (nom découpé à la main, `nom_tri`, statut daté et sourcé, attribution Licence Ouverte)
+- [x] **CONT-01**: Un script importe le dataset data.gouv « statuts sourcés » (instantané + sha256 + date), écarte `bloc` et `propositions`, mappe les statuts et produit un diff relisible
+- [x] **CONT-02**: Les 59 personnalités du dataset ont une fiche candidat valide (nom découpé à la main, `nom_tri`, statut daté et sourcé, attribution Licence Ouverte)
 - [ ] **CONT-03**: Un script archive une source (capture (fetch HTML/PDF ; rendu manuel `--file` pour sites client/403) → extrait texte committé + sha256 ; binaire hors dépôt public ; soumission Wayback)
 - [ ] **CONT-04**: Les 3 thèmes pilotes sont choisis par couverture mesurée en sources primaires, et le choix est documenté
 - [ ] **CONT-05**: Chaque candidat `declare`/`primaire` a, pour chaque thème pilote, soit des mesures réelles sourcées en `brouillon`, soit un état couverture daté ; rien n'est inventé
@@ -159,8 +159,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | REGLE-10 | Phase 2 | Complete |
 | REGLE-11 | Phase 2 | Complete |
 | REGLE-12 | Phase 2 | Complete |
-| CONT-01 | Phase 3 | Pending |
-| CONT-02 | Phase 3 | Pending |
+| CONT-01 | Phase 3 | Complete |
+| CONT-02 | Phase 3 | Complete |
 | CONT-03 | Phase 3 | Pending |
 | CONT-04 | Phase 3 | Pending |
 | CONT-05 | Phase 3 | Pending |

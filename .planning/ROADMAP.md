@@ -149,9 +149,9 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 03-01-PLAN.md — Import data.gouv : instantané haché, table de correspondance (59 lignes), fiches candidats, historique de statuts en ajout seul, attribution Licence Ouverte (wave 1)
-- [ ] 03-02-PLAN.md — Outil d'archivage : modules purs puis E/S + CLI (extrait + sha256, binaire dans le dépôt privé `reveleTonProg-archives`, Wayback non bloquant), sans Playwright, capture manuelle `--file` (wave 1)
-- [ ] 03-03-PLAN.md — Outillage couverture : classement des thèmes (marge 2, départage Aîné), scanner par candidat, contrôles d'intégrité du corpus pilote (wave 1)
+- [x] 03-01-PLAN.md — Import data.gouv : instantané haché, table de correspondance (59 lignes), fiches candidats, historique de statuts en ajout seul, attribution Licence Ouverte (wave 1)
+- [x] 03-02-PLAN.md — Outil d'archivage : modules purs puis E/S + CLI (extrait + sha256, binaire dans le dépôt privé `reveleTonProg-archives`, Wayback non bloquant), sans Playwright, capture manuelle `--file` (wave 1)
+- [x] 03-03-PLAN.md — Outillage couverture : classement des thèmes (marge 2, départage Aîné), scanner par candidat, contrôles d'intégrité du corpus pilote (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -251,7 +251,7 @@ Phase 1 ──┬──> Phase 2 (règles) ──────────┐
 |-------|----------------|--------|-----------|
 | 1. Fondations, schémas v1 et content-core | 7/7 | Complete    | 2026-11-03 |
 | 2. Règles éditoriales et pièges | 7/7 | Complete    | 2026-11-03 |
-| 3. Import data.gouv et corpus pilote | 0/9 | Planned | - |
+| 3. Import data.gouv et corpus pilote | 3/9 | In Progress|  |
 | 4. Référentiel M1 et 4 niveaux de lecture | 0/TBD | Not started | - |
 | 5. Pages institutionnelles, qualité et URL de test | 0/TBD | Not started | - |
 
