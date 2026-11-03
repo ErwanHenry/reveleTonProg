@@ -46,6 +46,7 @@ export const CHAMPS_EXEMPTES: readonly string[] = [
   'mesures : chiffrage.texte (citation de la source primaire)',
   'candidats : parti (nom propre)',
   'sources : titre (peut être un titre de presse)',
+  'glossaire, journal, themes : chiffres non vérifiés (aucun texte_source auquel les comparer)',
 ];
 
 /** Clés du dataset data.gouv qui ne doivent jamais entrer dans src/content/ (REGLE-12). */
@@ -118,8 +119,14 @@ export const KANDEL_MOLES = { base: 207, motsParPhrase: 1.015, syllabesParMot: 7
 // Chiffres et citations (REGLE-04, REGLE-05)
 // ---------------------------------------------------------------------------
 
-/** Niveaux dont les nombres sont vérifiés contre la source (le détaillé ne l'est pas). */
-export const CHAMPS_CHIFFRES = ['resume', 'enfant', 'aine'] as const;
+/** Pointeurs des champs de mesure dont les nombres sont vérifiés contre la source : erreur (CONTEXT). */
+export const CHAMPS_CHIFFRES = ['/redactions/resume', '/redactions/enfant', '/redactions/aine'] as const;
+/**
+ * Titre et détaillé (WR-03) : un chiffre absent de la source n'y est qu'un avertissement, car le
+ * texte long contient légitimement des dates et des chiffres dérivés ; la décision acceptée (CONTEXT)
+ * réserve l'erreur à résumé, enfant et aîné. Un chiffre dérivé (une somme) s'établit dans texte_source.
+ */
+export const CHAMPS_CHIFFRES_AVERTIS = ['/titre', '/redactions/detaille'] as const;
 /** Garde-fou anti-contournement : longueur (en mots) plausible d'un texte_source (avertissement). */
 export const TEXTE_SOURCE_MOTS = { min: 4, max: 120 } as const;
 
@@ -203,6 +210,7 @@ export const CATALOGUE: readonly EntreeCatalogue[] = [
   { code: 'LONGUEUR_HORS_BORNES', regle: 'REGLE-03', severite: 'erreur', piege: null, libelle: 'La rédaction est plus courte ou plus longue que les bornes du niveau.' },
   // REGLE-04 : chiffres et citations
   { code: 'CHIFFRE_HORS_SOURCE', regle: 'REGLE-04', severite: 'erreur', piege: '§12 : une rédaction enfant qui ajoute un chiffre absent du programme', libelle: 'Un chiffre de la rédaction ne figure ni dans le texte de la source ni dans le chiffrage.' },
+  { code: 'CHIFFRE_DETAILLE_HORS_SOURCE', regle: 'REGLE-04', severite: 'avertissement', piege: null, libelle: 'Un chiffre du titre ou du détaillé ne figure ni dans le texte de la source ni dans le chiffrage.' },
   { code: 'NOMBRE_LETTRES_HORS_SOURCE', regle: 'REGLE-04', severite: 'avertissement', piege: null, libelle: 'Un nombre écrit en lettres ne figure pas dans la source.' },
   { code: 'CITATION_HORS_SOURCE', regle: 'REGLE-04', severite: 'erreur', piege: null, libelle: 'Une citation entre guillemets n’est pas mot pour mot dans le texte de la source.' },
   // REGLE-05 : fidélité à l'archive

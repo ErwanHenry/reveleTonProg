@@ -1,4 +1,4 @@
-import { CHAMPS_CHIFFRES, TEXTE_SOURCE_MOTS } from './config.ts';
+import { CHAMPS_CHIFFRES, CHAMPS_CHIFFRES_AVERTIS, TEXTE_SOURCE_MOTS } from './config.ts';
 import { lireArchive } from './archives.ts';
 import { champsEditoriaux } from './redaction.ts';
 import { sansMarqueurs } from './text/normalize.ts';
@@ -21,15 +21,8 @@ const chiffrageDe = (m: Pick<LoadedEntry, 'data'>): string | undefined => {
   return typeof t === 'string' ? sansMarqueurs(t) : undefined;
 };
 
-function redactionDe(m: LoadedEntry, niveau: string): string | undefined {
-  const r = m.data.redactions;
-  if (r === null || typeof r !== 'object' || Array.isArray(r)) return undefined;
-  const t = (r as Record<string, unknown>)[niveau];
-  return typeof t === 'string' ? sansMarqueurs(t) : undefined;
-}
-
 /**
- * REGLE-04 : (1) aucun chiffre de résumé, enfant ou aîné absent de texte_source et de chiffrage.texte
+ * REGLE-04 : (1) aucun chiffre de résumé, enfant ou aîné (erreur), ni du titre ou du détaillé (avertissement), absent de texte_source et de chiffrage.texte
  * (le chiffrage n'est digne de confiance que s'il est lui-même dans l'archive : corpus `textes_archives`) ;
  * (2) toute citation « … » d'un champ éditorial de la mesure figure mot pour mot dans texte_source ;
  * (3) garde-fou de longueur de texte_source (un texte_source démesuré légitimerait n'importe quoi).
@@ -46,17 +39,19 @@ const chiffresCitations: EntryRule = {
     const sources = chiffrage === undefined ? source : `${source} ${chiffrage}`;
     const nombres = new Set(extractNumbers(sources));
     const motsNombres = new Set(extractNumberWords(sources));
-    for (const niveau of CHAMPS_CHIFFRES) {
-      const texte = redactionDe(e, niveau);
-      if (texte === undefined) continue;
-      const pointer = `/redactions/${niveau}`;
+    for (const { pointer, texte: brut } of champsEditoriaux(e)) {
+      const strict = (CHAMPS_CHIFFRES as readonly string[]).includes(pointer);
+      if (!strict && !(CHAMPS_CHIFFRES_AVERTIS as readonly string[]).includes(pointer)) continue;
+      const texte = sansMarqueurs(brut);
+      const niveau = pointer.slice(pointer.lastIndexOf('/') + 1);
       for (const valeur of new Set(extractNumbers(texte))) {
         if (nombres.has(valeur)) continue;
-        out.push({
-          code: 'CHIFFRE_HORS_SOURCE',
-          pointer,
-          message: `le nombre « ${citer(valeur)} » de la rédaction « ${niveau} » ne figure ni dans texte_source ni dans chiffrage.texte : le retirer ou l'établir dans la source.`,
-        });
+        const message = `le nombre « ${citer(valeur)} » du champ « ${niveau} » ne figure ni dans texte_source ni dans chiffrage.texte : le retirer ou l'établir dans la source.`;
+        out.push(
+          strict
+            ? { code: 'CHIFFRE_HORS_SOURCE', pointer, message }
+            : { code: 'CHIFFRE_DETAILLE_HORS_SOURCE', severity: 'warning', pointer, message },
+        );
       }
       for (const mot of new Set(extractNumberWords(texte))) {
         if (motsNombres.has(mot)) continue;
@@ -64,7 +59,7 @@ const chiffresCitations: EntryRule = {
           code: 'NOMBRE_LETTRES_HORS_SOURCE',
           severity: 'warning',
           pointer,
-          message: `le nombre écrit en lettres « ${citer(mot)} » de la rédaction « ${niveau} » ne figure pas dans la source : vérifier qu'il vient bien d'elle.`,
+          message: `le nombre écrit en lettres « ${citer(mot)} » du champ « ${niveau} » ne figure pas dans la source : vérifier qu'il vient bien d'elle.`,
         });
       }
     }

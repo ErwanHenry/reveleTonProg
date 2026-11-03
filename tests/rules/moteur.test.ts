@@ -290,7 +290,7 @@ describe('configuration exportable', () => {
   it('le catalogue a des codes uniques et des hypothèses A1 à A12', () => {
     const codes = CATALOGUE.map((c) => c.code);
     assert.equal(new Set(codes).size, codes.length);
-    assert.equal(codes.length, 39);
+    assert.equal(codes.length, 40);
     assert.deepEqual(
       HYPOTHESES.map((h) => h.id),
       Array.from({ length: 12 }, (_, i) => `A${i + 1}`),

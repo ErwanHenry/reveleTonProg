@@ -19,6 +19,7 @@ const TEXTE = 'Nous encadrerons les loyers dans toutes les villes de plus de 50 
 
 const CODES = new Set([
   'CHIFFRE_HORS_SOURCE',
+  'CHIFFRE_DETAILLE_HORS_SOURCE',
   'NOMBRE_LETTRES_HORS_SOURCE',
   'CITATION_HORS_SOURCE',
   'TEXTE_SOURCE_HORS_ARCHIVE',
@@ -74,6 +75,20 @@ describe('REGLE-04 : chiffres', () => {
     );
   });
 
+  it('WR-03 : détaillé, un chiffre absent de la source avertit (la décision acceptée réserve l’erreur à résumé, enfant, aîné)', () => {
+    comparer(
+      citations([r(MESURE, 'La mesure concernerait toutes les villes de plus de 50 000 habitants.', 'La mesure concernerait toutes les villes de plus de 30 000 habitants.')]),
+      [warn('CHIFFRE_DETAILLE_HORS_SOURCE', '/redactions/detaille')],
+    );
+  });
+
+  it('WR-03 : titre, un chiffre absent de la source avertit', () => {
+    comparer(
+      citations([r(MESURE, 'Encadrement des loyers dans les villes moyennes (fictif)', 'Baisse de 30 % des loyers (fictif)')]),
+      [warn('CHIFFRE_DETAILLE_HORS_SOURCE', '/titre')],
+    );
+  });
+
   it('aîné : un chiffre absent de la source échoue', () => {
     comparer(
       citations([r(MESURE, "Cette règle s'appliquerait dans toutes les villes de plus de 50 000 habitants.", "Cette règle s'appliquerait dans toutes les villes de plus de 30 000 habitants.")]),
@@ -106,13 +121,6 @@ describe('REGLE-04 : chiffres', () => {
       r(MESURE, 'Le préfet fixerait le plafond chaque année.', "Coût estimé de 2 milliards d'euros."),
     ]);
     comparer(d, [err('CHIFFRAGE_HORS_ARCHIVE', '/chiffrage/texte')]);
-  });
-
-  it('un chiffre présent seulement dans le détaillé n’est pas vérifié (question ouverte 9)', () => {
-    comparer(
-      tous([r(MESURE, 'La mesure concernerait toutes les villes de plus de 50 000 habitants.', 'La mesure concernerait toutes les villes de plus de 30 000 habitants.')]),
-      [],
-    );
   });
 
   it('un nombre en lettres absent de la source donne un avertissement sur l’enfant', () => {
