@@ -278,7 +278,7 @@ export const HYPOTHESES: readonly Hypothese[] = [
   { id: 'A7', regle: 'REGLE-09', choix: 'Une hypothèse de duel au premier tour compte exactement deux scores dont la somme atteint au moins 99 ou dont « autres » est sous 5 %, ou un nom qui évoque le second tour (deuxième tour, ballottage, finale, T2) ; deux scores avec 5 % ou plus d’« autres » restent admis (le corpus fictif n’a que deux candidats). Les seuils et le motif sont dans la configuration.' },
   { id: 'A8', regle: 'REGLE-09', choix: 'Une fenêtre de blocage inclut son instant de début et exclut son instant de fin (20h00 pile est autorisé).' },
   { id: 'A9', regle: 'REGLE-11', choix: 'GitHub affiche au plus 10 erreurs et 10 avertissements en annotations par étape ; les lignes de texte du journal restent toutes imprimées.' },
-  { id: 'A10', regle: 'REGLE-09', choix: 'Les bornes 00h00 et 20h00 des fenêtres de blocage viennent de la spécification du projet (§6), pas du texte de l’article 11 de la loi 77-808.' },
+  { id: 'A10', regle: 'REGLE-09', choix: 'Les bornes 00h00 et 20h00 des fenêtres de blocage viennent de la spécification du projet (§6), pas du texte de l’article 11 de la loi 77-808 ; le vote du samedi outre-mer n’est pas couvert. La règle juge la date de publication, pas l’instant de build ou d’affichage (dette différée à l’affichage des sondages, lot 4).' },
   { id: 'A11', regle: 'REGLE-05', choix: 'Mot pour mot après normalisation signifie : casse et ponctuation ignorées, accents significatifs.' },
   { id: 'A12', regle: 'REGLE-06', choix: 'Le seuil Kandel-Moles reste à 80 et ne produit qu’un avertissement, même si la fixture saine demande une retouche pour l’atteindre.' },
 ];
