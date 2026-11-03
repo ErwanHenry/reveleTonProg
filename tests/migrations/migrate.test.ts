@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { chmodSync, cpSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { ecrireIdsLock } from '../../src/lib/content-core/ids-lock.ts';
 import { loadAll } from '../../src/lib/content-core/load.ts';
 import { inspectVersions, migrateText, runMigrations } from '../../src/lib/content-core/migrate.ts';
 import type { Migration } from '../../src/lib/content-core/migrate.ts';
@@ -127,6 +128,7 @@ describe('runMigrations', () => {
 
   it('le contenu migré passe la validation complète (0 diagnostic)', () => {
     const { root } = tmpRoot(AVANT);
+    writeFileSync(path.join(root, 'ids.lock'), ecrireIdsLock(['marie-fictive'])); // un candidat exige son verrou (REGLE-07)
     runMigrations(root, { schemasDir: SCHEMAS_DIR, registry: [fakeMigration], write: true });
     assert.deepEqual(loadAll(root, { schemasDir: SCHEMAS_DIR }).diagnostics.filter((d) => d.severity === 'error'), []);
   });

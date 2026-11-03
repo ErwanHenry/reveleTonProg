@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { ecrireIdsLock } from '../../src/lib/content-core/ids-lock.ts';
 import { checkContained, listContentFiles, loadAll, parseYaml, validateYamlText } from '../../src/lib/content-core/load.ts';
 import { REPO_ROOT, SCHEMAS_DIR } from '../helpers/validate-yaml.ts';
 
@@ -247,6 +248,7 @@ describe('loadAll', () => {
   it('WR-03 : candidat dont le nom de fichier diffère de l’id : ID_CHEMIN_INCOHERENT sur /id', () => {
     const root = tmpRoot();
     put(root, 'candidats/autre-nom.yaml', FIXTURE_TEXT);
+    writeFileSync(path.join(root, 'ids.lock'), ecrireIdsLock(['autre-nom'])); // sans lock, IDS_LOCK_ABSENT s'ajouterait
     const res = loadAll(root, OPTS);
     assert.deepEqual(res.diagnostics.map((d) => [d.code, d.pointer]), [['ID_CHEMIN_INCOHERENT', '/id']]);
     assert.equal(res.entries.length, 0);
