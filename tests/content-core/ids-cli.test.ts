@@ -225,3 +225,55 @@ describe('npm run ids (scripts/ids.ts)', () => {
     assert.equal(cli(['--check', '--root', root]).status, 0);
   });
 });
+
+describe('npm run ids -- --check --base <fichier> (ajout seul contre le commit de base)', () => {
+  const base = (root: string): string => {
+    const f = path.join(tmpEmpty(), 'ids-base.lock');
+    cpSync(path.join(root, 'ids.lock'), f);
+    return f;
+  };
+
+  it('verrou courant = base : code 0', () => {
+    const root = tmpCopy();
+    const res = cli(['--check', '--root', root, '--base', base(root)]);
+    assert.equal(res.status, 0, res.stdout + res.stderr);
+    assert.match(res.stdout, /0 problème\(s\)/);
+  });
+
+  it('une ligne retirée avec son fichier candidat : la vérification locale passe, --base échoue (ID_VERROUILLE_DISPARU)', () => {
+    const root = tmpCopy();
+    const fichierBase = base(root);
+    rmSync(candidat(root, 'jean-imaginaire'));
+    writeFileSync(path.join(root, 'ids.lock'), `${EN_TETE_IDS_LOCK}marie-fictive\n`);
+    assert.equal(cli(['--check', '--root', root]).status, 0, 'sans --base, la suppression cohérente passe');
+    const res = cli(['--check', '--root', root, '--base', fichierBase]);
+    assert.equal(res.status, 1, res.stdout + res.stderr);
+    assert.match(res.stdout, /ids-base\.lock:3:1 ID_VERROUILLE_DISPARU/);
+    assert.match(res.stdout, /jean-imaginaire/);
+    assert.match(res.stdout, /retiré de ids\.lock depuis la base : interdit/);
+  });
+
+  it('un identifiant ajouté (avec son candidat) est accepté', () => {
+    const root = tmpCopy();
+    const fichierBase = base(root);
+    cpSync(candidat(root, 'jean-imaginaire'), candidat(root, 'paul-exemple'));
+    assert.equal(cli(['--write', '--root', root]).status, 0);
+    const res = cli(['--check', '--root', root, '--base', fichierBase]);
+    assert.equal(res.status, 0, res.stdout + res.stderr);
+  });
+
+  it('--base sur un fichier introuvable ou combiné à --write : erreur d’usage (code 2)', () => {
+    const root = tmpCopy();
+    const absent = cli(['--check', '--root', root, '--base', path.join(tmpEmpty(), 'absent.lock')]);
+    assert.equal(absent.status, 2);
+    assert.match(absent.stderr, /Usage/);
+    const ecriture = cli(['--write', '--root', root, '--base', base(root)]);
+    assert.equal(ecriture.status, 2);
+    assert.match(ecriture.stderr, /Usage/);
+  });
+
+  it('le ids.lock du corpus fictif est accepté comme sa propre base', () => {
+    const res = cli(['--check', '--base', 'tests/fixtures/corpus-valide/ids.lock', '--root', 'tests/fixtures/corpus-valide']);
+    assert.equal(res.status, 0, res.stdout + res.stderr);
+  });
+});

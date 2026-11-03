@@ -98,6 +98,12 @@ describe('ci.yml : actions épinglées', () => {
     }
   });
 
+  it('le checkout du job verifier récupère tout l’historique (comparaison d’ids.lock avec la base)', () => {
+    const checkout = ci.jobs.verifier.steps.find((s) => s.uses?.startsWith('actions/checkout@'));
+    assert.equal(checkout?.with?.['fetch-depth'], 0);
+    assert.equal(checkout?.with?.['persist-credentials'], false);
+  });
+
   it('setup-node lit .nvmrc et met npm en cache', () => {
     const node = allSteps().filter((s) => s.uses?.startsWith('actions/setup-node@'));
     assert.equal(node.length, 1);
@@ -111,7 +117,7 @@ describe('ci.yml : job verifier', () => {
   const expectedOrder = [
     'npm ci',
     'npm run migrate -- --check',
-    'npm run validate -- --format github',
+    'npm run validate -- --mode production --format github',
     'npm run check',
     'npm test',
     'npm run build',
@@ -131,6 +137,33 @@ describe('ci.yml : job verifier', () => {
       ci.jobs.verifier.steps.some((s) => s.run?.trim().startsWith(cmd) && s.env?.RTP_CONTENT_ROOT === '.');
     assert.ok(real('npm run validate'));
     assert.ok(real('npm run migrate -- --check'));
+  });
+
+  it('toutes les étapes validate sont épinglées sur --mode production (T-02-21, T-02-30)', () => {
+    const validations = ci.jobs.verifier.steps.filter((s) => s.run?.trim().startsWith('npm run validate'));
+    assert.equal(validations.length, 2);
+    for (const s of validations) {
+      assert.ok(s.run?.includes('--mode production'), `mode non épinglé : ${s.run}`);
+      assert.ok(s.run?.includes('--format github'), `annotations absentes : ${s.run}`);
+    }
+    assert.ok(!/RTP_MODE/.test(ciRaw), 'la CI ne doit pas dépendre de RTP_MODE');
+  });
+
+  it('ids.lock est comparé au commit de base (ajout seul), valeurs d’événement passées par env', () => {
+    const steps = ci.jobs.verifier.steps;
+    const iStep = steps.findIndex((s) => s.run?.includes('npm run ids -- --check --base') === true);
+    assert.ok(iStep >= 0, 'étape de comparaison à la base absente');
+    const step = steps[iStep] as Step;
+    assert.equal(step.env?.RTP_CONTENT_ROOT, '.');
+    assert.match(step.run as string, /git show "\$\{BASE\}:ids\.lock"/);
+    assert.ok(!(step.run as string).includes('${{'), 'aucune interpolation ${{ }} dans le corps du script');
+    for (const cle of ['EVENT_NAME', 'BASE_REF', 'PUSH_BEFORE']) assert.ok(step.env?.[cle]?.startsWith('${{'), `${cle} doit venir de l’événement via env`);
+    const iValidate = steps.findIndex((s) => s.run?.trim().startsWith('npm run validate') && s.env?.RTP_CONTENT_ROOT === '.');
+    assert.ok(iValidate >= 0 && iValidate < iStep, 'la comparaison suit les étapes validate');
+  });
+
+  it('aucun corps de script ne contient d’interpolation ${{ }}', () => {
+    for (const s of allSteps()) assert.ok(!(s.run ?? '').includes('${{'), `interpolation dans run : ${s.name}`);
   });
 
   it('npm audit signatures vient après npm ci et avant migrate', () => {

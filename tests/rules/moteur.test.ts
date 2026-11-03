@@ -274,10 +274,10 @@ describe('citer', () => {
 });
 
 describe('registre par défaut', () => {
-  it('trois familles vides : la fixture saine donne [] et LoadResult garde sa forme', () => {
+  it('quatre familles enregistrées : la fixture saine donne [] et LoadResult garde sa forme', () => {
     assert.deepEqual(
       FAMILLES.map((f) => f.id),
-      ['redaction', 'corpus', 'sondages'],
+      ['redaction', 'corpus', 'sondages', 'citations'],
     );
     const res = loadAll(BASE_CORPUS, { schemasDir: SCHEMAS_DIR });
     assert.deepEqual(res.diagnostics, []);

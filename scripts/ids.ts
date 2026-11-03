@@ -1,5 +1,5 @@
 // CLI `npm run ids -- --check | --write` : verrou append-only des identifiants de candidats (REGLE-07).
-import { lstatSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { formatText } from '../src/lib/content-core/diagnostics.ts';
@@ -9,9 +9,11 @@ import type { IdsLock, ProblemeIds } from '../src/lib/content-core/ids-lock.ts';
 import { checkContained, listContentFiles, readContained } from '../src/lib/content-core/load.ts';
 import { resolveContentRoot } from '../src/lib/content-core/root.ts';
 
-const USAGE = `Usage : npm run ids -- (--check | --write) [--root <dossier>]
+const USAGE = `Usage : npm run ids -- (--check [--base <fichier>] | --write) [--root <dossier>]
 
   --check          vérifie que ids.lock couvre exactement les candidats (code 1 sinon)
+  --base <fichier> avec --check : ids.lock du commit de base ; tout identifiant qu'il verrouille
+                   et que le ids.lock courant ne contient plus est refusé (ajout seul, REGLE-07)
   --write          ajoute au verrou les nouveaux identifiants de candidats (jamais de retrait)
   --root <dossier> racine du contenu (défaut : RTP_CONTENT_ROOT, sinon le corpus fictif de test)
 `;
@@ -21,11 +23,11 @@ function usageError(message: string): never {
   process.exit(2);
 }
 
-let values: { root?: string; check?: boolean; write?: boolean };
+let values: { root?: string; check?: boolean; write?: boolean; base?: string };
 try {
   ({ values } = parseArgs({
     args: process.argv.slice(2),
-    options: { root: { type: 'string' }, check: { type: 'boolean' }, write: { type: 'boolean' } },
+    options: { root: { type: 'string' }, check: { type: 'boolean' }, write: { type: 'boolean' }, base: { type: 'string' } },
     strict: true,
     allowPositionals: false,
   }));
@@ -33,8 +35,13 @@ try {
   usageError(e instanceof Error ? e.message : String(e));
 }
 if (values.check === values.write) usageError(values.check ? 'Choisir --check ou --write, pas les deux' : 'Choisir --check ou --write');
+if (values.base !== undefined && !values.check) usageError('--base ne s\'utilise qu\'avec --check');
 
 const projectRoot = process.cwd();
+const basePath = values.base !== undefined ? path.resolve(projectRoot, values.base) : undefined;
+if (basePath !== undefined && !(existsSync(basePath) && statSync(basePath).isFile())) {
+  usageError(`--base : fichier introuvable (${values.base})`);
+}
 const contentRoot = values.root !== undefined ? path.resolve(projectRoot, values.root) : resolveContentRoot(projectRoot);
 const rel = path.relative(projectRoot, contentRoot).split(path.sep).join('/') || '.';
 const lockPath = path.join(contentRoot, IDS_LOCK);
@@ -69,6 +76,23 @@ const lock = lireLock();
 if (values.check) {
   const problemes = comparerIdsLock(lock, ids);
   for (const p of problemes) print(diagOf(p, p.code === 'ID_NON_VERROUILLE' && p.id !== undefined ? (fichierDe.get(p.id) ?? lockPath) : lockPath));
+  if (basePath !== undefined) {
+    // Ajout seul contre le commit de base : retirer une ligne d'ids.lock en même temps que le
+    // fichier candidat passerait la vérification locale, pas celle-ci.
+    const base = lireIdsLock(readFileSync(basePath, 'utf8'));
+    const courants = new Set(lock?.ids ?? []);
+    for (const id of base.ids) {
+      if (courants.has(id)) continue;
+      const retire: ProblemeIds = {
+        code: 'ID_VERROUILLE_DISPARU',
+        ligne: base.lignes.get(id) ?? 1,
+        id,
+        message: `identifiant « ${id} » retiré de ids.lock depuis la base : interdit`,
+      };
+      problemes.push(retire);
+      print(diagOf(retire, basePath));
+    }
+  }
   console.log(`ids : ${ids.length} candidat(s), ${lock?.ids.length ?? 0} verrouillé(s), ${problemes.length} problème(s) — racine ${rel}`);
   process.exit(problemes.length > 0 ? 1 : 0);
 }

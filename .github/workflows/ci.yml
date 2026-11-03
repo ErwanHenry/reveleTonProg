@@ -22,9 +22,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - name: Récupérer le dépôt
+      - name: Récupérer le dépôt (historique complet, pour comparer ids.lock au commit de base)
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
       - name: Installer Node (version de .nvmrc)
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -41,12 +42,39 @@ jobs:
         run: npm run migrate -- --check
         env:
           RTP_CONTENT_ROOT: "."
-      - name: validate (corpus par défaut)
-        run: npm run validate -- --format github
-      - name: validate (corpus réel)
-        run: npm run validate -- --format github
+      - name: validate (corpus par défaut, mode production)
+        run: npm run validate -- --mode production --format github
+      - name: validate (corpus réel, mode production)
+        run: npm run validate -- --mode production --format github
         env:
           RTP_CONTENT_ROOT: "."
+      - name: ids.lock en ajout seul (comparé au commit de base)
+        env:
+          RTP_CONTENT_ROOT: "."
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          PUSH_BEFORE: ${{ github.event.before }}
+        run: |
+          set -eu
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            BASE=$(git merge-base "origin/${BASE_REF}" HEAD || true)
+          else
+            BASE="$PUSH_BEFORE"
+          fi
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+            echo "Pas de commit de base (première poussée de la branche) : comparaison ignorée."
+            exit 0
+          fi
+          if ! git cat-file -e "${BASE}^{commit}" 2>/dev/null; then
+            echo "::warning::Commit de base ${BASE} introuvable (réécriture d'historique ?) : comparaison de ids.lock ignorée."
+            exit 0
+          fi
+          if ! git cat-file -e "${BASE}:ids.lock" 2>/dev/null; then
+            echo "ids.lock n'existe pas dans le commit de base ${BASE} (introduction du fichier) : comparaison ignorée."
+            exit 0
+          fi
+          git show "${BASE}:ids.lock" > "$RUNNER_TEMP/ids-base.lock"
+          npm run ids -- --check --base "$RUNNER_TEMP/ids-base.lock"
       - name: Vérifier les types (astro check)
         run: npm run check
       - name: Lancer les tests
