@@ -250,7 +250,33 @@ Plans:
   4. Erwan ouvre la build preview (artefact CI ou preview locale, `noindex` si jamais hébergée) et parcourt le corpus pilote de bout en bout.
   5. Un journal d'audit existe pour le test croisé simulé (enfant de 10 ans, retraité de 72 ans, journaliste, avec données piégées), avant la clôture du milestone.
 
-**Plans**: TBD
+**Plans**: 8 plans (5 waves)
+
+Plans:
+**Wave 1**
+
+- [ ] 05-01-PLAN.md — Socle e2e : Playwright + axe (Chromium seul, provenance vérifiée), serveur gzip maison, `scripts/e2e.ts` (fixture puis corpus réel, séquentiel), specs sans JS, clavier et axe WCAG 2.2 AA (wave 1)
+- [ ] 05-02-PLAN.md — Mentions légales (LCEN art. 1-1, `config/hebergeur.yml` statut prevu + garde RTP_DEPLOIEMENT), Qui sommes-nous sans branding ni don, dates des tours dans le pied de chaque page, constantes partagées (wave 1)
+- [ ] 05-03-PLAN.md — Banc du test croisé : lecteur journalisé `scripts/audit-lire.ts`, fiches des 3 personas, protocole et scénario écrits avant les résultats (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 05-04-PLAN.md — Page Méthode générée depuis `config.ts`, la couverture mesurée et `data/dataset-datagouv.yaml` (écart 59/51 calculé depuis l'instantané) (wave 2)
+- [ ] 05-05-PLAN.md — Specs 160 % et reflow 320 px (correction CSS du sélecteur), reduced-motion, contraste des 10 thèmes, vie privée, 4G lente < 1 s (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion AND on Phase 3 plan 03-09 merged)*
+
+- [ ] 05-06-PLAN.md — CI : artefact `site-preview` (URL de test) et job `e2e`, alias npm, README, RUNBOOK (droit de réponse, étapes juridiques du Lot 3), ADR (wave 3)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 05-07-PLAN.md — Test croisé exécuté (enfant 10 ans, retraité 72 ans, journaliste) + pièges §12 rejoués, journal d'audit et verdict (wave 4)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 05-08-PLAN.md — Barrière complète sur main, URL de test (artefact CI ou preview locale), parcours d'Erwan (checkpoint, réalisable par l'orchestrateur pour lui) (wave 5)
+
+**Note d'exécution** : les plans de la Phase 5 tournent en worktrees pendant que les plans de contenu 03-07, 03-08 puis 03-09 tournent sur main. La Phase 5 ne modifie jamais `src/content/**`, `archives/**`, `data/couverture-themes.yaml`, `docs/COUVERTURE-THEMES.md`, `src/pages/index.astro` ni `tests/dist/cas/squelette.cas.ts` (les dates des tours atteignent l'accueil par le pied de page de `Base.astro`). Fichiers partagés avec 03-09 (`.github/workflows/ci.yml`, `tests/repo/ci.test.ts`, `README.md`, `docs/RUNBOOK.md`, `docs/ARCHITECTURE.md`, `tests/repo/docs.test.ts`, bloc `scripts` de `package.json`, contrat des scripts de `tests/repo/scaffold.test.ts`) : uniquement dans 05-06, exécuté APRÈS la fusion de 03-09 (05-06 s'arrête si `03-09-SUMMARY.md` est absent). Seule exception, en sections séparables : 05-01 modifie le bloc `devDependencies` de `package.json`, `package-lock.json` et les cas « dépendances » et « lockfile » de `scaffold.test.ts` (03-09 ne touche ni au lockfile ni à ces cas) ; en cas de conflit de fusion, garder les deux côtés. 05-07 (test croisé) porte sur le corpus réel final, donc après la clôture de la Phase 3.
 **UI hint**: yes
 **Research flag**: oui. Formulation juridique des mentions légales (D-4, idéalement relue par un avocat avant le Lot 3), identité de l'hébergeur de la preview.
 
@@ -283,7 +309,7 @@ Phase 1 ──┬──> Phase 2 (règles) ──────────┐
 | 2. Règles éditoriales et pièges | 7/7 | Complete    | 2026-11-03 |
 | 3. Import data.gouv et corpus pilote | 6/9 | In Progress|  |
 | 4. Référentiel M1 et 4 niveaux de lecture | 9/9 | Complete    | 2026-11-03 |
-| 5. Pages institutionnelles, qualité et URL de test | 0/TBD | Not started | - |
+| 5. Pages institutionnelles, qualité et URL de test | 0/8 | Planned | - |
 
 ---
 *Roadmap created: 2026-11-03*
