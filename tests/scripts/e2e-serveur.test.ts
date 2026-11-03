@@ -1,0 +1,96 @@
+import assert from 'node:assert/strict';
+import { request, type IncomingHttpHeaders } from 'node:http';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import type { AddressInfo } from 'node:net';
+import os from 'node:os';
+import path from 'node:path';
+import { after, before, describe, it } from 'node:test';
+import { gunzipSync } from 'node:zlib';
+import { creerServeur } from '../../e2e/serveur.ts';
+
+interface Reponse {
+  status: number | undefined;
+  headers: IncomingHttpHeaders;
+  corps: Buffer;
+}
+
+describe('e2e/serveur.ts', () => {
+  let port: number;
+  let tmp: string;
+  let serveur: ReturnType<typeof creerServeur>;
+  const HTML = '<!doctype html><title>x</title><p>bonjour bonjour bonjour bonjour</p>';
+
+  // Requête HTTP brute : fetch normaliserait « /../ » et décompresserait le gzip.
+  function get(chemin: string, headers: Record<string, string> = {}): Promise<Reponse> {
+    return new Promise((ok, ko) => {
+      const req = request({ host: '127.0.0.1', port, path: chemin, method: 'GET', headers }, (res) => {
+        const morceaux: Buffer[] = [];
+        res.on('data', (c: Buffer) => morceaux.push(c));
+        res.on('end', () => ok({ status: res.statusCode, headers: res.headers, corps: Buffer.concat(morceaux) }));
+      });
+      req.on('error', ko);
+      req.end();
+    });
+  }
+
+  before(async () => {
+    tmp = mkdtempSync(path.join(os.tmpdir(), 'rtp-serveur-'));
+    const dist = path.join(tmp, 'dist');
+    mkdirSync(path.join(dist, 'a'), { recursive: true });
+    mkdirSync(path.join(dist, 'vide'), { recursive: true });
+    mkdirSync(path.join(dist, '_astro'), { recursive: true });
+    writeFileSync(path.join(dist, 'index.html'), HTML);
+    writeFileSync(path.join(dist, 'a', 'index.html'), HTML);
+    writeFileSync(path.join(dist, '_astro', 'x.css'), 'body{color:red}');
+    writeFileSync(path.join(tmp, 'secret.txt'), 'SECRET');
+    serveur = creerServeur(dist);
+    await new Promise<void>((ok) => serveur.listen(0, '127.0.0.1', ok));
+    port = (serveur.address() as AddressInfo).port;
+  });
+
+  after(() => {
+    serveur.close();
+    rmSync(tmp, { recursive: true, force: true });
+  });
+
+  it('sert index.html en gzip si demandé', async () => {
+    const r = await get('/', { 'accept-encoding': 'gzip' });
+    assert.equal(r.status, 200);
+    assert.equal(r.headers['content-type'], 'text/html; charset=utf-8');
+    assert.equal(r.headers['content-encoding'], 'gzip');
+    assert.equal(r.headers['vary'], 'Accept-Encoding');
+    assert.equal(r.headers['cache-control'], 'no-store');
+    assert.equal(gunzipSync(r.corps).toString('utf8'), HTML);
+  });
+
+  it('sans gzip : octets bruts et content-length exact', async () => {
+    const r = await get('/', { 'accept-encoding': 'identity' });
+    assert.equal(r.headers['content-encoding'], undefined);
+    assert.equal(r.headers['content-length'], String(Buffer.byteLength(HTML)));
+    assert.equal(r.headers['cache-control'], 'no-store');
+    assert.equal(r.corps.toString('utf8'), HTML);
+  });
+
+  it('sert un sous-dossier et une feuille de style', async () => {
+    assert.equal((await get('/a/')).status, 200);
+    const css = await get('/_astro/x.css');
+    assert.equal(css.headers['content-type'], 'text/css; charset=utf-8');
+  });
+
+  for (const chemin of ['/%2e%2e/secret.txt', '/../secret.txt', '/..%2fsecret.txt']) {
+    it(`refuse la traversée ${chemin}`, async () => {
+      const r = await get(chemin);
+      assert.equal(r.status, 404);
+      assert.ok(!r.corps.toString('utf8').includes('SECRET'));
+    });
+  }
+
+  it('404 pour un dossier sans index.html et un fichier absent', async () => {
+    assert.equal((await get('/vide/')).status, 404);
+    assert.equal((await get('/absent.html')).status, 404);
+  });
+
+  it('400 sur un encodage malformé', async () => {
+    assert.equal((await get('/%E0%A4%A')).status, 400);
+  });
+});
