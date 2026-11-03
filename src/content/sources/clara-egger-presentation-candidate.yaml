@@ -1,0 +1,15 @@
+version_schema: 1
+id: clara-egger-presentation-candidate
+type: site_parti
+auteur: parti_du_candidat
+candidats:
+  - clara-egger
+titre: "Solution Démocratique, Clara Egger : candidate et programme limité"
+url: https://solutiondemocratique.fr/clara-egger/
+date_publication: 2026-11
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/clara-egger/aea21c66fb43.txt
+  sha256: aea21c66fb438d16c08338b54c86c53b029da68bf554d748e4883a8fe672f4fa
+  capture_le: 2026-11-03T18:09:09+01:00
+  binaire_sha256: efc2d1986c08e211306edd58a3b48a6743162c23be9b1f6ec0bca315ccbb7496

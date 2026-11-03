@@ -1,0 +1,15 @@
+version_schema: 1
+id: clara-egger-notre-solution
+type: site_parti
+auteur: parti_du_candidat
+candidats:
+  - clara-egger
+titre: "Solution Démocratique, Notre solution : droit d'initiative et de vote constitutionnels"
+url: https://solutiondemocratique.fr/notre-solution/
+date_publication: 2026-11
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/clara-egger/df2c88bc0265.txt
+  sha256: df2c88bc0265775c1caa7669f17df2dae03ad773e4a32d3943cc9826e13d455c
+  capture_le: 2026-11-03T18:09:11+01:00
+  binaire_sha256: 4cecdca8b7ba5a19c99c8c01c845adde8d1fd46cd8207136748b0bf076881f63

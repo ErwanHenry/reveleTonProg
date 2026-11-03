@@ -1,0 +1,15 @@
+version_schema: 1
+id: anasse-kazib-depliant
+type: programme
+auteur: candidat
+candidats:
+  - anasse-kazib
+titre: Anasse Kazib 2027, dépliant de campagne (4 pages)
+url: https://anasse2027.fr/programme/depliant-anasse-2027.pdf
+date_publication: 2026-10-27
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/anasse-kazib/55842c647ddf.txt
+  sha256: 55842c647ddfb13223d32bf05ea0a5c3b53e0f84152f7fbf8d47ee395755be69
+  capture_le: 2026-11-03T18:10:47+01:00
+  binaire_sha256: 57722b44b7912f163590903a62a95e756073900ae273f738f5e2d729eb0a8c8a

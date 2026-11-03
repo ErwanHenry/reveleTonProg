@@ -1,0 +1,15 @@
+version_schema: 1
+id: jean-francois-legendre-manifeste
+type: programme
+auteur: candidat
+candidats:
+  - jean-francois-legendre
+titre: "Jean-François Legendre, 64 % : vers une alternative citoyenne en France (manifeste fondateur de À nous maintenant)"
+url: https://docs.google.com/document/d/1G4dUZaI20umZghEgSgRGCQeiWDJ2fiwhLZvtUK7hofc/export?format=txt
+date_publication: 2026-11
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/jean-francois-legendre/7c49b6206376.txt
+  sha256: 7c49b62063764c118e86fd65a66af78e790386cadd780944b905ff15ad292ba2
+  capture_le: 2026-11-03T18:16:06+01:00
+  binaire_sha256: cff70985783f59e06681b609f456806cc4252c93e971147768dc7e3094859e69

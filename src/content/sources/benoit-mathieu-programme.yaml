@@ -1,0 +1,15 @@
+version_schema: 1
+id: benoit-mathieu-programme
+type: site_candidat
+auteur: candidat
+candidats:
+  - benoit-mathieu
+titre: "Benoît Mathieu 2027, Programme : tirage au sort, RIC, nouvelle Constitution"
+url: https://benoitmathieu2027.fr/programme
+date_publication: 2026-10-30
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/benoit-mathieu/c3a06cb75438.txt
+  sha256: c3a06cb75438bab8f2f93a2141bd511f523a27ba73ea507b10a78657dc34a384
+  capture_le: 2026-11-03T18:18:38+01:00
+  binaire_sha256: cb4fc3d8a7b36377961cdef489400b6eeeee6afb117477a8fa58af8f18087fb4

@@ -1,0 +1,15 @@
+version_schema: 1
+id: david-lisnard-programme-index
+type: site_parti
+auteur: parti_du_candidat
+candidats:
+  - david-lisnard
+titre: "Nouvelle Énergie, Le programme de David Lisnard : trois axes et thématiques"
+url: https://www.unenouvelleenergie.fr/notre-programme/
+date_publication: 2026-11
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/david-lisnard/aebd31c88068.txt
+  sha256: aebd31c880684d5efd448af9297df509ff9b2809940a6bb3ce8d591205b374f5
+  capture_le: 2026-11-03T18:17:05+01:00
+  binaire_sha256: 62cd42d54f5751d897edc897e27d78d26819121a952d409a73d5ef2b9b6353f0

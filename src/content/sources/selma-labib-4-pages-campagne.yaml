@@ -1,0 +1,15 @@
+version_schema: 1
+id: selma-labib-4-pages-campagne
+type: programme
+auteur: parti_du_candidat
+candidats:
+  - selma-labib
+titre: NPA-Révolutionnaires, C'est aux travailleurs et aux travailleuses de diriger la société ! (4 pages de campagne)
+url: https://npa-revolutionnaires.org/wp-content/uploads/2026/09/260919_4p-campagne-A4.pdf
+date_publication: 2026-09-28
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/selma-labib/cbc9fde9cabc.txt
+  sha256: cbc9fde9cabc78148dda8fc21a5488b40849be998b7e2aa1b6e6614388e821d9
+  capture_le: 2026-11-03T18:12:03+01:00
+  binaire_sha256: 2ee56502dbba87b73784b7b01a351f1a375e8e9d63aa09bc956db861c290edbb

@@ -1,0 +1,15 @@
+version_schema: 1
+id: jean-luc-melenchon-pole-public-bancaire
+type: programme
+auteur: candidat
+candidats:
+  - jean-luc-melenchon
+titre: Mélenchon 2027, Pour un pôle public bancaire au service des besoins
+url: https://melenchon2027.fr/wp-content/uploads/2026/10/DP-POLE-PUBLIC-BANCAIRE_ST.pdf
+date_publication: 2026-10-27
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/jean-luc-melenchon/cfe3d1f65182.txt
+  sha256: cfe3d1f651829e1a3e656dabecd1a17ab6c47f7f212e895e30ebfc7f0710caee
+  capture_le: 2026-11-03T18:20:03+01:00
+  binaire_sha256: 1ae03f69ca4d5522c131f68e309fa44e815912c1031a436d73889d028db73259

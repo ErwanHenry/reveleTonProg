@@ -1,0 +1,15 @@
+version_schema: 1
+id: clara-egger-parrainage-2027
+type: site_parti
+auteur: parti_du_candidat
+candidats:
+  - clara-egger
+titre: "Solution Démocratique, Parrainage 2027 : le projet avec Clara Egger"
+url: https://solutiondemocratique.fr/parrainage2027/
+date_publication: 2026-11
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/clara-egger/3beb0d6b8da9.txt
+  sha256: 3beb0d6b8da96eca3b3d3a5de87d12db13b45dc707f054020e3116b83496d6d9
+  capture_le: 2026-11-03T18:09:07+01:00
+  binaire_sha256: 4937473f68756dc21ac7d6e2c4609a8bbf80f5e3a3e3a0f14cb23816df7b168e

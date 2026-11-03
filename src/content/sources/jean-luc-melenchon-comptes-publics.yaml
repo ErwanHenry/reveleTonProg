@@ -1,0 +1,15 @@
+version_schema: 1
+id: jean-luc-melenchon-comptes-publics
+type: programme
+auteur: candidat
+candidats:
+  - jean-luc-melenchon
+titre: Mélenchon 2027, Comment nous allons remettre de l'ordre dans les comptes publics
+url: https://melenchon2027.fr/wp-content/uploads/2026/10/Comment-nous-allons-remettre-de-l-ordre-dans-les-comptes-publics.pdf
+date_publication: 2026-10-14
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/jean-luc-melenchon/b7af366684aa.txt
+  sha256: b7af366684aa19512004551f96163c660a2c55f743d1226ab18c66d41e1ca5d0
+  capture_le: 2026-11-03T18:20:01+01:00
+  binaire_sha256: 796b2e7a7a3d26e6812498c7ad5e0589134fdb0429918e40975dfa22a67563e7

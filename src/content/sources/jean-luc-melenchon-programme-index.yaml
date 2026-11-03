@@ -1,0 +1,15 @@
+version_schema: 1
+id: jean-luc-melenchon-programme-index
+type: site_candidat
+auteur: candidat
+candidats:
+  - jean-luc-melenchon
+titre: "Mélenchon 2027, Programme : découvrir (livre-programme, plans thématiques, plans d'investissement)"
+url: https://melenchon2027.fr/programme/decouvrir/
+date_publication: 2026-11
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/jean-luc-melenchon/581294ccb3e8.txt
+  sha256: 581294ccb3e8becfd741f215ff6dc4dbcb8d98b7659e5681e72a8712755e7bcf
+  capture_le: 2026-11-03T18:19:59+01:00
+  binaire_sha256: 158a1cd80c79d9e91f50658b459a38298c3af6e32e59d69a082fd068b0eef0f7

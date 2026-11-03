@@ -1,0 +1,15 @@
+version_schema: 1
+id: benoit-mathieu-le-candidat
+type: site_candidat
+auteur: candidat
+candidats:
+  - benoit-mathieu
+titre: "Benoît Mathieu 2027, Le candidat : une conviction, pas un programme"
+url: https://benoitmathieu2027.fr/le-candidat
+date_publication: 2026-11
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/benoit-mathieu/44770915adab.txt
+  sha256: 44770915adab8290f409310bfb30cb79839189bb1ffc58f3696074d80498da9b
+  capture_le: 2026-11-03T18:18:39+01:00
+  binaire_sha256: 04253470c31989fd1623442d3690cfe663c99e5dfc30f5446b6964a3e57fc3b1

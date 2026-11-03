@@ -652,6 +652,573 @@ candidats:
       institutions:
         niveau: fort
         note: dossier 11 « Référendum », dossiers 8, 12 et 13 sur la probité, la campagne sobre et le budget présidentiel ; solution 12
+  - id: nicolas-dupont-aignan
+    acces: ok
+    urls_bloquees: []
+    sources:
+      - nicolas-dupont-aignan-projet-dlf-index
+      - nicolas-dupont-aignan-20-mesures
+    urls_consultees:
+      - "https://www.dupontaignan.fr/ (site de campagne : renvoie vers le projet de Debout la France, aucune page de programme propre)"
+      - https://www.debout-la-france.fr/notre-projet/ (index du projet par thèmes, archivé ; « actualisation en cours », badge « Projet 2027 » sur une partie des pages)
+      - https://www.dupontaignan.fr/actualite/20-mesures-pour-retablir-lordre-et-defendre-la-justice-sociale/ (20 mesures du 23/10/2026, archivé)
+      - https://www.debout-la-france.fr/projet/logement/ (page thématique lue, non archivée)
+      - https://www.debout-la-france.fr/projet/instruction-publique/ (page thématique lue, non archivée)
+      - https://www.debout-la-france.fr/projet/retraites/ (page thématique lue, non archivée)
+      - https://www.debout-la-france.fr/projet/sante/ (page thématique lue, non archivée)
+      - https://www.debout-la-france.fr/projet/securite/ (page thématique lue, non archivée)
+      - https://www.debout-la-france.fr/projet/environnement-energie/ (page thématique lue, non archivée)
+      - https://www.debout-la-france.fr/projet/economie-travail/ (page thématique lue, non archivée)
+      - https://www.debout-la-france.fr/projet/affaires-europeennes/ et /affaires-etrangeres/ (pages thématiques lues, non archivées)
+      - https://www.debout-la-france.fr/projet/refonder-et-moraliser-notre-democratie/ (page thématique lue, non archivée)
+    cellules:
+      logement:
+        niveau: fort
+        note: page « Logement » (30 mesures pour une France de propriétaires, objectif 3 Français sur 4 propriétaires, 400 000 logements par an), page badgée « Projet 2027 »
+      ecole:
+        niveau: fort
+        note: "page « Éducation » (60 mesures : autorité, savoirs, mérite) et 20 mesures : suppression de Parcoursup, bac égalitaire ; page badgée « Projet 2027 »"
+      retraites:
+        niveau: fort
+        note: "page « Retraites » (10 mesures : indexation sur l’inflation, maintien de l’âge de départ) et 20 mesures : livret d’épargne-retraite de 10 000 euros ; page non badgée « Projet 2027 », chiffres de 2019 et 2021 (voir doutes)"
+      sante:
+        niveau: fort
+        note: "page « Santé » (mesures fortes : fin des fermetures de lits, un établissement rouvert par département, bourse contre les déserts médicaux, médicaments stratégiques) ; page non badgée « Projet 2027 », cite le passe sanitaire (voir doutes)"
+      securite:
+        niveau: fort
+        note: "page « Sécurité » (badgée « Projet 2027 ») et 10 mesures pour rétablir l’ordre dans la page des 20 mesures : peines planchers, majorité pénale à 16 ans, 40 000 places de prison"
+      climat:
+        niveau: fort
+        note: "page « Environnement et Énergie » dédiée (nucléaire, hydroélectricité, critique des éoliennes) et 20 mesures : prix de l’électricité divisé par deux ; page non badgée « Projet 2027 »"
+      travail:
+        niveau: fort
+        note: "page « Économie et travail » : « 10 mesures pour créer et relocaliser 2 millions d’emplois » ; 20 mesures : exonération de charges pour le premier emploi des moins de 26 ans"
+      impots:
+        niveau: fort
+        note: "page « Économie et travail » : baisse des impôts de production, crédit d’impôt production, « 10 mesures pour relancer le pouvoir d’achat » ; 20 mesures : TVA à 0 % sur les produits de première nécessité, baisse de 40 centimes du carburant"
+      europe-et-monde:
+        niveau: fort
+        note: "pages « Affaires européennes » (référendum sur l’appartenance à l’Union européenne, Europe des nations) et « Affaires étrangères » ; 20 mesures : primauté du droit français, rétablissement des frontières"
+      institutions:
+        niveau: fort
+        note: "page « Refonder et moraliser notre démocratie » : référendum d’initiative citoyenne, référendum obligatoire pour la Constitution, retour au septennat ; badgée « Projet 2027 »"
+  - id: sylvain-durif
+    acces: bloque
+    urls_bloquees:
+      - https://durif2027.com/le-projet
+    sources: []
+    urls_consultees:
+      - "https://durif2027.com/ (page d’accueil : bandeau « Communiqué officiel, campagne du Ministère du Cringe suspendue », pas de texte de programme dans le HTML)"
+      - https://durif2027.com/le-projet (titre « 50 engagements pour 2027-2032 », contenu rendu côté client, illisible sans navigateur ; le paquet JavaScript du site contient un texte structuré, lu comme texte brut, non archivé car non vérifiable)
+      - https://durif2027.com/le-candidat et /ma-vision (même coquille côté client)
+      - https://ministereducringe.com (HTTP 429 à la lecture)
+      - https://sylvaindurif.fr (domaine inexistant)
+    cellules:
+      logement:
+        niveau: inaccessible
+        note: "source bloquée non lue : https://durif2027.com/le-projet (page rendue côté client, le HTML servi ne contient qu’un bandeau « Campagne du Ministère du Cringe suspendue »)"
+      ecole:
+        niveau: inaccessible
+        note: "source bloquée non lue : https://durif2027.com/le-projet (page rendue côté client, le HTML servi ne contient qu’un bandeau « Campagne du Ministère du Cringe suspendue »)"
+      retraites:
+        niveau: inaccessible
+        note: "source bloquée non lue : https://durif2027.com/le-projet (page rendue côté client, le HTML servi ne contient qu’un bandeau « Campagne du Ministère du Cringe suspendue »)"
+      sante:
+        niveau: inaccessible
+        note: "source bloquée non lue : https://durif2027.com/le-projet (page rendue côté client, le HTML servi ne contient qu’un bandeau « Campagne du Ministère du Cringe suspendue »)"
+      securite:
+        niveau: inaccessible
+        note: "source bloquée non lue : https://durif2027.com/le-projet (page rendue côté client, le HTML servi ne contient qu’un bandeau « Campagne du Ministère du Cringe suspendue »)"
+      climat:
+        niveau: inaccessible
+        note: "source bloquée non lue : https://durif2027.com/le-projet (page rendue côté client, le HTML servi ne contient qu’un bandeau « Campagne du Ministère du Cringe suspendue »)"
+      travail:
+        niveau: inaccessible
+        note: "source bloquée non lue : https://durif2027.com/le-projet (page rendue côté client, le HTML servi ne contient qu’un bandeau « Campagne du Ministère du Cringe suspendue »)"
+      impots:
+        niveau: inaccessible
+        note: "source bloquée non lue : https://durif2027.com/le-projet (page rendue côté client, le HTML servi ne contient qu’un bandeau « Campagne du Ministère du Cringe suspendue »)"
+      europe-et-monde:
+        niveau: inaccessible
+        note: "source bloquée non lue : https://durif2027.com/le-projet (page rendue côté client, le HTML servi ne contient qu’un bandeau « Campagne du Ministère du Cringe suspendue »)"
+      institutions:
+        niveau: inaccessible
+        note: "source bloquée non lue : https://durif2027.com/le-projet (page rendue côté client, le HTML servi ne contient qu’un bandeau « Campagne du Ministère du Cringe suspendue »)"
+  - id: clara-egger
+    acces: ok
+    urls_bloquees: []
+    sources:
+      - clara-egger-parrainage-2027
+      - clara-egger-presentation-candidate
+      - clara-egger-notre-solution
+    urls_consultees:
+      - https://solutiondemocratique.fr/parrainage2027/ (projet de la candidature, archivé)
+      - https://solutiondemocratique.fr/clara-egger/ (présentation de la candidate et programme « volontairement limité », archivé)
+      - https://solutiondemocratique.fr/notre-solution/ (droit d’initiative et de vote constitutionnels, archivé)
+      - "https://solutiondemocratique.fr/notre-solution/proposition-de-revision-constitutionnelle-controle-constitution/ (proposition de révision constitutionnelle, lue, non archivée : page de thème institutions)"
+      - https://solutiondemocratique.fr/ (accueil, parti Solution Démocratique)
+    cellules:
+      logement:
+        niveau: silence
+        note: "aucun passage de programme sur ce thème dans les 3 sources lues : le programme est volontairement limité aux institutions (page de présentation de la candidate)"
+      ecole:
+        niveau: silence
+        note: "aucun passage de programme sur ce thème dans les 3 sources lues : le programme est volontairement limité aux institutions (page de présentation de la candidate)"
+      retraites:
+        niveau: silence
+        note: "aucun passage de programme sur ce thème dans les 3 sources lues : le programme est volontairement limité aux institutions (page de présentation de la candidate)"
+      sante:
+        niveau: silence
+        note: "aucun passage de programme sur ce thème dans les 3 sources lues : le programme est volontairement limité aux institutions (page de présentation de la candidate)"
+      securite:
+        niveau: silence
+        note: "aucun passage de programme sur ce thème dans les 3 sources lues : le programme est volontairement limité aux institutions (page de présentation de la candidate)"
+      climat:
+        niveau: silence
+        note: "aucun passage de programme sur ce thème dans les 3 sources lues : le programme est volontairement limité aux institutions (page de présentation de la candidate)"
+      travail:
+        niveau: silence
+        note: "aucun passage de programme sur ce thème dans les 3 sources lues : le programme est volontairement limité aux institutions (page de présentation de la candidate)"
+      impots:
+        niveau: silence
+        note: la fiscalité locale n’apparaît que comme autonomie des collectivités dans la réforme constitutionnelle (article 72-2), sans position fiscale ; aucun autre passage dans les 3 sources lues
+      europe-et-monde:
+        niveau: silence
+        note: seules des comparaisons avec les référendums européens de la Suisse, de l’Irlande et du Danemark servent d’exemples institutionnels, sans position sur l’Europe
+      institutions:
+        niveau: fort
+        note: "projet central : droit d’initiative et de vote des citoyens sur la Constitution, référendum constituant obligatoire, décentralisation, rôle d’arbitre du président ; page « Notre solution » et page de parrainage"
+  - id: raphael-glucksmann
+    acces: ok
+    urls_bloquees: []
+    sources:
+      - raphael-glucksmann-projet-acte-1
+      - raphael-glucksmann-lettre-aux-francais
+    urls_consultees:
+      - "https://glucks2027.fr/ (site de campagne : message de candidature, aucun programme)"
+      - https://place-publique.eu/pages/6mRSwq5tuSrSi68Cw1IADX/l-acte-i (page de l’Acte I, liste des chantiers)
+      - https://place-publique.eu/document/6J8wjk3EW8dBCLwKxa7J96/projet-placepublique-acte1.pdf (Projet Acte I de Place publique, 88 pages, archivé)
+      - https://place-publique.eu/posts/2fgDdljEIy36rgxBjRyiQZ/raphael-glucksmann-sa-lettre-aux-francais (lettre du 25 août 2026, archivée)
+      - https://place-publique.eu/pages/69jA2SKIG5udlNX7wI3dmc/le-projet (présentation du projet, non archivée)
+    cellules:
+      logement:
+        niveau: fort
+        note: "Acte I p. 64 : chantier logement (bail réel solidaire, encadrement des loyers en zone tendue, taxation de la vacance, « logement d’abord »), 6 engagements détectés"
+      ecole:
+        niveau: fort
+        note: "Acte I : chantier « Sauver l’École de la République », 23 formulations d’engagement détectées"
+      retraites:
+        niveau: fort
+        note: "Acte I p. 43 : chantier « Des retraites justes » : abrogation de la réforme de 2023, pensions décentes, pénibilité, nouvelle gouvernance"
+      sante:
+        niveau: fort
+        note: "Acte I : chantier « Garantir nos droits à la santé », 11 formulations d’engagement détectées ; lettre aux Français, 2 engagements"
+      securite:
+        niveau: fort
+        note: "Acte I : chantier « Vivre en sécurité dans le respect de la justice et du droit », 27 formulations d’engagement détectées"
+      climat:
+        niveau: fort
+        note: "Acte I : chantier « Mener la révolution énergétique, écologique et industrielle » et transformation écologique des territoires, 19 formulations"
+      travail:
+        niveau: fort
+        note: "Acte I p. 40 : chantier « Remettre les travailleurs au cœur du contrat social » : SMIC à 1 600 euros net, 33 formulations"
+      impots:
+        niveau: fort
+        note: "Acte I p. 40 : « grand chantier fiscal » rééquilibrant travail, capital, héritage et retraites, 9 formulations d’engagement détectées"
+      europe-et-monde:
+        niveau: fort
+        note: "Acte I : chantier « Défendre la France et l’Europe » et Europe souveraine, 24 formulations d’engagement détectées"
+      institutions:
+        niveau: fort
+        note: "Acte I : chantier « Régénérer la démocratie », 9 formulations d’engagement détectées ; lettre aux Français : engagement sur la République"
+  - id: anasse-kazib
+    acces: ok
+    urls_bloquees: []
+    sources:
+      - anasse-kazib-programme
+      - anasse-kazib-depliant
+    urls_consultees:
+      - https://anasse2027.fr/ (site de campagne)
+      - https://anasse2027.fr/programme (six axes « Ce que nous voulons », archivé ; la page indique « programme 2027 en cours d’élaboration »)
+      - https://anasse2027.fr/programme/depliant-anasse-2027.pdf (dépliant de campagne de 4 pages, archivé)
+      - https://www.revolutionpermanente.fr/ (site du courant, militant, non lu en détail ni archivé)
+      - programme 2022 de Révolution Permanente (lien de la page programme, élection précédente, exclu, non lu)
+    cellules:
+      logement:
+        niveau: partiel
+        note: "axe 1 : « expropriation des logements vides, plafonnement et gel des loyers » ; 2 énoncés"
+      ecole:
+        niveau: partiel
+        note: "axe 1 : revenu étudiant au niveau du SMIC ; axe 5 : « non au SNU et à la militarisation de nos écoles et de nos facs » ; 2 énoncés"
+      retraites:
+        niveau: partiel
+        note: "axe 1 : « retraite à 60 ans et 55 ans pour les métiers pénibles, sans conditions d’annuité » ; 1 énoncé"
+      sante:
+        niveau: partiel
+        note: "axe 1 : investissements massifs dans les services publics sous contrôle des travailleurs ; axe 2 : expropriation des secteurs stratégiques dont la santé ; énoncés indirects"
+      securite:
+        niveau: fort
+        note: "axe 4 : abrogation des lois sécuritaires, amnistie des manifestants, dissolution des corps spéciaux de police ; 3 énoncés"
+      climat:
+        niveau: partiel
+        note: "axe 6 : comités de travailleurs, scientifiques et riverains pour la dépollution des sols et de l’eau ; production planifiée dans le respect de l’environnement ; 1 à 2 énoncés"
+      travail:
+        niveau: fort
+        note: "axes 1 à 3 : SMIC à 2 000 euros net, augmentation de 500 euros, semaine de 28 h, interdiction des licenciements, CDI pour tous ; plus de 3 énoncés"
+      impots:
+        niveau: partiel
+        note: "axe 2 : suppression des aides publiques aux grandes entreprises ; axe 1 : revenu étudiant « financé par le patronat » ; énoncés indirects, aucune mesure fiscale détaillée"
+      europe-et-monde:
+        niveau: fort
+        note: "axes 3 et 5 : régularisation de tous les sans-papiers, retrait des troupes françaises, « pas un euro pour la guerre », libération de la Palestine et de la Kanaky ; plus de 3 énoncés"
+      institutions:
+        niveau: fort
+        note: "axe 4 : « fin de la Ve République, du Sénat et de la figure présidentielle » ; une seule ligne mais trois engagements distincts (voir doutes)"
+  - id: selma-labib
+    acces: ok
+    urls_bloquees: []
+    sources:
+      - selma-labib-4-pages-campagne
+    urls_consultees:
+      - https://npa-revolutionnaires.org/ (site du parti NPA-Révolutionnaires, militant)
+      - "https://npa-revolutionnaires.org/campagnes-presidentielles (page de campagne : agenda, revue de presse, communiqués ; aucun programme)"
+      - https://npa-revolutionnaires.org/articles/communique-presidentielle-2027-selma-labib-une-candidature-ouvriere-et-revolutionnaire-soutenue-par-gael-quirante (communiqué de désignation du 17 juin 2026, sans engagement, non archivé)
+      - https://npa-revolutionnaires.org/wp-content/uploads/2026/09/260919_4p-campagne-A4.pdf (4 pages de campagne, archivé)
+      - https://npa-revolutionnaires.org/rubriques/materiel (tracts et affiches, non archivés)
+    cellules:
+      logement:
+        niveau: partiel
+        note: "4 pages p. 2 : prise de pouvoir des travailleurs sur la production « dans tous les secteurs : logement, alimentation, énergie » ; énoncé de principe"
+      ecole:
+        niveau: partiel
+        note: "4 pages p. 2 : embauches massives dans les écoles et les hôpitaux, besoins recensés par les travailleurs ; 1 énoncé"
+      retraites:
+        niveau: partiel
+        note: "4 pages p. 2 : augmentation générale des salaires, des pensions et des allocations, indexées sur les prix ; 1 énoncé"
+      sante:
+        niveau: partiel
+        note: "4 pages p. 2 : embauches massives dans les hôpitaux et services publics ; 1 énoncé indirect"
+      securite:
+        niveau: silence
+        note: aucun engagement sur la police ou la justice dans le dépliant ; seule la police municipale de Carcassonne est citée en critique du RN
+      climat:
+        niveau: partiel
+        note: "4 pages p. 3 : plus de Canadair que de Rafale, expropriation des grandes entreprises pour décider de la production « en respectant des contraintes environnementales » ; 2 énoncés"
+      travail:
+        niveau: fort
+        note: "4 pages p. 2 : augmentation de 400 à 500 euros, interdiction des licenciements, baisse du temps de travail sans perte de salaire, embauches ; plus de 3 énoncés"
+      impots:
+        niveau: partiel
+        note: "4 pages : « exproprions les milliardaires », prise sur les profits des multinationales ; énoncé indirect, pas de mesure fiscale"
+      europe-et-monde:
+        niveau: partiel
+        note: "4 pages p. 2 : « à bas le militarisme, pas un euro pour les guerres impérialistes », opposition au service militaire renouvelé ; 2 énoncés"
+      institutions:
+        niveau: silence
+        note: le dépliant ne contient aucune mesure sur les institutions (il refuse la voie des urnes comme seul recours)
+  - id: francis-lalanne
+    acces: ok
+    urls_bloquees: []
+    sources:
+      - francis-lalanne-programme
+    urls_consultees:
+      - https://dieudolalanne2027.com/programme (programme en 9 axes de la campagne Dieudo Lalanne 2027, archivé)
+      - https://dieudolalanne2027.com/ (accueil de la campagne, « site officiel de la campagne présidentielle de Francis Lalanne »)
+      - https://dieudolalanne2027.com/projet (HTTP 404)
+      - https://lalanne2027.com (domaine en vente, sans rapport avec la campagne)
+      - https://france-libre.fr/nos-themes-et-valeurs/ (profession de foi de l’association, valeurs générales, non archivée)
+    cellules:
+      logement:
+        niveau: silence
+        note: aucun passage sur le logement dans les 9 axes du programme
+      ecole:
+        niveau: partiel
+        note: "axe 3 : « les enfants doivent être éduqués par leur famille, l’État n’est là que pour les instruire » ; 1 énoncé de principe"
+      retraites:
+        niveau: silence
+        note: aucun passage sur les retraites dans les 9 axes du programme
+      sante:
+        niveau: partiel
+        note: "axe 3 : fin du pass et des obligations médicales, interdiction constitutionnelle de la discrimination sur le statut médical ; 2 énoncés"
+      securite:
+        niveau: fort
+        note: "axe 7 « Sécurité ! » : refonte de la justice, plus d’effectifs contre la pédocriminalité et les trafics, caméras dans les salles d’audience et sur les policiers ; 3 énoncés"
+      climat:
+        niveau: silence
+        note: aucun engagement climatique dans les 9 axes du programme (« respectueuse du vivant » en introduction seulement)
+      travail:
+        niveau: partiel
+        note: "axe 5 : soutien aux TPE/PME et artisans, baisse drastique des charges ; 1 énoncé"
+      impots:
+        niveau: fort
+        note: "axe 5 « Stop Impôts ! » : baisse radicale des impôts et des taxes sur les carburants, gratuité des transports publics, baisse des charges ; section dédiée, 3 énoncés"
+      europe-et-monde:
+        niveau: fort
+        note: "axes 1, 2 et 9 : sortie de l’Union européenne, sortie de l’OTAN, retour au franc, retrait des troupes, politique avec l’Afrique ; plus de 3 énoncés"
+      institutions:
+        niveau: fort
+        note: "axe 4 « Démocratie ! » : RIC en toutes matières, assemblée constituante, caméras au Conseil des ministres, blocage des lobbies ; section dédiée"
+  - id: marine-le-pen
+    acces: aucun_site
+    urls_bloquees: []
+    sources: []
+    urls_consultees:
+      - "https://rassemblementnational.fr/ (site du parti : aucun programme présidentiel 2027)"
+      - https://rassemblementnational.fr/22-mesures (« 22 mesures pour 2022 », programme de l’élection précédente, exclu)
+      - "https://rassemblementnational.fr/livrets-thematiques (livrets thématiques ; les PDF projet-l-ecole et projet-la-sante, ouverts à titre de contrôle, portent une date de création de janvier et février 2022 : exclus, non archivés)"
+      - "https://rassemblementnational.fr/documents/WEB-GRN-LIVRET-ENTREPRISE.pdf (livret entreprise de 2024 : « version 2022 du programme présidentiel mise à jour, base de travail pour les prochaines échéances » ; exclu, économie seule, non archivé)"
+      - "https://rassemblementnational.fr/documents/GRN-CONTRE-BUDGET-2026.pdf (contre-budget du groupe parlementaire, conférence de presse du 23 octobre 2025 : exclu, non archivé)"
+      - https://rassemblementnational.fr/documents/202406-programme.pdf (programme des législatives 2024, élection précédente, non lu)
+      - https://marinelepen2027.fr (page vide)
+      - https://www.marinelepen.fr (site tiers sans rapport avec la candidate)
+    cellules:
+      logement:
+        niveau: aucun
+        note: "aucun document de programme 2027 publié : les documents du site du parti sont des programmes d’élections précédentes (22 mesures « pour 2022 », livrets thématiques datés de janvier-février 2022, programmes de 2024) ou budgétaires, exclus"
+      ecole:
+        niveau: aucun
+        note: "aucun document de programme 2027 publié : les documents du site du parti sont des programmes d’élections précédentes (22 mesures « pour 2022 », livrets thématiques datés de janvier-février 2022, programmes de 2024) ou budgétaires, exclus"
+      retraites:
+        niveau: aucun
+        note: "aucun document de programme 2027 publié : les documents du site du parti sont des programmes d’élections précédentes (22 mesures « pour 2022 », livrets thématiques datés de janvier-février 2022, programmes de 2024) ou budgétaires, exclus"
+      sante:
+        niveau: aucun
+        note: "aucun document de programme 2027 publié : les documents du site du parti sont des programmes d’élections précédentes (22 mesures « pour 2022 », livrets thématiques datés de janvier-février 2022, programmes de 2024) ou budgétaires, exclus"
+      securite:
+        niveau: aucun
+        note: "aucun document de programme 2027 publié : les documents du site du parti sont des programmes d’élections précédentes (22 mesures « pour 2022 », livrets thématiques datés de janvier-février 2022, programmes de 2024) ou budgétaires, exclus"
+      climat:
+        niveau: aucun
+        note: "aucun document de programme 2027 publié : les documents du site du parti sont des programmes d’élections précédentes (22 mesures « pour 2022 », livrets thématiques datés de janvier-février 2022, programmes de 2024) ou budgétaires, exclus"
+      travail:
+        niveau: aucun
+        note: "aucun document de programme 2027 publié : les documents du site du parti sont des programmes d’élections précédentes (22 mesures « pour 2022 », livrets thématiques datés de janvier-février 2022, programmes de 2024) ou budgétaires, exclus"
+      impots:
+        niveau: aucun
+        note: "aucun document de programme 2027 publié : les documents du site du parti sont des programmes d’élections précédentes (22 mesures « pour 2022 », livrets thématiques datés de janvier-février 2022, programmes de 2024) ou budgétaires, exclus"
+      europe-et-monde:
+        niveau: aucun
+        note: "aucun document de programme 2027 publié : les documents du site du parti sont des programmes d’élections précédentes (22 mesures « pour 2022 », livrets thématiques datés de janvier-février 2022, programmes de 2024) ou budgétaires, exclus"
+      institutions:
+        niveau: aucun
+        note: "aucun document de programme 2027 publié : les documents du site du parti sont des programmes d’élections précédentes (22 mesures « pour 2022 », livrets thématiques datés de janvier-février 2022, programmes de 2024) ou budgétaires, exclus"
+  - id: jean-francois-legendre
+    acces: ok
+    urls_bloquees: []
+    sources:
+      - jean-francois-legendre-manifeste
+    urls_consultees:
+      - "https://www.anousmaintenant.fr (site du mouvement À nous maintenant : présentation en 4 piliers et candidature de Jean-François Legendre)"
+      - https://www.anousmaintenant.fr/le-mouvement (même contenu, lien vers le manifeste)
+      - https://docs.google.com/document/d/1G4dUZaI20umZghEgSgRGCQeiWDJ2fiwhLZvtUK7hofc/export?format=txt (manifeste « 64 % », export texte du document partagé, archivé ; l’URL stable est celle de l’export, l’URL finale de redirection étant temporaire)
+    cellules:
+      logement:
+        niveau: partiel
+        note: "manifeste, chapitre « Construire solide » : question de l’encadrement des loyers à la place des APL, revue des aides au logement ; 2 énoncés interrogatifs"
+      ecole:
+        niveau: fort
+        note: "manifeste, section « L’éducation » : durée des études réduite à 12 ans, réflexion sur le baccalauréat, dossier de l’université ; section dédiée"
+      retraites:
+        niveau: partiel
+        note: "manifeste : budget des retraites à l’équilibre, révision possible du montant des retraites, âge décidé par référendum ; pas de section dédiée"
+      sante:
+        niveau: partiel
+        note: "manifeste : préserver le système de santé tout en réduisant les prestations de 10 %, analyse des arrêts maladie ; pas de section dédiée"
+      securite:
+        niveau: fort
+        note: "manifeste, section « La sécurité » : effectifs de police et de gendarmerie, pistes de réforme, 7 formulations d’engagement détectées"
+      climat:
+        niveau: fort
+        note: "manifeste, section « Le changement climatique » et exode urbain : réduction de l’impact sur la nature, consigne des bouteilles ; section dédiée"
+      travail:
+        niveau: fort
+        note: "manifeste, section « Le travail » : taxer la finance pour équilibrer l’État providence, plus de recettes que le travail ; section dédiée, surtout des principes"
+      impots:
+        niveau: fort
+        note: "manifeste, section « La fiscalité » : impôt accru sur les hauts revenus, lutte contre l’optimisation fiscale ; section dédiée"
+      europe-et-monde:
+        niveau: fort
+        note: manifeste, sections « L’Europe », « La mondialisation », « Le rôle de la France dans le monde » ; sections dédiées
+      institutions:
+        niveau: fort
+        note: "manifeste, « Le système de référendums » : RIC, RIG, assemblée citoyenne tirée au sort élue hors des partis ; section dédiée"
+  - id: david-lisnard
+    acces: ok
+    urls_bloquees: []
+    sources:
+      - david-lisnard-programme-index
+      - david-lisnard-axe-1-maitre-destin
+      - david-lisnard-axe-2-ambition-francaise
+      - david-lisnard-axe-3-renouveau-civique
+    urls_consultees:
+      - "https://www.lisnard2027.fr/ (site de campagne : « ouvre prochainement », renvoie vers unenouvelleenergie.fr)"
+      - https://www.unenouvelleenergie.fr/notre-programme/ (index du programme, archivé)
+      - https://www.unenouvelleenergie.fr/notre-programme/etre-maitre-de-notre-destin/ (axe 1, archivé)
+      - https://www.unenouvelleenergie.fr/notre-programme/reussir-une-nouvelle-ambition-francaise/ (axe 2, archivé)
+      - https://www.unenouvelleenergie.fr/notre-programme/generer-un-renouveau-civique/ (axe 3, archivé)
+      - https://www.unenouvelleenergie.fr/notre-programme/education/, /sante/, /securite/, /agriculture/, /immigration/ (pages thématiques, lues en partie, non archivées)
+    cellules:
+      logement:
+        niveau: fort
+        note: "axe 2 : politique du logement « non dogmatique », réforme de la loi SRU, foncier constructible, 5 formulations d’engagement détectées"
+      ecole:
+        niveau: fort
+        note: "axe 3 : « révolution de l’école démocratique » en cinq piliers, abrogation de la carte scolaire ; page « École » dédiée"
+      retraites:
+        niveau: fort
+        note: "axe 2 : « réforme des retraites » : âge légal à 65 ans puis combinaison répartition et capitalisation, agence centrale publique"
+      sante:
+        niveau: fort
+        note: "axe 2 : « réforme globale du système de santé » ; page « Santé » dédiée"
+      securite:
+        niveau: fort
+        note: "axe 2 : volet sécurité et justice, 17 formulations d’engagement détectées ; page « Sécurité » dédiée"
+      climat:
+        niveau: fort
+        note: "axe 3 : « ambition écologique pour une France bas carbone », 4 formulations d’engagement détectées"
+      travail:
+        niveau: fort
+        note: "axe 2 : assouplissement du code du travail, allègement du capital et du travail, 13 formulations d’engagement détectées"
+      impots:
+        niveau: fort
+        note: "axe 2 : suppression de la C3S et de la CVAE, baisse des impôts de production, réforme des droits de succession sur les entreprises"
+      europe-et-monde:
+        niveau: fort
+        note: "axe 1 « Être maître de notre destin » : souveraineté, 43 occurrences et 4 formulations d’engagement détectées"
+      institutions:
+        niveau: fort
+        note: "axe 1 : réforme du Parlement et de la loi (article 24), décentralisation radicale, 3 formulations d’engagement détectées"
+  - id: mira-markovic
+    acces: aucun_site
+    urls_bloquees: []
+    sources: []
+    urls_consultees:
+      - "https://parti-animaliste.fr/mira-markovic-2027 (page de la candidature : parrainages, pas de programme)"
+      - "https://parti-animaliste.fr/programme (programmes du parti : européennes 2024 et élections nationales de 2022, « grande cause du quinquennat 2022-2027 » ; programmes d’élections précédentes, exclus, non archivés)"
+      - https://parti-animaliste.fr/wp-content/uploads/2022/03/programme-national-2022.pdf (programme national 2022, élection précédente, exclu, non lu)
+      - https://parti-animaliste.fr/legislatives-2027 (appel à candidatures, aucun programme)
+    cellules:
+      logement:
+        niveau: aucun
+        note: "aucun programme présidentiel 2027 publié : le parti ne publie que les programmes de 2022 (nationales) et de 2024 (européennes), exclus ; la candidature est présentée comme monothématique"
+      ecole:
+        niveau: aucun
+        note: "aucun programme présidentiel 2027 publié : le parti ne publie que les programmes de 2022 (nationales) et de 2024 (européennes), exclus ; la candidature est présentée comme monothématique"
+      retraites:
+        niveau: aucun
+        note: "aucun programme présidentiel 2027 publié : le parti ne publie que les programmes de 2022 (nationales) et de 2024 (européennes), exclus ; la candidature est présentée comme monothématique"
+      sante:
+        niveau: aucun
+        note: "aucun programme présidentiel 2027 publié : le parti ne publie que les programmes de 2022 (nationales) et de 2024 (européennes), exclus ; la candidature est présentée comme monothématique"
+      securite:
+        niveau: aucun
+        note: "aucun programme présidentiel 2027 publié : le parti ne publie que les programmes de 2022 (nationales) et de 2024 (européennes), exclus ; la candidature est présentée comme monothématique"
+      climat:
+        niveau: aucun
+        note: "aucun programme présidentiel 2027 publié : le parti ne publie que les programmes de 2022 (nationales) et de 2024 (européennes), exclus ; la candidature est présentée comme monothématique"
+      travail:
+        niveau: aucun
+        note: "aucun programme présidentiel 2027 publié : le parti ne publie que les programmes de 2022 (nationales) et de 2024 (européennes), exclus ; la candidature est présentée comme monothématique"
+      impots:
+        niveau: aucun
+        note: "aucun programme présidentiel 2027 publié : le parti ne publie que les programmes de 2022 (nationales) et de 2024 (européennes), exclus ; la candidature est présentée comme monothématique"
+      europe-et-monde:
+        niveau: aucun
+        note: "aucun programme présidentiel 2027 publié : le parti ne publie que les programmes de 2022 (nationales) et de 2024 (européennes), exclus ; la candidature est présentée comme monothématique"
+      institutions:
+        niveau: aucun
+        note: "aucun programme présidentiel 2027 publié : le parti ne publie que les programmes de 2022 (nationales) et de 2024 (européennes), exclus ; la candidature est présentée comme monothématique"
+  - id: benoit-mathieu
+    acces: ok
+    urls_bloquees: []
+    sources:
+      - benoit-mathieu-programme
+      - benoit-mathieu-le-candidat
+    urls_consultees:
+      - "https://benoitmathieu2027.fr/ (accueil : tour de France à vélo pour les 500 parrainages)"
+      - https://benoitmathieu2027.fr/programme (programme « uniquement démocratique », archivé)
+      - https://benoitmathieu2027.fr/le-candidat (page « Une conviction, pas un programme », archivée)
+    cellules:
+      logement:
+        niveau: silence
+        note: "aucun passage sur ce thème dans les 2 sources lues : « je ne présente volontairement aucun programme socio-économique sur ce site »"
+      ecole:
+        niveau: silence
+        note: "aucun passage sur ce thème dans les 2 sources lues : « je ne présente volontairement aucun programme socio-économique sur ce site »"
+      retraites:
+        niveau: silence
+        note: "aucun passage sur ce thème dans les 2 sources lues : « je ne présente volontairement aucun programme socio-économique sur ce site »"
+      sante:
+        niveau: silence
+        note: la page de programme écrit « pas de programme partisan ni sur la santé » ; aucun engagement
+      securite:
+        niveau: silence
+        note: la page de programme écrit « pas de programme partisan ni sur la sécurité » ; aucun engagement
+      climat:
+        niveau: silence
+        note: "aucun passage sur ce thème dans les 2 sources lues : « je ne présente volontairement aucun programme socio-économique sur ce site »"
+      travail:
+        niveau: silence
+        note: "aucun passage sur ce thème dans les 2 sources lues : « je ne présente volontairement aucun programme socio-économique sur ce site »"
+      impots:
+        niveau: silence
+        note: "aucun passage sur ce thème dans les 2 sources lues : « je ne présente volontairement aucun programme socio-économique sur ce site »"
+      europe-et-monde:
+        niveau: silence
+        note: "aucun passage sur ce thème dans les 2 sources lues : « je ne présente volontairement aucun programme socio-économique sur ce site »"
+      institutions:
+        niveau: fort
+        note: "page « Programme » : assemblée citoyenne tirée au sort pour réécrire la Constitution, RIC, deux pivots détaillés ; programme entièrement consacré à ce thème"
+  - id: jean-luc-melenchon
+    acces: partiel
+    urls_bloquees:
+      - https://melenchon2027.fr/programme2025/livre/
+    sources:
+      - jean-luc-melenchon-programme-index
+      - jean-luc-melenchon-lettre-au-peuple
+      - jean-luc-melenchon-comptes-publics
+      - jean-luc-melenchon-pole-public-bancaire
+    urls_consultees:
+      - "https://melenchon2027.fr/programme2025/livre/ (lien « Lire » du livre L’Avenir en commun, édition 2025 : redirige vers la page d’accueil, le livre n’est pas lisible en ligne ; à capturer manuellement)"
+      - https://melenchon2027.fr/programme/decouvrir/ (index du programme, archivé)
+      - https://melenchon2027.fr/lettre-au-peuple-de-france/ (lettre au peuple, archivée)
+      - https://melenchon2027.fr/wp-content/uploads/2026/10/Comment-nous-allons-remettre-de-l-ordre-dans-les-comptes-publics.pdf (orientations budgétaires 2027, 24 pages, archivé)
+      - https://melenchon2027.fr/wp-content/uploads/2026/10/DP-POLE-PUBLIC-BANCAIRE_ST.pdf (pôle public bancaire, 16 pages, archivé)
+      - https://melenchon2027.fr/programme/plans-thematiques/ (plans esr et ruralité, lus, non archivés)
+      - https://melenchon2027.fr/programme/plans-investissement/ (plans btp-logement et automobile, lus, non archivés)
+      - https://melenchon2027.fr/synthese-des-contributions/ (contributions de soutiens, exclue)
+      - https://melenchon2027.fr/wp-content/uploads/2026/04/PROGRAMME-FRONT-POPULAIRE.pdf (programme d’une élection précédente, exclu, non lu)
+    cellules:
+      logement:
+        niveau: fort
+        note: "comptes publics p. 8 et 10 : plan d’investissement dans les logements publics, 3 milliards pour le mal-logement et la réquisition de logements vacants, 700 000 rénovations par an ; plan btp-logement lu en direct. Livre source bloquée non lue : https://melenchon2027.fr/programme2025/livre/"
+      ecole:
+        niveau: fort
+        note: "comptes publics p. 9 : ouverture de postes, 19 élèves par classe en un mandat ; plan thématique « esr » lu en direct. Livre source bloquée non lue : https://melenchon2027.fr/programme2025/livre/"
+      retraites:
+        niveau: fort
+        note: "comptes publics p. 8, 11, 12 : abrogation de la réforme Borne, retour à 60 ans avec 40 annuités, indexation des pensions, pension minimum au niveau du SMIC. Livre source bloquée non lue : https://melenchon2027.fr/programme2025/livre/"
+      sante:
+        niveau: fort
+        note: "comptes publics p. 9 à 11 : hausse de 3 milliards d’euros du budget des hôpitaux avec 10 000 postes de soignants, plan canicule dans les hôpitaux et Ehpad, section « Mettre en sécurité sociale ». Livre source bloquée non lue : https://melenchon2027.fr/programme2025/livre/"
+      securite:
+        niveau: partiel
+        note: "comptes publics p. 11 : renforcement des services départementaux d’incendie et de secours et de la sécurité civile ; rien sur la police ni la justice dans les sources lues. Livre source bloquée non lue : https://melenchon2027.fr/programme2025/livre/"
+      climat:
+        niveau: fort
+        note: "comptes publics p. 10-11 : section « Enclencher la planification écologique », plan canicule, rénovation des passoires thermiques ; pôle public bancaire : financement de la bifurcation écologique"
+      travail:
+        niveau: fort
+        note: "comptes publics p. 8 : hausse du SMIC à 1 700 euros net, conférence sur les salaires, hausse de 10 % des fonctionnaires. Livre source bloquée non lue : https://melenchon2027.fr/programme2025/livre/"
+      impots:
+        niveau: fort
+        note: "comptes publics p. 6 et 13 : section « Dégager les ressources nécessaires » : suppression de la flat tax, retour sur les mesures fiscales de Macron, 100 milliards de recettes. Livre source bloquée non lue : https://melenchon2027.fr/programme2025/livre/"
+      europe-et-monde:
+        niveau: partiel
+        note: "lettre au peuple : « la France doit se dédier à la Paix » ; comptes publics p. 20 : rachats de dette par la BCE sans révision des traités ; 2 énoncés. Livre source bloquée non lue : https://melenchon2027.fr/programme2025/livre/"
+      institutions:
+        niveau: fort
+        note: "lettre au peuple : « passons à la Sixième République », référendum d’initiative citoyenne, droit de révoquer tout élu ; 3 énoncés en deux phrases. Livre source bloquée non lue : https://melenchon2027.fr/programme2025/livre/"
 pilote:
   provisoires:
     - institutions

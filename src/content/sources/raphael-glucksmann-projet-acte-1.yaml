@@ -1,0 +1,15 @@
+version_schema: 1
+id: raphael-glucksmann-projet-acte-1
+type: programme
+auteur: parti_du_candidat
+candidats:
+  - raphael-glucksmann
+titre: "Place publique, Projet Acte I : notre vision pour la France"
+url: https://place-publique.eu/document/6J8wjk3EW8dBCLwKxa7J96/projet-placepublique-acte1.pdf
+date_publication: 2026-10-15
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/raphael-glucksmann/56f3d747f045.txt
+  sha256: 56f3d747f045218f0667e177fe7f50621a07db8cad1bc4a4c30afbd211c43c2b
+  capture_le: 2026-11-03T18:10:03+01:00
+  binaire_sha256: 3898722a862a3ecef7d5481f7fc04ad7c329cd7e4070ed6f8de7a57cef4b1e7e

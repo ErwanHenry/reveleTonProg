@@ -1,0 +1,15 @@
+version_schema: 1
+id: david-lisnard-axe-2-ambition-francaise
+type: site_parti
+auteur: parti_du_candidat
+candidats:
+  - david-lisnard
+titre: "Nouvelle Énergie, Axe 2 : Réussir une nouvelle ambition française"
+url: https://www.unenouvelleenergie.fr/notre-programme/reussir-une-nouvelle-ambition-francaise/
+date_publication: 2026-11
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/david-lisnard/005a5d8b6fbf.txt
+  sha256: 005a5d8b6fbf1394873cb7a969d015e6f76bf8bb92045c048145b6d3c21cde39
+  capture_le: 2026-11-03T18:17:06+01:00
+  binaire_sha256: 811b72c398a7b1e42232ba62ae16c9260bd49a1c32903b25bb3f2999734074c3

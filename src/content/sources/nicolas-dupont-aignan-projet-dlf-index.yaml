@@ -1,0 +1,15 @@
+version_schema: 1
+id: nicolas-dupont-aignan-projet-dlf-index
+type: site_parti
+auteur: parti_du_candidat
+candidats:
+  - nicolas-dupont-aignan
+titre: "Debout la France, Le Projet de Debout La France : index des thèmes"
+url: https://www.debout-la-france.fr/notre-projet/
+date_publication: 2026-11
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/nicolas-dupont-aignan/92359b0ee2ee.txt
+  sha256: 92359b0ee2eeedc75517c5d33861c5a64658a7c89df2dad91914b4316944dc53
+  capture_le: 2026-11-03T18:06:24+01:00
+  binaire_sha256: a3d0ba46e75bf041109c154ced1717cc7160f1567867ba482d4a80676f4f41d3
