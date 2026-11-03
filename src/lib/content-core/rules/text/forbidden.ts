@@ -31,7 +31,7 @@ export function verbesConnotes(text: string): string[] {
   const found = new Set<string>();
   const sansCitations = corps(text);
   for (const w of words(sansCitations)) {
-    const v = w.normalize('NFC').toLocaleLowerCase('fr');
+    const v = w.normalize('NFKC').toLocaleLowerCase('fr'); // NFKC : lettres pleine chasse ; accents conservés
     if (VERBES.has(v)) found.add(v);
   }
   const pronominal = VERBES_CONNOTES_PRONOMINAUX.exec(sansCitations.toLocaleLowerCase('fr'));

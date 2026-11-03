@@ -128,6 +128,13 @@ describe('redaction : guillemets, verbes, caractères suspects', () => {
     assert.deepEqual(d.map((x) => [x.code, x.severite, x.pointer]), [['CARACTERE_SUSPECT', 'error', '/redactions/resume']]);
   });
 
+  for (const [nom, c] of [['LRM', '\u200E'], ['ALM', '\u061C'], ['séparateur mongol', '\u180E'], ['remplisseur hangul', '\u3164'], ['étiquette', '\u{E0041}'], ['i sans point', 'ı'], ['petite capitale', 'ᴇ']] as const) {
+    it(`CR-01 : ${nom} dans un mot est une erreur CARACTERE_SUSPECT`, () => {
+      const d = diag([r(MESURE, 'Marie Fictive propose de plafonner les loyers', `Marie Fictive propose de plafonner les loy${c}ers`)]);
+      assert.deepEqual(d.map((x) => [x.code, x.pointer]), [['CARACTERE_SUSPECT', '/redactions/resume']]);
+    });
+  }
+
   it('un contrôle bidirectionnel (U+202E) est une erreur', () => {
     const d = diag([r(MESURE, 'Encadrement des loyers', 'Encadrement des \u202Eloyers')]);
     assert.deepEqual(d.map((x) => [x.code, x.pointer]), [['CARACTERE_SUSPECT', '/titre']]);

@@ -51,7 +51,7 @@ const neutralite: EntryRule = {
         out.push({
           code: 'CARACTERE_SUSPECT',
           pointer,
-          message: 'le texte contient un caractère de contrôle bidirectionnel ou d’une écriture non latine (grec, cyrillique), qui pourrait masquer un mot interdit.',
+          message: 'le texte contient un caractère invisible, de contrôle bidirectionnel, d’une écriture non latine (grec, cyrillique…) ou imitant une lettre latine, qui pourrait masquer un mot interdit.',
         });
       }
       const affiche = cleanText(sansMarqueurs(texte));
