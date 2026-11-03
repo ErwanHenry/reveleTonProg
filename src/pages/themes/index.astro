@@ -1,0 +1,32 @@
+---
+import Base from '../../layouts/Base.astro';
+import TuileTheme from '../../components/TuileTheme.astro';
+import { getCorpus } from '../../lib/corpus/index.ts';
+
+const corpus = await getCorpus();
+---
+<Base
+  titre="Les thèmes : reveleTonProg"
+  description="Les thèmes publiés, avec le nombre de candidats concernés."
+  miseAJour={corpus.miseAJourIndex()}
+>
+  <main id="contenu" class="conteneur">
+    <nav class="fil" aria-label="Fil d'Ariane">
+      <ol>
+        <li><a href="/">Accueil</a></li>
+        <li aria-current="page">Thèmes</li>
+      </ol>
+    </nav>
+    <h1>Les thèmes</h1>
+    {corpus.themes.length === 0 ? (
+      <>
+        <p>Aucun thème publié pour le moment.</p>
+        <p><a href="/candidats/">Consulter la liste des candidats</a></p>
+      </>
+    ) : (
+      <ul class="tuiles">
+        {corpus.themes.map((vue) => <TuileTheme vue={vue} />)}
+      </ul>
+    )}
+  </main>
+</Base>

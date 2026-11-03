@@ -1,0 +1,28 @@
+---
+import EtatVide from './EtatVide.astro';
+import Mesure from './Mesure.astro';
+import type { VueCellule } from '../lib/corpus/index.ts';
+
+interface Props {
+  cellule: VueCellule;
+}
+
+const { cellule } = Astro.props;
+const { candidat, premiere, autres } = cellule;
+const page = `/candidats/${candidat.id}/#${cellule.theme}`;
+---
+<li class="cellule" data-rang={candidat.rang} id={`c-${candidat.id}`}>
+  <div class="cellule-tete">
+    <span class="picto" aria-hidden="true"></span>
+    <div>
+      <h3 class="cellule-nom"><a href={page}>{candidat.nomAffiche}</a></h3>
+      <p class="cellule-parti">{candidat.parti === null ? 'Sans étiquette de parti déclarée' : `Parti revendiqué : ${candidat.parti}`}</p>
+    </div>
+  </div>
+  <div class="cellule-corps">
+    {premiere === undefined ? <EtatVide cellule={cellule} /> : <Mesure vue={premiere} niveauTitre={4} />}
+  </div>
+  {autres > 0 && (
+    <p class="cellule-pied"><a href={page}>{autres === 1 ? '1 autre mesure' : `${autres} autres mesures`}<span class="sr-only"> de {candidat.nomAffiche} sur ce thème</span></a></p>
+  )}
+</li>

@@ -1,0 +1,83 @@
+---
+import Base from '../../layouts/Base.astro';
+import BadgeBrouillon from '../../components/BadgeBrouillon.astro';
+import Cellule from '../../components/Cellule.astro';
+import LecteurNiveaux from '../../components/LecteurNiveaux.astro';
+import OrdreCandidats from '../../components/OrdreCandidats.astro';
+import { LIBELLES_MOTIF, formatDate, getCorpus, phraseCouverture } from '../../lib/corpus/index.ts';
+import type { VueMesure } from '../../lib/corpus/index.ts';
+
+export async function getStaticPaths() {
+  const corpus = await getCorpus();
+  return corpus.themes.map((t) => ({ params: { id: t.theme.id }, props: { id: t.theme.id } }));
+}
+
+const { id } = Astro.props;
+const corpus = await getCorpus();
+const vue = corpus.theme(id);
+const { theme } = vue;
+
+const mesuresAffichees = vue.cellules.flatMap((c): VueMesure[] => (c.premiere === undefined ? [] : [c.premiere]));
+const n = vue.autresPersonnalites;
+---
+<Base
+  titre={`${theme.nom} : positions des candidats, reveleTonProg`}
+  description={`Ce que chaque candidat propose sur le thème ${theme.nom}, avec sa source.`}
+  miseAJour={vue.miseAJour}
+  avecSignalement={mesuresAffichees.length > 0}
+>
+  <main id="contenu" class="conteneur" data-theme={id}>
+    <nav class="fil" aria-label="Fil d'Ariane">
+      <ol>
+        <li><a href="/">Accueil</a></li>
+        <li><a href="/themes/">Thèmes</a></li>
+        <li aria-current="page">{theme.nom}</li>
+      </ol>
+    </nav>
+    <div class="theme-entete">
+      <h1 class="theme-titre">{theme.nom}</h1>
+      <BadgeBrouillon texte={vue.badge} />
+    </div>
+    <p>Voici la position de chaque candidat sur ce thème. Cliquez sur un nom pour voir toutes ses mesures.</p>
+    <LecteurNiveaux contexte={{ type: 'theme', id }} mesures={mesuresAffichees}>
+      <p class="couverture">{phraseCouverture(vue.couverture)}</p>
+      <OrdreCandidats />
+      <h2>Les candidats</h2>
+      {vue.cellules.length === 0 ? (
+        <>
+          <p>Aucun candidat dans le périmètre de ce thème pour le moment.</p>
+          <p><a href="/">Revenir à l'accueil pour choisir un autre thème</a></p>
+        </>
+      ) : (
+        <ul class="cellules" data-ordonnable>
+          {vue.cellules.map((cellule) => <Cellule cellule={cellule} />)}
+        </ul>
+      )}
+      {vue.renonces.length > 0 && (
+        <details class="renonce">
+          <summary>Ne se présentent pas ({vue.renonces.length})</summary>
+          <ul data-ordonnable>
+            {vue.renonces.map((c) => {
+              const statut = c.statutAffiche;
+              const motif = statut?.motif === undefined ? undefined : LIBELLES_MOTIF[statut.motif];
+              return (
+                <li data-rang={c.rang}>
+                  <a href={`/candidats/${c.id}/`}>{c.nomAffiche}</a> : {motif ?? 'ne se présente pas'}.{statut !== null && (
+                    <> <time datetime={statut.date}>{formatDate(statut.date)}</time>.</>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </details>
+      )}
+      {n > 0 && (
+        <p class="autres-personnalites">
+          {n === 1
+            ? '1 autre personnalité du jeu de données ne figure pas ici : '
+            : `${n} autres personnalités du jeu de données ne figurent pas ici : `}<a href="/candidats/">voir la liste complète des candidats</a>.
+        </p>
+      )}
+    </LecteurNiveaux>
+  </main>
+</Base>

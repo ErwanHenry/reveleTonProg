@@ -1,0 +1,42 @@
+---
+// Bloc « Ce qui me concerne » (niveau Gros caractères). Premier élément de .lecteur-contenu dans le DOM,
+// jamais réordonné par CSS : masqué par niveaux.css sauf au niveau Gros caractères.
+// Il liste les thèmes publiés marqués `prioritaire_aine`, sans classer les candidats.
+import { getCorpus } from '../lib/corpus/index.ts';
+import type { Contexte, VueMesure } from '../lib/corpus/index.ts';
+
+interface Props {
+  contexte: Contexte;
+  /** Mesures affichées sur la page : sert, sur une page candidat hors périmètre, à ne lier que les thèmes présents. */
+  mesures?: readonly VueMesure[];
+}
+
+const { contexte, mesures = [] } = Astro.props;
+const corpus = await getCorpus();
+
+const prioritaires = corpus.themes.filter((t) => t.theme.prioritaire_aine === true);
+const themesAvecMesure = new Set(mesures.map((m) => m.mesure.theme));
+const retenus =
+  contexte.type === 'theme'
+    ? prioritaires
+    : contexte.type === 'candidat'
+      ? prioritaires.filter((t) => corpus.perimetre.has(contexte.id) || themesAvecMesure.has(t.theme.id))
+      : [];
+---
+{retenus.length > 0 && (
+  <section class="concerne-aine" aria-labelledby="concerne-titre">
+    <h2 id="concerne-titre">Ce qui me concerne</h2>
+    <p>Les thèmes qui touchent souvent les retraités : pensions, santé, dépendance, succession, logement. Cette sélection ne classe pas les candidats.</p>
+    <ul class="concerne-liste">
+      {retenus.map((t) => {
+        const courant = contexte.type === 'theme' && contexte.id === t.theme.id;
+        const href = contexte.type === 'theme' ? `/themes/${t.theme.id}/` : `#${t.theme.id}`;
+        return (
+          <li data-theme={t.theme.id}>
+            <a href={href} aria-current={courant ? 'page' : undefined}>{t.theme.nom}{courant && <span class="courant"> (page affichée)</span>}</a>
+          </li>
+        );
+      })}
+    </ul>
+  </section>
+)}

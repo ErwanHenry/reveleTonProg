@@ -1,0 +1,178 @@
+/*
+  Glossaire du niveau « Pour les enfants » (plan 04-07) : un mot expliqué est un bouton au soulignement
+  pointillé (jamais un trait plein : le trait plein est réservé aux liens), suivi de sa définition en
+  popover natif. Aucun script, aucune image : le marqueur « ? » est un caractère ASCII dessiné en CSS,
+  avec un texte alternatif vide pour que le nom accessible reste le mot lui-même.
+
+  Navigateur sans API Popover : les définitions sont masquées (sinon elles s'insèreraient dans la phrase),
+  les mots redeviennent du texte simple et la liste « Mots expliqués » devient le seul chemin d'accès,
+  annoncé par une phrase d'aide.
+*/
+
+/* Le mot : remise à zéro du bouton, pointillé 2px décalé de 4px, zone de 24 px de haut (exception en ligne à la cible de 44 px) */
+.terme {
+  margin: 0;
+  padding-block: 0.25rem;
+  padding-inline: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+/* Le marqueur : rond de 2px contenant « ? ». La déclaration simple vient d'abord, la variante à texte alternatif vide ensuite. */
+.terme::after {
+  content: "?";
+  content: "?" / "";
+  display: inline-block;
+  box-sizing: border-box;
+  width: 1.25em;
+  height: 1.25em;
+  margin-inline-start: 0.25rem;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  font-size: 0.75em;
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+  text-decoration: none;
+}
+
+/* Définition ouverte : le mot prend le fond « panneau ». aria-expanded n'est pas reflété dans le DOM, d'où :popover-open. */
+.terme:has(+ .definition:popover-open) {
+  background: var(--panneau);
+}
+
+/*
+  La boîte. On ne touche jamais à `display` : la feuille de style du navigateur masque [popover] tant qu'il n'est
+  pas ouvert, et centre la boîte dans la couche supérieure (margin: auto).
+*/
+.definition {
+  box-sizing: border-box;
+  max-width: min(calc(100vw - 2rem), 24rem);
+  max-height: 80vh;
+  margin: auto;
+  padding: 1rem;
+  overflow: auto;
+  border: 2px solid var(--encre);
+  border-radius: 4px;
+  background: var(--carte);
+  color: var(--encre);
+  font-size: var(--t-corps);
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.definition::backdrop {
+  background: rgba(31, 35, 40, 0.4);
+}
+
+/* Qui a dit ces mots : pour un parti, la définition est son auto-description */
+.definition-source {
+  display: block;
+  margin-top: 0.5rem;
+  color: var(--encre-douce);
+  font-size: var(--t-label);
+}
+
+/* Liste « Mots expliqués » : même gabarit que « Ne se présentent pas » (base.css) */
+details.mots-expliques {
+  margin-bottom: 1.5rem;
+  background: var(--carte);
+  border: 1px solid var(--bord-carte);
+  border-radius: 4px;
+}
+
+details.mots-expliques summary {
+  min-height: 2.75rem;
+  padding: 0.5rem 1rem;
+  font-size: var(--t-corps);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+details.mots-expliques[open] summary {
+  border-bottom: 1px solid var(--bord-carte);
+}
+
+details.mots-expliques dl {
+  margin: 0;
+  padding: 1rem;
+  background: var(--panneau);
+}
+
+details.mots-expliques dt {
+  font-size: var(--t-corps);
+  font-weight: 600;
+}
+
+details.mots-expliques dd {
+  margin: 0 0 1rem;
+  font-size: var(--t-corps);
+  font-weight: 400;
+}
+
+details.mots-expliques dd:last-child {
+  margin-bottom: 0;
+}
+
+/* Phrase d'aide : visible seulement sans API Popover (voir plus bas) */
+.mots-aide-repli {
+  display: none;
+  margin: 0 0 1rem;
+  color: var(--encre-douce);
+  font-size: var(--t-label);
+}
+
+/*
+  La liste et son aide ne se voient qu'au niveau « Pour les enfants ». Écrit en :not(:has(...)) : un navigateur
+  sans :has() ignore la règle et garde la liste visible, ce qui est le bon repli (la page reste complète).
+*/
+.lecteur:not(:has(> .niveaux #niv-enfant:checked)) .mots-expliques {
+  display: none;
+}
+
+.lecteur:not(:has(> .niveaux #niv-enfant:checked)) .mots-aide-repli {
+  display: none;
+}
+
+/* Sans API Popover : définitions masquées, mots en texte simple, aide visible */
+@supports not selector(:popover-open) {
+  .definition {
+    display: none;
+  }
+
+  .terme {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .terme::after {
+    content: none;
+  }
+
+  .mots-aide-repli {
+    display: block;
+  }
+}
+
+@media (forced-colors: active) {
+  .definition {
+    border-color: CanvasText;
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  details.mots-expliques {
+    border-color: CanvasText;
+  }
+
+  .terme:has(+ .definition:popover-open) {
+    background: Highlight;
+    color: HighlightText;
+  }
+}

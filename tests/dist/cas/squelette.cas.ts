@@ -16,18 +16,22 @@ export default function squelette(ctx: ContexteSite): void {
   it('(a) construit le corpus fictif en HTML statique, et checkDist ne signale aucune erreur', () => {
     const { status, output, outDir } = ctx.construire('corpus-valide', { racine: FIXTURE_ROOT });
     assert.equal(status, 0, `astro build a échoué :\n${output}`);
-    const html = ctx.lire(outDir, 'index.html');
-    assert.match(html, /Marie Fictive/);
-    assert.match(html, /Parti Imaginaire/);
-    assert.ok(html.includes('2026-10-15'), 'la date 2026-10-15 doit apparaître telle quelle');
-    assert.match(html, /lang="fr"/);
-    // mesure sourcée fictive : titre, résumé, source et date de consultation telle qu'écrite dans le YAML
-    assert.ok(html.includes('Encadrement des loyers dans les villes moyennes (fictif)'), 'titre de la mesure absent');
-    assert.ok(html.includes('Marie Fictive propose de plafonner les loyers'), 'résumé de la mesure absent');
-    assert.ok(html.includes('Programme fictif de Marie Fictive'), 'titre de la source absent');
-    assert.ok(html.includes('2026-10-20'), 'date de consultation de la source absente');
+    // page candidat : nom, parti revendiqué, date du statut, mesure sourcée fictive (titre et résumé)
+    const candidat = ctx.lire(outDir, 'candidats/marie-fictive/index.html');
+    assert.match(candidat, /Marie Fictive/);
+    assert.match(candidat, /Parti Imaginaire/);
+    assert.match(candidat, /lang="fr"/);
+    assert.ok(candidat.includes('datetime="2026-10-15"'), 'la date 2026-10-15 doit apparaître dans un <time datetime>');
+    assert.ok(candidat.includes('Encadrement des loyers dans les villes moyennes (fictif)'), 'titre de la mesure absent');
+    assert.ok(candidat.includes('Marie Fictive propose de plafonner les loyers'), 'résumé de la mesure absent');
+    // page thème : source de la mesure et date de consultation telle qu'écrite dans le YAML
+    const theme = ctx.lire(outDir, 'themes/logement/index.html');
+    assert.ok(theme.includes('Programme fictif de Marie Fictive'), 'titre de la source absent');
+    assert.ok(theme.includes('datetime="2026-10-20"'), 'date de consultation de la source absente');
+    // le hall remplace la page du squelette
+    assert.match(ctx.lire(outDir, 'index.html'), /<h1[^>]*>Les programmes de la présidentielle 2027, à votre niveau<\/h1>/);
     // compressHTML: true conserve l'espace entre un élément inline et le texte suivant
-    assert.match(html, /<\/span>\s+à des fins de test/);
+    assert.match(candidat, /<\/span>\s+n'utilise aucun cookie/);
 
     const constats = checkDist(outDir, {
       mode: 'production',
@@ -46,7 +50,15 @@ export default function squelette(ctx: ContexteSite): void {
     fs.mkdirSync(path.join(root, 'src', 'content'), { recursive: true });
     const { status, output, outDir } = ctx.construire('racine-vide', { racine: root });
     assert.equal(status, 0, `astro build a échoué :\n${output}`);
-    assert.match(ctx.lire(outDir, 'index.html'), /Aucun candidat dans ce corpus/);
+    const hall = ctx.lire(outDir, 'index.html');
+    assert.match(hall, /Aucun thème publié pour le moment\./);
+    assert.match(hall, /<a[^>]*href="\/candidats\/"[^>]*>Consulter la liste des candidats<\/a>/);
+    const liste = ctx.lire(outDir, 'candidats/index.html');
+    assert.match(liste, /Aucun candidat à afficher pour le moment\./);
+    assert.match(liste, /<a[^>]*href="\/"[^>]*>Revenir à l'accueil<\/a>/);
+    const constats = checkDist(outDir, { mode: 'production', cellulesParTheme: cellulesAttendues(root, ctx.repoRoot, 'production') });
+    const erreurs = constats.filter((c) => c.severite === 'erreur');
+    assert.deepEqual(erreurs, [], erreurs.map((c) => `${c.code} ${c.fichier} : ${c.message}`).join('\n'));
   });
 
   it('(c) échoue avec fichier:ligne:col SCHEMA_REQUIRED sur une fixture cassée', () => {

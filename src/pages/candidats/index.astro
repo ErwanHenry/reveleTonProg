@@ -1,0 +1,52 @@
+---
+import Base from '../../layouts/Base.astro';
+import BadgeBrouillon from '../../components/BadgeBrouillon.astro';
+import OrdreCandidats from '../../components/OrdreCandidats.astro';
+import { BADGES, LIBELLES_STATUT, formatDate, getCorpus } from '../../lib/corpus/index.ts';
+
+const corpus = await getCorpus();
+---
+<Base
+  titre="Les candidats : reveleTonProg"
+  description="Toutes les personnalités du jeu de données, avec leur parti revendiqué et leur statut."
+  miseAJour={corpus.miseAJourIndex()}
+>
+  <main id="contenu" class="conteneur">
+    <nav class="fil" aria-label="Fil d'Ariane">
+      <ol>
+        <li><a href="/">Accueil</a></li>
+        <li aria-current="page">Candidats</li>
+      </ol>
+    </nav>
+    <h1>Les candidats</h1>
+    {corpus.candidats.length === 0 ? (
+      <>
+        <p>Aucun candidat à afficher pour le moment.</p>
+        <p><a href="/">Revenir à l'accueil</a></p>
+      </>
+    ) : (
+      <>
+        <p>Toutes les personnalités du jeu de données, dans l'ordre choisi ci-dessus. Le statut est celui de la dernière source consultée.</p>
+        <OrdreCandidats />
+        <ul class="lignes" data-ordonnable>
+          {corpus.candidats.map((c) => {
+            const statut = c.statutAffiche;
+            return (
+              <li class="ligne" data-rang={c.rang}>
+                <p class="ligne-nom"><a href={`/candidats/${c.id}/`}>{c.nomAffiche}</a></p>
+                <p class="ligne-parti">{c.parti === null ? 'Sans étiquette de parti déclarée' : `Parti revendiqué : ${c.parti}`}</p>
+                <p class="ligne-statut">
+                  {statut === null ? (
+                    'Statut en cours de vérification'
+                  ) : (
+                    <>{LIBELLES_STATUT[statut.code]} · <time datetime={statut.date}>{formatDate(statut.date)}</time> <BadgeBrouillon texte={statut.statut_relecture === 'brouillon' ? BADGES.brouillon : null} /></>
+                  )}
+                </p>
+              </li>
+            );
+          })}
+        </ul>
+      </>
+    )}
+  </main>
+</Base>

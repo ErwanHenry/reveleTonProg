@@ -1,32 +1,38 @@
-// Vue-modèle du corpus : les pages passent ici, jamais par getCollection directement.
-import { getCollection, getEntry } from 'astro:content';
-import type { Candidat, Mesure, Source, StatutEntree } from './types.ts';
+// Adaptateur Astro du corpus : les pages et composants passent ici (getCorpus), jamais par
+// getCollection directement. C'est le SEUL endroit où une page apprend le mode (RTP_MODE).
+import { getCollection } from 'astro:content';
+import { resolveMode } from '../content-core/root.ts';
+import type { Candidat, Couverture, EntreeGlossaire, Mesure, Source, Theme } from './types.ts';
+import { construireCorpus } from './vue.ts';
+import type { Brut, Corpus } from './vue.ts';
 
-const collator = new Intl.Collator('fr');
+export * from './vue.ts';
 
-export async function getCandidats(): Promise<Candidat[]> {
-  const entries = await getCollection('candidats');
+let memo: Promise<Corpus> | undefined;
+
+async function charger(): Promise<Corpus> {
+  const [themes, candidats, mesures, sources, couverture, glossaire] = await Promise.all([
+    getCollection('themes'),
+    getCollection('candidats'),
+    getCollection('mesures'),
+    getCollection('sources'),
+    getCollection('couverture'),
+    getCollection('glossaire'),
+  ]);
   // Les données sont déjà validées par content-core ; on caste une seule fois ici.
-  const candidats = entries.map((e) => e.data as unknown as Candidat);
-  return candidats.sort((a, b) => collator.compare(a.nom_tri, b.nom_tri));
+  const brut: Brut = {
+    themes: themes.map((e) => e.data as unknown as Theme),
+    candidats: candidats.map((e) => e.data as unknown as Candidat),
+    mesures: mesures.map((e) => e.data as unknown as Mesure),
+    sources: sources.map((e) => e.data as unknown as Source),
+    couverture: couverture.map((e) => e.data as unknown as Couverture),
+    glossaire: glossaire.map((e) => e.data as unknown as EntreeGlossaire),
+  };
+  return construireCorpus(brut, resolveMode(undefined, process.env));
 }
 
-/** Statut courant = dernière entrée de `statuts` (convention append-only). */
-export function statutCourant(c: Candidat): StatutEntree {
-  const dernier = c.statuts[c.statuts.length - 1];
-  if (dernier === undefined) throw new Error(`candidat ${c.id} sans statut (le schéma exige minItems: 1)`);
-  return dernier;
-}
-
-/** Mesures d'un candidat, triées par titre (ordre alphabétique français). */
-export async function getMesuresDe(candidatId: string): Promise<Mesure[]> {
-  const entries = await getCollection('mesures');
-  const mesures = entries.map((e) => e.data as unknown as Mesure).filter((m) => m.candidat === candidatId);
-  return mesures.sort((a, b) => collator.compare(a.titre, b.titre));
-}
-
-/** Source primaire par identifiant (slug) ; `undefined` si absente (règle de corpus en phase 2). */
-export async function getSource(id: string): Promise<Source | undefined> {
-  const entry = await getEntry('sources', id);
-  return entry === undefined ? undefined : (entry.data as unknown as Source);
+/** Corpus tel que le visiteur le voit dans le mode du build (production par défaut, fail-closed). */
+export function getCorpus(): Promise<Corpus> {
+  memo ??= charger();
+  return memo;
 }

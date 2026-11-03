@@ -1,0 +1,70 @@
+---
+import BadgeBrouillon from './BadgeBrouillon.astro';
+import TexteEnfant from './TexteEnfant.astro';
+import { LIBELLES_NIVEAUX, NIVEAUX, formatDate } from '../lib/corpus/index.ts';
+import type { VueMesure } from '../lib/corpus/index.ts';
+import { resolveContentRoot } from '../lib/content-core/root.ts';
+import { lienExtrait, lienIssue, lienMailto } from '../lib/corpus/signalement.ts';
+import { loadSiteConfig } from '../lib/site-config.ts';
+
+interface Props {
+  vue: VueMesure;
+  niveauTitre: 3 | 4;
+}
+
+const { vue, niveauTitre } = Astro.props;
+const { mesure, source } = vue;
+const Titre = `h${niveauTitre}` as 'h3' | 'h4';
+
+const paragraphes = (t: string): string[] => t.split(/\n{2,}/).map((p) => p.trim()).filter((p) => p !== '');
+const config = loadSiteConfig();
+const archive = source.archive;
+const lienMail = lienMailto(config.contact, mesure.id, `${Astro.url.pathname}#${vue.ancre}`);
+const lienGithub = lienIssue(config.depot, mesure.id);
+const manque = "Cette version n'est pas encore rédigée ; voici la version En bref.";
+---
+<article class="mesure" id={vue.ancre} data-statut-relecture={mesure.statut_relecture}>
+  <div class="mesure-entete">
+    <Titre class="mesure-titre">{mesure.titre}</Titre>
+    <BadgeBrouillon texte={vue.badge} />
+  </div>
+  {NIVEAUX.map((niveau) => (
+    <div class="redaction" data-niveau={niveau}>
+      <p class="etiquette">{LIBELLES_NIVEAUX[niveau]}</p>
+      {niveau === 'resume' && <p>{mesure.redactions.resume}</p>}
+      {niveau === 'detaille' && (
+        <>
+          {paragraphes(mesure.redactions.detaille).map((p) => <p>{p}</p>)}
+          <blockquote data-citation><p>« {mesure.texte_source} »</p></blockquote>
+        </>
+      )}
+      {niveau === 'enfant' && (
+        mesure.redactions.enfant === undefined
+          ? <><p>{manque}</p><p>{mesure.redactions.resume}</p></>
+          : <p><TexteEnfant texte={mesure.redactions.enfant} prefixe={vue.ancre} /></p>
+      )}
+      {niveau === 'aine' && (
+        mesure.redactions.aine === undefined
+          ? <><p>{manque}</p><p>{mesure.redactions.resume}</p></>
+          : paragraphes(mesure.redactions.aine).map((p) => <p>{p}</p>)
+      )}
+    </div>
+  ))}
+  <div class="source">
+    <p>Source primaire : <span data-citation>{source.titre}</span></p>
+    <p>Consultée le <time datetime={source.date_consultation}>{formatDate(source.date_consultation)}</time></p>
+    <p><a href={source.url} rel="noopener noreferrer">Lire le document original</a></p>
+    {archive?.wayback_url !== undefined && (
+      <p><a href={archive.wayback_url} rel="noopener noreferrer">Copie archivée (Wayback Machine)</a></p>
+    )}
+    {archive !== undefined && (
+      <p>
+        <a href={lienExtrait(config.depot, archive.extrait, resolveContentRoot(process.cwd(), process.env), process.cwd())} rel="noopener noreferrer">Extrait archivé, empreinte sha256 {archive.sha256.slice(0, 12)}</a>
+      </p>
+    )}
+    <p class="signaler">
+      <a href={lienMail}>Signaler une erreur (courriel)<span class="sr-only"> sur la mesure « {mesure.titre} »</span></a>
+      <a href={lienGithub} rel="noopener noreferrer">Signaler une erreur (GitHub)<span class="sr-only"> sur la mesure « {mesure.titre} »</span></a>
+    </p>
+  </div>
+</article>

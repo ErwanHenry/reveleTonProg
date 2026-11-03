@@ -1,0 +1,23 @@
+---
+// Statut d'une personnalité, en phrase : libellé, motif, date, lien vers la source (M1-02).
+// La page fournit le statut tel que le mode l'autorise (production : le dernier statut relu, sinon aucun).
+import BadgeBrouillon from './BadgeBrouillon.astro';
+import { LIBELLES_MOTIF, LIBELLES_STATUT, depuis, formatDate, texteSource } from '../lib/corpus/index.ts';
+import type { PageCandidat } from '../lib/corpus/index.ts';
+
+interface Props {
+  page: PageCandidat;
+}
+
+const { page } = Astro.props;
+const { statut } = page;
+const motif = statut?.motif === undefined ? '' : ` (${LIBELLES_MOTIF[statut.motif]})`;
+const jour = statut === null ? '' : formatDate(statut.date);
+// « depuis le » / « depuis » : la date elle-même va dans <time>
+const prefixe = statut === null ? '' : depuis(statut.date).slice(0, depuis(statut.date).length - jour.length);
+---
+{statut === null ? (
+  <p class="statut statut-attente">Statut en cours de vérification</p>
+) : (
+  <p class="statut">{LIBELLES_STATUT[statut.code]}{motif}, {prefixe}<time datetime={statut.date}>{jour}</time>. Source : <a href={statut.source.url} rel="noopener noreferrer">{texteSource(statut.source)}</a>. <BadgeBrouillon texte={page.badgeStatut} /></p>
+)}

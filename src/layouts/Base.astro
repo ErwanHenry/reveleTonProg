@@ -1,0 +1,66 @@
+---
+import '../styles/base.css';
+import '../styles/pages.css';
+import ordreUrl from '../scripts/ordre.js?url';
+import { formatDate, getCorpus } from '../lib/corpus/index.ts';
+
+interface Props {
+  titre: string;
+  description: string;
+  /** Date ISO maximale des contenus affichés sur la page ; `undefined` si rien n'est publié. */
+  miseAJour: string | undefined;
+  /** Vrai si la page affiche au moins une mesure : ajoute la phrase de signalement avant le pied de page. */
+  avecSignalement?: boolean;
+}
+
+const { titre, description, miseAJour, avecSignalement = false } = Astro.props;
+const corpus = await getCorpus();
+// Rubrique courante, déduite du chemin (trailingSlash: 'always') : aucun paramètre de page nécessaire.
+const chemin = Astro.url.pathname;
+const courante = /^\/themes(\/|$)/.test(chemin) ? 'themes' : /^\/candidats(\/|$)/.test(chemin) ? 'candidats' : undefined;
+---
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{titre}</title>
+    <meta name="description" content={description} />
+    {corpus.mode === 'preview' && <meta name="robots" content="noindex" />}
+    <script is:inline src={ordreUrl}></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#contenu">Aller au contenu</a>
+    <header class="entete">
+      <div class="conteneur entete-ligne">
+        <a class="site-nom" href="/">reveleTonProg</a>
+        <nav class="nav-principale" aria-label="Navigation principale">
+          <ul>
+            <li><a href="/themes/" aria-current={courante === 'themes' ? 'page' : undefined}>Thèmes</a></li>
+            <li><a href="/candidats/" aria-current={courante === 'candidats' ? 'page' : undefined}>Candidats</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+    {corpus.mode === 'preview' && (
+      <div class="banniere-preview bandeau-apercu">Version de prévisualisation : contenus non relus, ne pas diffuser.</div>
+    )}
+    <slot />
+    {avecSignalement && (
+      <div class="conteneur">
+        <p class="signalement-intro">Vous avez repéré une erreur ? Signalez-la : l'identifiant de la mesure est déjà indiqué dans le message.</p>
+      </div>
+    )}
+    <footer class="pied">
+      <div class="conteneur">
+        {miseAJour === undefined ? (
+          <p data-mise-a-jour>Aucun contenu publié pour le moment.</p>
+        ) : (
+          <p data-mise-a-jour>Dernière mise à jour des contenus de cette page : <time datetime={miseAJour}>{formatDate(miseAJour)}</time>.</p>
+        )}
+        <p><span>Ce site</span>
+n'utilise aucun cookie et n'appelle aucun service extérieur.</p>
+      </div>
+    </footer>
+  </body>
+</html>
