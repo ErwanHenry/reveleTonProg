@@ -38,3 +38,13 @@ export function foldKey(s: string): string {
 export function sansMarqueurs(s: string): string {
   return s.replace(MARQUEUR_GLOSSAIRE, (_m, affiche: string) => affiche);
 }
+
+/** Identifiant de glossaire par défaut d'un marqueur [[affiché]] : le slug du texte affiché (A2). */
+export function slugGlossaire(affiche: string): string {
+  return affiche
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}

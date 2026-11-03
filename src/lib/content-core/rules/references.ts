@@ -4,6 +4,7 @@ import type { CollectionName } from '../collections.ts';
 import { readContained } from '../contained.ts';
 import { IDS_LOCK, comparerIdsLock, lireIdsLock } from '../ids-lock.ts';
 import { CHAMPS_EDITORIAUX, MARQUEUR_GLOSSAIRE } from './config.ts';
+import { slugGlossaire } from './text/normalize.ts';
 import { citer } from './types.ts';
 import type { CorpusRule, Finding, LoadedEntry, RuleContext } from './types.ts';
 
@@ -16,15 +17,8 @@ const existe = (ctx: RuleContext, collection: CollectionName, id: unknown): bool
 const tableau = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
 const objet = (v: unknown): Record<string, unknown> => (v !== null && typeof v === 'object' ? (v as Record<string, unknown>) : {});
 
-/** Identifiant de glossaire par défaut d'un marqueur [[affiché]] : le slug du texte affiché (A2). */
-export function slugGlossaire(affiche: string): string {
-  return affiche
-    .normalize('NFD')
-    .replace(/\p{M}/gu, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
+// Déplacé dans le module texte pur (Phase 4) pour que les composants Astro l'importent sans node:fs.
+export { slugGlossaire };
 
 /** Valeurs texte d'un champ éditorial, `*` désignant chaque élément d'un tableau. */
 function valeursTexte(donnees: unknown, pointeur: string): { pointer: string; texte: string }[] {
