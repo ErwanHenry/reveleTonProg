@@ -4,6 +4,7 @@ import { champsEditoriaux } from './redaction.ts';
 import { sansMarqueurs } from './text/normalize.ts';
 import { extractNumberWords, extractNumbers } from './text/numbers.ts';
 import { haystack, quoteIn } from './text/verbatim.ts';
+import { extractWordNumbers } from './text/word-numbers.ts';
 import { countWords, quoteSpans } from './text/words.ts';
 import { citer } from './types.ts';
 import type { CorpusRule, EntryRule, Famille, Finding, LoadedEntry, RuleContext } from './types.ts';
@@ -37,7 +38,9 @@ const chiffresCitations: EntryRule = {
     const out: Finding[] = [];
 
     const sources = chiffrage === undefined ? source : `${source} ${chiffrage}`;
-    const nombres = new Set(extractNumbers(sources));
+    // WR-08 : les nombres en toutes lettres de la source (« deux millions ») comptent comme leur
+    // valeur en chiffres, et inversement : « 2 millions » dans une rédaction est établi par la source.
+    const nombres = new Set([...extractNumbers(sources), ...extractWordNumbers(sources).map((n) => n.valeur)]);
     const motsNombres = new Set(extractNumberWords(sources));
     for (const { pointer, texte: brut } of champsEditoriaux(e)) {
       const strict = (CHAMPS_CHIFFRES as readonly string[]).includes(pointer);
@@ -53,8 +56,21 @@ const chiffresCitations: EntryRule = {
             : { code: 'CHIFFRE_DETAILLE_HORS_SOURCE', severity: 'warning', pointer, message },
         );
       }
+      // Nombres en toutes lettres : comparés par valeur (« trois » est établi par « 3 » dans la source).
+      const couverts = new Set<string>();
+      for (const { valeur, mots } of extractWordNumbers(texte)) {
+        for (const m of mots) couverts.add(m);
+        if (nombres.has(valeur)) continue;
+        out.push({
+          code: 'NOMBRE_LETTRES_HORS_SOURCE',
+          severity: 'warning',
+          pointer,
+          message: `le nombre écrit en lettres « ${citer(mots.join(' '))} » du champ « ${niveau} » ne figure pas dans la source : vérifier qu'il vient bien d'elle.`,
+        });
+      }
+      // Quantités floues (dizaine, moitié, tiers, ordinaux…) : comparées mot pour mot.
       for (const mot of new Set(extractNumberWords(texte))) {
-        if (motsNombres.has(mot)) continue;
+        if (couverts.has(mot) || motsNombres.has(mot)) continue;
         out.push({
           code: 'NOMBRE_LETTRES_HORS_SOURCE',
           severity: 'warning',

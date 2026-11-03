@@ -123,6 +123,37 @@ describe('REGLE-04 : chiffres', () => {
     comparer(d, [err('CHIFFRAGE_HORS_ARCHIVE', '/chiffrage/texte')]);
   });
 
+  it('WR-08 : la source en lettres (« cinquante mille ») établit « 50 000 » en chiffres', () => {
+    const d = citations([r(MESURE, 'de plus de 50 000 habitants, avec un plafond', 'de plus de cinquante mille habitants, avec un plafond')]).filter(
+      (x) => x.code === 'CHIFFRE_HORS_SOURCE' || x.code === 'NOMBRE_LETTRES_HORS_SOURCE',
+    );
+    comparer(d, []);
+  });
+
+  it('WR-08 : la source en chiffres établit un nombre en lettres de la rédaction', () => {
+    const d = citations([r(MESURE, 'Marie Fictive propose de plafonner les loyers dans les villes de plus de 50 000 habitants.', 'Marie Fictive propose de plafonner les loyers dans les villes de plus de cinquante mille habitants.')]).filter(
+      (x) => x.code === 'CHIFFRE_HORS_SOURCE' || x.code === 'NOMBRE_LETTRES_HORS_SOURCE',
+    );
+    comparer(d, []);
+  });
+
+  it('WR-08 : « deux millions » en lettres dans la source, « 2 millions » dans le résumé', () => {
+    const d = citations([
+      r(MESURE, 'de plus de 50 000 habitants, avec un plafond', 'de plus de deux millions habitants, avec un plafond'),
+      r(MESURE, 'plafonner les loyers dans les villes de plus de 50 000 habitants. Le préfet', 'plafonner les loyers dans les villes de plus de 2 millions habitants. Le préfet'),
+    ]).filter((x) => x.code === 'CHIFFRE_HORS_SOURCE' && x.pointer === '/redactions/resume');
+    comparer(d, []);
+  });
+
+  it('WR-08 : un nombre en lettres de valeur différente reste signalé', () => {
+    comparer(
+      citations([r(MESURE, 'Marie Fictive propose de plafonner les loyers dans les villes de plus de 50 000 habitants.', 'Marie Fictive propose de plafonner les loyers dans les villes de plus de soixante mille habitants.')]).filter(
+        (x) => x.code === 'NOMBRE_LETTRES_HORS_SOURCE',
+      ),
+      [warn('NOMBRE_LETTRES_HORS_SOURCE', '/redactions/resume')],
+    );
+  });
+
   it('un nombre en lettres absent de la source donne un avertissement sur l’enfant', () => {
     comparer(
       citations([r(MESURE, 'Un propriétaire ne pourrait pas demander plus que ce prix.', 'Trois propriétaires ne pourraient pas demander plus que ce prix.')]),
