@@ -5,7 +5,6 @@ theme: logement
 sous_theme: loyers
 titre: Encadrement des loyers dans les villes moyennes (fictif)
 texte_source: Nous encadrerons les loyers dans toutes les villes de plus de 50 000 habitants, avec un plafond fixé chaque année par le préfet.
-source: marie-fictive-programme
 source_localisation: page 3 (fictive)
 redactions:
   resume: Marie Fictive propose de plafonner les loyers dans les villes de plus de 50 000 habitants. Le préfet fixerait le plafond chaque année.
