@@ -1,7 +1,7 @@
 import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, renameSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { EN_TETE_IDS_LOCK, ajouterIds, comparerIdsLock, ecrireIdsLock, lireIdsLock } from '../../src/lib/content-core/ids-lock.ts';
@@ -86,7 +86,10 @@ describe('ids-lock : ecrireIdsLock et ajouterIds', () => {
 
   it('reproduit octet pour octet les ids.lock versionnés', () => {
     assert.equal(ecrireIdsLock(['jean-imaginaire', 'marie-fictive']), readFileSync(path.join(FIXTURE_ROOT, 'ids.lock'), 'utf8'));
-    assert.equal(ecrireIdsLock([]), readFileSync(path.join(REPO_ROOT, 'ids.lock'), 'utf8'));
+    const idsReels = readdirSync(path.join(REPO_ROOT, 'src/content/candidats'))
+      .filter((f) => f.endsWith('.yaml'))
+      .map((f) => f.slice(0, -'.yaml'.length));
+    assert.equal(ecrireIdsLock(idsReels), readFileSync(path.join(REPO_ROOT, 'ids.lock'), 'utf8'));
   });
 
   it('ajoute les nouveaux ids en conservant les anciens', () => {
@@ -143,7 +146,7 @@ describe('npm run ids (scripts/ids.ts)', () => {
     assert.match(fixture.stdout, /ids : 2 candidat\(s\), 2 verrouillé\(s\), 0 problème\(s\)/);
     const reel = cli(['--check', '--root', '.']);
     assert.equal(reel.status, 0, reel.stdout + reel.stderr);
-    assert.match(reel.stdout, /ids : 0 candidat\(s\), 0 verrouillé\(s\), 0 problème\(s\) — racine \./);
+    assert.match(reel.stdout, /ids : (\d+) candidat\(s\), \1 verrouillé\(s\), 0 problème\(s\) — racine \./);
   });
 
   it('candidat renommé : --check échoue (DISPARU + NON_VERROUILLE), --write refuse sans toucher le verrou', () => {
