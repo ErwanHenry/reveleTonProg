@@ -1,0 +1,19 @@
+version_schema: 1
+id: sarah-knafo
+prenom: Sarah
+nom: Knafo
+nom_tri: Knafo
+parti: null
+ids_externes:
+  2027etmoi: knafo
+statuts:
+  - code: renonce
+    motif: non_candidat
+    date: 2026-04-29
+    source:
+      type: presse
+      titre: franceinfo
+      url: https://www.franceinfo.fr/politique/pas-candidate-a-l-election-presidentielle-de-2027-sarah-knafo-lance-une-grande-consultation-des-francais_7970540.html
+      date_publication: 2026-04-29
+      date_consultation: 2026-09-22
+    statut_relecture: brouillon

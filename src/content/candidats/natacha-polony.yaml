@@ -1,0 +1,23 @@
+version_schema: 1
+id: natacha-polony
+prenom: Natacha
+nom: Polony
+nom_tri: Polony
+parti: Nous sommes la France (mouvement)
+parti_source:
+  type: candidat
+  url: https://www.natachapolony2027.fr/
+  date_consultation: 2026-10-28
+site_officiel: https://www.natachapolony2027.fr/
+ids_externes:
+  2027etmoi: polony
+statuts:
+  - code: declare
+    date: 2026-10-14
+    source:
+      type: presse
+      titre: LCP — « Oui, je suis candidate à la présidentielle », annonce Natacha Polony
+      url: https://lcp.fr/actualites/natacha-polony-annonce-sa-candidature-a-l-election-presidentielle-443808
+      date_publication: 2026-10-14
+      date_consultation: 2026-10-28
+    statut_relecture: brouillon

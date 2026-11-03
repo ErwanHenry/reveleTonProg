@@ -1,0 +1,23 @@
+version_schema: 1
+id: marion-marechal
+prenom: Marion
+nom: Maréchal
+nom_tri: Maréchal
+parti: Identité-Libertés
+parti_source:
+  type: parti
+  url: https://identite-libertes.fr/
+  date_consultation: 2026-09-22
+ids_externes:
+  2027etmoi: marechal
+statuts:
+  - code: renonce
+    motif: ralliement
+    date: 2026-09-20
+    source:
+      type: presse
+      titre: CNews
+      url: https://www.cnews.fr/france/2026-09-20/presidentielle-2027-marion-marechal-prete-jeter-toutes-ses-forces-dans-la
+      date_publication: 2026-09-20
+      date_consultation: 2026-09-22
+    statut_relecture: brouillon

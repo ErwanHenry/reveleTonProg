@@ -1,0 +1,18 @@
+version_schema: 1
+id: benoit-mathieu
+prenom: Benoît
+nom: Mathieu
+nom_tri: Mathieu
+parti: null
+ids_externes:
+  2027etmoi: mathieu
+statuts:
+  - code: declare
+    date: 2026-05-03
+    source:
+      type: presse
+      titre: RMC
+      url: https://rmc.bfmtv.com/actualites/politique/presidentielle-2027-a-27-ans-il-sillonne-la-france-a-velo-en-quete-des-500-parrainages_AV-202605030128.html
+      date_publication: 2026-05-03
+      date_consultation: 2026-10-28
+    statut_relecture: brouillon

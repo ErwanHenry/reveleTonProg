@@ -1,0 +1,18 @@
+version_schema: 1
+id: gilles-platret
+prenom: Gilles
+nom: Platret
+nom_tri: Platret
+parti: null
+ids_externes:
+  2027etmoi: platret
+statuts:
+  - code: declare
+    date: 2026-10-09
+    source:
+      type: presse
+      titre: "France 3 Bourgogne-Franche-Comté — Gilles Platret, le maire de Chalon-sur-Saône, se déclare candidat à l'élection présidentielle : « je m'engage résolument vers 2027 »"
+      url: https://france3-regions.franceinfo.fr/bourgogne-franche-comte/saone-et-loire/chalon-sur-saone/gilles-platret-le-maire-de-chalon-sur-saone-se-declare-candidat-a-l-election-presidentielle-je-m-engage-resolument-vers-2027-3430416.html
+      date_publication: 2026-10-09
+      date_consultation: 2026-10-28
+    statut_relecture: brouillon

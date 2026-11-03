@@ -1,0 +1,19 @@
+version_schema: 1
+id: michel-barnier
+prenom: Michel
+nom: Barnier
+nom_tri: Barnier
+parti: null
+ids_externes:
+  2027etmoi: barnier
+statuts:
+  - code: renonce
+    motif: non_candidat
+    date: 2026-04-19
+    source:
+      type: presse
+      titre: franceinfo
+      url: https://www.franceinfo.fr/politique/michel-barnier/presidentielle-2027-michel-barnier-se-sent-capable-d-etre-president-mais-ne-veut-pas-personnaliser-aujourd-hui-la-campagne_7949753.html
+      date_publication: 2026-04-19
+      date_consultation: 2026-09-22
+    statut_relecture: brouillon

@@ -1,0 +1,18 @@
+version_schema: 1
+id: erwan-rohou
+prenom: Erwan
+nom: Rohou
+nom_tri: Rohou
+parti: null
+ids_externes:
+  2027etmoi: rohou
+statuts:
+  - code: declare
+    date: 2026-10-22
+    source:
+      type: presse
+      titre: "franceinfo — Portraits : qui sont les candidats (déjà) déclarés à l'élection présidentielle de 2027 ? (34 candidats au 22 octobre 2026)"
+      url: https://www.franceinfo.fr/elections/presidentielle/portraits-qui-sont-les-candidats-declares-a-l-election-presidentielle-de-2027_8208032.html
+      date_publication: 2026-10-22
+      date_consultation: 2026-10-28
+    statut_relecture: brouillon

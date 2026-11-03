@@ -1,0 +1,23 @@
+version_schema: 1
+id: marine-tondelier
+prenom: Marine
+nom: Tondelier
+nom_tri: Tondelier
+parti: Les Écologistes
+parti_source:
+  type: candidat
+  url: https://www.marinetondelier.fr/
+  date_consultation: 2026-10-28
+site_officiel: https://www.marinetondelier.fr/
+ids_externes:
+  2027etmoi: tondelier
+statuts:
+  - code: declare
+    date: 2026-09-22
+    source:
+      type: presse
+      titre: Journal du Net
+      url: https://www.journaldunet.com/business/action-publique/1555211-referendum-interne-des-ecologistes-sur-la-candidature-de-marine-tondelier-a-la-presidentielle-de-2027/
+      date_publication: 2026-09-22
+      date_consultation: 2026-10-28
+    statut_relecture: brouillon

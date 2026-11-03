@@ -1,0 +1,23 @@
+version_schema: 1
+id: jean-luc-melenchon
+prenom: Jean-Luc
+nom: Mélenchon
+nom_tri: Mélenchon
+parti: La France insoumise
+parti_source:
+  type: parti
+  url: https://lafranceinsoumise.fr/
+  date_consultation: 2026-10-28
+site_officiel: https://melenchon2027.fr/
+ids_externes:
+  2027etmoi: melenchon
+statuts:
+  - code: declare
+    date: 2026-05-03
+    source:
+      type: presse
+      titre: LCP
+      url: https://lcp.fr/actualites/presidentielle-jean-luc-melenchon-officialise-sa-candidature-pour-2027-435851
+      date_publication: 2026-05-03
+      date_consultation: 2026-10-28
+    statut_relecture: brouillon

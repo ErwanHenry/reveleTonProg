@@ -1,0 +1,23 @@
+version_schema: 1
+id: manolo-mlekuz
+prenom: Manolo
+nom: Mlekuz
+nom_tri: Mlekuz
+parti: Trajectoire
+parti_source:
+  type: candidat
+  url: https://trajectoire2027.fr/
+  date_consultation: 2026-10-28
+site_officiel: https://trajectoire2027.fr/
+ids_externes:
+  2027etmoi: mlekuz
+statuts:
+  - code: declare
+    date: 2026-07-03
+    source:
+      type: presse
+      titre: RMC
+      url: https://rmc.bfmtv.com/actualites/politique/si-j-arrive-a-l-elysee-ce-candidat-pour-2027-age-de-20-ans-veut-etre-un-president-sans-pouvoir_AV-202607030571.html
+      date_publication: 2026-07-03
+      date_consultation: 2026-10-28
+    statut_relecture: brouillon

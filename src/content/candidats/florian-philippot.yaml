@@ -1,0 +1,22 @@
+version_schema: 1
+id: florian-philippot
+prenom: Florian
+nom: Philippot
+nom_tri: Philippot
+parti: Les Patriotes
+parti_source:
+  type: parti
+  url: https://les-patriotes.fr/
+  date_consultation: 2026-10-28
+ids_externes:
+  2027etmoi: philippot
+statuts:
+  - code: declare
+    date: 2026-05-09
+    source:
+      type: presse
+      titre: Front Populaire
+      url: https://frontpopulaire.fr/politique/contents/florian-philippot-troisieme-candidat-souverainiste-a-la-presidentielle_tco_31760632
+      date_publication: 2026-05-09
+      date_consultation: 2026-10-28
+    statut_relecture: brouillon

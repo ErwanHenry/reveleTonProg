@@ -1,0 +1,23 @@
+version_schema: 1
+id: philippe-poutou
+prenom: Philippe
+nom: Poutou
+nom_tri: Poutou
+parti: NPA-l'Anticapitaliste
+parti_source:
+  type: parti
+  url: https://lanticapitaliste.org/
+  date_consultation: 2026-09-22
+ids_externes:
+  2027etmoi: poutou
+statuts:
+  - code: renonce
+    motif: non_candidat
+    date: 2026-06-29
+    source:
+      type: presse
+      titre: franceinfo
+      url: https://www.franceinfo.fr/elections/presidentielle/le-npa-anticapitaliste-renonce-a-presenter-un-candidat-a-l-election-presidentielle-2027-et-annonce-soutenir-jean-luc-melenchon_8084936.html
+      date_publication: 2026-06-29
+      date_consultation: 2026-09-22
+    statut_relecture: brouillon

@@ -1,0 +1,23 @@
+version_schema: 1
+id: delphine-batho
+prenom: Delphine
+nom: Batho
+nom_tri: Batho
+parti: Génération écologie
+parti_source:
+  type: parti
+  url: https://generationecologie.fr/
+  date_consultation: 2026-10-28
+site_officiel: https://www.delphinebatho.fr/
+ids_externes:
+  2027etmoi: batho
+statuts:
+  - code: declare
+    date: 2025-11-25
+    source:
+      type: candidat
+      titre: Site de campagne
+      url: https://www.delphinebatho.fr/
+      date_publication: 2025-11-25
+      date_consultation: 2026-10-28
+    statut_relecture: brouillon

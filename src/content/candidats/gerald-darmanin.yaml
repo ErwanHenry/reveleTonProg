@@ -1,0 +1,19 @@
+version_schema: 1
+id: gerald-darmanin
+prenom: Gérald
+nom: Darmanin
+nom_tri: Darmanin
+parti: null
+ids_externes:
+  2027etmoi: darmanin
+statuts:
+  - code: renonce
+    motif: ralliement
+    date: 2026-08-17
+    source:
+      type: presse
+      titre: franceinfo
+      url: https://www.franceinfo.fr/politique/gerald-darmanin-ne-se-presentera-pas-a-l-election-presidentielle-et-apporte-son-soutien-a-edouard-philippe_8151311.html
+      date_publication: 2026-08-17
+      date_consultation: 2026-09-22
+    statut_relecture: brouillon

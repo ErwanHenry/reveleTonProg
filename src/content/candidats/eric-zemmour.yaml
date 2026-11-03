@@ -1,0 +1,22 @@
+version_schema: 1
+id: eric-zemmour
+prenom: Éric
+nom: Zemmour
+nom_tri: Zemmour
+parti: Reconquête
+parti_source:
+  type: parti
+  url: https://www.parti-reconquete.fr/
+  date_consultation: 2026-10-28
+ids_externes:
+  2027etmoi: zemmour
+statuts:
+  - code: declare
+    date: 2026-09-17
+    source:
+      type: presse
+      titre: L'Avenir
+      url: https://www.lavenir.net/actu/monde/2026/09/18/zemmour-confirme-quil-sera-candidat-a-lelection-presidentielle-en-france-et-durcit-encore-son-discours-sur-limmigration-5OFMOVM6CVCDFHY4B3GI5QID3Q/
+      date_publication: 2026-09-17
+      date_consultation: 2026-10-28
+    statut_relecture: brouillon

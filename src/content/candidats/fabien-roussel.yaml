@@ -1,0 +1,22 @@
+version_schema: 1
+id: fabien-roussel
+prenom: Fabien
+nom: Roussel
+nom_tri: Roussel
+parti: Parti communiste français
+parti_source:
+  type: parti
+  url: https://www.pcf.fr/
+  date_consultation: 2026-10-28
+ids_externes:
+  2027etmoi: roussel
+statuts:
+  - code: declare
+    date: 2026-09-06
+    source:
+      type: presse
+      titre: LCP
+      url: https://lcp.fr/actualites/fabien-roussel-officiellement-candidat-du-pcf-a-l-election-presidentielle-de-2027-441389
+      date_publication: 2026-09-06
+      date_consultation: 2026-10-28
+    statut_relecture: brouillon

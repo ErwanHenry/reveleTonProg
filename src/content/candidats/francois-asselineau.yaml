@@ -1,0 +1,22 @@
+version_schema: 1
+id: francois-asselineau
+prenom: François
+nom: Asselineau
+nom_tri: Asselineau
+parti: Union populaire républicaine
+parti_source:
+  type: parti
+  url: https://upr.fr/
+  date_consultation: 2026-10-28
+ids_externes:
+  2027etmoi: asselineau
+statuts:
+  - code: declare
+    date: 2026-07-07
+    source:
+      type: parti
+      titre: UPR
+      url: https://upr.fr/actualites/francois-asselineau-en-2027-je-serai-le-seul-candidat-a-la-presidence-de-la-republique-francaise
+      date_publication: 2026-07-07
+      date_consultation: 2026-10-28
+    statut_relecture: brouillon

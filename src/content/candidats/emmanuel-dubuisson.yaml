@@ -1,0 +1,23 @@
+version_schema: 1
+id: emmanuel-dubuisson
+prenom: Emmanuel
+nom: Dubuisson
+nom_tri: Dubuisson
+parti: Sans parti (association Les Gaulois)
+parti_source:
+  type: candidat
+  url: https://www.dubuisson2027.fr/
+  date_consultation: 2026-10-28
+site_officiel: https://www.dubuisson2027.fr/
+ids_externes:
+  2027etmoi: dubuisson
+statuts:
+  - code: declare
+    date: 2026-10-08
+    source:
+      type: institution
+      titre: Annuaire des entreprises (registre SIRENE) — Les Gaulois, campagne présidentielle élection 2027 de M. Emmanuel Dubuisson
+      url: https://annuaire-entreprises.data.gouv.fr/entreprise/les-gaulois-campagne-presidentielle-election-2027-de-m-emmanuel-dubuisson-106391956
+      date_publication: 2026-10-08
+      date_consultation: 2026-10-28
+    statut_relecture: brouillon

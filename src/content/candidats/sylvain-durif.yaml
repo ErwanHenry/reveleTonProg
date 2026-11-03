@@ -1,0 +1,18 @@
+version_schema: 1
+id: sylvain-durif
+prenom: Sylvain
+nom: Durif
+nom_tri: Durif
+parti: null
+ids_externes:
+  2027etmoi: durif
+statuts:
+  - code: declare
+    date: 2026-08-26
+    source:
+      type: presse
+      titre: 20 Minutes
+      url: https://www.20minutes.fr/politique/4241053-20260826-presidentielle-2027-sylvain-durif-christ-cosmique-veut-presenter
+      date_publication: 2026-08-26
+      date_consultation: 2026-10-28
+    statut_relecture: brouillon

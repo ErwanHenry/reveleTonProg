@@ -1,0 +1,23 @@
+version_schema: 1
+id: francois-bayrou
+prenom: François
+nom: Bayrou
+nom_tri: Bayrou
+parti: MoDem
+parti_source:
+  type: parti
+  url: https://www.mouvementdemocrate.fr/
+  date_consultation: 2026-09-22
+ids_externes:
+  2027etmoi: bayrou
+statuts:
+  - code: renonce
+    motif: non_candidat
+    date: 2026-06-10
+    source:
+      type: presse
+      titre: franceinfo
+      url: https://www.franceinfo.fr/elections/presidentielle/l-ancien-premier-ministre-francois-bayrou-n-est-pas-candidat-a-l-election-presidentielle-de-2027_8054486.html
+      date_publication: 2026-06-10
+      date_consultation: 2026-09-22
+    statut_relecture: brouillon

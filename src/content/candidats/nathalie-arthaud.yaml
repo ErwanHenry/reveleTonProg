@@ -1,0 +1,23 @@
+version_schema: 1
+id: nathalie-arthaud
+prenom: Nathalie
+nom: Arthaud
+nom_tri: Arthaud
+parti: Lutte ouvrière
+parti_source:
+  type: parti
+  url: https://www.lutte-ouvriere.org/
+  date_consultation: 2026-10-28
+site_officiel: https://www.nathalie-arthaud.info/
+ids_externes:
+  2027etmoi: arthaud
+statuts:
+  - code: declare
+    date: 2025-12-08
+    source:
+      type: presse
+      titre: franceinfo
+      url: https://www.franceinfo.fr/politique/nathalie-arthaud/presidentielle-2027-nathalie-arthaud-porte-parole-de-lutte-ouvriere-annonce-sa-candidature_7665874.html
+      date_publication: 2025-12-08
+      date_consultation: 2026-10-28
+    statut_relecture: brouillon

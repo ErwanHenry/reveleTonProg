@@ -1,0 +1,18 @@
+version_schema: 1
+id: olivier-becht
+prenom: Olivier
+nom: Becht
+nom_tri: Becht
+parti: null
+ids_externes:
+  2027etmoi: becht
+statuts:
+  - code: declare
+    date: 2026-09-24
+    source:
+      type: presse
+      titre: ICI Alsace
+      url: https://www.ici.fr/grand-est/alsace-cea/rixheim/il-faut-refonder-notre-modele-le-depute-alsacien-olivier-becht-est-candidat-a-la-presidentielle-1401407
+      date_publication: 2026-09-24
+      date_consultation: 2026-10-28
+    statut_relecture: brouillon

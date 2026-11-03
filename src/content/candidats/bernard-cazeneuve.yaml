@@ -1,0 +1,22 @@
+version_schema: 1
+id: bernard-cazeneuve
+prenom: Bernard
+nom: Cazeneuve
+nom_tri: Cazeneuve
+parti: La Convention
+parti_source:
+  type: parti
+  url: https://la-convention.fr/
+  date_consultation: 2026-10-28
+ids_externes:
+  2027etmoi: cazeneuve
+statuts:
+  - code: declare
+    date: 2026-04-29
+    source:
+      type: presse
+      titre: Europe 1
+      url: https://www.europe1.fr/politique/presidentielle-2027-bernard-cazeneuve-annonce-sa-candidature-le-barrage-a-jean-luc-melenchon-se-precise-929339
+      date_publication: 2026-04-29
+      date_consultation: 2026-10-28
+    statut_relecture: brouillon

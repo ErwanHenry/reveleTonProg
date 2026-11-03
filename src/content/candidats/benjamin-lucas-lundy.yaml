@@ -1,0 +1,19 @@
+version_schema: 1
+id: benjamin-lucas-lundy
+prenom: Benjamin
+nom: Lucas-Lundy
+nom_tri: Lucas-Lundy
+parti: null
+ids_externes:
+  2027etmoi: lucas-lundy
+statuts:
+  - code: renonce
+    motif: retrait
+    date: 2026-07-07
+    source:
+      type: presse
+      titre: Le Monde
+      url: https://www.lemonde.fr/politique/article/2026/07/07/le-depute-benjamin-lucas-landy-retire-sa-candidature-a-la-primaire-unitaire-de-la-gauche_6721467_823448.html
+      date_publication: 2026-07-07
+      date_consultation: 2026-09-22
+    statut_relecture: brouillon

@@ -1,0 +1,22 @@
+version_schema: 1
+id: clara-egger
+prenom: Clara
+nom: Egger
+nom_tri: Egger
+parti: Solution démocratique
+parti_source:
+  type: parti
+  url: https://solutiondemocratique.fr/
+  date_consultation: 2026-10-28
+ids_externes:
+  2027etmoi: egger
+statuts:
+  - code: declare
+    date: 2026-04-19
+    source:
+      type: parti
+      titre: Solution démocratique
+      url: https://solutiondemocratique.fr/presidentielle2027-annonce-candidature-clara-egger/
+      date_publication: 2026-04-19
+      date_consultation: 2026-10-28
+    statut_relecture: brouillon

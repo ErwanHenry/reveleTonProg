@@ -1,0 +1,23 @@
+version_schema: 1
+id: xavier-bertrand
+prenom: Xavier
+nom: Bertrand
+nom_tri: Bertrand
+parti: Les Républicains (candidat indépendant, Nous France)
+parti_source:
+  type: candidat
+  url: https://www.nousfrance.fr/
+  date_consultation: 2026-10-28
+site_officiel: https://www.nousfrance.fr/
+ids_externes:
+  2027etmoi: bertrand
+statuts:
+  - code: declare
+    date: 2026-08-27
+    source:
+      type: presse
+      titre: franceinfo
+      url: https://www.franceinfo.fr/elections/presidentielle/xavier-bertrand-figure-de-la-droite-et-president-de-la-region-hauts-de-france-annonce-sa-candidature-a-l-election-presidentielle_8164871.html
+      date_publication: 2026-08-27
+      date_consultation: 2026-10-28
+    statut_relecture: brouillon

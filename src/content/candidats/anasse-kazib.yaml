@@ -1,0 +1,23 @@
+version_schema: 1
+id: anasse-kazib
+prenom: Anasse
+nom: Kazib
+nom_tri: Kazib
+parti: Révolution permanente
+parti_source:
+  type: parti
+  url: https://www.revolutionpermanente.fr/
+  date_consultation: 2026-10-28
+site_officiel: https://anasse2027.fr/
+ids_externes:
+  2027etmoi: kazib
+statuts:
+  - code: declare
+    date: 2026-06-01
+    source:
+      type: parti
+      titre: Révolution permanente
+      url: https://www.revolutionpermanente.fr/Anasse-Kazib-2027-500-parrainages-pour-que-la-classe-ouvriere-s-invite-dans-la-presidentielle
+      date_publication: 2026-06-01
+      date_consultation: 2026-10-28
+    statut_relecture: brouillon

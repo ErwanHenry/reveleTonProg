@@ -1,0 +1,23 @@
+version_schema: 1
+id: edouard-philippe
+prenom: Édouard
+nom: Philippe
+nom_tri: Philippe
+parti: Horizons
+parti_source:
+  type: parti
+  url: https://horizonsleparti.fr/
+  date_consultation: 2026-10-28
+site_officiel: https://www.edouardphilippe.fr/
+ids_externes:
+  2027etmoi: philippe
+statuts:
+  - code: declare
+    date: 2026-09-09
+    source:
+      type: presse
+      titre: Public Sénat
+      url: https://www.publicsenat.fr/actualites/politique/presidentielle-2027-la-main-tendue-dedouard-philippe-rejetee-par-gabriel-attal-et-bruno-retailleau-relance-lidee-dune-primaire
+      date_publication: 2026-09-09
+      date_consultation: 2026-10-28
+    statut_relecture: brouillon
