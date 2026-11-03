@@ -15,7 +15,7 @@ const objet = (v: unknown): Record<string, unknown> => (v !== null && typeof v =
  * périmètre en silence. Les dates ISO (AAAA-MM ou AAAA-MM-JJ) se comparent comme des chaînes ; à date
  * égale, le dernier de la liste l'emporte.
  */
-function statutLePlusRecent(statuts: unknown): Record<string, unknown> | undefined {
+export function statutLePlusRecent(statuts: unknown): Record<string, unknown> | undefined {
   let meilleur: Record<string, unknown> | undefined;
   for (const brut of tableau(statuts)) {
     const s = objet(brut);

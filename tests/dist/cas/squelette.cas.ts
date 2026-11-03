@@ -1,71 +1,22 @@
-// Walking-skeleton end-to-end test.
-// Seul fichier de test autorisé à lancer `astro build` : node --test exécute les
-// fichiers en parallèle et des builds concurrents partageraient le cache `.astro`.
-// Le corpus construit est choisi par la variable d'environnement RTP_CONTENT_ROOT
-// (corpus fictif par défaut, racine vide ou fixture cassée selon le sous-test).
-import { after, describe, it } from 'node:test';
+// Walking skeleton (Phase 1), migré depuis tests/dist/skeleton.test.ts : mêmes quatre cas.
+// Le cas (a) remplace la boucle « aucun .js, aucun <script, aucun href externe » par checkDist, qui
+// est plus strict (ressources tierces, scripts en ligne, poids, mots collés, sources datées…).
+import { it } from 'node:test';
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
+import { cellulesAttendues, checkDist } from '../../../scripts/lib/check-dist.ts';
+import type { ContexteSite } from '../contexte.ts';
 
-const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const ASTRO_BIN = path.join(REPO_ROOT, 'node_modules', '.bin', 'astro');
-const FIXTURE_ROOT = path.join(REPO_ROOT, 'tests', 'fixtures', 'corpus-valide');
+export default function squelette(ctx: ContexteSite): void {
+  const FIXTURE_ROOT = path.join(ctx.repoRoot, 'tests', 'fixtures', 'corpus-valide');
 
-const tmpDirs: string[] = [];
-function mkTmp(): string {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rtp-'));
-  tmpDirs.push(dir);
-  return dir;
-}
-
-after(() => {
-  for (const dir of tmpDirs) fs.rmSync(dir, { recursive: true, force: true });
-});
-
-interface BuildResult {
-  status: number | null;
-  output: string;
-  outDir: string;
-}
-
-function build(contentRoot: string): BuildResult {
-  assert.ok(
-    fs.existsSync(ASTRO_BIN),
-    `astro est introuvable (${ASTRO_BIN}) : lancez « npm install » avant ce test (build avec RTP_CONTENT_ROOT=${contentRoot})`,
-  );
-  const outDir = path.join(mkTmp(), 'dist');
-  const res = spawnSync(ASTRO_BIN, ['build', '--outDir', outDir], {
-    cwd: REPO_ROOT,
-    env: {
-      ...process.env,
-      RTP_CONTENT_ROOT: contentRoot, // lu par content-core (root.ts)
-      ASTRO_TELEMETRY_DISABLED: '1',
-    },
-    encoding: 'utf8',
-    timeout: 120_000,
-  });
-  return { status: res.status, output: `${res.stdout ?? ''}${res.stderr ?? ''}`, outDir };
-}
-
-function walk(dir: string): string[] {
-  if (!fs.existsSync(dir)) return [];
-  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
-    const p = path.join(dir, e.name);
-    return e.isDirectory() ? walk(p) : [p];
-  });
-}
-
-describe('walking skeleton', { concurrency: false }, () => {
-  it('(a) construit le corpus fictif en HTML statique sans JS', () => {
-    const { status, output, outDir } = build(FIXTURE_ROOT);
+  it('(a) construit le corpus fictif en HTML statique, et checkDist ne signale aucune erreur', () => {
+    const { status, output, outDir } = ctx.construire('corpus-valide', { racine: FIXTURE_ROOT });
     assert.equal(status, 0, `astro build a échoué :\n${output}`);
-    const html = fs.readFileSync(path.join(outDir, 'index.html'), 'utf8');
+    const html = ctx.lire(outDir, 'index.html');
     assert.match(html, /Marie Fictive/);
     assert.match(html, /Parti Imaginaire/);
     assert.ok(html.includes('2026-10-15'), 'la date 2026-10-15 doit apparaître telle quelle');
@@ -78,30 +29,28 @@ describe('walking skeleton', { concurrency: false }, () => {
     // compressHTML: true conserve l'espace entre un élément inline et le texte suivant
     assert.match(html, /<\/span>\s+à des fins de test/);
 
-    const files = walk(outDir);
-    for (const f of files) {
-      assert.ok(!f.endsWith('.js'), `fichier JS interdit dans dist : ${f}`);
-      if (f.endsWith('.html')) {
-        const content = fs.readFileSync(f, 'utf8');
-        assert.ok(!content.includes('<script'), `<script interdit dans ${f}`);
-        for (const m of content.matchAll(/\b(?:src|href)=["']?(https?:\/\/[^"'\s>]*)/g)) {
-          assert.fail(`ressource tierce interdite dans ${f} : ${m[1]}`);
-        }
-      }
-    }
+    const constats = checkDist(outDir, {
+      mode: 'production',
+      cellulesParTheme: cellulesAttendues(FIXTURE_ROOT, ctx.repoRoot, 'production'),
+    });
+    const erreurs = constats.filter((c) => c.severite === 'erreur');
+    assert.deepEqual(
+      erreurs,
+      [],
+      `checkDist signale ${erreurs.length} erreur(s) :\n${erreurs.map((c) => `${c.code} ${c.fichier} : ${c.message}`).join('\n')}`,
+    );
   });
 
   it('(b) construit une racine de contenu vide', () => {
-    const root = mkTmp();
+    const root = ctx.tmp();
     fs.mkdirSync(path.join(root, 'src', 'content'), { recursive: true });
-    const { status, output, outDir } = build(root);
+    const { status, output, outDir } = ctx.construire('racine-vide', { racine: root });
     assert.equal(status, 0, `astro build a échoué :\n${output}`);
-    const html = fs.readFileSync(path.join(outDir, 'index.html'), 'utf8');
-    assert.match(html, /Aucun candidat dans ce corpus/);
+    assert.match(ctx.lire(outDir, 'index.html'), /Aucun candidat dans ce corpus/);
   });
 
   it('(c) échoue avec fichier:ligne:col SCHEMA_REQUIRED sur une fixture cassée', () => {
-    const root = mkTmp();
+    const root = ctx.tmp();
     fs.cpSync(FIXTURE_ROOT, root, { recursive: true });
     const file = path.join(root, 'src', 'content', 'candidats', 'marie-fictive.yaml');
     const source = fs.readFileSync(file, 'utf8');
@@ -109,7 +58,7 @@ describe('walking skeleton', { concurrency: false }, () => {
     assert.ok(idx > 0, 'la fixture doit contenir « statuts: »');
     fs.writeFileSync(file, source.slice(0, idx));
 
-    const { status, output, outDir } = build(root);
+    const { status, output, outDir } = ctx.construire('fixture-cassee', { racine: root });
     assert.notEqual(status, 0, 'le build aurait dû échouer');
     assert.match(output, /marie-fictive\.yaml:\d+:\d+ SCHEMA_REQUIRED/);
     const occurrences = output.match(/marie-fictive\.yaml:\d+:\d+ SCHEMA_REQUIRED/g) ?? [];
@@ -128,7 +77,7 @@ describe('walking skeleton', { concurrency: false }, () => {
     const bytes = fs.readFileSync(archivePath);
     const sha = createHash('sha256').update(bytes).digest('hex');
     assert.equal(sha, source.archive.sha256, "le sha256 réel de l'extrait doit égaler archive.sha256");
-    assert.equal(path.basename(archivePath), `${sha.slice(0, 12)}.txt`, 'le fichier doit s\'appeler <12 premiers hex du sha256>.txt');
+    assert.equal(path.basename(archivePath), `${sha.slice(0, 12)}.txt`, "le fichier doit s'appeler <12 premiers hex du sha256>.txt");
     assert.ok(bytes.toString('utf8').includes(mesure.texte_source), "texte_source doit apparaître tel quel dans l'extrait");
   });
-});
+}
