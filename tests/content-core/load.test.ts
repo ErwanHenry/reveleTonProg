@@ -158,7 +158,8 @@ describe('loadAll', () => {
     assert.deepEqual(res.diagnostics, []);
     const candidats = res.entries.filter((e) => e.collection === 'candidats');
     assert.ok(candidats.length >= 1);
-    const statuts = candidats[0]?.data.statuts as { date: unknown }[];
+    const marie = candidats.find((e) => e.id === 'marie-fictive');
+    const statuts = marie?.data.statuts as { date: unknown }[];
     assert.equal(typeof statuts[1]?.date, 'string');
     assert.equal(statuts[1]?.date, '2026-10-15');
   });
