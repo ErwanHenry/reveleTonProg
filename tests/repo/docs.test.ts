@@ -106,6 +106,33 @@ describe('docs/ARCHITECTURE.md', () => {
   });
 });
 
+describe('docs/ARCHITECTURE.md (phase 2)', () => {
+  it('montre les trois niveaux de règles dans le diagramme Mermaid', () => {
+    const block = architecture.match(/```mermaid\n([\s\S]*?)```/);
+    assert.ok(block, 'bloc mermaid absent');
+    for (const tier of ['règles de fichier', 'règles d\'entrée', 'règles de corpus']) {
+      assert.ok(block[1]?.includes(tier), `le diagramme doit montrer « ${tier} »`);
+    }
+  });
+
+  it('a les ADR 027 à 031 au minimum, sans référence à une décision D-n', () => {
+    for (let n = 27; n <= 31; n += 1) {
+      assert.match(architecture, new RegExp(`^### ADR-0${n} : `, 'm'), `ADR-0${n} manquant`);
+    }
+    const adrs = architecture.match(/^### ADR-0(?:2[7-9]|[3-9]\d).*$/gm) ?? [];
+    assert.ok(adrs.length >= 5);
+    for (const titre of adrs) assert.ok(!titre.includes('(D-'), `titre d'ADR avec (D- : ${titre}`);
+  });
+
+  it('consigne chacune des hypothèses A1 à A12 et renvoie à HYPOTHESES', () => {
+    assert.ok(architecture.includes('HYPOTHESES'));
+    for (const h of HYPOTHESES) {
+      assert.ok(new RegExp(`\\*\\*${h.id}\\*\\*`).test(architecture), `hypothèse ${h.id} absente d'ARCHITECTURE`);
+    }
+    assert.equal(HYPOTHESES.length, 12);
+  });
+});
+
 describe('docs/RUNBOOK.md', () => {
   it('a les bons chemins et commandes', () => {
     for (const needle of [
