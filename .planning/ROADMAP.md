@@ -29,7 +29,7 @@ Le milestone part d'un dépôt vide et aboutit à un corpus pilote navigable sur
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Fondations, schémas v1 et content-core** - Dépôt Node 24 + Astro 7 statique, CI durcie, hygiène, schémas JSON 2020-12 et loader/validateur unique
+- [x] **Phase 1: Fondations, schémas v1 et content-core** - Dépôt Node 24 + Astro 7 statique, CI durcie, hygiène, schémas JSON 2020-12 et loader/validateur unique (completed 2026-11-03)
 - [ ] **Phase 2: Règles éditoriales et pièges** - La CI refuse une mesure sans source et tous les pièges §12 applicables (livrable Lot 1)
 - [ ] **Phase 3: Import data.gouv et corpus pilote** - 59 fiches candidats sourcées, outil d'archivage, 3 thèmes pilotes réels en brouillon (parallélisable avec 2 et 4)
 - [ ] **Phase 4: Référentiel M1 et 4 niveaux de lecture** - Pages thème et candidat, bascule de niveau sans JS, ordre alphabétique/aléatoire, Aîné et Enfant, contrôle post-build (parallélisable avec 2 et 3)
@@ -74,7 +74,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 01-07-PLAN.md — Contract lock + migrations + phase gate: meta/corpus tests, migrate --check/--write, push, green CI, failing probe (wave 5)
+- [x] 01-07-PLAN.md — Contract lock + migrations + phase gate: meta/corpus tests, migrate --check/--write, push, green CI, failing probe (wave 5)
 
 **Research flag**: oui. Passe de conception sur les champs `couverture`/`sources`/archive et le vocabulaire `motif`, avec confirmation de D-3, D-7 et D-8.
 
@@ -204,7 +204,7 @@ Phase 1 ──┬──> Phase 2 (règles) ──────────┐
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Fondations, schémas v1 et content-core | 6/7 | In Progress|  |
+| 1. Fondations, schémas v1 et content-core | 7/7 | Complete   | 2026-11-03 |
 | 2. Règles éditoriales et pièges | 0/TBD | Not started | - |
 | 3. Import data.gouv et corpus pilote | 0/TBD | Not started | - |
 | 4. Référentiel M1 et 4 niveaux de lecture | 0/TBD | Not started | - |

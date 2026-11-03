@@ -13,9 +13,9 @@
 
 - [x] **FOND-01**: Un développeur clone le dépôt et lance `npm install && npm run validate && npm test && npm run build` avec Node 24 (`.nvmrc`, `engines >=24.12`) sans autre étape
 - [x] **FOND-02**: La config Astro 7 produit un site 100 % statique sans JS par défaut (`compressHTML: true`, `prefetch: false`, service d'image passthrough)
-- [ ] **FOND-03**: Chaque push et pull request déclenche GitHub Actions (actions épinglées par SHA, `permissions: contents: read`, `TZ=Europe/Paris`) qui exécute validate + tests + build et échoue au premier problème
-- [ ] **FOND-04**: CI détecte les secrets (gitleaks) et Dependabot ouvre des PR de mise à jour avec cooldown
-- [ ] **FOND-05**: Le dépôt contient LICENSE (code MIT, contenu éditorial Licence Ouverte 2.0, `archives/` et textes des candidats exclus) et des ADR pour D-1…D-13 dans `docs/ARCHITECTURE.md`
+- [x] **FOND-03**: Chaque push et pull request déclenche GitHub Actions (actions épinglées par SHA, `permissions: contents: read`, `TZ=Europe/Paris`) qui exécute validate + tests + build et échoue au premier problème
+- [x] **FOND-04**: CI détecte les secrets (gitleaks) et Dependabot ouvre des PR de mise à jour avec cooldown
+- [x] **FOND-05**: Le dépôt contient LICENSE (code MIT, contenu éditorial Licence Ouverte 2.0, `archives/` et textes des candidats exclus) et des ADR pour D-1…D-13 dans `docs/ARCHITECTURE.md`
 
 ### Schémas et modèle de données (DATA)
 
@@ -26,7 +26,7 @@
 - [x] **DATA-05**: Une couverture par thème liste chaque candidat dans le périmètre d'équité avec un état `mesures|non_precise|programme_non_publie`, `verifie_le`, `verifie_par`, sources consultées
 - [x] **DATA-06**: Un glossaire contient des termes (définition en une phrase, niveau CM1) et des partis (`type: parti`, auto-description sourcée)
 - [x] **DATA-07**: Un loader unique (`src/lib/content-core/load`) parse le YAML sans le tag `timestamp` (dates = chaînes) et est utilisé à la fois par le validateur CI et par Astro
-- [ ] **DATA-08**: Un changement de schéma passe par un script de migration (`npm run migrate -- --check|--write`) testé avant/après ; la CI échoue si un fichier est en retard de version
+- [x] **DATA-08**: Un changement de schéma passe par un script de migration (`npm run migrate -- --check|--write`) testé avant/après ; la CI échoue si un fichier est en retard de version
 
 ### Règles éditoriales et pièges (REGLE)
 
@@ -136,9 +136,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | FOND-01 | Phase 1 | Complete |
 | FOND-02 | Phase 1 | Complete |
-| FOND-03 | Phase 1 | Pending |
-| FOND-04 | Phase 1 | Pending |
-| FOND-05 | Phase 1 | Pending |
+| FOND-03 | Phase 1 | Complete |
+| FOND-04 | Phase 1 | Complete |
+| FOND-05 | Phase 1 | Complete |
 | DATA-01 | Phase 1 | Complete |
 | DATA-02 | Phase 1 | Complete |
 | DATA-03 | Phase 1 | Complete |
@@ -146,7 +146,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DATA-05 | Phase 1 | Complete |
 | DATA-06 | Phase 1 | Complete |
 | DATA-07 | Phase 1 | Complete |
-| DATA-08 | Phase 1 | Pending |
+| DATA-08 | Phase 1 | Complete |
 | REGLE-01 | Phase 2 | Pending |
 | REGLE-02 | Phase 2 | Pending |
 | REGLE-03 | Phase 2 | Pending |
