@@ -32,6 +32,7 @@ describe('scaffold Node 24', () => {
     assert.deepEqual(pkg.scripts, {
       validate: 'node scripts/validate.ts',
       migrate: 'node scripts/migrate.ts',
+      ids: 'node scripts/ids.ts',
       check: 'astro check',
       test: 'TZ=Europe/Paris node --test "tests/**/*.test.ts"',
       build: 'astro build',
