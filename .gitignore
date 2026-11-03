@@ -42,3 +42,6 @@ n8n_data/
 
 # Astro
 .astro/
+
+# Worktrees des agents GSD
+.claude/worktrees/
