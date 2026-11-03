@@ -1,0 +1,15 @@
+version_schema: 1
+id: olivier-becht-livre-partie-7
+type: programme
+auteur: candidat
+candidats:
+  - olivier-becht
+titre: "Olivier Becht, Refonder ou Périr (Projet France), partie 7 : Un nouveau modèle de sécurité"
+url: https://becht2027.fr/wp-content/uploads/livre/olivier-becht-projet-france-partie-7-a99af3a0434069da.pdf
+date_publication: 2026-09-25
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/olivier-becht/3ca9bf58d88a.txt
+  sha256: 3ca9bf58d88a2b1bfe68e22161aaf1526c28765e7b1007955fdd4dbc8986ae31
+  capture_le: 2026-11-03T17:54:31+01:00
+  binaire_sha256: 1edc848824108dfe5e3129b8165008e1e52937f29e58222581494e9a497dd5e3

@@ -1,0 +1,15 @@
+version_schema: 1
+id: gabriel-attal-programme
+type: programme
+auteur: candidat
+candidats:
+  - gabriel-attal
+titre: "Gabriel Attal, Mes engagements pour la France : chantiers capitaux et premières mesures"
+url: https://attalpresident.fr/programme
+date_publication: 2026-11
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/gabriel-attal/44bb4569d09d.txt
+  sha256: 44bb4569d09d1edd6bddd84f4843f4742b83277a13c05583ff204407ec54e9d6
+  capture_le: 2026-11-03T17:48:14+01:00
+  binaire_sha256: 1690c892b0ceb3cca15fa0ddfc9f8d43f7a0b105fec72bb710d34d0269952c00

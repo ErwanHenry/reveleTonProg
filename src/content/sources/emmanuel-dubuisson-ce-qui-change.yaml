@@ -1,0 +1,15 @@
+version_schema: 1
+id: emmanuel-dubuisson-ce-qui-change
+type: programme
+auteur: candidat
+candidats:
+  - emmanuel-dubuisson
+titre: "Emmanuel Dubuisson, Ce qui change pour vous : 15 solutions du programme"
+url: https://www.dubuisson2027.fr/ce-qui-change-pour-vous
+date_publication: 2026-11
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/emmanuel-dubuisson/09632f06fd1b.txt
+  sha256: 09632f06fd1bc8b69723f50e4feea532a79a4c5cb3e91719a103f1a34ed4ce8b
+  capture_le: 2026-11-03T18:01:08+01:00
+  binaire_sha256: accfc74ec336006ca4b226b735684a4d988041aedd3b14f9553ec2bc1acb1c90

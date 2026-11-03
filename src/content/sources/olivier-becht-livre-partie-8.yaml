@@ -1,0 +1,15 @@
+version_schema: 1
+id: olivier-becht-livre-partie-8
+type: programme
+auteur: candidat
+candidats:
+  - olivier-becht
+titre: "Olivier Becht, Refonder ou Périr (Projet France), partie 8 : Un nouveau modèle d’organisation de la République et des Libertés"
+url: https://becht2027.fr/wp-content/uploads/livre/olivier-becht-projet-france-partie-8-51a3e2d478b8f0ba.pdf
+date_publication: 2026-09-25
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/olivier-becht/4abc321e6966.txt
+  sha256: 4abc321e696604692b782a4f982d14b18c04562e888b86aa59942b6181caac43
+  capture_le: 2026-11-03T17:54:32+01:00
+  binaire_sha256: 194d69946b4160a1ac04a6f1d1ed1c06403470cd226a6d20d8855dd0ac30b8f1

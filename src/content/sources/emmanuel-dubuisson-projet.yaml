@@ -1,0 +1,15 @@
+version_schema: 1
+id: emmanuel-dubuisson-projet
+type: programme
+auteur: candidat
+candidats:
+  - emmanuel-dubuisson
+titre: "Emmanuel Dubuisson, Le projet : trois chapitres, treize thèmes"
+url: https://www.dubuisson2027.fr/projet
+date_publication: 2026-11
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/emmanuel-dubuisson/a60f488ab052.txt
+  sha256: a60f488ab0521fee1ed1b7f932d5008739050b0e7c38f0315163600b41b92084
+  capture_le: 2026-11-03T18:01:07+01:00
+  binaire_sha256: 700461be6db6ab7c4bdc40ddf764a2e5bb8d4f804d47ee9083a24f9f0d27930a

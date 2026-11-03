@@ -1,0 +1,663 @@
+version: 1
+mesure_le: 2026-11-03
+mesure_par: Claude (agent), à relire par Erwan Henry
+regle:
+  marge_egalite: 2
+themes:
+  - id: logement
+    nom: Logement
+    prioritaire_aine: true
+    mots_cles:
+      - logement
+      - loyer
+      - locataire
+      - propriétaire
+      - hlm
+      - immobilier
+      - habitat
+      - hébergement
+      - sans-abri
+      - mal-logé
+  - id: ecole
+    nom: École
+    prioritaire_aine: false
+    mots_cles:
+      - école
+      - enseignant
+      - professeur
+      - élève
+      - collège
+      - lycée
+      - éducation
+      - scolaire
+      - maternelle
+      - baccalauréat
+      - universit
+      - étudiant
+  - id: retraites
+    nom: Retraites
+    prioritaire_aine: true
+    mots_cles:
+      - retraite
+      - pension
+      - âge de départ
+      - âge légal
+      - cotis
+      - régime
+      - annuité
+      - trimestre
+  - id: sante
+    nom: Santé
+    prioritaire_aine: true
+    mots_cles:
+      - santé
+      - hôpital
+      - hospitali
+      - médecin
+      - médical
+      - soignant
+      - médicament
+      - urgences
+      - infirmier
+      - ehpad
+      - dépendance
+      - assurance maladie
+  - id: securite
+    nom: Sécurité
+    prioritaire_aine: false
+    mots_cles:
+      - sécurité
+      - police
+      - gendarm
+      - délinquan
+      - criminalité
+      - justice
+      - prison
+      - pénal
+      - terroris
+      - défense
+      - armée
+  - id: climat
+    nom: Climat
+    prioritaire_aine: false
+    mots_cles:
+      - climat
+      - écolog
+      - énergie
+      - carbone
+      - nucléaire
+      - renouvelable
+      - transition
+      - émission
+      - biodiversité
+      - pollution
+      - réchauffement
+  - id: travail
+    nom: Travail
+    prioritaire_aine: false
+    mots_cles:
+      - travail
+      - emploi
+      - chômage
+      - salaire
+      - smic
+      - entreprise
+      - syndica
+      - apprentissage
+      - licenci
+      - contrat de travail
+  - id: impots
+    nom: Impôts
+    prioritaire_aine: false
+    mots_cles:
+      - impôt
+      - impot
+      - fiscal
+      - taxe
+      - tva
+      - csg
+      - prélèvement
+      - niche
+      - cotisation
+      - redevance
+  - id: europe-et-monde
+    nom: Europe et monde
+    prioritaire_aine: false
+    mots_cles:
+      - europe
+      - européen
+      - union européenne
+      - otan
+      - diplomat
+      - international
+      - politique étrangère
+      - traité
+      - migrat
+      - frontière
+      - commerce
+      - onu
+  - id: institutions
+    nom: Institutions
+    prioritaire_aine: false
+    mots_cles:
+      - constitution
+      - référendum
+      - ric
+      - proportionnelle
+      - assemblée
+      - sénat
+      - parlement
+      - mandat
+      - quinquennat
+      - septennat
+      - "49.3"
+      - élection
+      - démocratie
+candidats:
+  - id: nathalie-arthaud
+    acces: ok
+    urls_bloquees: []
+    sources:
+      - nathalie-arthaud-brochure-campagne
+    urls_consultees:
+      - "https://www.nathalie-arthaud.info/ (page d'accueil : texte de campagne court, pas de programme thématique)"
+      - https://www.nathalie-arthaud.info/portail/breves/brochure-campagne-196541.html (renvoie vers lutte-ouvriere.org ; annonce du 25/08/2026 de la brochure de campagne)
+      - https://www.nathalie-arthaud.info/medias/document/fichiers/2026/06/brochure-ete-2026.pdf (brochure de campagne, archivée)
+      - https://www.lutte-ouvriere.org/ (site du parti, militant, non archivé)
+      - https://www.lutte-ouvriere.org/portail/qui-sommes-nous/index.html (présentation du parti, « Nos positions », non archivée)
+    cellules:
+      logement:
+        niveau: silence
+        note: "aucun passage de programme sur le logement dans la brochure de campagne (seule mention : des personnes à la rue, en constat)"
+      ecole:
+        niveau: partiel
+        note: "brochure p. 12 et 14 : embauches à recenser avec le personnel de l'éducation ; « milliards pour les hôpitaux, les écoles » via la confiscation des bénéfices ; 2 énoncés indirects"
+      retraites:
+        niveau: partiel
+        note: "brochure p. 11 : « augmentation massive des salaires, des allocations et des pensions » indexée sur les prix ; un seul énoncé"
+      sante:
+        niveau: partiel
+        note: "brochure p. 12 et 14 : embauches à recenser dans les hôpitaux et Ehpad ; « milliards pour les hôpitaux » ; 2 énoncés indirects"
+      securite:
+        niveau: partiel
+        note: "brochure p. 25 : refus de l'unité nationale derrière les généraux et de la rallonge militaire ; aucune position sur police ni justice ; 1 énoncé de principe"
+      climat:
+        niveau: silence
+        note: "brochure : le climat n'apparaît qu'en constat (réchauffement, transition), aucun engagement"
+      travail:
+        niveau: fort
+        note: "brochure p. 10-12 : section « Le programme que les travailleurs devront imposer » : hausse massive des salaires indexée, répartition du travail entre tous, baisse du temps de travail sans perte de salaire, plus de 3 énoncés"
+      impots:
+        niveau: partiel
+        note: "brochure p. 14 : confiscation des bénéfices des « profiteurs de guerre » et levée du secret des affaires ; énoncé indirect, pas de mesure fiscale détaillée"
+      europe-et-monde:
+        niveau: fort
+        note: "brochure p. 16-18 et 25 : régularisation de tous les sans-papiers, liberté de circulation et d'installation, contre le protectionnisme, refus de l'unité nationale ; plus de 3 énoncés"
+      institutions:
+        niveau: silence
+        note: "brochure p. 26-27 : rappelle que le programme ne passe pas par les élections ; aucune mesure sur les institutions"
+  - id: francois-asselineau
+    acces: aucun_site
+    urls_bloquees: []
+    sources: []
+    urls_consultees:
+      - https://upr.fr/notre-programme (programme 2027 annoncé « publié prochainement » ; ne propose que les programmes 2012, 2017 et 2022)
+      - https://upr.fr/notre-programme/programme-2022 (programme d'une élection précédente, exclu, non lu)
+      - https://upr.fr/nos-fondamentaux (liste de principes du parti sans mesure détaillée, non archivée)
+      - "https://upr.fr/ (accueil : campagne 2027, collecte de dons, pas de programme)"
+    cellules:
+      logement:
+        niveau: aucun
+        note: "aucune source de programme 2027 : la page « Notre programme » indique « Programme 2027 : sera publié prochainement, en cours d'élaboration »"
+      ecole:
+        niveau: aucun
+        note: "aucune source de programme 2027 : la page « Notre programme » indique « Programme 2027 : sera publié prochainement, en cours d'élaboration »"
+      retraites:
+        niveau: aucun
+        note: "aucune source de programme 2027 : la page « Notre programme » indique « Programme 2027 : sera publié prochainement, en cours d'élaboration »"
+      sante:
+        niveau: aucun
+        note: "aucune source de programme 2027 : la page « Notre programme » indique « Programme 2027 : sera publié prochainement, en cours d'élaboration »"
+      securite:
+        niveau: aucun
+        note: "aucune source de programme 2027 : la page « Notre programme » indique « Programme 2027 : sera publié prochainement, en cours d'élaboration »"
+      climat:
+        niveau: aucun
+        note: "aucune source de programme 2027 : la page « Notre programme » indique « Programme 2027 : sera publié prochainement, en cours d'élaboration »"
+      travail:
+        niveau: aucun
+        note: "aucune source de programme 2027 : la page « Notre programme » indique « Programme 2027 : sera publié prochainement, en cours d'élaboration »"
+      impots:
+        niveau: aucun
+        note: "aucune source de programme 2027 : la page « Notre programme » indique « Programme 2027 : sera publié prochainement, en cours d'élaboration »"
+      europe-et-monde:
+        niveau: aucun
+        note: "aucune source de programme 2027 : la page « Notre programme » indique « Programme 2027 : sera publié prochainement, en cours d'élaboration »"
+      institutions:
+        niveau: aucun
+        note: "aucune source de programme 2027 : la page « Notre programme » indique « Programme 2027 : sera publié prochainement, en cours d'élaboration »"
+  - id: gabriel-attal
+    acces: ok
+    urls_bloquees: []
+    sources:
+      - gabriel-attal-programme
+    urls_consultees:
+      - https://attalpresident.fr/ (accueil du site de campagne)
+      - "https://attalpresident.fr/programme (index du programme : 96 mesures annoncées, filtres par thématique, archivé)"
+      - https://attalpresident.fr/programme?thematique=education (liste filtrée, lue en direct, non archivée ; idem pour travail, economie, finances-publiques, justice, securite-et-ordre-public, immigration, ecologie, energie, democratie, politique-etrangere, familles)
+      - https://attalpresident.fr/programme/thematiques/sante (page de la thématique, lue en direct, non archivée)
+      - https://attalpresident.fr/programme/thematiques/defense (page de la thématique, lue en direct, non archivée)
+    cellules:
+      logement:
+        niveau: partiel
+        note: "index du programme : « Instaurer un droit à la climatisation » (protection des logements contre les canicules), énoncé indirect ; aucune mesure de logement proprement dite, pas de thématique logement"
+      ecole:
+        niveau: fort
+        note: "thématique « Éducation » : 16 mesures annoncées (Plan Voltaire, remplacement des enseignants absents, redoublement, certificat d'études...), plus un chantier capital « École »"
+      retraites:
+        niveau: fort
+        note: "index du programme : capitalisation fléchée vers l'innovation, intéressement vers l'épargne retraite, petites pensions protégées, âge légal remplacé par la durée de cotisation (4 énoncés)"
+      sante:
+        niveau: fort
+        note: "page de la thématique « Santé » : 5 mesures (assistant médical IA, équilibre des comptes de la Sécurité sociale, droit à la climatisation, polluants éternels dans l'eau)"
+      securite:
+        niveau: fort
+        note: "thématiques « Justice » (14 mesures), « Sécurité et ordre public » (8 mesures) et « Défense » : comparution immédiate des mineurs, magistrats supplémentaires, etc."
+      climat:
+        niveau: fort
+        note: thématiques « Écologie » (9 mesures dont le plan Eau) et « Énergie » (7 mesures dont géoénergie et fusion nucléaire), plus un chantier « Dette écologique »
+      travail:
+        niveau: fort
+        note: "thématique « Travail » (12 mesures : treizième mois pour les classes moyennes, Constitution du travail, assurance chômage) et chantier capital « Travail & salaires »"
+      impots:
+        niveau: fort
+        note: "thématique « Finances publiques » (9 mesures) : aucune hausse d'impôts pendant 5 ans, loi de programmation fiscale sur dix ans, déficit sous 3 %"
+      europe-et-monde:
+        niveau: fort
+        note: "thématiques « Politique étrangère » (12 mesures : traité Mercosur, clauses miroir, dôme de fer européen), « Immigration » (3 mesures) et chantier « Frontières »"
+      institutions:
+        niveau: fort
+        note: "thématique « Démocratie » (7 mesures : journée référendaire annuelle, référendums locaux, nominations aux hautes fonctions, maire)"
+  - id: delphine-batho
+    acces: bloque
+    urls_bloquees:
+      - https://www.delphinebatho.fr/
+      - https://generationecologie.fr/
+    sources: []
+    urls_consultees:
+      - https://www.delphinebatho.fr/ (HTTP 403, site de campagne)
+      - https://www.delphinebatho.fr/programme (HTTP 403)
+      - https://generationecologie.fr/ (HTTP 403, site du parti)
+      - https://www.generationecologie.fr/ (HTTP 403)
+      - "recherche web « Delphine Batho programme présidentielle 2027 » : seuls des agrégateurs et des articles de presse, aucun autre site du candidat, non utilisés"
+    cellules:
+      logement:
+        niveau: inaccessible
+        note: "source bloquée non lue : https://www.delphinebatho.fr/ et https://generationecologie.fr/ répondent HTTP 403 aux clients automatisés ; capture manuelle à demander (plan 03-05)"
+      ecole:
+        niveau: inaccessible
+        note: "source bloquée non lue : https://www.delphinebatho.fr/ et https://generationecologie.fr/ répondent HTTP 403 aux clients automatisés ; capture manuelle à demander (plan 03-05)"
+      retraites:
+        niveau: inaccessible
+        note: "source bloquée non lue : https://www.delphinebatho.fr/ et https://generationecologie.fr/ répondent HTTP 403 aux clients automatisés ; capture manuelle à demander (plan 03-05)"
+      sante:
+        niveau: inaccessible
+        note: "source bloquée non lue : https://www.delphinebatho.fr/ et https://generationecologie.fr/ répondent HTTP 403 aux clients automatisés ; capture manuelle à demander (plan 03-05)"
+      securite:
+        niveau: inaccessible
+        note: "source bloquée non lue : https://www.delphinebatho.fr/ et https://generationecologie.fr/ répondent HTTP 403 aux clients automatisés ; capture manuelle à demander (plan 03-05)"
+      climat:
+        niveau: inaccessible
+        note: "source bloquée non lue : https://www.delphinebatho.fr/ et https://generationecologie.fr/ répondent HTTP 403 aux clients automatisés ; capture manuelle à demander (plan 03-05)"
+      travail:
+        niveau: inaccessible
+        note: "source bloquée non lue : https://www.delphinebatho.fr/ et https://generationecologie.fr/ répondent HTTP 403 aux clients automatisés ; capture manuelle à demander (plan 03-05)"
+      impots:
+        niveau: inaccessible
+        note: "source bloquée non lue : https://www.delphinebatho.fr/ et https://generationecologie.fr/ répondent HTTP 403 aux clients automatisés ; capture manuelle à demander (plan 03-05)"
+      europe-et-monde:
+        niveau: inaccessible
+        note: "source bloquée non lue : https://www.delphinebatho.fr/ et https://generationecologie.fr/ répondent HTTP 403 aux clients automatisés ; capture manuelle à demander (plan 03-05)"
+      institutions:
+        niveau: inaccessible
+        note: "source bloquée non lue : https://www.delphinebatho.fr/ et https://generationecologie.fr/ répondent HTTP 403 aux clients automatisés ; capture manuelle à demander (plan 03-05)"
+  - id: olivier-becht
+    acces: ok
+    urls_bloquees: []
+    sources:
+      - olivier-becht-5-refondations
+      - olivier-becht-livre-partie-4
+      - olivier-becht-livre-partie-5
+      - olivier-becht-livre-partie-6
+      - olivier-becht-livre-partie-7
+      - olivier-becht-livre-partie-8
+      - olivier-becht-livre-partie-9
+    urls_consultees:
+      - https://becht2027.fr/ (accueil du site de campagne)
+      - https://becht2027.fr/projet-france/les-5-refondations/ (index des 5 refondations, archivé)
+      - https://becht2027.fr/projet-france/les-5-refondations/refondation-energie/ (page lue en direct, non archivée ; idem refondation-sociale, refondation-sante, refondation-securite, refondation-democratique-territoriale)
+      - https://becht2027.fr/projet-france/le-livre/ (page de présentation du livre)
+      - "https://becht2027.fr/wp-content/uploads/livre/olivier-becht-projet-france-partie-1-0d37b44fd60e9388.pdf (partie 1 « Reprendre la route », récit sans engagement, non archivée ; idem parties 2 et 3 : récit et diagnostic, « Je ne vais pas vous infliger ici un catalogue de mesures »)"
+      - https://becht2027.fr/wp-content/uploads/livre/olivier-becht-projet-france-partie-4-d23eb5f5d21db80b.pdf (partie 4, archivée ; parties 5 à 9 archivées de même)
+    cellules:
+      logement:
+        niveau: fort
+        note: "partie 5, section « Vivre et vieillir dans la dignité » : « une autre politique du logement » (rénover l'existant, friches et bureaux vides, logement social en petites unités, communes à offre excédentaire) ; plus de 3 énoncés"
+      ecole:
+        niveau: fort
+        note: "parties 4, 5, 7 et 9 : plus de 10 énoncés sur l'éducation (reprendre l'éducation « à la base » dans le plan de sécurité, apprentissage, université) ; thème traité à plusieurs endroits"
+      retraites:
+        niveau: fort
+        note: "partie 5, section « Vivre et vieillir dans la dignité » : retraite par points, âge de départ au choix, pension indexée sur le rapport actifs/retraités, minimum de 1 200 euros, soumis à référendum ; le scanner ne détecte aucun engagement (formulation en « je propose »)"
+      sante:
+        niveau: fort
+        note: "partie 6 « Un nouveau modèle de santé » (9 pages) et page « La santé » des 5 refondations : refondation du système de soins, alimentation sans phytosanitaires, défi technologique"
+      securite:
+        niveau: fort
+        note: "partie 7 « Un nouveau modèle de sécurité » (14 pages) et page « La sécurité » : plan de sécurité, peines de prison, centres de redressement"
+      climat:
+        niveau: fort
+        note: "page « L'énergie » (refondation énergie) et partie 4 : carburants de synthèse décarbonés, indépendance énergétique ; partie 9 : taxe environnementale européenne"
+      travail:
+        niveau: fort
+        note: "parties 4 et 5 : actionnariat salarié, intéressement et participation, contrat universel, indemnité d'activité, plus de 3 énoncés ; page « La refondation sociale »"
+      impots:
+        niveau: fort
+        note: "pas de section dédiée ; énoncés dispersés : plutôt que d'alourdir l'impôt, salariés actionnaires et avantage fiscal relevé des primes (partie 4), épargne retraite abondée en franchise d'impôt (partie 5), récapitulatif annuel des prélèvements (partie 8), taxe data (partie 9) ; limite de la mesure : à relire"
+      europe-et-monde:
+        niveau: fort
+        note: "partie 9 « Un nouveau modèle de rayonnement » (14 pages) : puissance technologique européenne, harmonisation fiscale, taxe sur les géants du numérique, pression migratoire"
+      institutions:
+        niveau: fort
+        note: "partie 8 « Un nouveau modèle d'organisation de la République et des Libertés » (12 pages) et page « Le pacte démocratique et territorial » : référendum d'initiative citoyenne, autonomie des collectivités"
+  - id: xavier-bertrand
+    acces: aucun_site
+    urls_bloquees: []
+    sources: []
+    urls_consultees:
+      - https://www.nousfrance.fr/ (accueil Nous France ; huit thèmes à « participer », pas de mesures)
+      - https://www.nousfrance.fr/vision/ (texte de valeurs « Nous, France ! », sans mesure, non archivé)
+      - "https://www.nousfrance.fr/programme/autorite/ (titre seul, idem territoires, travail, environnement, immigration, jeunesse, europe, pouvoir-achat : HTML sans contenu au-delà du titre, non archivés)"
+    cellules:
+      logement:
+        niveau: aucun
+        note: "aucune source de programme : les huit pages /programme/* du site de campagne ne contiennent qu'un titre et un formulaire de participation (ex. « Restaurer la valeur travail »), la page « Vision » est un texte de valeurs sans mesure"
+      ecole:
+        niveau: aucun
+        note: "aucune source de programme : les huit pages /programme/* du site de campagne ne contiennent qu'un titre et un formulaire de participation (ex. « Restaurer la valeur travail »), la page « Vision » est un texte de valeurs sans mesure"
+      retraites:
+        niveau: aucun
+        note: "aucune source de programme : les huit pages /programme/* du site de campagne ne contiennent qu'un titre et un formulaire de participation (ex. « Restaurer la valeur travail »), la page « Vision » est un texte de valeurs sans mesure"
+      sante:
+        niveau: aucun
+        note: "aucune source de programme : les huit pages /programme/* du site de campagne ne contiennent qu'un titre et un formulaire de participation (ex. « Restaurer la valeur travail »), la page « Vision » est un texte de valeurs sans mesure"
+      securite:
+        niveau: aucun
+        note: "aucune source de programme : les huit pages /programme/* du site de campagne ne contiennent qu'un titre et un formulaire de participation (ex. « Restaurer la valeur travail »), la page « Vision » est un texte de valeurs sans mesure"
+      climat:
+        niveau: aucun
+        note: "aucune source de programme : les huit pages /programme/* du site de campagne ne contiennent qu'un titre et un formulaire de participation (ex. « Restaurer la valeur travail »), la page « Vision » est un texte de valeurs sans mesure"
+      travail:
+        niveau: aucun
+        note: "aucune source de programme : les huit pages /programme/* du site de campagne ne contiennent qu'un titre et un formulaire de participation (ex. « Restaurer la valeur travail »), la page « Vision » est un texte de valeurs sans mesure"
+      impots:
+        niveau: aucun
+        note: "aucune source de programme : les huit pages /programme/* du site de campagne ne contiennent qu'un titre et un formulaire de participation (ex. « Restaurer la valeur travail »), la page « Vision » est un texte de valeurs sans mesure"
+      europe-et-monde:
+        niveau: aucun
+        note: "aucune source de programme : les huit pages /programme/* du site de campagne ne contiennent qu'un titre et un formulaire de participation (ex. « Restaurer la valeur travail »), la page « Vision » est un texte de valeurs sans mesure"
+      institutions:
+        niveau: aucun
+        note: "aucune source de programme : les huit pages /programme/* du site de campagne ne contiennent qu'un titre et un formulaire de participation (ex. « Restaurer la valeur travail »), la page « Vision » est un texte de valeurs sans mesure"
+  - id: augustin-billetdoux
+    acces: aucun_site
+    urls_bloquees: []
+    sources: []
+    urls_consultees:
+      - https://billetdoux2027.fr/ (vidéo de déclaration, témoignages de soutien de particuliers, inscription à la lettre d'information ; non archivé pour ne pas conserver de données de particuliers)
+      - https://billetdoux2027.fr/temoignages (témoignages de soutien, non lu en détail, non archivé)
+    cellules:
+      logement:
+        niveau: aucun
+        note: "aucune source de programme : le site de campagne ne contient qu'une vidéo de déclaration de candidature (sans transcription), des témoignages de soutien et un formulaire, aucune mesure écrite"
+      ecole:
+        niveau: aucun
+        note: "aucune source de programme : le site de campagne ne contient qu'une vidéo de déclaration de candidature (sans transcription), des témoignages de soutien et un formulaire, aucune mesure écrite"
+      retraites:
+        niveau: aucun
+        note: "aucune source de programme : le site de campagne ne contient qu'une vidéo de déclaration de candidature (sans transcription), des témoignages de soutien et un formulaire, aucune mesure écrite"
+      sante:
+        niveau: aucun
+        note: "aucune source de programme : le site de campagne ne contient qu'une vidéo de déclaration de candidature (sans transcription), des témoignages de soutien et un formulaire, aucune mesure écrite"
+      securite:
+        niveau: aucun
+        note: "aucune source de programme : le site de campagne ne contient qu'une vidéo de déclaration de candidature (sans transcription), des témoignages de soutien et un formulaire, aucune mesure écrite"
+      climat:
+        niveau: aucun
+        note: "aucune source de programme : le site de campagne ne contient qu'une vidéo de déclaration de candidature (sans transcription), des témoignages de soutien et un formulaire, aucune mesure écrite"
+      travail:
+        niveau: aucun
+        note: "aucune source de programme : le site de campagne ne contient qu'une vidéo de déclaration de candidature (sans transcription), des témoignages de soutien et un formulaire, aucune mesure écrite"
+      impots:
+        niveau: aucun
+        note: "aucune source de programme : le site de campagne ne contient qu'une vidéo de déclaration de candidature (sans transcription), des témoignages de soutien et un formulaire, aucune mesure écrite"
+      europe-et-monde:
+        niveau: aucun
+        note: "aucune source de programme : le site de campagne ne contient qu'une vidéo de déclaration de candidature (sans transcription), des témoignages de soutien et un formulaire, aucune mesure écrite"
+      institutions:
+        niveau: aucun
+        note: "aucune source de programme : le site de campagne ne contient qu'une vidéo de déclaration de candidature (sans transcription), des témoignages de soutien et un formulaire, aucune mesure écrite"
+  - id: karim-bouamrane
+    acces: ok
+    urls_bloquees: []
+    sources:
+      - karim-bouamrane-manifeste
+    urls_consultees:
+      - https://www.karimbouamrane2027.org/ (accueil du site de campagne, redirigé depuis karimbouamrane2027.org)
+      - https://www.karimbouamrane2027.org/manifeste.html (texte du manifeste en HTML, identique au PDF, non archivé séparément)
+      - https://www.karimbouamrane2027.org/output/pdf/manifeste-karim-bouamrane-2027-v2.pdf (manifeste, 8 pages, archivé)
+    cellules:
+      logement:
+        niveau: partiel
+        note: "manifeste, section « Loger » : « une France qui construit, qui rénove, qui accompagne » et transition juste qui rénove les logements des familles modestes ; énoncés de principe, 2 passages"
+      ecole:
+        niveau: partiel
+        note: "manifeste, section « Éduquer » : éducation de qualité, « démocratise l'excellence », « formation qui mène à un emploi choisi et non subi » ; énoncés de principe, 2 passages"
+      retraites:
+        niveau: silence
+        note: "manifeste lu en entier (8 pages) : aucun passage sur les retraites ou les pensions (« protège ses aînés » ne traite pas du système de retraite)"
+      sante:
+        niveau: partiel
+        note: "manifeste, section « Soigner » : accès à des soins de qualité, lutte contre les déserts médicaux, préparation du système au vieillissement ; 1 passage de principe"
+      securite:
+        niveau: fort
+        note: "manifeste : « re-sanctuariser l'autorité », narcotrafic combattu, « J'augmenterai l'effort de défense », protection des enfants et des femmes comme grande cause nationale ; plus de 3 énoncés, de principe"
+      climat:
+        niveau: partiel
+        note: "manifeste, section « protège l'environnement » : transition juste (rénovation, emplois durables, agriculteurs protégés) ; 1 passage de principe"
+      travail:
+        niveau: partiel
+        note: "manifeste : « Je veux que travailler paye et permette de vivre dignement », valorisation du travail ; 1 à 2 énoncés de principe"
+      impots:
+        niveau: silence
+        note: "manifeste lu en entier : seule la gestion de l'argent public (simplifier, réduire les doublons) est abordée, aucun passage sur les impôts ou taxes"
+      europe-et-monde:
+        niveau: fort
+        note: "manifeste : politique migratoire en trois exigences, Europe « qui nous protège » aux frontières gardées, souveraineté, rang de la France dans le monde, binationaux ; plus de 3 énoncés"
+      institutions:
+        niveau: silence
+        note: "manifeste lu en entier : seule une confiance générale « à ses maires » est exprimée, aucune mesure sur les institutions"
+  - id: juan-branco
+    acces: ok
+    urls_bloquees: []
+    sources:
+      - juan-branco-la-voie-programme
+    urls_consultees:
+      - https://ruches.org/ (accueil du mouvement Les Ruches, site de campagne du dataset)
+      - https://ruches.org/le-projet (La Voie, programme intégral, 845 mesures en 24 thèmes, archivé ; auteur coalition car publié par le mouvement Les Ruches)
+      - https://ruches.org/projet-1784217879253.pdf (version PDF « La Voie », 59 pages, créée le 2026-05-27 ; extraction PDF dégradée, chiffres déformés comme « 3plus de 00 taxes » ; non archivée, la page HTML fait foi)
+      - https://media.ruches.org/guide-1784217820347.pdf (guide du mouvement, non programme, non lu)
+    cellules:
+      logement:
+        niveau: fort
+        note: "section « 12 · L'Énergie, l'Écologie et les Logements » (55 mesures) : plan contre la spéculation immobilière, suppression des aides au logement, moratoire sur l'aide à l'isolation, droit opposable au logement ; plus de 3 énoncés"
+      ecole:
+        niveau: fort
+        note: section « 06 · L'Instruction » (75 mesures) et priorité « Doublement des budgets de recherche et d'enseignement »
+      retraites:
+        niveau: fort
+        note: "mesures dispersées : alignement des régimes de retraite, fusion des caisses publiques et privées, suppression de l'abattement fiscal de 10 % pour les retraites, réseau public de maisons de retraite ; plus de 3 énoncés, pas de section dédiée"
+      sante:
+        niveau: fort
+        note: section « 07 · La Santé » (68 mesures) et « 08 · Le Handicap » ; priorités « Éradication des déserts médicaux » et service public de la santé universel
+      securite:
+        niveau: fort
+        note: sections « 01 · La Justice » (77 mesures), « 02 · L'Intérieur » (36) et « 03 · L'Extérieur et la Défense » (40)
+      climat:
+        niveau: fort
+        note: "section « 12 · L'Énergie, l'Écologie et les Logements » (55 mesures) : politique écologique et énergétique, plus de 3 énoncés"
+      travail:
+        niveau: fort
+        note: section « 04 · L'Économie » (143 mesures), droit opposable au travail, suppression de cotisations ; plus de 3 énoncés sur l'emploi et le salaire
+      impots:
+        niveau: fort
+        note: priorité « Suppression de plus de 300 taxes, cotisations et impôts », sous-section « Fiscalité et prélèvements », déclarations fiscales et sociales intégrées ; plus de 3 énoncés
+      europe-et-monde:
+        niveau: fort
+        note: sections « 03 · L'Extérieur et la Défense » (40 mesures) et « 13 · L'Europe (transition) » (4) ; référendums sur l'Union européenne, l'euro et l'OTAN
+      institutions:
+        niveau: fort
+        note: rubriques « Démocratie » (47 mesures), « Gouvernance », « République », « Géographie des pouvoirs » ; RIC, mandats impératifs et révocables, jurés populaires, suppression des régions
+  - id: bernard-cazeneuve
+    acces: ok
+    urls_bloquees: []
+    sources:
+      - bernard-cazeneuve-lettre
+    urls_consultees:
+      - https://www.la-convention.fr/lettre (page de la lettre en HTML, texte intégral identique au PDF, non archivée séparément)
+      - https://assets.nationbuilder.com/laconvention/pages/2515/attachments/original/1784151599/Auxfrancaisversionfinale1507.pdf?1784151599 (lettre « Tenir la promesse de la France », 86 pages, datée du 15 juillet 2026, archivée)
+      - https://assets.nationbuilder.com/laconvention/pages/2513/attachments/original/1784135398/Synthese_mesuresVfinale.pdf?1784135398 (synthèse de la lettre en 8 pages rédigée à la troisième personne, résumé non signé par le candidat, exclue)
+      - https://www.la-convention.fr/ (accueil du parti La Convention)
+    cellules:
+      logement:
+        niveau: fort
+        note: "lettre, partie II « La dignité garantie » et proposition 8 : grand plan de constructions et de rénovations, mécanismes d'accession à la propriété ; proposition 21 : rénovation massive des logements ; 3 énoncés"
+      ecole:
+        niveau: fort
+        note: "lettre, partie IV « Transmettre » et proposition 22 : enseignants mieux formés et mieux payés, humanités, lutte contre la ségrégation scolaire ; proposition 23 sur les aides aux étudiants"
+      retraites:
+        niveau: fort
+        note: "lettre, partie « Sauver le modèle social » et proposition 10 : quatre principes (durée de cotisation plutôt que recul de l'âge légal, pénibilité rétablie, carrières longues, emploi des seniors)"
+      sante:
+        niveau: fort
+        note: "lettre, parties « Protéger à chaque âge de la vie » : propositions 4 (soignants, santé mentale grande cause nationale) et 5 (grand âge, dépendance) ; plus de 3 énoncés"
+      securite:
+        niveau: fort
+        note: lettre, partie « La sécurité, première des protections » et proposition 6 (police de proximité, trafics, peines exécutées), proposition 13 (justice), proposition 25 (sécurité extérieure)
+      climat:
+        niveau: fort
+        note: "lettre, propositions 19 (énergie : filière électronucléaire, renouvelables, électrification) et 21 (écologie populaire et planifiée)"
+      travail:
+        niveau: fort
+        note: "lettre, partie IV « Travailler » et proposition 24 : transitions professionnelles, apprentissage généralisé, CDI comme norme pour les jeunes, emploi des seniors"
+      impots:
+        niveau: fort
+        note: "lettre, partie III « L'impôt consenti, la dette maîtrisée » et proposition 18 : fiscalité des très grandes fortunes, rééquilibrage travail/capital, moins de niches, baisse des impôts de production"
+      europe-et-monde:
+        niveau: fort
+        note: "lettre, propositions 25 à 28 : réarmement, multilatéralisme, Europe (majorité qualifiée, défense), immigration en trois principes"
+      institutions:
+        niveau: fort
+        note: "lettre, partie III « Protéger la démocratie » et proposition 12 : rétablissement du septennat, discipline sur le 49.3, dose de proportionnelle, participation citoyenne ; propositions 16 et 17 sur la décentralisation et les normes"
+  - id: christian-collovati
+    acces: ok
+    urls_bloquees: []
+    sources:
+      - christian-collovati-site-campagne
+    urls_consultees:
+      - https://xn--lepeuplefranais2027-hyb.fr/ (site « Le Peuple français 2027 », redirigé vers https://www.xn--lepeuplefranais2027-hyb.fr/, page unique du programme, archivée ; adresse trouvée sans lien dans le jeu de données, domaine du candidat confirmé par sa biographie et sa page « Contactez-moi »)
+      - https://www.xn--lepeuplefranais2027-hyb.fr/blog/ (page sans contenu lisible, 1 176 caractères)
+      - https://www.xn--lepeuplefranais2027-hyb.fr/contactez-moi/ (non lue)
+    cellules:
+      logement:
+        niveau: fort
+        note: "page d'accueil, section « Villes » : pas de nouvelles constructions, réhabilitation, maisons abandonnées reprises par la commune, suppression de la loi SRU ; plus de 3 énoncés"
+      ecole:
+        niveau: fort
+        note: "page d'accueil, section « Education Nationale » : exclusion de 10 jours, interdiction du téléphone portable, dictées quotidiennes, sport, refonte des programmes ; plus de 3 énoncés"
+      retraites:
+        niveau: fort
+        note: "page d'accueil, section « Retraites » : pas d'âge de départ, 172 trimestres, décote, résidence en France ; 5 énoncés"
+      sante:
+        niveau: partiel
+        note: "page d'accueil : réduire l'AME, freiner l'endettement de la sécurité sociale, revoir l'aide sociale à l'enfance ; aucun passage sur le système de soins"
+      securite:
+        niveau: fort
+        note: "page d'accueil : section « Défense Nationale », contrôles aux frontières, état d'urgence, régime des prisons, suppression du juge d'application des peines ; plus de 3 énoncés"
+      climat:
+        niveau: fort
+        note: "page d'accueil : nucléaire maintenu à haute exigence, réutilisation des eaux usées et dessalement, végétalisation des villes, adaptation aux canicules ; 4 énoncés dispersés, pas de section dédiée"
+      travail:
+        niveau: fort
+        note: "page d'accueil, section « Economie » et actions de prise de fonctions : fin des 35 heures, retour à 39 heures, traque du travail dissimulé, révision des grilles salariales ; plus de 3 énoncés"
+      impots:
+        niveau: fort
+        note: "page d'accueil, section « Economie » : réduction des impôts, droits de succession (plancher relevé), suppression de subventions et crédits d'impôt pour dons ; plus de 3 énoncés"
+      europe-et-monde:
+        niveau: fort
+        note: "page d'accueil : section « Europe » (suspension des traités de l'UE jusqu'à fin 2027), visas, taxation de 100 % des commandes extérieures, Mercosur, retour des étrangers en situation irrégulière ; plus de 3 énoncés"
+      institutions:
+        niveau: fort
+        note: "page d'accueil : réduction du nombre de sénateurs et de députés (1 par département), article 16 de la Constitution, référendum sur la peine de mort, réforme des codes ; plus de 3 énoncés"
+  - id: emmanuel-dubuisson
+    acces: ok
+    urls_bloquees: []
+    sources:
+      - emmanuel-dubuisson-projet
+      - emmanuel-dubuisson-ce-qui-change
+    urls_consultees:
+      - https://www.dubuisson2027.fr/ (accueil du site de campagne)
+      - "https://www.dubuisson2027.fr/projet (index du programme : 3 chapitres, 13 dossiers, archivé)"
+      - https://www.dubuisson2027.fr/ce-qui-change-pour-vous (15 solutions du programme et simulations, archivé)
+      - "https://www.dubuisson2027.fr/dossiers/1-methode-de-travail (dossiers 1 à 13 lus en direct, non archivés : richesse-pour-les-francais, sante-publique-medecine, fonction-publique, securite, justice-probite-publique, outre-mer, probite-ethique-presidentielle, fiscalite-budget, agriculture-alimentation-eau, referendum, campagne-sobre, agenda-budget-presidentiel)"
+      - https://www.dubuisson2027.fr/livre (présentation du livre, non programme)
+    cellules:
+      logement:
+        niveau: silence
+        note: "index du programme, 15 solutions et 13 dossiers lus : seule mention d'un loyer dans une phrase de vision, aucun énoncé sur le logement"
+      ecole:
+        niveau: partiel
+        note: solution 03 « École et créativité » (sécuriser les lieux et les parcours, transmettre les savoirs, voies vers la formation) ; aucun dossier dédié, 1 énoncé de principe
+      retraites:
+        niveau: partiel
+        note: "page « Ce qui change pour vous » : capitalisation retraite de 10 % prélevée sur le salaire dans le cas de paie de référence ; mécanisme cité dans la réforme du salaire, pas de dossier retraites"
+      sante:
+        niveau: fort
+        note: "dossier 3 « Santé publique et médecine » et solution 02 « Soins de proximité » : santé plus proche, parcours de soins simplifié, dossier partagé entre professionnels"
+      securite:
+        niveau: fort
+        note: dossiers 5 « Une sécurité qui tient » et 6 « Justice et probité publique », solutions 06 et 07
+      climat:
+        niveau: partiel
+        note: "solution 14 « Écologie pratique » et dossier 10 (agriculture, eau, énergie) : préserver et produire, tarifs d'énergie simulés ; pas de position sur le climat lui-même"
+      travail:
+        niveau: fort
+        note: dossier 2 « La richesse pour les Français » (part du salaire versée directement), solutions 01 « Pouvoir d'achat » et 05 « Égalité salariale », réaffectation de 70 % des cotisations
+      impots:
+        niveau: fort
+        note: "dossier 9 « Fiscalité et budget » (12 000 caractères : chemin de l'argent, taxe sur les patrimoines), solution 13 « Fiscalité », suppression de la TVA sur les achats communaux éligibles"
+      europe-et-monde:
+        niveau: partiel
+        note: "dossier 7 « Outre-mer » : diplomatie depuis les territoires français, coopérations régionales ; aucun passage sur l'Union européenne ni l'immigration"
+      institutions:
+        niveau: fort
+        note: dossier 11 « Référendum », dossiers 8, 12 et 13 sur la probité, la campagne sobre et le budget présidentiel ; solution 12
+pilote:
+  provisoires:
+    - institutions
+    - impots
+    - retraites
+  themes: []
+  livres: []
+  derogation: null
+  relecture_ouverte: false

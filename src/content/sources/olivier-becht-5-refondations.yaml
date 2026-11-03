@@ -1,0 +1,15 @@
+version_schema: 1
+id: olivier-becht-5-refondations
+type: programme
+auteur: candidat
+candidats:
+  - olivier-becht
+titre: "Olivier Becht, Projet France : les 5 refondations"
+url: https://becht2027.fr/projet-france/les-5-refondations/
+date_publication: 2026-11
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/olivier-becht/ca4d014d92a0.txt
+  sha256: ca4d014d92a090b909acfead77bd077b6189ff81d8be4b371a7f70cb44ecb577
+  capture_le: 2026-11-03T17:54:21+01:00
+  binaire_sha256: a59cc97a7f0d065d7b17b7c3077d8e93052a8f46dcb94f03d6d28e2701c16e8d
