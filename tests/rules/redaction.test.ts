@@ -150,6 +150,13 @@ describe('redaction : guillemets, verbes, caractères suspects', () => {
     });
   }
 
+  for (const [nom, c] of [['pleine chasse', '２'], ['arabo-indien', '٥']] as const) {
+    it(`CR-04 : un chiffre ${nom} est une erreur CARACTERE_SUSPECT`, () => {
+      const d = diag([r(MESURE, 'Marie Fictive propose de plafonner les loyers', `Marie Fictive propose de plafonner les loyers de ${c}0`)]);
+      assert.deepEqual(d.map((x) => [x.code, x.pointer]), [['CARACTERE_SUSPECT', '/redactions/resume']]);
+    });
+  }
+
   it('un contrôle bidirectionnel (U+202E) est une erreur', () => {
     const d = diag([r(MESURE, 'Encadrement des loyers', 'Encadrement des \u202Eloyers')]);
     assert.deepEqual(d.map((x) => [x.code, x.pointer]), [['CARACTERE_SUSPECT', '/titre']]);

@@ -91,10 +91,11 @@ export const MARQUEUR_GLOSSAIRE = /\[\[([^\[\]|]+)(?:\|([a-z0-9]+(?:-[a-z0-9]+)*
  * Liste blanche (CR-01) : tout caractère de format ou d'usage privé (invisible, bidi, étiquettes),
  * toute écriture qui n'est ni latine, ni commune (chiffres, ponctuation, symboles), ni héritée
  * (diacritiques), ainsi que les lettres latines qui imitent une autre lettre (alphabet phonétique
- * et petites capitales U+0250-02AF, U+1D00-1DBF ; i sans point U+0131 ; j sans point U+0237).
+ * et petites capitales U+0250-02AF, U+1D00-1DBF ; i sans point U+0131 ; j sans point U+0237) et les
+ * chiffres décimaux non ASCII (pleine chasse, arabo-indiens…) qui échapperaient au contrôle des nombres.
  */
 export const CARACTERES_SUSPECTS =
-  /[\p{Cf}\p{Co}\u0131\u0237\u0250-\u02AF\u1D00-\u1DBF]|[^\p{Script=Latin}\p{Script=Common}\p{Script=Inherited}]/u;
+  /[\p{Cf}\p{Co}\u0131\u0237\u0250-\u02AF\u1D00-\u1DBF]|[^\p{Script=Latin}\p{Script=Common}\p{Script=Inherited}]|(?![0-9])\p{Nd}/u;
 
 // ---------------------------------------------------------------------------
 // Longueurs et lisibilité (REGLE-03, REGLE-06)
@@ -197,7 +198,7 @@ export const CATALOGUE: readonly EntreeCatalogue[] = [
   { code: 'MOT_INTERDIT', regle: 'REGLE-02', severite: 'erreur', piege: '§12 : une mesure avec un mot interdit', libelle: 'Un mot de la liste des mots interdits figure hors citation.' },
   { code: 'GUILLEMETS_DESEQUILIBRES', regle: 'REGLE-02', severite: 'erreur', piege: null, libelle: 'Les guillemets français ne sont pas équilibrés.' },
   { code: 'VERBE_CONNOTE', regle: 'REGLE-02', severite: 'avertissement', piege: null, libelle: 'Un verbe de parole connoté est employé.' },
-  { code: 'CARACTERE_SUSPECT', regle: 'REGLE-02', severite: 'erreur', piege: null, libelle: 'Le texte contient un caractère invisible, de contrôle bidirectionnel, d’une écriture non latine ou imitant une lettre latine.' },
+  { code: 'CARACTERE_SUSPECT', regle: 'REGLE-02', severite: 'erreur', piege: null, libelle: 'Le texte contient un caractère invisible, de contrôle bidirectionnel, d’une écriture non latine, imitant une lettre latine ou un chiffre non ASCII.' },
   // REGLE-03 : longueurs
   { code: 'LONGUEUR_HORS_BORNES', regle: 'REGLE-03', severite: 'erreur', piege: null, libelle: 'La rédaction est plus courte ou plus longue que les bornes du niveau.' },
   // REGLE-04 : chiffres et citations
