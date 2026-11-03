@@ -19,7 +19,7 @@ created: 2026-11-03
 |----------|-------|
 | **Framework** | `node:test` + `node:assert` on Node 24 (TypeScript type stripping), already used by Phases 1-3; `node:vm` for the two browser scripts; no Playwright in this phase (Phase 5) |
 | **Config file** | none; `package.json` script `TZ=Europe/Paris node --test "tests/**/*.test.ts"` |
-| **Quick run command** | `fnm exec --using=24 node --test tests/corpus/*.test.ts tests/scripts/*.test.ts tests/browser-js/*.test.ts tests/ui/*.test.ts` (no Astro build, < 10 s) |
+| **Quick run command** | `fnm exec --using=24 node --test tests/corpus/corpus-m1.test.ts tests/corpus/vue.test.ts tests/corpus/vue-candidat.test.ts tests/corpus/site-config.test.ts tests/corpus/signalement.test.ts tests/corpus/enfant.test.ts tests/scripts/html.test.ts tests/scripts/check-dist.test.ts tests/browser-js/niveau.test.ts tests/browser-js/ordre.test.ts tests/ui/styles.test.ts` (Phase 4 files only, each run on the files that exist at that point; no Astro build, < 10 s). Phase 3 also adds tests under `tests/corpus/`: never glob that directory in a Phase 4 command |
 | **Build run command** | `fnm exec --using=24 node --test tests/dist/site.test.ts` (the ONLY file that runs `astro build`; slices plug in via `tests/dist/cas/*.cas.ts`) |
 | **Full suite command** | `fnm exec --using=24 npm test && fnm exec --using=24 npm run check && fnm exec --using=24 npm run build && fnm exec --using=24 npm run check-dist` (plan 04-09 only) |
 | **Estimated runtime** | quick ~10 s; build run ~20-40 s (4-6 sequential builds); full ~90 s |
@@ -39,12 +39,12 @@ created: 2026-11-03
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 04-01-01 | 01 | 1 | M1-01, M1-07, M1-11 | T-04-02, T-04-03 | overlay never edits corpus-valide; cleanup only removes own temp roots | unit (RED) | `node --test tests/corpus/corpus-m1.test.ts` (expected to fail) | ❌ W0 | ⬜ pending |
+| 04-01-01 | 01 | 1 | M1-01, M1-07, M1-11 | T-04-02, T-04-03 | overlay never edits corpus-valide; cleanup only removes own temp roots | unit (RED) | `! node --test tests/corpus/corpus-m1.test.ts` (non-zero exit expected) | ❌ W0 | ⬜ pending |
 | 04-01-02 | 01 | 1 | M1-01, M1-07, M1-11 | T-04-01 | fictional `.invalid` hosts only | unit + CLI | `node --test tests/corpus/corpus-m1.test.ts` + `validate --root <m1> --mode production/preview` + `ids --check --root <m1>` | ❌ W0 | ⬜ pending |
 | 04-02-01 | 02 | 1 | QUAL-01 | — | no HTML parser dependency | unit | `node --test tests/scripts/html.test.ts` | ❌ W0 | ⬜ pending |
 | 04-02-02 | 02 | 1 | QUAL-01 | T-04-04…08 | third parties, inline code, drafts, indexable preview all rejected | unit (fault injection, ≥ 22 cases) | `node --test tests/scripts/check-dist.test.ts tests/rules/equite.test.ts` | ❌ W0 | ⬜ pending |
 | 04-02-03 | 02 | 1 | QUAL-01 | T-04-09 | skeleton cases kept, checkDist replaces the no-JS loop | build | `node --test tests/dist/site.test.ts && npm run check` | ❌ W0 | ⬜ pending |
-| 04-03-01 | 03 | 2 | M1-01, M1-08, M1-11, M1-12 | — | — | unit + CSS + build (RED) | `node --test tests/corpus/vue.test.ts tests/ui/styles.test.ts` (expected to fail) | ❌ W0 | ⬜ pending |
+| 04-03-01 | 03 | 2 | M1-01, M1-08, M1-11, M1-12 | — | — | unit + CSS + build (RED) | `! node --test tests/corpus/vue.test.ts tests/ui/styles.test.ts` (non-zero exit expected) | ❌ W0 | ⬜ pending |
 | 04-03-02 | 03 | 2 | M1-01, M1-11, M1-12 | T-04-11, T-04-12 | production filter, fail-closed on missing case, single RTP_MODE reader | unit | `node --test tests/corpus/vue.test.ts && npm run check` | ❌ W0 | ⬜ pending |
 | 04-03-03 | 03 | 2 | M1-01, M1-08, M1-12 | T-04-10, T-04-13, T-04-14 | no set:html, external hashed CSS, rel noopener | build + CSS | `node --test tests/repo/astro-config.test.ts tests/ui/styles.test.ts tests/corpus/vue.test.ts tests/dist/site.test.ts && npm run check` | ❌ W0 | ⬜ pending |
 | 04-04-01 | 04 | 3 | M1-04 | T-04-15, T-04-16 | encodeURIComponent, strict config reader, no personal address | unit | `node --test tests/corpus/site-config.test.ts tests/corpus/signalement.test.ts` | ❌ W0 | ⬜ pending |
@@ -52,7 +52,7 @@ created: 2026-11-03
 | 04-04-03 | 04 | 3 | M1-11 | T-04-18, T-04-19 | preview noindex + robots Disallow; zero badge strings in production | build (2 modes) | `node --test tests/dist/site.test.ts tests/ui/styles.test.ts tests/corpus/vue.test.ts && npm run check` | ❌ W0 | ⬜ pending |
 | 04-05-01 | 05 | 3 | M1-06 | T-04-21, T-04-22 | hostile stored value ignored, only `rtp:niveau` | unit (node:vm) | `node --test tests/browser-js/niveau.test.ts` + size ≤ 2048 | ❌ W0 | ⬜ pending |
 | 04-05-02 | 05 | 3 | M1-05, M1-09 | T-04-23, T-04-24 | sync same-origin script, content readable without :has() | build + CSS | `node --test tests/ui/styles.test.ts tests/browser-js/niveau.test.ts tests/dist/site.test.ts && npm run check` | ❌ W0 | ⬜ pending |
-| 04-06-01 | 06 | 4 | M1-02, M1-03, M1-12 | — | — | unit + build (RED) | `node --test tests/corpus/vue-candidat.test.ts` (expected to fail) | ❌ W0 | ⬜ pending |
+| 04-06-01 | 06 | 4 | M1-02, M1-03, M1-12 | — | — | unit + build (RED) | `! node --test tests/corpus/vue-candidat.test.ts` (non-zero exit expected) | ❌ W0 | ⬜ pending |
 | 04-06-02 | 06 | 4 | M1-02 | T-04-25 | unreviewed statut never shown as fact in production | unit | `node --test tests/corpus/vue-candidat.test.ts tests/corpus/vue.test.ts` | ❌ W0 | ⬜ pending |
 | 04-06-03 | 06 | 4 | M1-02, M1-03, M1-12 | T-04-26, T-04-27, T-04-28 | links and fragments resolve; neutral order and colour | build (2 modes) | `node --test tests/dist/site.test.ts tests/ui/styles.test.ts tests/corpus/vue.test.ts tests/corpus/vue-candidat.test.ts && npm run check` | ❌ W0 | ⬜ pending |
 | 04-07-01 | 07 | 4 | M1-10 | T-04-29 | shared marker syntax, unknown id throws | unit | `node --test tests/corpus/enfant.test.ts tests/rules/references.test.ts tests/pieges/*.test.ts` | ❌ W0 | ⬜ pending |
