@@ -23,7 +23,7 @@ describe('sondage : cas valides', () => {
 
 describe('sondage : cas invalides', () => {
   const bad: [string, string, { code: string; pointer: string }[]][] = [
-    ['url_notice absente (REGLE-09)', swap('url_notice: https://institut-fictif.exemple.invalid/notice\n', ''), [{ code: 'SCHEMA_REQUIRED', pointer: '' }]],
+    ['url_notice absente (REGLE-09)', swap('url_notice: https://institut-fictif.exemple.invalid/notice\n', ''), [{ code: 'SONDAGE_NOTICE_ABSENTE', pointer: '' }]],
     ['url_notice en http', swap('url_notice: https://', 'url_notice: http://'), [{ code: 'SCHEMA_FORMAT', pointer: '/url_notice' }]],
     ['tour 3', swap('tour: 1', 'tour: 3'), [{ code: 'SCHEMA_ENUM', pointer: '/tour' }]],
     ['echantillon 0', swap('echantillon: 1000', 'echantillon: 0'), [{ code: 'SCHEMA_MINIMUM', pointer: '/echantillon' }]],
