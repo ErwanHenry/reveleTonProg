@@ -1,4 +1,5 @@
 import { parseDocument } from 'yaml';
+import { foldKey } from '../../src/lib/content-core/rules/text/normalize.ts';
 
 // Tableau de couverture des thèmes (CONT-04). Module PUR : aucun import node:, aucune lecture
 // disque. Il valide la forme de data/couverture-themes.yaml et recalcule, à partir des seules cases
@@ -338,4 +339,185 @@ export function classer(data: CouvertureThemes): ResultatClassement {
     `Comparaison côte à côte : marge = ${choix.join(', ')} ; littéral = ${top3Litteral.join(', ')}.`,
   ];
   return { classement, choix, top3Litteral, explication };
+}
+
+// ---------------------------------------------------------------------------
+// Scanner d'un extrait archivé (aide à la lecture, jamais une preuve)
+// ---------------------------------------------------------------------------
+
+/**
+ * Radicaux français par thème, utilisés quand le tableau de couverture ne fournit pas de liste. Chaque
+ * entrée est un préfixe de mot après pliage (casse et accents) : « retrait » apparie « retraites »,
+ * jamais « portrait ». Un radical de 3 lettres ou moins (ric, tva, csg...) doit être un mot entier.
+ */
+export const MOTS_CLES_DEFAUT: Readonly<Record<string, readonly string[]>> = {
+  logement: ['logement', 'loyer', 'locataire', 'propriétaire', 'hlm', 'immobilier', 'habitat', 'hébergement', 'sans-abri', 'mal-logé'],
+  ecole: ['école', 'enseignant', 'professeur', 'élève', 'collège', 'lycée', 'éducation', 'scolaire', 'maternelle', 'baccalauréat', 'universit', 'étudiant'],
+  retraites: ['retraite', 'pension', 'âge de départ', 'âge légal', 'cotis', 'régime', 'annuité', 'trimestre'],
+  sante: ['santé', 'hôpital', 'hospitali', 'médecin', 'médical', 'soignant', 'médicament', 'urgences', 'infirmier', 'ehpad', 'dépendance', 'assurance maladie'],
+  securite: ['sécurité', 'police', 'gendarm', 'délinquan', 'criminalité', 'justice', 'prison', 'pénal', 'terroris', 'défense', 'armée'],
+  climat: ['climat', 'écolog', 'énergie', 'carbone', 'nucléaire', 'renouvelable', 'transition', 'émission', 'biodiversité', 'pollution', 'réchauffement'],
+  travail: ['travail', 'emploi', 'chômage', 'salaire', 'smic', 'entreprise', 'syndica', 'apprentissage', 'licenci', 'contrat de travail'],
+  impots: ['impôt', 'impot', 'fiscal', 'taxe', 'tva', 'csg', 'prélèvement', 'niche', 'cotisation', 'redevance'],
+  'europe-et-monde': ['europe', 'européen', 'union européenne', 'otan', 'diplomat', 'international', 'politique étrangère', 'traité', 'migrat', 'frontière', 'commerce', 'onu'],
+  institutions: ['constitution', 'référendum', 'ric', 'proportionnelle', 'assemblée', 'sénat', 'parlement', 'mandat', 'quinquennat', 'septennat', '49.3', 'élection', 'démocratie'],
+};
+
+export interface ThemeAScanner {
+  id: string;
+  mots_cles: readonly string[];
+}
+export interface ExtraitScan {
+  page: number;
+  texte: string;
+}
+export interface ResultatScan {
+  theme: string;
+  hits: number;
+  engagements: number;
+  extraits: ExtraitScan[];
+}
+
+interface Jeton {
+  debut: number;
+  fin: number;
+  cle: string;
+}
+
+const JETON = /[\p{L}\p{N}\p{M}]+/gu;
+const DEMI_FENETRE = 150;
+const ECART_MIN_EXTRAITS = 60;
+const REMONTEE_PHRASE_MAX = 400;
+const PUCE = /^(?:[-–—•·▪●■◦*]\s|\d{1,2}[.)]\s)/u;
+const FUTUR = /(?:rai|ras|ra|rons|rez|ront)$/;
+const VERBES_ENGAGEMENT = new Set(['sera', 'seront', 'doit', 'doivent', 'devra', 'devront']);
+// Mots en -er/-ir/-re/-oir qui ne sont pas des verbes à l'infinitif (heuristique, faux positifs assumés).
+const PAS_INFINITIFS = new Set([
+  'notre', 'votre', 'autre', 'autres', 'entre', 'contre', 'outre', 'nombre', 'titre', 'centre', 'membre', 'membres', 'ordre', 'chapitre',
+  'premier', 'dernier', 'ouvrier', 'financier', 'entier', 'hier', 'avenir', 'plaisir', 'soir', 'pouvoir', 'devoir', 'savoir', 'cadre', 'monsieur',
+]);
+
+function jetons(texte: string): Jeton[] {
+  const out: Jeton[] = [];
+  for (const m of texte.matchAll(JETON)) out.push({ debut: m.index, fin: m.index + m[0].length, cle: foldKey(m[0]) });
+  return out;
+}
+
+const correspond = (cleTexte: string, cleMot: string): boolean => (cleMot.length <= 3 ? cleTexte === cleMot : cleTexte.startsWith(cleMot));
+
+/** Début de la phrase qui contient `pos`, ou -1 si aucune borne n'est trouvée dans la fenêtre de remontée. */
+function debutPhrase(texte: string, pos: number): number {
+  const borne = Math.max(0, pos - REMONTEE_PHRASE_MAX);
+  for (let k = pos - 1; k >= borne; k--) {
+    const c = texte.charAt(k);
+    if (c === '\n' || c === '\f') return k + 1;
+    if ((c === '.' || c === '!' || c === '?' || c === '…' || c === ';') && /\s/.test(texte.charAt(k + 1) || ' ')) return k + 1;
+  }
+  return borne === 0 ? 0 : -1;
+}
+
+/** La phrase commence-t-elle comme un engagement ? Heuristique de lecture, pas un verdict. */
+function estEngagement(texte: string, pos: number): boolean {
+  const debut = debutPhrase(texte, pos);
+  if (debut < 0) return false;
+  const tete = texte.slice(debut, debut + 160).trimStart();
+  if (PUCE.test(tete)) return true;
+  const mots = jetons(tete.slice(0, 120)).slice(0, 10).map((j) => j.cle);
+  const premier = mots[0];
+  if (premier === undefined) return false;
+  if ((premier === 'nous' || premier === 'je' || premier === 'j') && mots.slice(1, 5).some((m) => m.length >= 5 && FUTUR.test(m))) return true;
+  if (mots.some((m) => VERBES_ENGAGEMENT.has(m))) return true;
+  return premier.length >= 4 && /(?:er|ir|re|oir)$/.test(premier) && !PAS_INFINITIFS.has(premier);
+}
+
+function extraitAutour(texte: string, debut: number, fin: number): string {
+  let a = Math.max(0, debut - DEMI_FENETRE);
+  let b = Math.min(texte.length, fin + DEMI_FENETRE);
+  const coupeAvant = a > 0;
+  const coupeApres = b < texte.length;
+  if (coupeAvant && !/\s/.test(texte.charAt(a - 1))) {
+    const i = texte.slice(a, debut).search(/\s/);
+    if (i >= 0) a += i + 1;
+  }
+  if (coupeApres && !/\s/.test(texte.charAt(b))) {
+    const i = texte.slice(fin, b).search(/\s\S*$/);
+    if (i >= 0) b = fin + i;
+  }
+  // Texte de tiers affiché dans un terminal : pas de séquence d'échappement ni de caractère bidi.
+  const coeur = texte.slice(a, b).replace(/\p{Cf}/gu, '').replace(/[\p{Cc}\s]+/gu, ' ').trim();
+  return `${coupeAvant ? '… ' : ''}${coeur}${coupeApres ? ' …' : ''}`;
+}
+
+/**
+ * Cherche, par thème, les mots-clés dans un extrait archivé : occurrences, occurrences dont la phrase
+ * commence comme un engagement, et au plus `max` extraits (±150 caractères, coupés entre deux mots)
+ * avec leur numéro de page (1 + sauts de page avant l'occurrence). Un seul passage sur les mots du
+ * texte : le coût reste linéaire quelle que soit la taille de l'archive.
+ */
+export function scanner(texte: string, themes: readonly ThemeAScanner[], max = 8): ResultatScan[] {
+  const t = texte.normalize('NFC');
+  const mots = jetons(t);
+  const sauts: number[] = [];
+  for (let i = t.indexOf('\f'); i >= 0; i = t.indexOf('\f', i + 1)) sauts.push(i);
+  const page = (pos: number): number => {
+    let lo = 0;
+    let hi = sauts.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if ((sauts[mid] as number) < pos) lo = mid + 1;
+      else hi = mid;
+    }
+    return 1 + lo;
+  };
+
+  return themes.map((theme) => {
+    // Index par première lettre du premier mot du mot-clé, pour éviter de tester tous les mots-clés à chaque mot.
+    const index = new Map<string, string[][]>();
+    for (const brut of theme.mots_cles) {
+      const cles = jetons(brut).map((j) => j.cle);
+      const tete = cles[0];
+      if (tete === undefined) continue;
+      const seau = index.get(tete.charAt(0)) ?? [];
+      seau.push(cles);
+      index.set(tete.charAt(0), seau);
+    }
+    const trouvees: { debut: number; fin: number; engage: boolean }[] = [];
+    let engagements = 0;
+    for (let i = 0; i < mots.length; i++) {
+      const mot = mots[i] as Jeton;
+      const seau = index.get(mot.cle.charAt(0));
+      if (seau === undefined) continue;
+      for (const cles of seau) {
+        let ok = true;
+        for (let j = 0; j < cles.length; j++) {
+          const cible = mots[i + j];
+          if (cible === undefined || !correspond(cible.cle, cles[j] as string)) {
+            ok = false;
+            break;
+          }
+        }
+        if (!ok) continue;
+        const fin = (mots[i + cles.length - 1] as Jeton).fin;
+        const engage = estEngagement(t, mot.debut);
+        if (engage) engagements++;
+        trouvees.push({ debut: mot.debut, fin, engage });
+        break;
+      }
+    }
+    // Les formulations d'engagement d'abord, puis le reste ; on évite deux extraits sur la même occurrence.
+    const ordre = [...trouvees.filter((h) => h.engage), ...trouvees.filter((h) => !h.engage)];
+    const retenues: typeof trouvees = [];
+    for (const h of ordre) {
+      if (retenues.length >= max) break;
+      if (retenues.some((r) => Math.abs(r.debut - h.debut) < ECART_MIN_EXTRAITS && page(r.debut) === page(h.debut))) continue;
+      retenues.push(h);
+    }
+    retenues.sort((a, b) => a.debut - b.debut);
+    return {
+      theme: theme.id,
+      hits: trouvees.length,
+      engagements,
+      extraits: retenues.map((h) => ({ page: page(h.debut), texte: extraitAutour(t, h.debut, h.fin) })),
+    };
+  });
 }
