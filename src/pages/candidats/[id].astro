@@ -1,0 +1,72 @@
+---
+import Base from '../../layouts/Base.astro';
+import BadgeBrouillon from '../../components/BadgeBrouillon.astro';
+import EtatVide from '../../components/EtatVide.astro';
+import LecteurNiveaux from '../../components/LecteurNiveaux.astro';
+import Mesure from '../../components/Mesure.astro';
+import StatutCandidat from '../../components/StatutCandidat.astro';
+import { getCorpus } from '../../lib/corpus/index.ts';
+
+export async function getStaticPaths() {
+  const corpus = await getCorpus();
+  return corpus.candidats.map((c) => ({ params: { id: c.id }, props: { id: c.id } }));
+}
+
+const { id } = Astro.props;
+const corpus = await getCorpus();
+const page = corpus.pageCandidat(id);
+const { candidat, sections } = page;
+const nom = candidat.nomAffiche;
+const mesuresAffichees = sections.flatMap((s) => s.cellule.mesures);
+---
+<Base
+  titre={`${nom} : positions par thème, reveleTonProg`}
+  description={`Les mesures de ${nom}, thème par thème, avec leurs sources.`}
+  miseAJour={page.miseAJour}
+  avecSignalement={mesuresAffichees.length > 0}
+>
+  <main id="contenu" class="conteneur">
+    <nav class="fil" aria-label="Fil d'Ariane">
+      <ol>
+        <li><a href="/">Accueil</a></li>
+        <li><a href="/candidats/">Candidats</a></li>
+        <li aria-current="page">{nom}</li>
+      </ol>
+    </nav>
+    <h1>{nom}</h1>
+    <p class="parti">{candidat.parti === null ? 'Sans étiquette de parti déclarée' : `Parti revendiqué : ${candidat.parti}`}</p>
+    <StatutCandidat page={page} />
+    <LecteurNiveaux contexte={{ type: 'candidat', id }} mesures={mesuresAffichees}>
+      {sections.length === 0 ? (
+        candidat.perimetre ? (
+          <>
+            <p>Aucun thème n'est publié pour le moment.</p>
+            <p><a href="/candidats/">Voir la liste des candidats</a></p>
+          </>
+        ) : (
+          <>
+            <p>Aucune mesure n'est présentée pour cette personnalité : les thèmes couvrent les candidatures déclarées et les candidatures à une primaire.</p>
+            <p><a href="/themes/">Voir les thèmes</a></p>
+          </>
+        )
+      ) : (
+        sections.map(({ theme, cellule }) => (
+          <section class="section-theme" id={theme.theme.id} data-theme={theme.theme.id}>
+            <div class="section-entete">
+              <h2 class="section-titre">{theme.theme.nom}</h2>
+              <BadgeBrouillon texte={theme.badge} />
+            </div>
+            {cellule.mesures.length > 0 ? (
+              cellule.mesures.map((vue) => <Mesure vue={vue} niveauTitre={3} />)
+            ) : (
+              <EtatVide cellule={cellule} />
+            )}
+            <p class="section-lien">
+              <a href={corpus.perimetre.has(id) ? `/themes/${theme.theme.id}/#c-${id}` : `/themes/${theme.theme.id}/`}>Voir tous les candidats sur le thème {theme.theme.nom}</a>
+            </p>
+          </section>
+        ))
+      )}
+    </LecteurNiveaux>
+  </main>
+</Base>

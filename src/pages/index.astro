@@ -1,49 +1,51 @@
 ---
-import { getCandidats, getMesuresDe, getSource, statutCourant } from '../lib/corpus/index.ts';
+// Accueil : les quatre niveaux de lecture, la règle de neutralité et les thèmes publiés.
+import Base from '../layouts/Base.astro';
+import LecteurNiveaux from '../components/LecteurNiveaux.astro';
+import TuileTheme from '../components/TuileTheme.astro';
+import { getCorpus } from '../lib/corpus/index.ts';
 
-const candidats = await getCandidats();
-const vues = await Promise.all(
-  candidats.map(async (c) => {
-    const mesures = await getMesuresDe(c.id);
-    const lignes = await Promise.all(mesures.map(async (m) => ({ mesure: m, source: await getSource(m.source) })));
-    return { candidat: c, lignes };
-  }),
-);
+const corpus = await getCorpus();
+const niveaux = [
+  ['En bref', 'Une phrase par mesure.'],
+  ['En détail', 'Le coût annoncé, le calendrier, ce qui existe déjà dans la loi et la citation du programme.'],
+  ['Pour les enfants', 'Des mots simples, avec les mots difficiles expliqués.'],
+  ['Gros caractères', 'Un texte plus grand et les thèmes qui touchent souvent les retraités en premier.'],
+] as const;
 ---
-<!doctype html>
-<html lang="fr">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="robots" content="noindex" />
-    <title>reveleTonProg — squelette (corpus fictif)</title>
-  </head>
-  <body>
-    <h1>reveleTonProg — squelette</h1>
-    {candidats.length === 0 ? (
-      <p>Aucun candidat dans ce corpus.</p>
-    ) : (
-      <ul>
-        {vues.map(({ candidat: c, lignes }) => {
-          const statut = statutCourant(c);
-          return (
-            <li>
-              {c.prenom} {c.nom}, {c.parti ?? 'Sans étiquette'} : {statut.code} — {statut.date}
-              {lignes.map(({ mesure, source }) => (
-                <div>
-                  <h3>{mesure.titre}</h3>
-                  <p>{mesure.redactions.resume}</p>
-                  {source !== undefined && (
-                    <p>Source : {source.titre}, consultée le {source.date_consultation}</p>
-                  )}
-                </div>
-              ))}
-            </li>
-          );
-        })}
-      </ul>
-    )}
-    <p><span>Données fictives</span>
-à des fins de test.</p>
-  </body>
-</html>
+<Base
+  titre="reveleTonProg : les programmes de la présidentielle 2027"
+  description="Les propositions de chaque candidat, thème par thème, à quatre niveaux de lecture, avec leur source."
+  miseAJour={corpus.miseAJourIndex()}
+>
+  <main id="contenu" class="conteneur">
+    <h1>Les programmes de la présidentielle 2027, à votre niveau</h1>
+    <p>Choisissez un thème : vous lirez la position de chaque candidat, avec sa source. Choisissez aussi votre niveau de lecture.</p>
+    <LecteurNiveaux contexte={{ type: 'hall' }} mesures={[]}>
+      <h2>Quatre niveaux de lecture</h2>
+      <dl class="niveaux-hall">
+        {niveaux.map(([libelle, description]) => (
+          <div>
+            <dt>{libelle}</dt>
+            <dd>{description}</dd>
+          </div>
+        ))}
+      </dl>
+      <p>Les candidats sont classés par ordre alphabétique, jamais selon les sondages. Chaque mesure vient d'une source primaire datée et décrit ce que le candidat propose, sans jugement.</p>
+      <h2 class="hall-themes">Les thèmes</h2>
+      {corpus.themes.length === 0 ? (
+        <>
+          <p>Aucun thème publié pour le moment.</p>
+          <p><a href="/candidats/">Consulter la liste des candidats</a></p>
+        </>
+      ) : (
+        <>
+          <ul class="tuiles">
+            {corpus.themes.map((vue) => <TuileTheme vue={vue} />)}
+          </ul>
+          <p><a href="/candidats/">Voir tous les candidats</a></p>
+        </>
+      )}
+    </LecteurNiveaux>
+  </main>
+</Base>

@@ -1,5 +1,6 @@
 ---
 import '../styles/base.css';
+import '../styles/pages.css';
 import { formatDate, getCorpus } from '../lib/corpus/index.ts';
 
 interface Props {
@@ -13,6 +14,9 @@ interface Props {
 
 const { titre, description, miseAJour, avecSignalement = false } = Astro.props;
 const corpus = await getCorpus();
+// Rubrique courante, déduite du chemin (trailingSlash: 'always') : aucun paramètre de page nécessaire.
+const chemin = Astro.url.pathname;
+const courante = /^\/themes(\/|$)/.test(chemin) ? 'themes' : /^\/candidats(\/|$)/.test(chemin) ? 'candidats' : undefined;
 ---
 <!doctype html>
 <html lang="fr">
@@ -26,8 +30,14 @@ const corpus = await getCorpus();
   <body>
     <a class="skip-link" href="#contenu">Aller au contenu</a>
     <header class="entete">
-      <div class="conteneur">
+      <div class="conteneur entete-ligne">
         <a class="site-nom" href="/">reveleTonProg</a>
+        <nav class="nav-principale" aria-label="Navigation principale">
+          <ul>
+            <li><a href="/themes/" aria-current={courante === 'themes' ? 'page' : undefined}>Thèmes</a></li>
+            <li><a href="/candidats/" aria-current={courante === 'candidats' ? 'page' : undefined}>Candidats</a></li>
+          </ul>
+        </nav>
       </div>
     </header>
     {corpus.mode === 'preview' && (

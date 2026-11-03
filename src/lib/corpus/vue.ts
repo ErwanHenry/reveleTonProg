@@ -13,6 +13,7 @@ import type {
   Mesure,
   MotifRenoncement,
   Source,
+  SourceStatut,
   StatutEntree,
   StatutRelecture,
   Theme,
@@ -108,6 +109,22 @@ export interface VueTheme {
   miseAJour: string | undefined;
 }
 
+/** Une section de page candidat : le thème et la case du candidat, avec toutes ses mesures visibles (`cellule.mesures`). */
+export interface SectionCandidat {
+  theme: VueTheme;
+  cellule: VueCellule;
+}
+
+export interface PageCandidat {
+  candidat: VueCandidat;
+  /** Statut montré au visiteur (production : le plus récent des statuts relus ou publiés), `null` si aucun. */
+  statut: StatutEntree | null;
+  /** Pastille du statut affiché : `BADGES.brouillon` pour un statut en brouillon (aperçu seulement), sinon `null` (un statut relu est ce que montre la production). */
+  badgeStatut: string | null;
+  sections: SectionCandidat[];
+  miseAJour: string | undefined;
+}
+
 export interface Corpus {
   mode: Mode;
   themes: VueTheme[];
@@ -119,6 +136,9 @@ export interface Corpus {
   sources: ReadonlyMap<string, Source>;
   theme(id: string): VueTheme;
   candidat(id: string): VueCandidat;
+  pageCandidat(id: string): PageCandidat;
+  /** Date de mise à jour des pages d'index (accueil, thèmes, candidats), `undefined` si rien n'est publié. */
+  miseAJourIndex(): string | undefined;
 }
 
 const collator = new Intl.Collator('fr');
@@ -140,6 +160,21 @@ export function formatDate(d: string): string {
   const mois = /^(\d{4})-(\d{2})$/.exec(d);
   if (mois) return MOIS_ANNEE.format(Date.UTC(Number(mois[1]), Number(mois[2]) - 1, 1));
   return d;
+}
+
+/** « depuis le 15 octobre 2026 », « depuis septembre 2026 », « depuis 2026 ». */
+export function depuis(date: string): string {
+  return /^\d{4}-\d{2}-\d{2}$/.test(date) ? `depuis le ${formatDate(date)}` : `depuis ${formatDate(date)}`;
+}
+
+/** Texte d'un lien vers la source d'un statut : le titre, sinon l'hôte de l'URL sans « www. ». */
+export function texteSource(s: SourceStatut): string {
+  if (s.titre !== undefined && s.titre !== '') return s.titre;
+  try {
+    return new URL(s.url).hostname.replace(/^www\./, '');
+  } catch {
+    return s.url;
+  }
 }
 
 /** Date ISO maximale (comparaison de chaînes), `undefined` ignorés. */
@@ -283,6 +318,45 @@ export function construireCorpus(brut: Brut, mode: Mode): Corpus {
     return { theme, badge: badgeDe(theme.statut_relecture), cellules, renonces, autresPersonnalites, couverture: compte, miseAJour };
   });
 
+  const pageCandidat = (id: string): PageCandidat => {
+    const candidat = parId.get(id);
+    if (candidat === undefined) throw new Error(`candidat « ${id} » absent du corpus`);
+    const sections: SectionCandidat[] = [];
+    for (const vue of themes) {
+      if (candidat.perimetre) {
+        const cellule = vue.cellules.find((c) => c.candidat.id === id);
+        if (cellule !== undefined) sections.push({ theme: vue, cellule });
+        continue;
+      }
+      const siennes = mesures.filter((m) => m.mesure.theme === vue.theme.id && m.mesure.candidat === id);
+      if (siennes.length === 0) continue;
+      const premiere = siennes[0];
+      sections.push({
+        theme: vue,
+        cellule: {
+          candidat,
+          theme: vue.theme.id,
+          etat: 'mesures',
+          mesures: siennes,
+          premiere,
+          autres: siennes.length - 1,
+          verifieLe: undefined,
+          sourcesConsultees: [],
+        },
+      });
+    }
+    const statut = candidat.statutAffiche;
+    const miseAJour = dateMax([
+      statut?.date,
+      statut?.source.date_consultation,
+      ...sections.flatMap((s) => [
+        s.cellule.verifieLe,
+        ...s.cellule.mesures.flatMap((m) => [m.mesure.date_relecture, m.source.date_consultation]),
+      ]),
+    ]);
+    return { candidat, statut, badgeStatut: statut?.statut_relecture === 'brouillon' ? BADGES.brouillon : null, sections, miseAJour };
+  };
+
   return {
     mode,
     themes,
@@ -301,5 +375,7 @@ export function construireCorpus(brut: Brut, mode: Mode): Corpus {
       if (c === undefined) throw new Error(`candidat « ${id} » absent du corpus`);
       return c;
     },
+    pageCandidat,
+    miseAJourIndex: () => dateMax([...themes.map((t) => t.miseAJour), ...candidats.map((c) => c.statutAffiche?.date)]),
   };
 }
