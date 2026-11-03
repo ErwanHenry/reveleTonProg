@@ -1,5 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
+import BadgeBrouillon from '../../components/BadgeBrouillon.astro';
 import Cellule from '../../components/Cellule.astro';
 import LecteurNiveaux from '../../components/LecteurNiveaux.astro';
 import { LIBELLES_MOTIF, formatDate, getCorpus, phraseCouverture } from '../../lib/corpus/index.ts';
@@ -22,6 +23,7 @@ const n = vue.autresPersonnalites;
   titre={`${theme.nom} : positions des candidats, reveleTonProg`}
   description={`Ce que chaque candidat propose sur le thème ${theme.nom}, avec sa source.`}
   miseAJour={vue.miseAJour}
+  avecSignalement={mesuresAffichees.length > 0}
 >
   <main id="contenu" class="conteneur" data-theme={id}>
     <nav class="fil" aria-label="Fil d'Ariane">
@@ -31,7 +33,10 @@ const n = vue.autresPersonnalites;
         <li aria-current="page">{theme.nom}</li>
       </ol>
     </nav>
-    <h1 class="theme-titre">{theme.nom}</h1>
+    <div class="theme-entete">
+      <h1 class="theme-titre">{theme.nom}</h1>
+      <BadgeBrouillon texte={vue.badge} />
+    </div>
     <p>Voici la position de chaque candidat sur ce thème. Cliquez sur un nom pour voir toutes ses mesures.</p>
     <LecteurNiveaux contexte={{ type: 'theme', id }} mesures={mesuresAffichees}>
       <p class="couverture">{phraseCouverture(vue.couverture)}</p>
