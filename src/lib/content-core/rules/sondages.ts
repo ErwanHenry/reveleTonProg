@@ -87,7 +87,8 @@ const sondage: EntryRule = {
       }
 
       if (tour === 1) {
-        const duel = h.scores.length === DUEL.scores && sommeScores >= DUEL.sommeMin * 100;
+        // WR-07 : deux scores dont la somme est quasi complète, ou avec peu d'« autres » (blanc/nul).
+        const duel = h.scores.length === DUEL.scores && (sommeScores >= DUEL.sommeMin * 100 || centiemes(h.autresPct) < DUEL.autresMax * 100);
         if (duel || DUEL.motif.test(h.nom)) {
           out.push({
             code: 'SONDAGE_TOUR2_EN_TOUR1',

@@ -165,8 +165,11 @@ export const SOMME_SONDAGE = { min: 95, max: 105 } as const;
 /** Détection d'une hypothèse de second tour (duel) rangée au premier tour (hypothèse A7). */
 export const DUEL = {
   scores: 2,
+  /** Somme des scores (en %) à partir de laquelle deux scores forment un duel. */
   sommeMin: 99,
-  motif: /second tour|2(?:e|nd|ème) tour|duel|face[- ]à[- ]face/i,
+  /** « Autres » strictement sous ce seuil (en %) : deux scores forment un duel même si la somme est plus basse (blanc/nul). */
+  autresMax: 5,
+  motif: /second tour|\b2(?:e|nd|ème) tour|deuxi[èe]me tour|ballottage|finale|\bT2\b|duel|face[- ]à[- ]face/i,
 } as const;
 
 /**
@@ -272,7 +275,7 @@ export const HYPOTHESES: readonly Hypothese[] = [
   { id: 'A4', regle: 'REGLE-03', choix: 'LONGUEUR_HORS_BORNES est une erreur quel que soit le statut de relecture.' },
   { id: 'A5', regle: 'REGLE-07', choix: 'Un candidat absent de ids.lock est une erreur (pas seulement un identifiant renommé ou supprimé) : il faut lancer « npm run ids -- --write » dans la même PR.' },
   { id: 'A6', regle: 'REGLE-08', choix: 'Le périmètre d’équité se lit sur le dernier statut de la liste statuts[], quel que soit son statut de relecture.' },
-  { id: 'A7', regle: 'REGLE-09', choix: 'Une hypothèse de duel au premier tour compte exactement deux scores dont la somme atteint au moins 99, ou un nom qui évoque le second tour ; les seuils sont dans la configuration.' },
+  { id: 'A7', regle: 'REGLE-09', choix: 'Une hypothèse de duel au premier tour compte exactement deux scores dont la somme atteint au moins 99 ou dont « autres » est sous 5 %, ou un nom qui évoque le second tour (deuxième tour, ballottage, finale, T2) ; deux scores avec 5 % ou plus d’« autres » restent admis (le corpus fictif n’a que deux candidats). Les seuils et le motif sont dans la configuration.' },
   { id: 'A8', regle: 'REGLE-09', choix: 'Une fenêtre de blocage inclut son instant de début et exclut son instant de fin (20h00 pile est autorisé).' },
   { id: 'A9', regle: 'REGLE-11', choix: 'GitHub affiche au plus 10 erreurs et 10 avertissements en annotations par étape ; les lignes de texte du journal restent toutes imprimées.' },
   { id: 'A10', regle: 'REGLE-09', choix: 'Les bornes 00h00 et 20h00 des fenêtres de blocage viennent de la spécification du projet (§6), pas du texte de l’article 11 de la loi 77-808.' },
