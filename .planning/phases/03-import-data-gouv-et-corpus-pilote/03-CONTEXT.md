@@ -26,6 +26,13 @@ Script d'import du dataset data.gouv « Candidatures à l'élection présidentie
 - Rédactions : l'agent rédige les 4 niveaux uniquement à partir du `texte_source` cité, tout en `statut_relecture: brouillon` ; rien n'est publié sans relecture d'Erwan ; « le candidat ne précise pas » plutôt qu'une supposition
 - Rien d'inventé : une case sans source primaire trouvée = état couverture `programme_non_publie` ou `non_precise` avec sources consultées et date
 
+### Décisions après recherche (Erwan 2026-11-03)
+- Motifs `renonce` ambigus : valeur la moins fausse (Poutou et Knafo : `non_candidat`, Brun : `elimine_primaire`), statut en `brouillon`, liste explicite à relire dans le SUMMARY ; pas de nouveau code de motif
+- Plafond pilote : 2 mesures par candidat et par thème (les plus centrales du thème dans la source)
+- Thèmes pilotes provisoires (recherche) : institutions, impôts, retraites — re-mesurer en exécution ; checkpoint seulement si le top 3 re-mesuré diffère
+- Hypothèses A3 (`date_consultation` = `verifie_le` amont), A4 (`parti: null` sans source de revendication) acceptées par défaut
+- La bascule `DEFAULT_CONTENT_ROOT` vers `.` est le dernier plan de la phase ; la rédaction en masse attend que les règles Phase 2 soient fusionnées
+
 ### Claude's Discretion
 - Outil de capture (Playwright si besoin de rendu JS, sinon fetch), structure du rapport de couverture, ordre de collecte
 
