@@ -27,7 +27,7 @@ Thumbs.db
 *.swp
 
 # Build
-dist/
+/dist/
 build/
 .next/
 

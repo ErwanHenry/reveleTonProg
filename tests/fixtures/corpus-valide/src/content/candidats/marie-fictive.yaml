@@ -1,0 +1,32 @@
+version_schema: 1
+id: marie-fictive
+prenom: Marie
+nom: Fictive
+nom_tri: Fictive
+parti: Parti Imaginaire
+parti_source:
+  type: parti
+  titre: Page de présentation du Parti Imaginaire
+  url: https://parti-imaginaire.exemple.invalid/presentation
+  date_consultation: 2026-10-20
+ids_externes:
+  2027etmoi: fictif-001
+statuts:
+  - code: pressenti
+    date: 2026-09
+    source:
+      type: presse
+      titre: Article fictif
+      url: https://journal-fictif.exemple.invalid/marie-fictive
+      date_consultation: 2026-09-15
+    statut_relecture: brouillon
+  - code: declare
+    date: 2026-10-15
+    source:
+      type: candidat
+      titre: Annonce de candidature (fictive)
+      url: https://marie-fictive.exemple.invalid/candidature
+      date_consultation: 2026-10-16
+    statut_relecture: relu
+    relecteur: Erwan Henry
+    date_relecture: 2026-10-17
