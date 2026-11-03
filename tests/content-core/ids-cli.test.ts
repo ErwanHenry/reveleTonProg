@@ -205,6 +205,14 @@ describe('npm run ids (scripts/ids.ts)', () => {
     assert.equal(readFileSync(cible, 'utf8'), 'zzz-zzz\n');
   });
 
+  it('WR-02 : seule l’absence de ids.lock vaut « pas de verrou », les autres erreurs lstat se propagent', () => {
+    // Une erreur EACCES/ENOTDIR/EIO ne se reproduit pas de façon portable sur un dossier de test
+    // (la racine doit rester traversable pour lister le contenu) : on verrouille la forme du code.
+    const src = readFileSync(path.join(REPO_ROOT, 'scripts', 'ids.ts'), 'utf8');
+    assert.match(src, /lstatSync\(lockPath, \{ throwIfNoEntry: false \}\) === undefined/);
+    assert.ok(!/lstatSync\(lockPath\);\s*\}\s*catch\s*\{\s*return undefined/.test(src), 'catch fourre-tout interdit');
+  });
+
   it('racine introuvable : code 1 (RACINE_INTROUVABLE)', () => {
     const res = cli(['--check', '--root', path.join(tmpEmpty(), 'absent')]);
     assert.equal(res.status, 1);
