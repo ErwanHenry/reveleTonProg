@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:reveletonprog:schema:couverture",
+  "title": "Couverture d'un thème",
+  "type": "object",
+  "required": ["version_schema", "id", "theme", "cases"],
+  "unevaluatedProperties": false,
+  "properties": {
+    "version_schema": { "const": 1 },
+    "id":    { "$ref": "urn:reveletonprog:schema:common#/$defs/slug" },
+    "theme": { "$ref": "urn:reveletonprog:schema:common#/$defs/slug" },
+    "cases": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["candidat", "etat", "verifie_le", "verifie_par"],
+        "unevaluatedProperties": false,
+        "properties": {
+          "candidat":    { "$ref": "urn:reveletonprog:schema:common#/$defs/idCandidat" },
+          "etat":        { "enum": ["mesures", "non_precise", "programme_non_publie"] },
+          "verifie_le":  { "$ref": "urn:reveletonprog:schema:common#/$defs/dateComplete" },
+          "verifie_par": { "$ref": "urn:reveletonprog:schema:common#/$defs/texte" },
+          "sources_consultees": {
+            "type": "array", "uniqueItems": true,
+            "items": { "$ref": "urn:reveletonprog:schema:common#/$defs/slug" }
+          }
+        },
+        "if":   { "properties": { "etat": { "const": "non_precise" } }, "required": ["etat"] },
+        "then": { "required": ["sources_consultees"], "properties": { "sources_consultees": { "type": "array", "minItems": 1 } } }
+      }
+    }
+  }
+}

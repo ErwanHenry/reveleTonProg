@@ -1,0 +1,26 @@
+version_schema: 1
+id: sondage-fictif-1
+institut: Institut Fictif
+commanditaire: Média Fictif
+terrain:
+  debut: 2026-10-01
+  fin: 2026-10-03
+date_publication: 2026-10-05T08:00:00+02:00
+echantillon: 1000
+methode: en_ligne
+base: inscrits
+marges_erreur:
+  - score_pct: 50
+    marge_pct: 3.1
+url_notice: https://institut-fictif.exemple.invalid/notice
+url_publication: https://media-fictif.exemple.invalid/sondage
+tour: 1
+hypotheses:
+  - nom: Hypothèse fictive A
+    scores:
+      - candidat: marie-fictive
+        pct: 52
+      - candidat: jean-imaginaire
+        pct: 41
+    autres_pct: 7
+statut_relecture: brouillon

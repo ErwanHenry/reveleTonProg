@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:reveletonprog:schema:glossaire",
+  "title": "Entrée de glossaire",
+  "type": "object",
+  "required": ["version_schema", "id", "type", "libelle", "definition"],
+  "unevaluatedProperties": false,
+  "properties": {
+    "version_schema": { "const": 1 },
+    "id":         { "$ref": "urn:reveletonprog:schema:common#/$defs/slug" },
+    "type":       { "enum": ["terme", "parti"] },
+    "libelle":    { "$ref": "urn:reveletonprog:schema:common#/$defs/texte" },
+    "definition": { "type": "string", "minLength": 1, "maxLength": 300 },
+    "source": {
+      "$ref": "urn:reveletonprog:schema:common#/$defs/sourceStatut",
+      "type": "object",
+      "properties": { "type": { "enum": ["parti", "institution"] } }
+    }
+  },
+  "if":   { "properties": { "type": { "const": "parti" } }, "required": ["type"] },
+  "then": { "required": ["source"], "properties": { "source": { "type": "object", "properties": { "type": { "const": "parti" } } } } }
+}

@@ -1,0 +1,12 @@
+version_schema: 1
+id: logement
+theme: logement
+cases:
+  - candidat: marie-fictive
+    etat: mesures
+    verifie_le: 2026-10-21
+    verifie_par: Erwan Henry
+  - candidat: jean-imaginaire
+    etat: programme_non_publie
+    verifie_le: 2026-10-21
+    verifie_par: Erwan Henry
