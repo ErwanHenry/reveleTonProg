@@ -33,6 +33,9 @@ Script d'import du dataset data.gouv « Candidatures à l'élection présidentie
 - Hypothèses A3 (`date_consultation` = `verifie_le` amont), A4 (`parti: null` sans source de revendication) acceptées par défaut
 - La bascule `DEFAULT_CONTENT_ROOT` vers `.` est le dernier plan de la phase ; la rédaction en masse attend que les règles Phase 2 soient fusionnées
 
+### Règle de choix des thèmes (Erwan 2026-11-03)
+- regle_themes: marge — thèmes à ±2 positions considérés à égalité, priorité aux thèmes Aîné (sur l'estimation : institutions, impôts, retraites) ; le top 3 littéral reste affiché à côté dans docs/COUVERTURE-THEMES.md
+
 ### Claude's Discretion
 - Outil de capture (Playwright si besoin de rendu JS, sinon fetch), structure du rapport de couverture, ordre de collecte
 
