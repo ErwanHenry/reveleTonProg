@@ -111,3 +111,31 @@ export interface Mesure {
   relecteur?: string;
   date_relecture?: string;
 }
+
+export type EtatCouverture = 'mesures' | 'non_precise' | 'programme_non_publie';
+
+export interface CaseCouverture {
+  candidat: string;
+  etat: EtatCouverture;
+  verifie_le: string;
+  verifie_par: string;
+  sources_consultees?: string[];
+}
+
+/** Aligné sur schemas/couverture.schema.json : une case par candidat du périmètre et par thème. */
+export interface Couverture {
+  version_schema: 1;
+  id: string;
+  theme: string;
+  cases: CaseCouverture[];
+}
+
+/** Aligné sur schemas/glossaire.schema.json. */
+export interface EntreeGlossaire {
+  version_schema: 1;
+  id: string;
+  type: 'terme' | 'parti';
+  libelle: string;
+  definition: string;
+  source?: SourceStatut;
+}
