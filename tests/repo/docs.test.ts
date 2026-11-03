@@ -183,6 +183,15 @@ describe('docs/RUNBOOK.md (phase 2)', () => {
   });
 });
 
+describe('docs/RUNBOOK.md (phase 3, archivage)', () => {
+  it('documente l’outil d’archivage et le dépôt privé', () => {
+    for (const needle of ['Archiver une source', 'RTP_ARCHIVES_DIR', '--wayback-missing', '--sync-private', '--file']) {
+      assert.ok(runbook.includes(needle), `RUNBOOK doit contenir « ${needle} »`);
+    }
+    assert.match(runbook, /^#{2,4} Archiver une source$/m);
+  });
+});
+
 describe('fichiers annexes', () => {
   it('.env.example ne fixe plus NODE_VERSION=20', () => {
     assert.ok(!envExample.includes('NODE_VERSION=20'));
