@@ -14,7 +14,7 @@ Un visiteur choisit un thème et lit, en moins de 3 minutes, la position de chaq
 
 ### Validated
 
-(None yet — ship to validate)
+- ✓ Dépôt Node 24 + Astro 7 statique zéro JS, CI durcie (SHA, gitleaks, Dependabot), schémas JSON 2020-12 v1 pour 8 collections, content-core partagé CLI/Astro, migrations — Validated in Phase 1: Fondations, schémas v1 et content-core (FOND-01..05, DATA-01..08)
 
 ### Active
 
@@ -93,4 +93,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-03 after initialization*
+*Last updated: 2026-11-03 after Phase 1*

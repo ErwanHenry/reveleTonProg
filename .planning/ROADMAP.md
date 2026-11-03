@@ -204,7 +204,7 @@ Phase 1 ──┬──> Phase 2 (règles) ──────────┐
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Fondations, schémas v1 et content-core | 7/7 | Complete   | 2026-11-03 |
+| 1. Fondations, schémas v1 et content-core | 7/7 | Complete    | 2026-11-03 |
 | 2. Règles éditoriales et pièges | 0/TBD | Not started | - |
 | 3. Import data.gouv et corpus pilote | 0/TBD | Not started | - |
 | 4. Référentiel M1 et 4 niveaux de lecture | 0/TBD | Not started | - |
