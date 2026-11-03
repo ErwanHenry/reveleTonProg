@@ -1,3 +1,19 @@
+---
+gsd_state_version: 1.0
+milestone: v1.1
+milestone_name: milestone
+status: executing
+stopped_at: Roadmap v1.0 créée, en attente d'approbation
+last_updated: "2026-11-03T11:46:16.850Z"
+last_activity: 2026-11-03 -- Phase 1 planning complete
+progress:
+  total_phases: 5
+  completed_phases: 0
+  total_plans: 7
+  completed_plans: 0
+  percent: 0
+---
+
 # Project State
 
 ## Project Reference
@@ -12,14 +28,15 @@ See: .planning/PROJECT.md (updated 2026-11-03)
 
 Phase: 1 of 5 (Fondations, schémas v1 et content-core)
 Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-11-03 — Roadmap créée (5 phases, 53/53 exigences mappées)
+Status: Ready to execute
+Last activity: 2026-11-03 -- Phase 1 planning complete
 
 Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
 **Velocity:**
+
 - Total plans completed: 0
 - Average duration: -
 - Total execution time: 0.0 hours
@@ -31,6 +48,7 @@ Progress: [░░░░░░░░░░] 0%
 | - | - | - | - |
 
 **Recent Trend:**
+
 - Last 5 plans: -
 - Trend: -
 
