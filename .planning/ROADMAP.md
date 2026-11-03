@@ -282,7 +282,7 @@ Phase 1 ──┬──> Phase 2 (règles) ──────────┐
 | 1. Fondations, schémas v1 et content-core | 7/7 | Complete    | 2026-11-03 |
 | 2. Règles éditoriales et pièges | 7/7 | Complete    | 2026-11-03 |
 | 3. Import data.gouv et corpus pilote | 5/9 | In Progress|  |
-| 4. Référentiel M1 et 4 niveaux de lecture | 9/9 | Complete   | 2026-11-03 |
+| 4. Référentiel M1 et 4 niveaux de lecture | 9/9 | Complete    | 2026-11-03 |
 | 5. Pages institutionnelles, qualité et URL de test | 0/TBD | Not started | - |
 
 ---

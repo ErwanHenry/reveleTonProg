@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
-status: verifying
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-11-03T21:10:18.161Z"
+status: ready_to_plan
+stopped_at: Phase 4 complete (9/9) — ready to discuss Phase 5
+last_updated: 2026-11-03T21:23:53.048Z
 last_activity: 2026-11-03
 progress:
   total_phases: 5
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-11-03)
 
 **Core value:** Un visiteur choisit un thème et lit, en moins de 3 minutes, la position de chaque candidat au niveau de détail qui lui convient — chaque mesure affichée étant rattachée à une source primaire datée, sans jamais prendre parti.
-**Current focus:** Phase 4 — Référentiel M1 et 4 niveaux de lecture
+**Current focus:** Phase 5 — pages institutionnelles, qualité et url de test
 **Milestone:** v1.0 — Lots 1 & 2 (squelette, données, référentiel M1)
 
 ## Current Position
 
-Phase: 4 (Référentiel M1 et 4 niveaux de lecture) — EXECUTING
-Plan: 9 of 9
-Status: Phase complete — ready for verification
+Phase: 5
+Plan: Not started
+Status: Ready to plan
 Last activity: 2026-11-03
 
 Progress: [██████░░░░] 57%
@@ -37,7 +37,7 @@ Progress: [██████░░░░] 57%
 
 **Velocity:**
 
-- Total plans completed: 14
+- Total plans completed: 23
 - Average duration: -
 - Total execution time: 0.0 hours
 
@@ -47,6 +47,7 @@ Progress: [██████░░░░] 57%
 |-------|-------|-------|----------|
 | 1 | 7 | - | - |
 | 2 | 7 | - | - |
+| 4 | 9 | - | - |
 
 **Recent Trend:**
 
