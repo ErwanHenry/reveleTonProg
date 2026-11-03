@@ -240,3 +240,45 @@
 .texte-institutionnel ul {
   padding-inline-start: 1.5rem;
 }
+
+/* Méthode : tableaux défilables au clavier (reflow à 320 px), détails repliables, codes longs */
+.texte-institutionnel .defile {
+  overflow-x: auto;
+  margin-block: 1rem;
+}
+
+.texte-institutionnel table {
+  border-collapse: collapse;
+  inline-size: 100%;
+  font-size: var(--t-label);
+}
+
+.texte-institutionnel caption {
+  text-align: start;
+  padding-block: 0.5rem;
+  color: var(--encre-douce);
+}
+
+.texte-institutionnel th,
+.texte-institutionnel td {
+  padding: 0.5rem;
+  border-bottom: 1px solid currentcolor;
+  text-align: start;
+  vertical-align: top;
+}
+
+.texte-institutionnel details {
+  margin-block: 1.5rem;
+}
+
+.texte-institutionnel summary {
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.texte-institutionnel code {
+  overflow-wrap: anywhere;
+}

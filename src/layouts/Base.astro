@@ -18,7 +18,7 @@ const { titre, description, miseAJour, avecSignalement = false } = Astro.props;
 const corpus = await getCorpus();
 // Rubrique courante, déduite du chemin (trailingSlash: 'always') : aucun paramètre de page nécessaire.
 const chemin = Astro.url.pathname;
-const institutionnelle = /^\/(mentions-legales|qui-sommes-nous)\/?$/.exec(chemin)?.[1];
+const institutionnelle = /^\/(methode|mentions-legales|qui-sommes-nous)\/?$/.exec(chemin)?.[1];
 const courante = /^\/themes(\/|$)/.test(chemin) ? 'themes' : /^\/candidats(\/|$)/.test(chemin) ? 'candidats' : undefined;
 ---
 <!doctype html>
@@ -66,6 +66,7 @@ n'utilise aucun cookie et n'appelle aucun service extérieur.</p>
 {' '}(<a href={SOURCE_DATES.url} rel="noopener noreferrer">source officielle</a>)</>)}</p>
         <nav aria-label="Informations sur le site" class="pied-liens">
           <ul>
+            <li><a href="/methode/" aria-current={institutionnelle === 'methode' ? 'page' : undefined}>Méthode</a></li>
             <li><a href="/mentions-legales/" aria-current={institutionnelle === 'mentions-legales' ? 'page' : undefined}>Mentions légales</a></li>
             <li><a href="/qui-sommes-nous/" aria-current={institutionnelle === 'qui-sommes-nous' ? 'page' : undefined}>Qui sommes-nous</a></li>
           </ul>
