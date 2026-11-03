@@ -2,7 +2,7 @@
 // getCollection directement. C'est le SEUL endroit où une page apprend le mode (RTP_MODE).
 import { getCollection } from 'astro:content';
 import { resolveMode } from '../content-core/root.ts';
-import type { Candidat, Couverture, EntreeGlossaire, Mesure, Source, StatutEntree, Theme } from './types.ts';
+import type { Candidat, Couverture, EntreeGlossaire, Mesure, Source, Theme } from './types.ts';
 import { construireCorpus } from './vue.ts';
 import type { Brut, Corpus } from './vue.ts';
 
@@ -35,30 +35,4 @@ async function charger(): Promise<Corpus> {
 export function getCorpus(): Promise<Corpus> {
   memo ??= charger();
   return memo;
-}
-
-// ---------------------------------------------------------------------------
-// Aides historiques de l'ancienne page d'accueil : remplacé par getCorpus ; retiré par le plan 04-06
-// avec l'ancienne page d'accueil. Réimplémentées sur getCorpus pour obéir au filtre de mode.
-// ---------------------------------------------------------------------------
-
-export async function getCandidats(): Promise<Candidat[]> {
-  return (await getCorpus()).candidats.map((c) => c.donnees);
-}
-
-/** Statut courant = dernière entrée de `statuts` (convention append-only). */
-export function statutCourant(c: Candidat): StatutEntree {
-  const dernier = c.statuts[c.statuts.length - 1];
-  if (dernier === undefined) throw new Error(`candidat ${c.id} sans statut (le schéma exige minItems: 1)`);
-  return dernier;
-}
-
-/** Mesures visibles d'un candidat (thèmes visibles, mode du build), triées par titre. */
-export async function getMesuresDe(candidatId: string): Promise<Mesure[]> {
-  return (await getCorpus()).mesures.filter((m) => m.mesure.candidat === candidatId).map((m) => m.mesure);
-}
-
-/** Source primaire par identifiant (slug) ; `undefined` si absente. */
-export async function getSource(id: string): Promise<Source | undefined> {
-  return (await getCorpus()).sources.get(id);
 }
