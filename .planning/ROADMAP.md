@@ -106,13 +106,22 @@ Plans:
 **Plans**: 7 plans (3 waves)
 
 Plans:
+**Wave 1**
+
 - [ ] 02-01-PLAN.md — Corpus fictif prêt pour les règles (wayback, phrase enfant, ids.lock, .gitattributes) et `npm run ids -- --check|--write` (wave 1)
 - [ ] 02-02-PLAN.md — Piège §12 « mesure sans source », codes métier Ajv, moteur de règles, config et catalogue exportables (wave 1, livrable Lot 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 02-03-PLAN.md — Rédactions : mots interdits, verbes connotés, longueurs, phrases enfant, Kandel-Moles (wave 2)
 - [ ] 02-04-PLAN.md — Corpus : sources et archives sur disque, références, ids.lock, équité, champs non importables (wave 2)
 - [ ] 02-05-PLAN.md — Sondages pièges et fenêtres de blocage, `--mode preview|production`, annotations GitHub (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 02-06-PLAN.md — Chiffres et citations vérifiés contre l'archive, couverture des 7 pièges §12, CI en production, ids.lock en ajout seul vérifié en CI (wave 3)
 - [ ] 02-07-PLAN.md — Documentation : codes du validateur, modes, ids.lock, pièges, ADR des hypothèses A1-A12 (wave 3)
+
 **Notes reportées de la Phase 1**: règle `archive.wayback_url` obligatoire pour toute source citée par une mesure `statut_relecture: publie` (le schéma v1 le laisse optionnel, hypothèse A3 ; règle Phase 2, sans changement de schéma).
 **Research flag**: oui. Normalisation et comptage de mots en français, extraction des nombres, heuristique de syllabes Kandel-Moles, règles de normalisation des citations.
 
