@@ -150,7 +150,7 @@ Plans:
 **Wave 1**
 
 - [ ] 03-01-PLAN.md — Import data.gouv : instantané haché, table de correspondance (59 lignes), fiches candidats, historique de statuts en ajout seul, attribution Licence Ouverte (wave 1)
-- [ ] 03-02-PLAN.md — Outil d'archivage (extrait + sha256, binaire dans le dépôt privé `reveleTonProg-archives`, Wayback non bloquant), sans Playwright (wave 1)
+- [ ] 03-02-PLAN.md — Outil d'archivage : modules purs puis E/S + CLI (extrait + sha256, binaire dans le dépôt privé `reveleTonProg-archives`, Wayback non bloquant), sans Playwright, capture manuelle `--file` (wave 1)
 - [ ] 03-03-PLAN.md — Outillage couverture : classement des thèmes (marge 2, départage Aîné), scanner par candidat, contrôles d'intégrité du corpus pilote (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
@@ -171,7 +171,7 @@ Plans:
 
 - [ ] 03-09-PLAN.md — Bascule `DEFAULT_CONTENT_ROOT` vers `.`, CI explicite sur les deux corpus, libellé honnête du squelette, verrou de phase, documentation et ADR (wave 7)
 
-**Note d'exécution**: la Phase 3 démarre après la fusion complète de la Phase 2 (les règles bornent longueurs, citations et chiffres dès le brouillon). Protocole de collecte et de rédaction partagé : `03-REDACTION.md`.
+**Note d'exécution**: plans de contenu (03-04, 03-06 à 03-08) = un lot par exécution (`## BATCH COMPLETE n/3`), relancé à neuf. La Phase 3 démarre après la fusion complète de la Phase 2 (les règles bornent longueurs, citations et chiffres dès le brouillon). Protocole de collecte et de rédaction partagé : `03-REDACTION.md`.
 **Research flag**: oui. Capture de sites de campagne lourds en JS, mécanique du stockage privé des archives, API Save Page Now et reprises, choix des thèmes selon la couverture mesurée.
 
 ### Phase 4: Référentiel M1 et 4 niveaux de lecture
