@@ -143,7 +143,7 @@ function monter(stockage: (d: Decor) => Stockage, { avecControle = true, readySt
     addEventListener: (t: string, f: Ecouteur): void => void decor.controle.ecouteurs.set(t, f),
   };
   const store = stockage(decor);
-  const generateur = alea ?? ((u: Uint32Array) => globalThis.crypto.getRandomValues(u));
+  const generateur = alea ?? ((u: Uint32Array) => void globalThis.crypto.getRandomValues(u as Uint32Array<ArrayBuffer>));
   const sandbox = {
     document: {
       readyState,

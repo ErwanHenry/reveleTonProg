@@ -1,0 +1,143 @@
+/*
+  Ordre des candidats (plan 04-08). Sans JavaScript : l'aide seule est visible, les listes sont dans l'ordre
+  alphabétique du HTML. Avec JavaScript, ordre.js (dans <head>) pose `data-ordre="aleatoire"` sur <html> si le
+  mode aléatoire est mémorisé : les listes sont alors cachées sans décalage de mise en page (visibility, jamais
+  display) jusqu'à ce que le script les marque `data-ordre-fait`.
+
+  Filet de sécurité : si le script échoue après avoir posé l'attribut, l'animation rtp-reveler rend les listes
+  visibles au bout de 1,5 s. Elle n'est PAS conditionnée par prefers-reduced-motion : ce n'est pas un mouvement,
+  la propriété visibility passe simplement de hidden à visible.
+*/
+
+html[data-ordre="aleatoire"] [data-ordonnable]:not([data-ordre-fait]) {
+  visibility: hidden;
+  animation: rtp-reveler 0s 1.5s forwards;
+}
+
+@keyframes rtp-reveler {
+  to {
+    visibility: visible;
+  }
+}
+
+/* Aide : toujours visible ; la phrase « demande JavaScript » disparaît quand le script a tourné */
+.ordre-aide {
+  margin: 0 0 1rem;
+  color: var(--encre-douce);
+  font-size: var(--t-label);
+}
+
+html[data-ordre-js] .ordre-aide-sansjs {
+  display: none;
+}
+
+/* Choix de l'ordre (révélé par le script) : mêmes états visuels que le sélecteur de niveau, dupliqués pour ne pas dépendre de niveaux.css */
+.ordre {
+  margin: 0 0 1.5rem;
+}
+
+.ordre-champ {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.5rem;
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.ordre-champ legend {
+  margin-bottom: 0.5rem;
+  padding: 0;
+  font-size: var(--t-label);
+  font-weight: 600;
+}
+
+.ordre-option {
+  position: relative;
+  display: flex;
+}
+
+/* Le radio natif est superposé, transparent mais jamais display: none : il reste focalisable et cliquable */
+.ordre-option input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.ordre-option label {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 1rem;
+  background: var(--carte);
+  color: var(--encre);
+  border: 2px solid var(--bord-fort);
+  border-radius: 4px;
+  font-size: var(--t-label);
+  font-weight: 600;
+  line-height: 1.2;
+  overflow-wrap: break-word;
+}
+
+/* Pastille : creuse (non choisi), pleine (choisi) : l'état ne repose pas sur la seule couleur */
+.ordre-option label::before {
+  content: "";
+  flex: none;
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+}
+
+.ordre-option:hover label {
+  background: var(--panneau);
+}
+
+.ordre-option input:checked + label {
+  background: var(--encre);
+  color: var(--carte);
+  border-color: var(--encre);
+}
+
+.ordre-option input:checked + label::before {
+  background: var(--carte);
+}
+
+.ordre-option input:focus-visible + label {
+  outline: 3px solid var(--encre);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--carte);
+}
+
+@media (min-width: 37.5em) {
+  .ordre-champ {
+    display: flex;
+    flex-wrap: wrap;
+  }
+}
+
+@media (forced-colors: active) {
+  .ordre-option label {
+    background: Canvas;
+    color: CanvasText;
+    border-color: CanvasText;
+  }
+
+  .ordre-option input:checked + label {
+    background: Highlight;
+    color: HighlightText;
+    border: 4px solid Highlight;
+  }
+
+  .ordre-option input:checked + label::before {
+    background: HighlightText;
+  }
+}

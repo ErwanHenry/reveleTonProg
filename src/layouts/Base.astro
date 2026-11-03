@@ -1,6 +1,7 @@
 ---
 import '../styles/base.css';
 import '../styles/pages.css';
+import ordreUrl from '../scripts/ordre.js?url';
 import { formatDate, getCorpus } from '../lib/corpus/index.ts';
 
 interface Props {
@@ -26,6 +27,7 @@ const courante = /^\/themes(\/|$)/.test(chemin) ? 'themes' : /^\/candidats(\/|$)
     <title>{titre}</title>
     <meta name="description" content={description} />
     {corpus.mode === 'preview' && <meta name="robots" content="noindex" />}
+    <script is:inline src={ordreUrl}></script>
   </head>
   <body>
     <a class="skip-link" href="#contenu">Aller au contenu</a>

@@ -1,0 +1,23 @@
+---
+// Ordre des candidats (M1-07). Sans JavaScript l'ordre est alphabétique (rang calculé à la construction) et seule
+// l'aide est visible. Le bloc de choix est caché dans le HTML : src/scripts/ordre.js (chargé dans <head> par
+// Base.astro) le révèle, l'applique et mémorise le choix sous la seule clé `rtp:ordre`.
+// Trois frères directs, sans enveloppe : deux phrases d'aide, puis le bloc caché.
+import '../styles/ordre.css';
+---
+<p class="ordre-aide" id="ordre-aide">Les candidats sont classés par ordre alphabétique du nom, jamais selon les sondages. L'ordre aléatoire change à chaque chargement de la page.</p>
+<p class="ordre-aide ordre-aide-sansjs">L'ordre aléatoire demande JavaScript.</p>
+<div class="ordre" data-ordre-controle hidden>
+  <fieldset class="ordre-champ" aria-describedby="ordre-aide">
+    <legend>Ordre des candidats</legend>
+    <span class="ordre-option">
+      <input type="radio" name="ordre" id="ordre-alpha" value="alphabetique" checked autocomplete="off" />
+      <label for="ordre-alpha">Ordre alphabétique</label>
+    </span>
+    <span class="ordre-option">
+      <input type="radio" name="ordre" id="ordre-alea" value="aleatoire" autocomplete="off" />
+      <label for="ordre-alea">Ordre aléatoire</label>
+    </span>
+    <p class="sr-only" role="status" data-ordre-annonce></p>
+  </fieldset>
+</div>
