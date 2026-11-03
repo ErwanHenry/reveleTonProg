@@ -46,14 +46,14 @@ export default function theme(ctx: ContexteSite): void {
       assert.ok(!fs.existsSync(path.join(outDir, 'themes', 'ecole')), 'le thème relu ne doit pas être publié');
     });
 
-    it('logement : quatre cartes dans le rang alphabétique (Érard avant Fictive)', () => {
+    it('logement : trois cartes dans le rang alphabétique (Érard avant Fictive)', () => {
       const { arbre } = page(production().outDir, 'themes/logement/index.html');
       const cs = cellules(arbre);
       assert.deepEqual(
         cs.map((c) => c.attrs['data-rang']),
-        ['0', '1', '2', '5'],
+        ['0', '1', '2'],
       );
-      assert.deepEqual(cs.map(nomDe), ['Élise Érard', 'Marie Fictive', 'Jean Imaginaire', 'Paul de Villefranche']);
+      assert.deepEqual(cs.map(nomDe), ['Élise Érard', 'Marie Fictive', 'Jean Imaginaire']);
       assert.equal(trouver(arbre, (n) => n.tag === 'ul' && aClasse(n, 'cellules'))[0]?.attrs['data-ordonnable'] !== undefined, true);
     });
 
@@ -106,7 +106,7 @@ export default function theme(ctx: ContexteSite): void {
       const p = trouver(arbre, (n) => n.tag === 'p' && aClasse(n, 'couverture'))[0] as Noeud;
       assert.equal(
         norm(texte(p)),
-        "Sur ce thème, 1 candidat sur 4 a une position publiée, 1 n'a rien de précisé dans les sources consultées, 2 n'ont pas publié de programme.",
+        "Sur ce thème, 1 candidat sur 3 a une position publiée, 1 n'a rien de précisé dans les sources consultées, 1 n'a pas publié de programme.",
       );
     });
 
@@ -120,7 +120,7 @@ export default function theme(ctx: ContexteSite): void {
       assert.ok(trouver(d, (n) => n.tag === 'time' && n.attrs.datetime === '2026-10-25').length === 1);
       assert.equal(trouver(d, (n) => aClasse(n, 'cellule')).length, 0);
       const autres = trouver(arbre, (n) => n.tag === 'p' && aClasse(n, 'autres-personnalites'))[0] as Noeud;
-      assert.equal(norm(texte(autres)), '1 autre personnalité du jeu de données ne figure pas ici : voir la liste complète des candidats.');
+      assert.equal(norm(texte(autres)), '2 autres personnalités du jeu de données ne figurent pas ici : voir la liste complète des candidats.');
     });
 
     it('pied de page : date de mise à jour = maximum des dates affichées ; canari d’espace', () => {

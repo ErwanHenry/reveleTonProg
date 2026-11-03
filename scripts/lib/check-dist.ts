@@ -7,7 +7,7 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 import { loadAll } from '../../src/lib/content-core/load.ts';
 import { PERIMETRE_EQUITE } from '../../src/lib/content-core/rules/config.ts';
-import { statutLePlusRecent } from '../../src/lib/content-core/rules/equite.ts';
+import { statutRetenu } from '../../src/lib/content-core/rules/equite.ts';
 import { motsInterdits } from '../../src/lib/content-core/rules/text/forbidden.ts';
 import type { Mode } from '../../src/lib/content-core/rules/types.ts';
 import { schemasDirOf } from '../../src/lib/content-core/root.ts';
@@ -92,7 +92,7 @@ const dansDist = (dist: string, abs: string): boolean => abs === dist || abs.sta
 
 /**
  * Nombre de cellules attendu sur la page de chaque thème visible dans `mode` : tout thème publié
- * (tous en preview) montre une cellule par candidat du périmètre d'équité (statut le plus récent
+ * (tous en preview) montre une cellule par candidat du périmètre d'équité (statut retenu, ADR-041 :
  * `declare` ou `primaire`). Calculé depuis le contenu brut, indépendamment du view-model des pages.
  */
 export function cellulesAttendues(contentRoot: string, projectRoot: string, mode: Mode): Map<string, number> {
@@ -100,7 +100,7 @@ export function cellulesAttendues(contentRoot: string, projectRoot: string, mode
   const perimetre = entries.filter(
     (e) =>
       e.collection === 'candidats' &&
-      (PERIMETRE_EQUITE as readonly unknown[]).includes(statutLePlusRecent(e.data.statuts)?.code),
+      (PERIMETRE_EQUITE as readonly unknown[]).includes(statutRetenu(e.data.statuts, mode)?.code),
   ).length;
   const out = new Map<string, number>();
   for (const e of entries) {

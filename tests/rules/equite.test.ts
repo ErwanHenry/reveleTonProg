@@ -58,7 +58,7 @@ describe('REGLE-08 : équité des thèmes publiés', () => {
     assert.deepEqual(equite([SANS_CAS_JEAN, { fichier: THEME, de: 'statut_relecture: publie', par: 'statut_relecture: brouillon' }]), []);
   });
 
-  it('un statut « declare » en brouillon ajouté en dernier place un candidat « pressenti » dans le périmètre (A6)', () => {
+  it('ADR-041 : un statut « declare » en brouillon ne fait pas entrer en production un candidat « pressenti » (preview : si)', () => {
     const pressenti: Remplacement = { fichier: JEAN, de: 'code: declare', par: 'code: pressenti' };
     assert.deepEqual(equite([SANS_CAS_JEAN, pressenti]), []);
     const brouillon: Remplacement = {
@@ -69,7 +69,23 @@ describe('REGLE-08 : équité des thèmes publiés', () => {
         '  - code: declare\n    date: 2026-10-20\n    source:\n      type: candidat\n      titre: Nouvelle annonce (fictive)\n' +
         '      url: https://jean-imaginaire.exemple.invalid/annonce\n      date_consultation: 2026-10-21\n    statut_relecture: brouillon\n',
     };
-    assert.deepEqual(equite([SANS_CAS_JEAN, pressenti, brouillon]), [['EQUITE_CANDIDAT_MANQUANT', 'error', THEME, '/statut_relecture']]);
+    // Production : le brouillon ne compte pas, Jean reste hors périmètre comme sur la page publiée (WR-01).
+    assert.deepEqual(equite([SANS_CAS_JEAN, pressenti, brouillon], 'production'), []);
+    // Preview : le brouillon compte, l'équipe voit ce que la relecture va publier.
+    assert.deepEqual(equite([SANS_CAS_JEAN, pressenti, brouillon], 'preview'), [['EQUITE_CANDIDAT_MANQUANT', 'warning', THEME, '/statut_relecture']]);
+  });
+
+  it('ADR-041 (WR-01) : un renoncement en brouillon plus récent ne sort pas un candidat relu du périmètre en production', () => {
+    const renonceBrouillon: Remplacement = {
+      fichier: JEAN,
+      de: '    date_relecture: 2026-10-14\n',
+      par:
+        '    date_relecture: 2026-10-14\n' +
+        '  - code: renonce\n    motif: retrait\n    date: 2026-11-01\n    source:\n      type: candidat\n      titre: Retrait (fictif)\n' +
+        '      url: https://jean-imaginaire.exemple.invalid/retrait\n      date_consultation: 2026-11-02\n    statut_relecture: brouillon\n',
+    };
+    assert.deepEqual(equite([SANS_CAS_JEAN, renonceBrouillon], 'production'), [['EQUITE_CANDIDAT_MANQUANT', 'error', THEME, '/statut_relecture']]);
+    assert.deepEqual(equite([SANS_CAS_JEAN, renonceBrouillon], 'preview'), []);
   });
 
   it('WR-12 : un statut plus ancien placé en fin de liste ne change pas le périmètre', () => {
@@ -82,7 +98,7 @@ describe('REGLE-08 : équité des thèmes publiés', () => {
         '      url: https://jean-imaginaire.exemple.invalid/rumeur\n      date_consultation: 2026-09-02\n    statut_relecture: brouillon\n',
     };
     // Le dernier de la liste est « pressenti », mais le plus récent par date est « declare » : Jean reste dans le périmètre.
-    assert.deepEqual(equite([SANS_CAS_JEAN, ancien]), [['EQUITE_CANDIDAT_MANQUANT', 'error', THEME, '/statut_relecture']]);
+    assert.deepEqual(equite([SANS_CAS_JEAN, ancien], 'preview'), [['EQUITE_CANDIDAT_MANQUANT', 'warning', THEME, '/statut_relecture']]);
   });
 
   it('WR-12 : une date partielle (AAAA-MM) se compare à une date complète', () => {
@@ -94,7 +110,7 @@ describe('REGLE-08 : équité des thèmes publiés', () => {
         '  - code: renonce\n    motif: retrait\n    date: 2026-11\n    source:\n      type: candidat\n      titre: Retrait (fictif)\n' +
         '      url: https://jean-imaginaire.exemple.invalid/retrait\n      date_consultation: 2026-11-02\n    statut_relecture: brouillon\n',
     };
-    assert.deepEqual(equite([SANS_CAS_JEAN, partiel]), []);
+    assert.deepEqual(equite([SANS_CAS_JEAN, partiel], 'preview'), []);
   });
 
   it('un fichier invalide au schéma : la règle se tait (pas de cascade)', () => {
