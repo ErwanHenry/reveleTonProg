@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
-status: verifying
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-11-03T15:19:24.228Z"
-last_activity: 2026-11-03
+status: ready_to_plan
+stopped_at: Phase 2 complete (7/7) — ready to discuss Phase 03
+last_updated: 2026-11-03T16:27:03.074Z
+last_activity: 2026-11-03 -- Phase 3 planning complete
 progress:
   total_phases: 5
   completed_phases: 2
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-11-03)
 
 **Core value:** Un visiteur choisit un thème et lit, en moins de 3 minutes, la position de chaque candidat au niveau de détail qui lui convient — chaque mesure affichée étant rattachée à une source primaire datée, sans jamais prendre parti.
-**Current focus:** Phase 2 — Règles éditoriales et pièges
+**Current focus:** Phase 03 — import data gouv et corpus pilote
 **Milestone:** v1.0 — Lots 1 & 2 (squelette, données, référentiel M1)
 
 ## Current Position
 
-Phase: 2 (Règles éditoriales et pièges) — EXECUTING
-Plan: 7 of 7
-Status: Phase complete — ready for verification
+Phase: 03
+Plan: Not started
+Status: Ready to plan
 Last activity: 2026-11-03
 
 Progress: [██████░░░░] 57%
@@ -37,7 +37,7 @@ Progress: [██████░░░░] 57%
 
 **Velocity:**
 
-- Total plans completed: 7
+- Total plans completed: 14
 - Average duration: -
 - Total execution time: 0.0 hours
 
@@ -46,6 +46,7 @@ Progress: [██████░░░░] 57%
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1 | 7 | - | - |
+| 2 | 7 | - | - |
 
 **Recent Trend:**
 

@@ -15,6 +15,7 @@ Un visiteur choisit un thème et lit, en moins de 3 minutes, la position de chaq
 ### Validated
 
 - ✓ Dépôt Node 24 + Astro 7 statique zéro JS, CI durcie (SHA, gitleaks, Dependabot), schémas JSON 2020-12 v1 pour 8 collections, content-core partagé CLI/Astro, migrations — Validated in Phase 1: Fondations, schémas v1 et content-core (FOND-01..05, DATA-01..08)
+- ✓ Règles éditoriales §5 et pièges §12 en CI (source primaire + archive, mots interdits, longueurs, chiffres et citations vérifiés contre l'archive, lisibilité enfant, ids.lock, équité, sondages et fenêtres légales), annotations fichier/ligne/code — Validated in Phase 2: Règles éditoriales et pièges (REGLE-01..12) — livrable Lot 1
 
 ### Active
 
@@ -93,4 +94,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-03 after Phase 1*
+*Last updated: 2026-11-03 after Phase 2*

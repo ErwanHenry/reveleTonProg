@@ -30,18 +30,18 @@
 
 ### Règles éditoriales et pièges (REGLE)
 
-- [ ] **REGLE-01**: La CI rejette une mesure sans source, avec une source inconnue, non primaire (presse) ou sans archive valide (fichier présent, sha256 correspondant)
-- [ ] **REGLE-02**: La CI rejette un mot interdit (« extrême », « populiste », « irresponsable », « courageux », « enfin » et variantes) dans les champs éditoriaux, hors citations `« … »` et `texte_source`, et avertit sur les verbes connotés (promet, prétend, ose…)
-- [ ] **REGLE-03**: La CI vérifie les longueurs par niveau (résumé ≤ 25 mots, détaillé 80-200, enfant 40-60, aîné 60-120) avec un comptage de mots adapté au français
-- [ ] **REGLE-04**: La CI rejette une rédaction (résumé, enfant, aîné) contenant un nombre absent du `texte_source` ou du chiffrage, et toute citation `« … »` du détaillé absente du `texte_source`
-- [ ] **REGLE-05**: La CI rejette un `texte_source` qui ne figure pas mot pour mot (après normalisation) dans l'extrait archivé
-- [ ] **REGLE-06**: La CI calcule un score de lisibilité Kandel-Moles sur les rédactions enfant (avertissement) et rejette pour `publie` une phrase enfant de plus de 15 mots
-- [ ] **REGLE-07**: La CI vérifie l'intégrité du corpus : références existantes, chemin = id, ids de candidats jamais renommés ni supprimés (`ids.lock`)
-- [ ] **REGLE-08**: La CI bloque la publication d'un thème tant qu'un candidat `declare`/`primaire` n'a ni mesure publiée ni état couverture vérifié (erreur en production, avertissement en preview)
-- [ ] **REGLE-09**: La CI rejette un sondage sans URL de notice, dont les scores somment hors 95-105 %, une hypothèse de second tour rangée en premier tour, ou une date de publication dans une fenêtre de blocage légal (17-18 avril et 1-2 mai 2027, Europe/Paris)
-- [ ] **REGLE-10**: Chaque piège du §12 applicable est une fixture dans `tests/fixtures/pieges/` avec son code d'erreur attendu, et `npm test` échoue si un piège passe
-- [ ] **REGLE-11**: Les erreurs du validateur indiquent fichier, ligne et code, au format annotation GitHub en CI
-- [ ] **REGLE-12**: La CI échoue si `bloc`, `extdroite` ou `propositions` (champs du dataset non importables) apparaissent dans `src/content/`
+- [x] **REGLE-01**: La CI rejette une mesure sans source, avec une source inconnue, non primaire (presse) ou sans archive valide (fichier présent, sha256 correspondant)
+- [x] **REGLE-02**: La CI rejette un mot interdit (« extrême », « populiste », « irresponsable », « courageux », « enfin » et variantes) dans les champs éditoriaux, hors citations `« … »` et `texte_source`, et avertit sur les verbes connotés (promet, prétend, ose…)
+- [x] **REGLE-03**: La CI vérifie les longueurs par niveau (résumé ≤ 25 mots, détaillé 80-200, enfant 40-60, aîné 60-120) avec un comptage de mots adapté au français
+- [x] **REGLE-04**: La CI rejette une rédaction (résumé, enfant, aîné) contenant un nombre absent du `texte_source` ou du chiffrage, et toute citation `« … »` du détaillé absente du `texte_source`
+- [x] **REGLE-05**: La CI rejette un `texte_source` qui ne figure pas mot pour mot (après normalisation) dans l'extrait archivé
+- [x] **REGLE-06**: La CI calcule un score de lisibilité Kandel-Moles sur les rédactions enfant (avertissement) et rejette pour `publie` une phrase enfant de plus de 15 mots
+- [x] **REGLE-07**: La CI vérifie l'intégrité du corpus : références existantes, chemin = id, ids de candidats jamais renommés ni supprimés (`ids.lock`)
+- [x] **REGLE-08**: La CI bloque la publication d'un thème tant qu'un candidat `declare`/`primaire` n'a ni mesure publiée ni état couverture vérifié (erreur en production, avertissement en preview)
+- [x] **REGLE-09**: La CI rejette un sondage sans URL de notice, dont les scores somment hors 95-105 %, une hypothèse de second tour rangée en premier tour, ou une date de publication dans une fenêtre de blocage légal (17-18 avril et 1-2 mai 2027, Europe/Paris)
+- [x] **REGLE-10**: Chaque piège du §12 applicable est une fixture dans `tests/fixtures/pieges/` avec son code d'erreur attendu, et `npm test` échoue si un piège passe
+- [x] **REGLE-11**: Les erreurs du validateur indiquent fichier, ligne et code, au format annotation GitHub en CI
+- [x] **REGLE-12**: La CI échoue si `bloc`, `extdroite` ou `propositions` (champs du dataset non importables) apparaissent dans `src/content/`
 
 ### Contenu pilote (CONT)
 
@@ -147,18 +147,18 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DATA-06 | Phase 1 | Complete |
 | DATA-07 | Phase 1 | Complete |
 | DATA-08 | Phase 1 | Complete |
-| REGLE-01 | Phase 2 | Pending |
-| REGLE-02 | Phase 2 | Pending |
-| REGLE-03 | Phase 2 | Pending |
-| REGLE-04 | Phase 2 | Pending |
-| REGLE-05 | Phase 2 | Pending |
-| REGLE-06 | Phase 2 | Pending |
-| REGLE-07 | Phase 2 | Pending |
-| REGLE-08 | Phase 2 | Pending |
-| REGLE-09 | Phase 2 | Pending |
-| REGLE-10 | Phase 2 | Pending |
-| REGLE-11 | Phase 2 | Pending |
-| REGLE-12 | Phase 2 | Pending |
+| REGLE-01 | Phase 2 | Complete |
+| REGLE-02 | Phase 2 | Complete |
+| REGLE-03 | Phase 2 | Complete |
+| REGLE-04 | Phase 2 | Complete |
+| REGLE-05 | Phase 2 | Complete |
+| REGLE-06 | Phase 2 | Complete |
+| REGLE-07 | Phase 2 | Complete |
+| REGLE-08 | Phase 2 | Complete |
+| REGLE-09 | Phase 2 | Complete |
+| REGLE-10 | Phase 2 | Complete |
+| REGLE-11 | Phase 2 | Complete |
+| REGLE-12 | Phase 2 | Complete |
 | CONT-01 | Phase 3 | Pending |
 | CONT-02 | Phase 3 | Pending |
 | CONT-03 | Phase 3 | Pending |
