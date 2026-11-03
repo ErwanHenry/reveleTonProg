@@ -28,7 +28,7 @@ created: 2026-11-03
 ## Sampling Rate
 
 - **After every task commit:** the task's `<automated>` command. Tooling tasks run their own test files; content batches run the validator on the real corpus in both modes plus `tests/corpus/*.test.ts`, the personal-data grep and the pinned local gitleaks scan of `archives/` (03-REDACTION.md §8).
-- **Content plans (03-04, 03-06, 03-07, 03-08):** one task per executor run; each run ends with `## BATCH COMPLETE <n>/3` and a fresh executor resumes from the files and the git log (context budget).
+- **Content plans (03-04, 03-06, 03-07, 03-08):** one task per executor run; batch notes go to `03-0X-LOTS.md` (committed each batch); `03-0X-SUMMARY.md` is written only by Task 3. Each run ends with `## BATCH COMPLETE <n>/3`; the orchestrator re-dispatches the same plan (fresh executor, task n+1) until `3/3`, so a missing SUMMARY before that is expected. Resume = first task whose « Lot <n> » is absent from LOTS.md, after an orphan check.
 - **After every plan wave:** wave 1 plans run their own files plus listed regressions; content plans 03-06, 03-07, 03-08 run the full `npm test` in their last task; the full suite runs at the phase gate (03-09 Task 3).
 - **Before `/gsd:verify-work`:** full suite green (03-09 Task 3), plus `RTP_MODE=preview npm run build`.
 - **Max feedback latency:** 20 seconds per tooling task; content batches are bounded by live fetching, not by tests.
@@ -64,8 +64,8 @@ created: 2026-11-03
 | 3-08-02 | 08 | 6 | CONT-05, CONT-06 | T-03-32 … T-03-37 | idem | idem | same as 3-06-01 | ✅ | ⬜ pending |
 | 3-08-03 | 08 | 6 | CONT-05, CONT-06 | T-03-34, T-03-38 | completeness enforced once delivered | full suite | same as 3-06-03 | ✅ | ⬜ pending |
 | 3-09-01 | 09 | 7 | CONT-05 (root) | T-03-40 | fixture explicit, no assertion weakened | unit + CLI | `fnm exec --using=24 node --test tests/repo/default-root.test.ts tests/content-core/*.test.ts tests/migrations/*.test.ts && fnm exec --using=24 npm run validate -- --mode production` | ❌ W0 (created by task) | ⬜ pending |
-| 3-09-02 | 09 | 7 | CONT-05 | T-03-39, T-03-41 | no action pin or permission change; honest label | repo + dist tests | `fnm exec --using=24 node --test tests/repo/ci.test.ts tests/dist/skeleton.test.ts && fnm exec --using=24 npm run build` | ✅ (extended) | ⬜ pending |
-| 3-09-03 | 09 | 7 | CONT-01, CONT-03, CONT-05, CONT-06 | T-03-42, T-03-43 | phase gate `livres == themes`; no secret in docs | full gate | full suite command above | ✅ (extended) | ⬜ pending |
+| 3-09-02 | 09 | 7 | CONT-05, CONT-03 | T-03-39, T-03-41 | no action pin or permission change; honest label; npm aliases; final Wayback sweep (warnings only) | repo + dist tests + validator | `fnm exec --using=24 node --test tests/repo/ci.test.ts tests/dist/skeleton.test.ts tests/repo/scaffold.test.ts && fnm exec --using=24 npm run build && fnm exec --using=24 npm run validate -- --mode production` | ✅ (extended) | ⬜ pending |
+| 3-09-03 | 09 | 7 | CONT-01, CONT-03, CONT-05, CONT-06 | T-03-42, T-03-43 | phase gate `livres == themes`; docs + ADRs; no secret in docs; review SUMMARY | full gate | full suite command above | ✅ (extended) | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -76,7 +76,7 @@ created: 2026-11-03
 No separate Wave 0 plan: in MVP mode every test file is created by the first task that needs it, test-first.
 
 - [ ] `tests/import/import-cli.test.ts`, `tests/corpus/fiches.test.ts` — 03-01 Task 1 (RED commit); `tests/import/datagouv.test.ts` — 03-01 Task 2
-- [ ] `tests/archive/archive-e2e.test.ts` + `tests/fixtures/archive/*.html` — 03-02 Task 1 (RED); `tests/archive/{archive,html-text,fetch-safe,wayback,private-store}.test.ts` — 03-02 Task 2
+- [ ] `tests/archive/{archive,html-text,wayback}.test.ts` (GREEN) + `tests/archive/archive-e2e.test.ts` (RED) + `tests/fixtures/archive/*.html` — 03-02 Task 1; `tests/archive/{fetch-safe,private-store}.test.ts` — 03-02 Task 2 (e2e turns GREEN)
 - [ ] `tests/couverture/{classement,scan,pilote}.test.ts`, `tests/fixtures/couverture/estimation-2026-11-03.yaml` — 03-03
 - [ ] `tests/corpus/couverture-themes.test.ts` — 03-04 Task 3
 - [ ] `tests/corpus/pilote.test.ts`, `tests/corpus/glossaire.test.ts` — 03-05 Task 2

@@ -171,7 +171,7 @@ Plans:
 
 - [ ] 03-09-PLAN.md — Bascule `DEFAULT_CONTENT_ROOT` vers `.`, CI explicite sur les deux corpus, libellé honnête du squelette, verrou de phase, documentation et ADR (wave 7)
 
-**Note d'exécution**: plans de contenu (03-04, 03-06 à 03-08) = un lot par exécution (`## BATCH COMPLETE n/3`), relancé à neuf. La Phase 3 démarre après la fusion complète de la Phase 2 (les règles bornent longueurs, citations et chiffres dès le brouillon). Protocole de collecte et de rédaction partagé : `03-REDACTION.md`.
+**Note d'exécution**: plans de contenu (03-04, 03-06 à 03-08) = un lot par exécution. Notes de lot dans `03-0X-LOTS.md` (committé à chaque lot), `03-0X-SUMMARY.md` écrit seulement au lot 3. The orchestrator re-dispatches the same plan (fresh executor, task n) until `## BATCH COMPLETE 3/3`; SUMMARY absent before that is expected. Reprise : première tâche dont le « Lot n » manque dans LOTS.md, après contrôle des fichiers orphelins. 03-05 : la réponse d'Erwan sur la règle des thèmes peut être pré-enregistrée dans `03-CONTEXT.md` (`regle_themes`). La Phase 3 démarre après la fusion complète de la Phase 2 (les règles bornent longueurs, citations et chiffres dès le brouillon). Protocole de collecte et de rédaction partagé : `03-REDACTION.md`.
 **Research flag**: oui. Capture de sites de campagne lourds en JS, mécanique du stockage privé des archives, API Save Page Now et reprises, choix des thèmes selon la couverture mesurée.
 
 ### Phase 4: Référentiel M1 et 4 niveaux de lecture
