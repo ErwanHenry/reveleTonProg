@@ -30,7 +30,7 @@ Le milestone part d'un dépôt vide et aboutit à un corpus pilote navigable sur
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Fondations, schémas v1 et content-core** - Dépôt Node 24 + Astro 7 statique, CI durcie, hygiène, schémas JSON 2020-12 et loader/validateur unique (completed 2026-11-03)
-- [ ] **Phase 2: Règles éditoriales et pièges** - La CI refuse une mesure sans source et tous les pièges §12 applicables (livrable Lot 1)
+- [x] **Phase 2: Règles éditoriales et pièges** - La CI refuse une mesure sans source et tous les pièges §12 applicables (livrable Lot 1) (completed 2026-11-03)
 - [ ] **Phase 3: Import data.gouv et corpus pilote** - 59 fiches candidats sourcées, outil d'archivage, 3 thèmes pilotes réels en brouillon (parallélisable avec 2 et 4)
 - [ ] **Phase 4: Référentiel M1 et 4 niveaux de lecture** - Pages thème et candidat, bascule de niveau sans JS, ordre alphabétique/aléatoire, Aîné et Enfant, contrôle post-build (parallélisable avec 2 et 3)
 - [ ] **Phase 5: Pages institutionnelles, qualité et URL de test** - Méthode, Mentions légales, Qui sommes-nous, suite a11y/4G, test croisé, preview livrée (livrable Lot 2)
@@ -119,8 +119,8 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 02-06-PLAN.md — Chiffres et citations vérifiés contre l'archive, couverture des 7 pièges §12, CI en production, ids.lock en ajout seul vérifié en CI (wave 3)
-- [ ] 02-07-PLAN.md — Documentation : codes du validateur, modes, ids.lock, pièges, ADR des hypothèses A1-A12 (wave 3)
+- [x] 02-06-PLAN.md — Chiffres et citations vérifiés contre l'archive, couverture des 7 pièges §12, CI en production, ids.lock en ajout seul vérifié en CI (wave 3)
+- [x] 02-07-PLAN.md — Documentation : codes du validateur, modes, ids.lock, pièges, ADR des hypothèses A1-A12 (wave 3)
 
 **Notes reportées de la Phase 1**: règle `archive.wayback_url` obligatoire pour toute source citée par une mesure `statut_relecture: publie` (le schéma v1 le laisse optionnel, hypothèse A3 ; règle Phase 2, sans changement de schéma).
 **Research flag**: oui. Normalisation et comptage de mots en français, extraction des nombres, heuristique de syllabes Kandel-Moles, règles de normalisation des citations.
@@ -144,7 +144,34 @@ Plans:
   4. Le choix des 3 thèmes pilotes est documenté avec la couverture mesurée en sources primaires par thème. Pour chaque thème pilote, chaque candidat `declare`/`primaire` a soit des mesures réelles en `brouillon` (citation vérifiée dans l'archive), soit un état de couverture daté.
   5. Chaque terme et parti utilisé dans les rédactions enfant pilotes se résout dans le glossaire, ce que la CI vérifie.
 
-**Plans**: TBD
+**Plans**: 9 plans (7 waves)
+
+Plans:
+**Wave 1**
+
+- [ ] 03-01-PLAN.md — Import data.gouv : instantané haché, table de correspondance (59 lignes), fiches candidats, historique de statuts en ajout seul, attribution Licence Ouverte (wave 1)
+- [ ] 03-02-PLAN.md — Outil d'archivage (extrait + sha256, binaire dans le dépôt privé `reveleTonProg-archives`, Wayback non bloquant), sans Playwright (wave 1)
+- [ ] 03-03-PLAN.md — Outillage couverture : classement des thèmes (marge 2, départage Aîné), scanner par candidat, contrôles d'intégrité du corpus pilote (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 03-04-PLAN.md — Couverture mesurée en direct sur les 10 thèmes pour chaque candidat du périmètre, sources archivées, `docs/COUVERTURE-THEMES.md` (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 03-05-PLAN.md — Captures manuelles des sites bloqués (checkpoint conditionnel), thèmes pilotes arrêtés (checkpoint conditionnel), tests du corpus pilote réel (wave 3)
+
+**Wave 4 → 6** *(séquentiels : glossaire, sources, dépôt privé et quotas Wave partagés)*
+
+- [ ] 03-06-PLAN.md — Thème pilote 1 (provisoire : institutions) en brouillon, 3 lots de candidats (wave 4)
+- [ ] 03-07-PLAN.md — Thème pilote 2 (provisoire : impôts) en brouillon, 3 lots de candidats (wave 5)
+- [ ] 03-08-PLAN.md — Thème pilote 3 (provisoire : retraites) en brouillon, 3 lots de candidats (wave 6)
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
+- [ ] 03-09-PLAN.md — Bascule `DEFAULT_CONTENT_ROOT` vers `.`, CI explicite sur les deux corpus, libellé honnête du squelette, verrou de phase, documentation et ADR (wave 7)
+
+**Note d'exécution**: la Phase 3 démarre après la fusion complète de la Phase 2 (les règles bornent longueurs, citations et chiffres dès le brouillon). Protocole de collecte et de rédaction partagé : `03-REDACTION.md`.
 **Research flag**: oui. Capture de sites de campagne lourds en JS, mécanique du stockage privé des archives, API Save Page Now et reprises, choix des thèmes selon la couverture mesurée.
 
 ### Phase 4: Référentiel M1 et 4 niveaux de lecture
@@ -223,8 +250,8 @@ Phase 1 ──┬──> Phase 2 (règles) ──────────┐
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Fondations, schémas v1 et content-core | 7/7 | Complete    | 2026-11-03 |
-| 2. Règles éditoriales et pièges | 5/7 | In Progress|  |
-| 3. Import data.gouv et corpus pilote | 0/TBD | Not started | - |
+| 2. Règles éditoriales et pièges | 7/7 | Complete   | 2026-11-03 |
+| 3. Import data.gouv et corpus pilote | 0/9 | Planned | - |
 | 4. Référentiel M1 et 4 niveaux de lecture | 0/TBD | Not started | - |
 | 5. Pages institutionnelles, qualité et URL de test | 0/TBD | Not started | - |
 
