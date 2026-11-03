@@ -282,7 +282,7 @@ export const HYPOTHESES: readonly Hypothese[] = [
   { id: 'A3', regle: 'REGLE-06', choix: 'Le statut « relu » est traité comme « publie » pour PHRASE_ENFANT_LONGUE (erreur) ; seul « brouillon » la rétrograde en avertissement.' },
   { id: 'A4', regle: 'REGLE-03', choix: 'LONGUEUR_HORS_BORNES est une erreur quel que soit le statut de relecture.' },
   { id: 'A5', regle: 'REGLE-07', choix: 'Un candidat absent de ids.lock est une erreur (pas seulement un identifiant renommé ou supprimé) : il faut lancer « npm run ids -- --write » dans la même PR.' },
-  { id: 'A6', regle: 'REGLE-08', choix: 'Le périmètre d’équité se lit sur le dernier statut de la liste statuts[], quel que soit son statut de relecture.' },
+  { id: 'A6', regle: 'REGLE-08', choix: 'Le périmètre d’équité se lit sur le statut le plus récent par date de la liste statuts[] (à date égale, le dernier de la liste), quel que soit son statut de relecture.' },
   { id: 'A7', regle: 'REGLE-09', choix: 'Une hypothèse de duel au premier tour compte exactement deux scores dont la somme atteint au moins 99 ou dont « autres » est sous 5 %, ou un nom qui évoque le second tour (deuxième tour, ballottage, finale, T2) ; deux scores avec 5 % ou plus d’« autres » restent admis (le corpus fictif n’a que deux candidats). Les seuils et le motif sont dans la configuration.' },
   { id: 'A8', regle: 'REGLE-09', choix: 'Une fenêtre de blocage inclut son instant de début et exclut son instant de fin (20h00 pile est autorisé).' },
   { id: 'A9', regle: 'REGLE-11', choix: 'GitHub affiche au plus 10 erreurs et 10 avertissements en annotations par étape ; les lignes de texte du journal restent toutes imprimées.' },
