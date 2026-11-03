@@ -1,0 +1,23 @@
+# en-tête de test de migration
+version_schema: 0
+id: marie-fictive
+prenom: Marie
+nom: Fictive
+nom_tri: Fictive
+etiquette: Parti Imaginaire # étiquette revendiquée par la candidate
+parti_source:
+  type: parti
+  titre: Page de présentation du Parti Imaginaire
+  url: https://parti-imaginaire.exemple.invalid/presentation
+  date_consultation: 2026-10-20
+statuts:
+  - code: declare
+    date: 2026-10-15
+    source:
+      type: candidat
+      titre: Annonce de candidature fictive publiée sur le site de la candidate, avec un titre volontairement très long pour dépasser quatre-vingts caractères
+      url: https://marie-fictive.exemple.invalid/candidature
+      date_consultation: 2026-10-16
+    statut_relecture: relu
+    relecteur: Erwan Henry
+    date_relecture: 2026-10-17
