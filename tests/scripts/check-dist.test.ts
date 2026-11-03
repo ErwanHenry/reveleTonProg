@@ -93,7 +93,7 @@ function distPropre(surcharges: Record<string, string | Buffer | null> = {}, opt
       noindex,
       corps:
         '<a href="/themes/logement/">Logement</a> ' +
-        '<a href="mailto:contact@x.invalid?subject=Signaler%20une%20erreur">Signaler une erreur</a>',
+        '<a href="mailto:contact@x.exemple.fr?subject=Signaler%20une%20erreur">Signaler une erreur</a>',
     }),
     'themes/logement/index.html': theme('logement', 2, { noindex }),
     '_astro/a.css': 'body{margin:0}.cellule{padding:1rem}',
@@ -234,8 +234,19 @@ describe('checkDist : ressources tierces, scripts et styles', () => {
     exactement('LIEN_EXTERNE_NON_PROTEGE', { 'index.html': page({ corps: '<a href="http://x.exemple.invalid/" rel="noopener">x</a>' }) });
     exactement('LIEN_EXTERNE_NON_PROTEGE', { 'index.html': page({ corps: '<a href="javascript:alert(1)">x</a>' }) });
     exactement('LIEN_EXTERNE_NON_PROTEGE', { 'index.html': page({ corps: '<a href="//x.exemple.invalid/" rel="noopener">x</a>' }) });
-    const ok = page({ corps: '<a href="https://x.exemple.invalid/" rel="noopener noreferrer">x</a><a href="mailto:a@x.invalid?subject=S%C3%A9">m</a>' });
+    const ok = page({ corps: '<a href="https://x.exemple.invalid/" rel="noopener noreferrer">x</a><a href="mailto:a@x.exemple.fr?subject=S%C3%A9">m</a>' });
     assert.deepEqual(verifier(distPropre({ 'index.html': ok })).codes, []);
+  });
+
+  it('CONTACT_PROVISOIRE (WR-03) : avertissement par défaut, erreur quand deploiement est vrai', () => {
+    const dist = ecrireDist(distPropre({ 'index.html': page({ corps: '<a href="mailto:contact@domaine-a-definir.invalid?subject=S">m</a>' }) }));
+    const defaut = checkDist(dist, { mode: 'production' });
+    assert.deepEqual(defaut.map((c) => [c.code, c.severite]), [['CONTACT_PROVISOIRE', 'avertissement']]);
+    const deploiement = checkDist(dist, { mode: 'production', deploiement: true });
+    assert.deepEqual(deploiement.map((c) => [c.code, c.severite]), [['CONTACT_PROVISOIRE', 'erreur']]);
+    // Un contact réel ne déclenche rien, même au déploiement.
+    const bon = ecrireDist(distPropre({}));
+    assert.deepEqual(checkDist(bon, { mode: 'production', deploiement: true }), []);
   });
 
   it('SCRIPT_EN_LIGNE : <script> sans src', () => {

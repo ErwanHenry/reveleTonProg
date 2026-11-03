@@ -45,6 +45,7 @@ export const CODES_CHECK_DIST = [
   'H1_NOMBRE',
   'MARQUEUR_RESIDUEL',
   'DIST_VIDE',
+  'CONTACT_PROVISOIRE',
 ] as const;
 export type CodeCheckDist = (typeof CODES_CHECK_DIST)[number];
 
@@ -60,6 +61,8 @@ export interface OptionsCheckDist {
   mode: Mode;
   /** Nombre de cellules attendu par thème visible (sans elle, CELLULES_INCOHERENTES et THEME_INATTENDU sont inactifs). */
   cellulesParTheme?: ReadonlyMap<string, number> | Readonly<Record<string, number>>;
+  /** Vrai pour un contrôle avant déploiement (RTP_DEPLOIEMENT=1) : un contact `.invalid` devient une erreur, sinon un avertissement. */
+  deploiement?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -125,11 +128,11 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
   const racineDist = path.resolve(dist);
   const constats: Constat[] = [];
   const vus = new Set<string>();
-  const signaler = (code: CodeCheckDist, fichier: string, message: string): void => {
+  const signaler = (code: CodeCheckDist, fichier: string, message: string, severite: Constat['severite'] = 'erreur'): void => {
     const cle = `${code}\u0000${fichier}\u0000${message}`;
     if (vus.has(cle)) return;
     vus.add(cle);
-    constats.push({ code, severite: 'erreur', fichier, message });
+    constats.push({ code, severite, fichier, message });
   };
 
   const fichiers = lister(racineDist);
@@ -257,7 +260,25 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
     for (const n of tous) {
       if (n.tag !== 'a' || n.attrs.href === undefined) continue;
       const href = nettoyerUrl(n.attrs.href);
-      if (href === '' || /^(?:mailto|tel):/i.test(href)) continue;
+      if (/^mailto:/i.test(href)) {
+        const adresse = href.slice('mailto:'.length).split('?')[0] ?? '';
+        let decode = adresse;
+        try {
+          decode = decodeURIComponent(adresse);
+        } catch {
+          // pourcentage mal formé : on garde l'adresse brute
+        }
+        if (decode.trim().toLowerCase().endsWith('.invalid')) {
+          signaler(
+            'CONTACT_PROVISOIRE',
+            rel,
+            `contact provisoire (.invalid) : ${decode.slice(0, 60)}`,
+            opts.deploiement === true ? 'erreur' : 'avertissement',
+          );
+        }
+        continue;
+      }
+      if (href === '' || /^tel:/i.test(href)) continue;
       if (/^javascript:/i.test(href)) {
         signaler('LIEN_EXTERNE_NON_PROTEGE', rel, `lien javascript: interdit : ${href.slice(0, 60)}`);
       } else if (href.startsWith('//')) {

@@ -167,6 +167,9 @@ Le mode `preview` ne sert qu'en local, pour rédiger un thème sans avoir encore
 | `H1_NOMBRE` | zéro ou plusieurs `h1` | un seul `h1` par page |
 | `MARQUEUR_RESIDUEL` | marqueur de gabarit resté dans le HTML | corriger le rendu |
 | `DIST_VIDE` | aucun HTML dans `dist/` | construire d'abord le site |
+| `CONTACT_PROVISOIRE` | lien `mailto:` en `.invalid` (contact de `config/site.yml` pas encore remplacé) | avertissement en CI ; erreur quand `RTP_DEPLOIEMENT=1` : renseigner un vrai contact |
+
+**Garde de déploiement (contact).** Tant que le domaine n'est pas acheté, `config/site.yml` garde `contact@domaine-a-definir.invalid` et la CI passe avec un avertissement. Le job de déploiement du lot 3 doit définir `RTP_DEPLOIEMENT=1` : le build (`astro build`) échoue alors si le contact finit par `.invalid`, et `check-dist` signale `CONTACT_PROVISOIRE` en erreur.
 
 ### Archiver une source
 
