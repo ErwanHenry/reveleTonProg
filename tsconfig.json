@@ -5,6 +5,6 @@
     "noUncheckedIndexedAccess": true,
     "types": ["node"]
   },
-  "include": [".astro/types.d.ts", "src/**/*", "scripts/**/*", "tests/**/*.ts"],
+  "include": [".astro/types.d.ts", "src/**/*", "scripts/**/*", "tests/**/*.ts", "e2e/**/*", "playwright.config.ts"],
   "exclude": ["dist", "tests/fixtures"]
 }
