@@ -95,6 +95,35 @@ describe('redaction : MOT_INTERDIT champ par champ', () => {
   });
 });
 
+describe('redaction : champs libres affichés (WR-05)', () => {
+  const SONDAGE = 'src/content/sondages/sondage-fictif-1.yaml';
+  const CANDIDAT = 'src/content/candidats/marie-fictive.yaml';
+  it('sondage : institut, commanditaire et nom d’hypothèse sont scannés', () => {
+    const d = diag([
+      r(SONDAGE, 'institut: Institut Fictif', 'institut: Institut extrême'),
+      r(SONDAGE, 'commanditaire: Média Fictif', 'commanditaire: Média populiste'),
+      r(SONDAGE, 'nom: Hypothèse fictive A', 'nom: Hypothèse irresponsable'),
+    ]);
+    assert.deepEqual(d.map((x) => [x.code, x.pointer]).sort(), [
+      ['MOT_INTERDIT', '/commanditaire'],
+      ['MOT_INTERDIT', '/hypotheses/0/nom'],
+      ['MOT_INTERDIT', '/institut'],
+    ]);
+  });
+  it('mesure : source_localisation est scanné', () => {
+    const d = diag([r(MESURE, 'source_localisation: page 3 (fictive)', 'source_localisation: page courageuse')]);
+    assert.deepEqual(d.map((x) => [x.code, x.pointer]), [['MOT_INTERDIT', '/source_localisation']]);
+  });
+  it('candidat : mandats_en_cours est scanné', () => {
+    const d = diag([r(CANDIDAT, 'prenom: Marie', 'prenom: Marie\nmandats_en_cours:\n  - Députée extrémiste')]);
+    assert.deepEqual(d.map((x) => [x.code, x.pointer]), [['MOT_INTERDIT', '/mandats_en_cours/0']]);
+  });
+  it('thème : mots_cles est scanné', () => {
+    const d = diag([r(THEME, 'ordre: 1', 'ordre: 1\nmots_cles:\n  - loyer\n  - enfin')]);
+    assert.deepEqual(d.map((x) => [x.code, x.pointer]), [['MOT_INTERDIT', '/mots_cles/1']]);
+  });
+});
+
 describe('redaction : exemptions', () => {
   it('texte_source n’est jamais examiné', () => {
     const d = diag([r(MESURE, 'chaque année par le préfet.\nsource:', 'chaque année par le préfet. Enfin, extrême.\nsource:')]);

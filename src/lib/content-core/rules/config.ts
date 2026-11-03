@@ -34,10 +34,20 @@ export const PERIMETRE_EQUITE = ['declare', 'primaire'] as const;
  * ligne ici.
  */
 export const CHAMPS_EDITORIAUX: Readonly<Partial<Record<CollectionName, readonly string[]>>> = {
-  mesures: ['/titre', '/redactions/resume', '/redactions/detaille', '/redactions/enfant', '/redactions/aine'],
+  mesures: [
+    '/titre',
+    '/redactions/resume',
+    '/redactions/detaille',
+    '/redactions/enfant',
+    '/redactions/aine',
+    '/source_localisation',
+    '/chiffrage/source_localisation',
+  ],
   glossaire: ['/libelle', '/definition'],
   journal: ['/resume'],
-  themes: ['/nom', '/sous_themes/*/nom'],
+  themes: ['/nom', '/sous_themes/*/nom', '/mots_cles/*'],
+  sondages: ['/institut', '/commanditaire', '/hypotheses/*/nom'],
+  candidats: ['/mandats_en_cours/*'],
 };
 
 /** Champs volontairement exemptés des règles de rédaction (citation ou donnée brute). */
