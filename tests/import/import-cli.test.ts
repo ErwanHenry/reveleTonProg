@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { parse, stringify } from 'yaml';
 import { loadAll } from '../../src/lib/content-core/load.ts';
 import { EN_TETE_IDS_LOCK } from '../../src/lib/content-core/ids-lock.ts';
 import { REPO_ROOT, SCHEMAS_DIR } from '../helpers/validate-yaml.ts';
@@ -49,6 +50,24 @@ function fichiers(root: string): Map<string, Buffer> {
   if (!existsSync(dir)) return out;
   for (const n of readdirSync(dir).sort()) out.set(n, readFileSync(path.join(dir, n)));
   return out;
+}
+
+/** Écrit une variante de l'instantané dans data/import de la racine temporaire et renvoie son chemin. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function muter(root: string, snap: string, fn: (j: { candidats: Record<string, any>[] }) => void): string {
+  const j = JSON.parse(readFileSync(snap, 'utf8')) as { candidats: Record<string, unknown>[] };
+  fn(j);
+  const out = path.join(root, 'data', 'import', 'variante.json');
+  writeFileSync(out, JSON.stringify(j));
+  return out;
+}
+
+/** Ajoute un motif à la table à la main de la racine temporaire (le statut renonce l'exige). */
+function ajouterMotif(root: string, amont: string, motif: string): void {
+  const file = path.join(root, 'data', 'import', 'correspondances.yaml');
+  const t = parse(readFileSync(file, 'utf8')) as { correspondances: Record<string, Record<string, unknown>> };
+  (t.correspondances[amont] as Record<string, unknown>).motif = motif;
+  writeFileSync(file, stringify(t));
 }
 
 describe('npm run import:datagouv (scripts/import-datagouv.ts)', () => {
@@ -109,6 +128,92 @@ describe('npm run import:datagouv (scripts/import-datagouv.ts)', () => {
     const meta = JSON.parse(readFileSync(copie.replace(/\.json$/, '.meta.json'), 'utf8')) as Record<string, unknown>;
     assert.equal(meta.rows, snapshotRows(snap).length);
     assert.match(String(meta.sha256), /^[0-9a-f]{64}$/);
+  });
+
+  it('un statut qui change en amont est ajouté en fin de statuts[] sans toucher l’ancien', () => {
+    const snap = newestSnapshot();
+    const root = tmpRoot();
+    assert.equal(importer(['--file', path.join(root, 'data', 'import', path.basename(snap)), '--root', root]).status, 0);
+    const fiche = path.join(root, 'src', 'content', 'candidats', 'jean-luc-melenchon.yaml');
+    const avant = readFileSync(fiche, 'utf8');
+    ajouterMotif(root, 'melenchon', 'retrait');
+    const modif = muter(root, snap, (j) => {
+      const r = j.candidats.find((x) => x.id === 'melenchon') as Record<string, any>;
+      r.statut = 'renonce';
+      r.source.date = '2026-11-01';
+    });
+    const res = importer(['--file', modif, '--root', root]);
+    assert.equal(res.status, 0, res.stdout + res.stderr);
+    assert.match(res.stdout, /statut ajouté : jean-luc-melenchon/);
+    assert.match(res.stdout, /1 statut\(s\) ajouté\(s\)/);
+    const apres = readFileSync(fiche, 'utf8');
+    const ancien = (parse(avant) as { statuts: unknown[] }).statuts;
+    const nouveau = (parse(apres) as { statuts: Record<string, unknown>[] }).statuts;
+    assert.equal(nouveau.length, 2);
+    assert.deepEqual(nouveau[0], ancien[0]);
+    assert.equal(nouveau[1]?.code, 'renonce');
+    assert.equal(nouveau[1]?.motif, 'retrait');
+    assert.equal(nouveau[1]?.statut_relecture, 'brouillon');
+    // L'entrée d'origine reste, octet pour octet, le début du bloc statuts du nouveau fichier.
+    assert.ok(apres.includes(avant.slice(avant.indexOf('statuts:'))));
+  });
+
+  it('une date qui recule est un conflit : code 1, rien n’est écrit', () => {
+    const snap = newestSnapshot();
+    const root = tmpRoot();
+    assert.equal(importer(['--file', path.join(root, 'data', 'import', path.basename(snap)), '--root', root]).status, 0);
+    const avant = fichiers(root);
+    ajouterMotif(root, 'melenchon', 'retrait');
+    const modif = muter(root, snap, (j) => {
+      const r = j.candidats.find((x) => x.id === 'melenchon') as Record<string, any>;
+      r.statut = 'renonce';
+      r.source.date = '2025-01-01';
+    });
+    const res = importer(['--file', modif, '--root', root]);
+    assert.equal(res.status, 1, res.stdout + res.stderr);
+    assert.match(res.stdout, /conflit : jean-luc-melenchon — régression de date/);
+    const apres = fichiers(root);
+    for (const [name, buf] of avant) assert.ok(buf.equals(apres.get(name) as Buffer), `${name} modifié malgré le conflit`);
+  });
+
+  it('un id amont absent de la table : code 1, tous les ids listés, aucun fichier écrit', () => {
+    const snap = newestSnapshot();
+    const root = tmpRoot();
+    const modif = muter(root, snap, (j) => {
+      const modele = j.candidats[0] as Record<string, any>;
+      j.candidats.push({ ...modele, id: 'nouveau-un' }, { ...modele, id: 'nouveau-deux' });
+    });
+    const res = importer(['--file', modif, '--root', root]);
+    assert.equal(res.status, 1);
+    assert.match(res.stderr, /nouveau-un, nouveau-deux/);
+    assert.equal(fichiers(root).size, 0);
+    assert.equal(readFileSync(path.join(root, 'ids.lock'), 'utf8'), EN_TETE_IDS_LOCK);
+  });
+
+  it('une ligne retirée en amont : la fiche reste et le rapport la liste', () => {
+    const snap = newestSnapshot();
+    const root = tmpRoot();
+    assert.equal(importer(['--file', path.join(root, 'data', 'import', path.basename(snap)), '--root', root]).status, 0);
+    const modif = muter(root, snap, (j) => {
+      j.candidats = j.candidats.filter((x) => x.id !== 'brun');
+    });
+    const res = importer(['--file', modif, '--root', root]);
+    assert.equal(res.status, 0, res.stdout + res.stderr);
+    assert.match(res.stdout, /absent en amont : philippe-brun/);
+    assert.ok(existsSync(path.join(root, 'src', 'content', 'candidats', 'philippe-brun.yaml')));
+    assert.match(readFileSync(path.join(root, 'ids.lock'), 'utf8'), /^philippe-brun$/m);
+  });
+
+  it('un jeu amont malformé : code 1 et rien d’écrit', () => {
+    const snap = newestSnapshot();
+    const root = tmpRoot();
+    const modif = muter(root, snap, (j) => {
+      delete (j.candidats[0] as Record<string, any>).statut;
+    });
+    const res = importer(['--file', modif, '--root', root]);
+    assert.equal(res.status, 1);
+    assert.match(res.stderr, /statut/);
+    assert.equal(fichiers(root).size, 0);
   });
 
   it('ignore RTP_CONTENT_ROOT : jamais d’écriture dans la fixture par défaut', () => {

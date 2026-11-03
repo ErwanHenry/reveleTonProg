@@ -82,6 +82,19 @@ describe('corpus réel : fiches candidats importées', () => {
     }
   });
 
+  it('ATTRIBUTION.md : producteur, licence, URL du jeu et date de mise à jour du dernier instantané', () => {
+    const texte = readFileSync(path.join(IMPORT_DIR, 'ATTRIBUTION.md'), 'utf8');
+    const meta = JSON.parse(readFileSync(newestSnapshot().replace(/\.json$/, '.meta.json'), 'utf8')) as { mise_a_jour: string };
+    const [a, m, j] = meta.mise_a_jour.split('-');
+    assert.ok(texte.includes('2027 et moi'));
+    assert.ok(texte.includes('Licence Ouverte 2.0'));
+    assert.ok(texte.includes('https://www.data.gouv.fr/datasets/candidatures-a-lelection-presidentielle-2027-statuts-sources'));
+    assert.ok(texte.includes(`${j}/${m}/${a}`), `date ${j}/${m}/${a} absente`);
+    const licence = readFileSync(path.join(REPO_ROOT, 'LICENSE'), 'utf8');
+    assert.ok(licence.includes('ATTRIBUTION.md'));
+    assert.ok(licence.includes(`${j}/${m}/${a}`));
+  });
+
   it('tant que la relecture n’est pas ouverte, tout statut est brouillon sans relecteur', () => {
     if (relectureOuverte()) return;
     for (const f of fiches) {

@@ -171,14 +171,14 @@ for (const row of amont.rows) {
     }
     const doc: unknown = parse(lu.text, { schema: 'core', uniqueKeys: true });
     if (doc === null || typeof doc !== 'object' || Array.isArray(doc)) {
-      conflits.push(`${id} : fichier existant illisible (objet YAML attendu)`);
+      conflits.push(`${id} — fichier existant illisible (objet YAML attendu)`);
       continue;
     }
     existant = doc as Record<string, unknown>;
   }
   const fusion = mergeFiche(existant, mapped);
   if ('conflit' in fusion) {
-    conflits.push(`${id} : ${fusion.conflit}`);
+    conflits.push(`${id} — ${fusion.conflit}`);
     continue;
   }
   const texte = renderYaml(fusion.fiche);
