@@ -43,15 +43,19 @@ describe('scaffold Node 24', () => {
     });
   });
 
-  it('dépendances : exactement les six paquets justifiés', () => {
+  it('dépendances : exactement les huit paquets justifiés', () => {
     assert.deepEqual(Object.keys(pkg.dependencies).sort(), ['ajv', 'astro', 'yaml']);
     assert.deepEqual(Object.keys(pkg.devDependencies).sort(), [
       '@astrojs/check',
+      '@axe-core/playwright',
+      '@playwright/test',
       '@types/node',
       'typescript',
     ]);
     assert.match(pkg.devDependencies['typescript'] ?? '', /^\^6\./);
     assert.match(pkg.devDependencies['@types/node'] ?? '', /^\^24\./);
+    assert.match(pkg.devDependencies['@playwright/test'] ?? '', /^\^1\.64\./);
+    assert.match(pkg.devDependencies['@axe-core/playwright'] ?? '', /^\^4\.14\./);
   });
 
   it('.npmrc impose engine-strict et src/content/.gitkeep existe', () => {
