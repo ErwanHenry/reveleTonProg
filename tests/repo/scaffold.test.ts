@@ -37,6 +37,7 @@ describe('scaffold Node 24', () => {
       check: 'astro check',
       test: 'TZ=Europe/Paris node --test "tests/**/*.test.ts"',
       build: 'astro build',
+      'check-dist': 'node scripts/check-dist.ts',
       dev: 'astro dev',
       preview: 'astro preview',
     });

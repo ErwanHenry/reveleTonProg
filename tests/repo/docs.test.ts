@@ -124,6 +124,23 @@ describe('docs/ARCHITECTURE.md (phase 2)', () => {
     for (const titre of adrs) assert.ok(!titre.includes('(D-'), `titre d'ADR avec (D- : ${titre}`);
   });
 
+  it('consigne les ADR de la phase 4 (pages M1, check-dist, structure fixe)', () => {
+    const titres = [
+      'cartes à structure fixe, pas à hauteur fixe',
+      'pages M1 en vue-modèle pure',
+      'statuts, périmètre et copie archivée',
+      'pages compatibles CSP',
+      'contrôle post-build `check-dist` sans dépendance',
+      'un seul fichier de test lance `astro build`',
+      'niveaux de lecture par boutons radio',
+    ];
+    for (const t of titres) {
+      assert.match(architecture, new RegExp(`^### ADR-\\d{3} : ${t.replace(/[`.*+?^${}()|[\]\\]/g, '\\$&')}`, 'm'), `ADR « ${t} » manquant`);
+    }
+    assert.match(architecture, /structure fixe[\s\S]{0,1200}160 %[\s\S]{0,400}Gros caractères/);
+    assert.ok(architecture.includes('check-dist'));
+  });
+
   it('consigne chacune des hypothèses A1 à A12 et renvoie à HYPOTHESES', () => {
     assert.ok(architecture.includes('HYPOTHESES'));
     for (const h of HYPOTHESES) {
