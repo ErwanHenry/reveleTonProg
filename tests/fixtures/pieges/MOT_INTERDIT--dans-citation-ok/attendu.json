@@ -1,0 +1,24 @@
+{
+  "piege": "§12 : faux positif — un mot interdit cité mot pour mot entre guillemets est exempté",
+  "regle": "REGLE-02",
+  "mode": "production",
+  "remplacer": [
+    {
+      "fichier": "src/content/sources/marie-fictive-programme.yaml",
+      "de": "23c5f1cc8eff56b2cb3581489929653742d60d472bf77d8aa83020cc99a7993e",
+      "par": "ddfceaa75ccc52b1ea586c6629d2bea68675857fea165741208e2020cad0e250"
+    },
+    {
+      "fichier": "src/content/mesures/marie-fictive/encadrement-loyers.yaml",
+      "de": "chaque année par le préfet.\nsource:",
+      "par": "chaque année par le préfet. Nous voulons enfin des loyers justes.\nsource:"
+    },
+    {
+      "fichier": "src/content/mesures/marie-fictive/encadrement-loyers.yaml",
+      "de": "Les villes plus petites",
+      "par": "Le programme ajoute : « Nous voulons enfin des loyers justes ». Les villes plus petites"
+    }
+  ],
+  "supprimer": [],
+  "attendu": []
+}
