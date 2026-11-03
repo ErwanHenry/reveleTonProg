@@ -169,6 +169,37 @@ describe('npm run validate : contrat d’annotations CI (REGLE-11)', () => {
     assert.match(res.stdout, /^::error file=[^\n]*sondage-fictif-1\.yaml,line=15,col=\d+,title=SONDAGE_NOTICE_ABSENTE::/m);
   });
 
+  it('EQUITE_CANDIDAT_MANQUANT : avertissement en preview (code 0), erreur en production (code 1)', () => {
+    const racine = piegeRoot('EQUITE_CANDIDAT_MANQUANT');
+    const ligne = readFileSync(path.join(racine, 'src', 'content', 'themes', 'logement.yaml'), 'utf8')
+      .split('\n')
+      .findIndex((l) => l.startsWith('statut_relecture:')) + 1;
+    assert.ok(ligne > 0, 'statut_relecture introuvable dans le thème');
+
+    const preview = cli(['--root', racine, '--format', 'github', '--mode', 'preview']);
+    assert.equal(preview.status, 0, preview.stdout + preview.stderr);
+    assert.match(preview.stdout, new RegExp(`^::warning file=[^\\n]*themes/logement\\.yaml,line=${ligne},col=\\d+,title=EQUITE_CANDIDAT_MANQUANT::`, 'm'));
+    assert.ok(!preview.stdout.includes('::error'), preview.stdout);
+
+    const production = cli(['--root', racine, '--format', 'github', '--mode', 'production']);
+    assert.equal(production.status, 1, production.stdout + production.stderr);
+    assert.match(production.stdout, new RegExp(`^::error file=[^\\n]*themes/logement\\.yaml,line=${ligne},col=\\d+,title=EQUITE_CANDIDAT_MANQUANT::`, 'm'));
+  });
+
+  it('RTP_MODE=preview sans drapeau se comporte comme --mode preview ; --mode production l’emporte sur RTP_MODE=preview', () => {
+    const racine = piegeRoot('EQUITE_CANDIDAT_MANQUANT');
+    const env = cli(['--root', racine, '--format', 'github'], { RTP_MODE: 'preview' });
+    assert.equal(env.status, 0, env.stdout + env.stderr);
+    assert.match(env.stdout, /^::warning .*title=EQUITE_CANDIDAT_MANQUANT::/m);
+
+    const flag = cli(['--root', racine, '--format', 'github', '--mode', 'production'], { RTP_MODE: 'preview' });
+    assert.equal(flag.status, 1, flag.stdout + flag.stderr);
+    assert.match(flag.stdout, /^::error .*title=EQUITE_CANDIDAT_MANQUANT::/m);
+
+    const defaut = cli(['--root', racine, '--format', 'github']);
+    assert.equal(defaut.status, 1, 'sans indication, le mode est production (fail-closed)');
+  });
+
   it('scripts/validate.ts n’écrit aucune annotation lui-même', () => {
     assert.ok(!readFileSync(path.join(REPO_ROOT, 'scripts', 'validate.ts'), 'utf8').includes('::error'));
   });
