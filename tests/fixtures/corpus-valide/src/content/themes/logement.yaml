@@ -1,0 +1,13 @@
+version_schema: 1
+id: logement
+nom: Logement
+ordre: 1
+prioritaire_aine: true
+sous_themes:
+  - id: loyers
+    nom: Loyers
+  - id: construction
+    nom: Construction
+statut_relecture: publie
+relecteur: Erwan Henry
+date_relecture: 2026-10-21

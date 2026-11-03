@@ -6,10 +6,12 @@
 import { after, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parse as parseYaml } from 'yaml';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const ASTRO_BIN = path.join(REPO_ROOT, 'node_modules', '.bin', 'astro');
@@ -68,6 +70,11 @@ describe('walking skeleton', { concurrency: false }, () => {
     assert.match(html, /Parti Imaginaire/);
     assert.ok(html.includes('2026-10-15'), 'la date 2026-10-15 doit apparaître telle quelle');
     assert.match(html, /lang="fr"/);
+    // mesure sourcée fictive : titre, résumé, source et date de consultation telle qu'écrite dans le YAML
+    assert.ok(html.includes('Encadrement des loyers dans les villes moyennes (fictif)'), 'titre de la mesure absent');
+    assert.ok(html.includes('Marie Fictive propose de plafonner les loyers'), 'résumé de la mesure absent');
+    assert.ok(html.includes('Programme fictif de Marie Fictive'), 'titre de la source absent');
+    assert.ok(html.includes('2026-10-20'), 'date de consultation de la source absente');
     // compressHTML: true conserve l'espace entre un élément inline et le texte suivant
     assert.match(html, /<\/span>\s+à des fins de test/);
 
@@ -108,5 +115,20 @@ describe('walking skeleton', { concurrency: false }, () => {
     const occurrences = output.match(/marie-fictive\.yaml:\d+:\d+ SCHEMA_REQUIRED/g) ?? [];
     assert.equal(occurrences.length, 1, `diagnostic attendu une seule fois, vu ${occurrences.length} fois`);
     assert.ok(!fs.existsSync(path.join(outDir, 'index.html')), 'index.html ne doit pas exister');
+  });
+
+  it("(d) l'extrait d'archive de la fixture est cohérent : sha256, nom de fichier, citation verbatim", () => {
+    const sourceYaml = fs.readFileSync(path.join(FIXTURE_ROOT, 'src', 'content', 'sources', 'marie-fictive-programme.yaml'), 'utf8');
+    const mesureYaml = fs.readFileSync(path.join(FIXTURE_ROOT, 'src', 'content', 'mesures', 'marie-fictive', 'encadrement-loyers.yaml'), 'utf8');
+    const source = parseYaml(sourceYaml, { schema: 'core' }) as { archive: { extrait: string; sha256: string } };
+    const mesure = parseYaml(mesureYaml, { schema: 'core' }) as { texte_source: string };
+
+    const archivePath = path.join(FIXTURE_ROOT, source.archive.extrait);
+    assert.ok(fs.existsSync(archivePath), `extrait d'archive introuvable : ${source.archive.extrait}`);
+    const bytes = fs.readFileSync(archivePath);
+    const sha = createHash('sha256').update(bytes).digest('hex');
+    assert.equal(sha, source.archive.sha256, "le sha256 réel de l'extrait doit égaler archive.sha256");
+    assert.equal(path.basename(archivePath), `${sha.slice(0, 12)}.txt`, 'le fichier doit s\'appeler <12 premiers hex du sha256>.txt');
+    assert.ok(bytes.toString('utf8').includes(mesure.texte_source), "texte_source doit apparaître tel quel dans l'extrait");
   });
 });

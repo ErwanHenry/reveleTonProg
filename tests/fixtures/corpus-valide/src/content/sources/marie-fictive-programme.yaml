@@ -1,0 +1,14 @@
+version_schema: 1
+id: marie-fictive-programme
+type: programme
+auteur: candidat
+candidats:
+  - marie-fictive
+titre: Programme fictif de Marie Fictive
+url: https://marie-fictive.exemple.invalid/programme
+date_publication: 2026-10
+date_consultation: 2026-10-20
+archive:
+  extrait: archives/marie-fictive/23c5f1cc8eff.txt
+  sha256: 23c5f1cc8eff56b2cb3581489929653742d60d472bf77d8aa83020cc99a7993e
+  capture_le: 2026-10-20T10:00:00+02:00

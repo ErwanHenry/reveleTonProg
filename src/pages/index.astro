@@ -1,7 +1,14 @@
 ---
-import { getCandidats, statutCourant } from '../lib/corpus/index.ts';
+import { getCandidats, getMesuresDe, getSource, statutCourant } from '../lib/corpus/index.ts';
 
 const candidats = await getCandidats();
+const vues = await Promise.all(
+  candidats.map(async (c) => {
+    const mesures = await getMesuresDe(c.id);
+    const lignes = await Promise.all(mesures.map(async (m) => ({ mesure: m, source: await getSource(m.source) })));
+    return { candidat: c, lignes };
+  }),
+);
 ---
 <!doctype html>
 <html lang="fr">
@@ -17,11 +24,20 @@ const candidats = await getCandidats();
       <p>Aucun candidat dans ce corpus.</p>
     ) : (
       <ul>
-        {candidats.map((c) => {
+        {vues.map(({ candidat: c, lignes }) => {
           const statut = statutCourant(c);
           return (
             <li>
               {c.prenom} {c.nom}, {c.parti ?? 'Sans étiquette'} : {statut.code} — {statut.date}
+              {lignes.map(({ mesure, source }) => (
+                <div>
+                  <h3>{mesure.titre}</h3>
+                  <p>{mesure.redactions.resume}</p>
+                  {source !== undefined && (
+                    <p>Source : {source.titre}, consultée le {source.date_consultation}</p>
+                  )}
+                </div>
+              ))}
             </li>
           );
         })}
