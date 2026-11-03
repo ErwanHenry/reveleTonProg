@@ -753,16 +753,21 @@ Dist assertions: output contains `Marie Fictive`; no `<script`; no file ending `
 | A9 | Astro's `#validateReferences` only logs (does not fail) for bad references | Pitfall 2 | Read from source; the observed run still produced a `dist/` |
 | A10 | A public/private split of `archives/` and `.txt` size cap are enforced by Phase 2/3 tooling, not by the Phase 1 schema | Pattern 1 | None for Phase 1 |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **What does the default `npm run build` render in Phase 1?**
    - Known: `src/content/` is empty; the walking-skeleton page needs the fixture; FOND-01 requires `npm run build` to pass.
    - Unclear: whether the user expects a populated page from a plain `npm run build`.
    - Recommendation: keep `build` on the real (empty) corpus, add a `build:fixture` script (`RTP_CONTENT_ROOT=tests/fixtures/corpus-valide astro build`) and the dist tests that build the fixture to a temp `--outDir`. Say so in README.
+   - RESOLVED: the default `npm run build` / `npm run validate` / `npm run migrate` root is the fixture, through `DEFAULT_CONTENT_ROOT = 'tests/fixtures/corpus-valide'` in `src/lib/content-core/root.ts`, overridable with `RTP_CONTENT_ROOT` (orchestrator decision, 2026-11-03). README documents it, CI also validates `RTP_CONTENT_ROOT=.`, and Phase 3 flips the default to `.` once real content exists. No `build:fixture` script.
 2. **Is Erwan fine with per-`statuts[]` review fields (A1) and the stricter `relu` rule (A2)?** Raise at the plan checkpoint; both are one-line schema edits before data exists.
+   - RESOLVED: A1-A4 are accepted as defaults by Erwan's delegate (the orchestrator, 2026-11-03). They are recorded in `schemas/CHANGELOG.md` (plan 01-05) and as ADRs in `docs/ARCHITECTURE.md` (plan 01-03).
 3. **Page-level "last updated" (M1-12, Phase 4)** has no schema field: derive it from `date_relecture`/`verifie_le`/git metadata, or add an optional `modifie_le` later (optional additions need no bump). No action in Phase 1.
+   - RESOLVED (deferred): M1-12 « dernière mise à jour » is designed in Phase 4 (derived from `date_relecture` / `verifie_le` / git metadata, or an optional field that needs no version bump). No Phase 1 action.
 4. **Editor integration of URN `$ref`s (Pitfall 11)** unverified; decide in Phase 2 whether to ship a bundled schema for editors.
+   - RESOLVED (deferred): editor integration of URN `$ref`s is not needed for v1.0. CI and `npm run validate` are the authority, and editor `$schema` headers are not a deliverable.
 5. **`ids.lock` (REGLE-07)** is Phase 2, but the candidate id regexp `^[a-z][a-z0-9]*(-[a-z0-9]+)+$` requires at least two segments: mononyms would need a decision (none are expected among the 59).
+   - RESOLVED (deferred): the mononym id regex question is handled in the Phase 3 import, when the real names exist; the schema is loosened then if needed (loosening = no version bump).
 
 ## Environment Availability
 

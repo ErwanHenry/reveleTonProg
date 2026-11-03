@@ -33,24 +33,24 @@ Static-site mapping of the generic skeleton terms:
 | Content root | `RTP_CONTENT_ROOT` env, default `tests/fixtures/corpus-valide` (`root.ts` `DEFAULT_CONTENT_ROOT`) until Phase 3 flips it to `.` | The real corpus is empty in Phase 1, yet the skeleton must render something real. The fixture mirrors the repo layout |
 | Diagnostics | `{code, severity, file, line, col, pointer, message}`. Codes are `YAML_*`, `FICHIER_*`, `SCHEMA_*` and `MIGRATION_*`. Output is text (`fichier:ligne:col CODE message (pointeur)`) or GitHub annotations (max 10 per severity) | Actionable in CI. Phase 2 maps them to domain codes through the override table in `ajv.ts` |
 | Migrations | `npm run migrate -- --check|--write`; version of a collection = `schema.properties.version_schema.const`; static registry `scripts/migrations/index.ts`; `toString({ lineWidth: 0 })` | DATA-08. Reviewer diffs stay minimal, and no code is loaded from content paths |
-| Archives | `archives/<candidat>/<sha12>.txt` committed (sha256 recorded in the source YAML); binaries in the private repo `reveleTonProg-archives`; 5 MB cap | D-8, copyright (CPI L.122-5); the hash is checkable in CI |
+| Archives | `archives/<candidat>/<sha12>.txt` committed (sha256 recorded in the source YAML); binaries in the private repo `reveleTonProg-archives`; 5 MB cap; `wayback_url` optional in schema v1, required by a Phase 2 rule for sources cited by `publie` measures | D-8, copyright (CPI L.122-5); the hash is checkable in CI |
 | Tests | `node:test` + `node:assert/strict`, `TZ=Europe/Paris node --test "tests/**/*.test.ts"`; only `tests/dist/skeleton.test.ts` spawns `astro build` | Zero test dependencies. Concurrent builds would share the `.astro` cache |
 | CI | GitHub Actions: `verifier` job (npm ci → migrate --check → validate → check → test → build, fixture and real root) and `secrets` job (gitleaks 8.30.1 binary, sha256-verified, full history). Actions pinned by SHA, `contents: read`, `TZ=Europe/Paris` | FOND-03/04. The gitleaks MIT binary avoids the action's proprietary licence |
-| Dependencies | Dependabot for npm + github-actions, weekly, 7-day cooldown (14 for majors) | FOND-04. The cooldown defends against freshly published malicious versions |
+| Dependencies | Dependabot version updates for npm + github-actions, weekly, 7-day cooldown (14 for majors); Dependabot alerts / security updates / push protection = one-time user action in Settings > Code security (RUNBOOK) | FOND-04. The cooldown defends against freshly published malicious versions; security settings stay under the owner's control |
 | Auth | None (no accounts, no cookies, no server) | Spec: zero personal data |
 | Licensing | Code MIT; editorial content Licence Ouverte 2.0; `archives/` and candidates' texts excluded | D-9 |
 
 ## Stack Touched in Phase 1
 
-- [x] Project scaffold: Node 24, Astro 7, TypeScript 6 (`astro check`), `node:test` runner (plan 01-01)
-- [x] Routing: one real route `/` rendered from the corpus (plans 01-01, 01-02)
-- [x] Data: real read (YAML → content-core → Astro store, plans 01-01..03) AND real write (`migrate --write` through the Document API, plan 01-05)
+- [x] Project scaffold: Node 24, Astro 7, TypeScript 6 (`astro check`), `node:test` runner (plan 01-01, e2e test written RED first)
+- [x] Routing: one real route `/` rendered from the corpus (plans 01-04, 01-06)
+- [x] Data: real read (YAML → content-core → CLI and Astro store, plans 01-02, 01-04, 01-05, 01-06) AND real write (`migrate --write` through the Document API, plan 01-07)
 - [x] UI: data-driven static page (candidate, status, measure, source). There is deliberately no interactive element: the level toggle (radios + `:has()`) is Phase 4, and zero JS by default is a spec constraint
-- [x] Deployment: green CI on GitHub plus the documented local command `npm install && npm run validate && npm test && npm run build && npm run preview` (plan 01-05). Hosting is lot 3
+- [x] Deployment: green CI on GitHub plus the documented local command `npm install && npm run validate && npm test && npm run build && npm run preview` (plan 01-07). Hosting is lot 3
 
 ## Out of Scope (Deferred to Later Slices)
 
-- Editorial rules and traps (forbidden words, lengths, figures outside the source, verbatim quotes, archive presence and sha256 check, equity, `ids.lock`, poll rules, REGLE-12 scan): Phase 2
+- Editorial rules and traps (`wayback_url` required for sources of `publie` measures, forbidden words, lengths, figures outside the source, verbatim quotes, archive presence and sha256 check, equity, `ids.lock`, poll rules, REGLE-12 scan): Phase 2
 - data.gouv import, archiving tool, real pilot corpus, flipping `DEFAULT_CONTENT_ROOT` to `.`: Phase 3
 - Theme and candidate pages, 4 reading levels, alphabetical/random order, Aîné/Enfant, preview badge, post-build `check-dist`: Phase 4
 - Méthode / Mentions légales / Qui sommes-nous pages, Playwright + axe + 4G tests, preview URL: Phase 5

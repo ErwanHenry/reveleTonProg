@@ -17,7 +17,7 @@ Dépôt Node 24 + Astro 7 statique (zéro JS), CI GitHub Actions durcie, hygièn
 - D-1 : statuts = codes du dataset `declare|primaire|pressenti|empeche|renonce` ; `renonce` affiché « Ne se présente pas » ; historique `statuts[]` append-only
 - D-2 : périmètre d'équité = `declare` + `primaire`, piloté par config
 - D-4 : mentions légales éditeur non professionnel (LCEN art. 1-1 II), pas d'adresse personnelle
-- D-5 : Node 24 LTS (`.nvmrc` = 24, `engines >=24.12`, `engine-strict`) ; Node 24.21.0 déjà installé localement via fnm
+- D-5 : Node 24 LTS (`.nvmrc` = 24, `engines >=24.12`, `engine-strict`) ; Node 24.22.2 (arm64) installé localement via fnm, réparé par l'orchestrateur le 2026-11-03 ; exécuter avec `fnm exec --using=24`
 
 ### Données et sources
 - D-3 : presse autorisée comme source d'un **statut** uniquement, `source.type: presse` affiché sur le badge, remplacée dès qu'une source candidat/parti/institution existe ; jamais pour une mesure
