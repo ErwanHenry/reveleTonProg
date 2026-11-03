@@ -188,6 +188,16 @@ export const OVERRIDES: CodeOverride[] = [
     message: () => 'source sans « archive » : un extrait archivé (chemin et empreinte sha256) est obligatoire',
     anchor: '/url',
   },
+  // REGLE-09 : un sondage sans notice est refusé par le schéma lui-même (jamais contournable par un bug de règle).
+  {
+    schema: 'sondage',
+    keyword: 'required',
+    pointer: /^$/,
+    when: (_value, params) => params.missingProperty === 'url_notice',
+    code: 'SONDAGE_NOTICE_ABSENTE',
+    message: () => 'sondage sans notice : url_notice (notice de la Commission des sondages ou de l\'institut) est obligatoire',
+    anchor: '/url_publication',
+  },
 ];
 
 function escapePointerSegment(s: string): string {
