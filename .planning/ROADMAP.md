@@ -66,7 +66,7 @@ Plans:
 **Wave 3** *(blocked on Wave 2 completion)*
 
 - [x] 01-04-PLAN.md — Astro object loader on the shared loadAll + view-model + zero-JS page; e2e GREEN (wave 3)
-- [ ] 01-05-PLAN.md — couverture, glossaire, sondage, journal schemas + fixtures + schemas/CHANGELOG.md (wave 3)
+- [x] 01-05-PLAN.md — couverture, glossaire, sondage, journal schemas + fixtures + schemas/CHANGELOG.md (wave 3)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -204,7 +204,7 @@ Phase 1 ──┬──> Phase 2 (règles) ──────────┐
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Fondations, schémas v1 et content-core | 4/7 | In Progress|  |
+| 1. Fondations, schémas v1 et content-core | 5/7 | In Progress|  |
 | 2. Règles éditoriales et pièges | 0/TBD | Not started | - |
 | 3. Import data.gouv et corpus pilote | 0/TBD | Not started | - |
 | 4. Référentiel M1 et 4 niveaux de lecture | 0/TBD | Not started | - |
