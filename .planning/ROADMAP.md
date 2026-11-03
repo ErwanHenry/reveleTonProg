@@ -60,7 +60,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 01-02-PLAN.md — content-core (parse + Ajv + diagnostics), common + candidat schemas, `npm run validate` CLI (wave 2)
+- [x] 01-02-PLAN.md — content-core (parse + Ajv + diagnostics), common + candidat schemas, `npm run validate` CLI (wave 2)
 - [ ] 01-03-PLAN.md — Repo hygiene: hardened CI, gitleaks, Dependabot, LICENSE, README, ARCHITECTURE (ADR D-1…D-13), RUNBOOK incl. manual GitHub security settings (wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
@@ -204,7 +204,7 @@ Phase 1 ──┬──> Phase 2 (règles) ──────────┐
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Fondations, schémas v1 et content-core | 1/7 | In Progress|  |
+| 1. Fondations, schémas v1 et content-core | 2/7 | In Progress|  |
 | 2. Règles éditoriales et pièges | 0/TBD | Not started | - |
 | 3. Import data.gouv et corpus pilote | 0/TBD | Not started | - |
 | 4. Référentiel M1 et 4 niveaux de lecture | 0/TBD | Not started | - |
