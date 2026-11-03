@@ -2,14 +2,15 @@ import type { Document, LineCounter } from 'yaml';
 import { pointerToPos } from '../diagnostics.ts';
 import type { Diagnostic } from '../diagnostics.ts';
 import type { CollectionName } from '../collections.ts';
+import { famille as citations } from './citations.ts';
 import { famille as corpus } from './corpus.ts';
 import { famille as redaction } from './redaction.ts';
 import { famille as sondages } from './sondages.ts';
 import { citer } from './types.ts';
 import type { Corpus, FichierAnalyse, Famille, Finding, LoadedEntry, Mode, RuleContext } from './types.ts';
 
-/** Registre des familles de règles, dans l'ordre d'exécution (le plan des citations s'ajoutera à la fin). */
-export const FAMILLES: readonly Famille[] = [redaction, corpus, sondages];
+/** Registre des familles de règles, dans l'ordre d'exécution. */
+export const FAMILLES: readonly Famille[] = [redaction, corpus, sondages, citations];
 
 const cleEntree = (collection: CollectionName, id: string): string => `${collection}\u0000${id}`;
 

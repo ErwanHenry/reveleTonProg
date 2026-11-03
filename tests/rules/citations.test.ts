@@ -10,7 +10,6 @@ import type { DiagnosticPiege, ElementAttendu, PiegeSpec, Remplacement } from '.
 import { SCHEMAS_DIR } from '../helpers/validate-yaml.ts';
 
 after(() => nettoyerRacines());
-void createReadStream; // (import inutile évité par le linter de type : conservé pour la lisibilité du fichier)
 
 const MESURE = 'src/content/mesures/marie-fictive/encadrement-loyers.yaml';
 const SOURCE = 'src/content/sources/marie-fictive-programme.yaml';
@@ -90,11 +89,11 @@ describe('REGLE-04 : chiffres', () => {
   });
 
   it('un chiffre présent seulement dans chiffrage.texte est accepté si chiffrage.texte est dans l’archive', () => {
-    const chiffrage = "Coût estimé : 2 milliards d'euros.";
+    const chiffrage = "Coût estimé de 2 milliards d'euros.";
     const d = avecArchive(
       [
         r(MESURE, 'source_localisation: page 3 (fictive)\n', `source_localisation: page 3 (fictive)\nchiffrage:\n  texte: ${chiffrage}\n`),
-        r(MESURE, 'Le préfet fixerait le plafond chaque année.', "Coût estimé : 2 milliards d'euros."),
+        r(MESURE, 'Le préfet fixerait le plafond chaque année.', "Coût estimé de 2 milliards d'euros."),
       ],
       `\n\n${chiffrage}\n`,
     );
@@ -103,8 +102,8 @@ describe('REGLE-04 : chiffres', () => {
 
   it('chiffrage.texte absent de l’archive : CHIFFRAGE_HORS_ARCHIVE, et le chiffre n’est pas blanchi sans cela', () => {
     const d = tous([
-      r(MESURE, 'source_localisation: page 3 (fictive)\n', "source_localisation: page 3 (fictive)\nchiffrage:\n  texte: Coût estimé : 2 milliards d'euros.\n"),
-      r(MESURE, 'Le préfet fixerait le plafond chaque année.', "Coût estimé : 2 milliards d'euros."),
+      r(MESURE, 'source_localisation: page 3 (fictive)\n', "source_localisation: page 3 (fictive)\nchiffrage:\n  texte: Coût estimé de 2 milliards d'euros.\n"),
+      r(MESURE, 'Le préfet fixerait le plafond chaque année.', "Coût estimé de 2 milliards d'euros."),
     ]);
     comparer(d, [err('CHIFFRAGE_HORS_ARCHIVE', '/chiffrage/texte')]);
   });
