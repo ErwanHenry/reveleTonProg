@@ -1,9 +1,10 @@
 import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { listContentFiles, loadAll, parseYaml, validateYamlText } from '../../src/lib/content-core/load.ts';
+import { checkContained, listContentFiles, loadAll, parseYaml, validateYamlText } from '../../src/lib/content-core/load.ts';
 import { REPO_ROOT, SCHEMAS_DIR } from '../helpers/validate-yaml.ts';
 
 const FIXTURE_ROOT = path.join(REPO_ROOT, 'tests', 'fixtures', 'corpus-valide');
@@ -133,6 +134,50 @@ describe('listContentFiles', () => {
     const res = loadAll(root, OPTS);
     assert.deepEqual(res.diagnostics.map((d) => d.code), ['FICHIER_LIEN_SYMBOLIQUE']);
     assert.equal(res.entries.length, 0);
+  });
+
+  it('src/ lien symbolique : FICHIER_LIEN_SYMBOLIQUE, rien de listé (CR-02)', () => {
+    const root = tmpRoot();
+    const elsewhere = tmpRoot();
+    cpSync(path.join(FIXTURE_ROOT, 'src'), path.join(elsewhere, 'src'), { recursive: true });
+    symlinkSync(path.join(elsewhere, 'src'), path.join(root, 'src'));
+    const res = loadAll(root, OPTS);
+    assert.deepEqual(res.diagnostics.map((d) => d.code), ['FICHIER_LIEN_SYMBOLIQUE']);
+    assert.equal(res.files, 0);
+  });
+
+  it('src/content lien symbolique : FICHIER_LIEN_SYMBOLIQUE, rien de listé (CR-02)', () => {
+    const root = tmpRoot();
+    const elsewhere = tmpRoot();
+    cpSync(path.join(FIXTURE_ROOT, 'src', 'content'), path.join(elsewhere, 'content'), { recursive: true });
+    mkdirSync(path.join(root, 'src'), { recursive: true });
+    symlinkSync(path.join(elsewhere, 'content'), path.join(root, 'src', 'content'));
+    const res = loadAll(root, OPTS);
+    assert.deepEqual(res.diagnostics.map((d) => d.code), ['FICHIER_LIEN_SYMBOLIQUE']);
+    assert.equal(res.files, 0);
+  });
+
+  it('fichier non régulier (tube nommé) : FICHIER_NON_REGULIER, jamais ouvert (CR-02)', () => {
+    const root = tmpRoot();
+    mkdirSync(path.join(root, 'src', 'content', 'candidats'), { recursive: true });
+    const fifo = path.join(root, 'src', 'content', 'candidats', 'x.yaml');
+    assert.equal(spawnSync('mkfifo', [fifo]).status, 0);
+    const res = loadAll(root, OPTS); // se bloquerait à jamais si le tube était ouvert
+    assert.deepEqual(res.diagnostics.map((d) => d.code), ['FICHIER_NON_REGULIER']);
+    assert.equal(res.files, 0);
+  });
+
+  it('checkContained : fichier hors racine ou lien symbolique refusé, fichier interne accepté', () => {
+    const root = tmpRoot();
+    const outside = path.join(tmpRoot(), 'dehors.yaml');
+    writeFileSync(outside, 'a: 1\n');
+    const inside = put(root, 'candidats/ok.yaml', 'a: 1\n');
+    assert.equal(checkContained(root, inside), undefined);
+    assert.equal(checkContained(root, outside)?.code, 'FICHIER_HORS_RACINE');
+    const link = path.join(root, 'src', 'content', 'candidats', 'lien.yaml');
+    symlinkSync(outside, link);
+    assert.equal(checkContained(root, link)?.code, 'FICHIER_LIEN_SYMBOLIQUE');
+    assert.equal(checkContained(root, path.join(root, 'absent.yaml'))?.code, 'FICHIER_ILLISIBLE');
   });
 
   it('mesures : exactement mesures/<candidat>/<slug>.yaml', () => {

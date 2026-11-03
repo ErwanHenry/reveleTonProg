@@ -1,6 +1,6 @@
 import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { loadAll } from '../../src/lib/content-core/load.ts';
@@ -157,5 +157,24 @@ describe('runMigrations', () => {
     const res = runMigrations(root, { schemasDir: SCHEMAS_DIR, registry: [fakeMigration], write: true });
     assert.deepEqual(res.ecrits, [file]);
     assert.equal(readFileSync(other, 'utf8'), before);
+  });
+});
+
+describe('runMigrations : jamais d\'écriture hors de la racine de contenu (CR-02)', () => {
+  it('src/content lien symbolique : rien n\'est écrit à travers le lien', () => {
+    const { root: outsideRoot, file: outsideFile } = tmpRoot(AVANT);
+    const root = mkdtempSync(path.join(os.tmpdir(), 'rtp-migrate-link-'));
+    tmpDirs.push(root);
+    mkdirSync(path.join(root, 'src'), { recursive: true });
+    symlinkSync(path.join(outsideRoot, 'src', 'content'), path.join(root, 'src', 'content'));
+    const res = runMigrations(root, { schemasDir: SCHEMAS_DIR, registry: [fakeMigration], write: true });
+    assert.deepEqual(res.ecrits, []);
+    assert.deepEqual(res.diagnostics.map((d) => d.code), ['FICHIER_LIEN_SYMBOLIQUE']);
+    assert.equal(readFileSync(outsideFile, 'utf8'), AVANT);
+  });
+
+  it('inspectVersions signale la racine introuvable', () => {
+    const res = inspectVersions(path.join(os.tmpdir(), 'rtp-inexistant-xyz'), { schemasDir: SCHEMAS_DIR });
+    assert.deepEqual(res.diagnostics.map((d) => d.code), ['RACINE_INTROUVABLE']);
   });
 });

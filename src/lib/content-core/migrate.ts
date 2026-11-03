@@ -2,7 +2,7 @@
 // Moitié "écriture" du squelette : tout passe par l'API Document de `yaml`, jamais par un
 // dump de toJS, pour que commentaires, ordre des clés et guillemets survivent.
 // Aucun import Astro : ce module sert aussi la CLI et la CI.
-import { readFileSync, writeFileSync } from 'node:fs';
+import { writeFileSync } from 'node:fs';
 import { LineCounter, parseDocument } from 'yaml';
 import type { Document } from 'yaml';
 import { schemaVersion } from './ajv.ts';
@@ -10,7 +10,7 @@ import { COLLECTIONS } from './collections.ts';
 import type { CollectionName } from './collections.ts';
 import { pointerToPos } from './diagnostics.ts';
 import type { Diagnostic } from './diagnostics.ts';
-import { PARSE_OPTIONS, listContentFiles } from './load.ts';
+import { PARSE_OPTIONS, checkContained, listContentFiles, readContained } from './load.ts';
 
 export interface Migration {
   schema: string;
@@ -61,8 +61,14 @@ export function inspectVersions(
   for (const f of listed.files) {
     const schema = COLLECTIONS[f.collection].schema;
     const courante = schemaVersion(opts.schemasDir, schema);
-    const { doc, lc } = parse(readFileSync(f.file, 'utf8'));
     const base = { file: f.file, collection: f.collection, schema, courante };
+    const read = readContained(contentRoot, f.file);
+    if ('diagnostic' in read) {
+      fichiers.push({ ...base, version: null, etat: 'invalide' });
+      diagnostics.push(read.diagnostic);
+      continue;
+    }
+    const { doc, lc } = parse(read.text);
 
     if (doc.errors.length > 0) {
       fichiers.push({ ...base, version: null, etat: 'invalide' });
@@ -122,7 +128,12 @@ export function runMigrations(
 
   for (const f of fichiers) {
     if (f.etat !== 'en_retard' || f.version === null) continue; // les autres fichiers ne sont jamais réécrits
-    const text = readFileSync(f.file, 'utf8');
+    const read = readContained(contentRoot, f.file);
+    if ('diagnostic' in read) {
+      diagnostics.push(read.diagnostic);
+      continue;
+    }
+    const text = read.text;
     let migrated: string;
     try {
       migrated = migrateText(text, f.schema, f.version, f.courante, opts.registry);
@@ -136,6 +147,11 @@ export function runMigrations(
       throw e;
     }
     if (opts.write && migrated !== text) {
+      const unsafe = checkContained(contentRoot, f.file); // revérifié juste avant l'écriture (TOCTOU)
+      if (unsafe) {
+        diagnostics.push(unsafe);
+        continue;
+      }
       writeFileSync(f.file, migrated); // f.file vient de listContentFiles : toujours sous la racine de contenu
       ecrits.push(f.file);
     }

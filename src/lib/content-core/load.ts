@@ -1,4 +1,4 @@
-import { existsSync, lstatSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { LineCounter, parseDocument, visit } from 'yaml';
 import type { Document } from 'yaml';
@@ -110,6 +110,14 @@ export function listContentFiles(contentRoot: string): {
     diagnostics.push(diag('RACINE_INTROUVABLE', contentRoot, 1, 1, 'racine de contenu introuvable (vérifier --root ou RTP_CONTENT_ROOT)'));
     return { files, diagnostics };
   }
+  // src/ et src/content/ ne sont jamais des liens symboliques : sinon la lecture (et l'écriture de
+  // `migrate --write`) sortirait de la racine de contenu sans que rien ne le signale.
+  for (const p of [path.join(contentRoot, 'src'), base]) {
+    if (existsSync(p) && lstatSync(p).isSymbolicLink()) {
+      diagnostics.push(diag('FICHIER_LIEN_SYMBOLIQUE', p, 1, 1, 'lien symbolique refusé (jamais suivi)'));
+      return { files, diagnostics };
+    }
+  }
   if (!existsSync(base) || !statSync(base).isDirectory()) {
     diagnostics.push(diag('RACINE_INTROUVABLE', base, 1, 1, 'dossier src/content introuvable sous la racine de contenu'));
     return { files, diagnostics };
@@ -143,6 +151,7 @@ export function listContentFiles(contentRoot: string): {
       }
       if (layout === 'flat') {
         if (e.isDirectory()) bad('FICHIER_EMPLACEMENT', full, `pas de sous-dossier dans ${collection}/ : un fichier .yaml par entrée`);
+        else if (!e.isFile()) bad('FICHIER_NON_REGULIER', full, 'fichier non régulier refusé (tube, socket, périphérique...)');
         else if (!e.name.endsWith('.yaml')) bad('FICHIER_EXTENSION', full, 'extension .yaml attendue');
         else files.push({ collection, id: e.name.slice(0, -'.yaml'.length), file: full });
         continue;
@@ -156,12 +165,43 @@ export function listContentFiles(contentRoot: string): {
         const ffull = path.join(full, f.name);
         if (isLink(ffull, f)) bad('FICHIER_LIEN_SYMBOLIQUE', ffull, 'lien symbolique refusé (jamais suivi)');
         else if (f.isDirectory()) bad('FICHIER_EMPLACEMENT', ffull, `attendu : ${collection}/<candidat>/<slug>.yaml, pas de niveau supplémentaire`);
+        else if (!f.isFile()) bad('FICHIER_NON_REGULIER', ffull, 'fichier non régulier refusé (tube, socket, périphérique...)');
         else if (!f.name.endsWith('.yaml')) bad('FICHIER_EXTENSION', ffull, 'extension .yaml attendue');
         else files.push({ collection, id: posix(path.join(e.name, f.name.slice(0, -'.yaml'.length))), file: ffull });
       }
     }
   }
   return { files, diagnostics };
+}
+
+/**
+ * Lecture sûre d'un fichier de contenu, juste avant usage (le listage seul laisse une fenêtre
+ * TOCTOU) : refuse lien symbolique, fichier non régulier et tout chemin dont le realpath sort de la
+ * racine de contenu. Une erreur d'E/S devient un diagnostic, jamais une exception.
+ */
+export function checkContained(contentRoot: string, file: string): Diagnostic | undefined {
+  try {
+    const st = lstatSync(file);
+    if (st.isSymbolicLink()) return diag('FICHIER_LIEN_SYMBOLIQUE', file, 1, 1, 'lien symbolique refusé (jamais suivi)');
+    if (!st.isFile()) return diag('FICHIER_NON_REGULIER', file, 1, 1, 'fichier non régulier refusé (tube, socket, périphérique...)');
+    const rootReal = realpathSync(contentRoot);
+    if (!realpathSync(file).startsWith(rootReal + path.sep)) {
+      return diag('FICHIER_HORS_RACINE', file, 1, 1, 'le fichier se résout hors de la racine de contenu : refusé');
+    }
+    return undefined;
+  } catch (e) {
+    return diag('FICHIER_ILLISIBLE', file, 1, 1, `fichier illisible (${e instanceof Error ? e.message : String(e)})`);
+  }
+}
+
+export function readContained(contentRoot: string, file: string): { text: string } | { diagnostic: Diagnostic } {
+  const diagnostic = checkContained(contentRoot, file);
+  if (diagnostic) return { diagnostic };
+  try {
+    return { text: readFileSync(file, 'utf8') };
+  } catch (e) {
+    return { diagnostic: diag('FICHIER_ILLISIBLE', file, 1, 1, `fichier illisible (${e instanceof Error ? e.message : String(e)})`) };
+  }
 }
 
 export function loadAll(contentRoot: string, opts: LoadOptions): LoadResult {
@@ -174,8 +214,12 @@ export function loadAll(contentRoot: string, opts: LoadOptions): LoadResult {
       diagnostics.push(diag('SCHEMA_INCONNU', f.file, 1, 1, `aucun schéma « ${schemaName} » pour la collection ${f.collection}`));
       continue;
     }
-    const text = readFileSync(f.file, 'utf8');
-    const res = validateYamlText(schemaName, text, f.file, opts);
+    const read = readContained(contentRoot, f.file);
+    if ('diagnostic' in read) {
+      diagnostics.push(read.diagnostic);
+      continue;
+    }
+    const res = validateYamlText(schemaName, read.text, f.file, opts);
     diagnostics.push(...res.diagnostics);
     if (!res.diagnostics.some((d) => d.severity === 'error')) {
       entries.push({ collection: f.collection, id: f.id, file: f.file, data: res.data as Record<string, unknown> });
