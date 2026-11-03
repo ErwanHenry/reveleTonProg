@@ -21,7 +21,7 @@ Ce document explique comment les trois thèmes pilotes du site ont été choisis
 | — | inaccessible | un document existe mais ne peut pas être lu automatiquement (refus HTTP 403, page rendue côté navigateur) |
 
 6. **Accès par candidat.** `ok` : tout ce qui a été trouvé a été lu. `partiel` : au moins un document a été lu, un autre est inaccessible ; les cases sont classées d’après ce qui a été lu et la note le dit. `bloque` : rien n’a pu être lu. `aucun_site` : aucun document de programme n’existe.
-7. **Sur 37 candidats** : 26 en accès `ok`, 2 en `partiel`, 3 en `bloque`, 6 en `aucun_site`.
+7. **Sur 37 candidats** : 26 en accès `ok`, 3 en `partiel`, 1 en `bloque`, 7 en `aucun_site`.
 
 ## Limites
 
@@ -44,7 +44,7 @@ Thèmes dans l’ordre du cahier des charges : Lo Logement, Éc École, Re Retra
 | 1 | Nathalie Arthaud | ok | ○ | ◐ | ◐ | ◐ | ◐ | ○ | ● | ◐ | ● | ○ |
 | 2 | François Asselineau | aucun site | × | × | × | × | × | × | × | × | × | × |
 | 3 | Gabriel Attal | ok | ◐ | ● | ● | ● | ● | ● | ● | ● | ● | ● |
-| 4 | Delphine Batho | bloqué | — | — | — | — | — | — | — | — | — | — |
+| 4 | Delphine Batho | partiel | ◐ | ◐ | ○ | ● | ● | ● | ◐ | ○ | ◐ | ● |
 | 5 | Olivier Becht | ok | ● | ● | ● | ● | ● | ● | ● | ● | ● | ● |
 | 6 | Xavier Bertrand | aucun site | × | × | × | × | × | × | × | × | × | × |
 | 7 | Augustin Billetdoux | aucun site | × | × | × | × | × | × | × | × | × | × |
@@ -54,7 +54,7 @@ Thèmes dans l’ordre du cahier des charges : Lo Logement, Éc École, Re Retra
 | 11 | Christian Collovati | ok | ● | ● | ● | ◐ | ● | ● | ● | ● | ● | ● |
 | 12 | Emmanuel Dubuisson | ok | ○ | ◐ | ◐ | ● | ● | ◐ | ● | ● | ◐ | ● |
 | 13 | Nicolas Dupont-Aignan | ok | ● | ● | ● | ● | ● | ● | ● | ● | ● | ● |
-| 14 | Sylvain Durif | bloqué | — | — | — | — | — | — | — | — | — | — |
+| 14 | Sylvain Durif | aucun site | × | × | × | × | × | × | × | × | × | × |
 | 15 | Clara Egger | ok | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ● |
 | 16 | Raphaël Glucksmann | ok | ● | ● | ● | ● | ● | ● | ● | ● | ● | ● |
 | 17 | Anasse Kazib | ok | ◐ | ◐ | ◐ | ◐ | ● | ◐ | ● | ◐ | ● | ● |
@@ -85,18 +85,18 @@ Une **position** est une case « fort » ou « partiel » ; « silence », « au
 
 | Rang | Thème | Positions | ● | ◐ | ○ | × | — | Thème Aîné prioritaire |
 |---:|---|---:|---:|---:|---:|---:|---:|:-:|
-| 1 | Travail (`travail`) | 25 | 20 | 5 | 3 | 6 | 3 |  |
-| 2 | Europe et monde (`europe-et-monde`) | 25 | 20 | 5 | 3 | 6 | 3 |  |
-| 3 | Santé (`sante`) | 25 | 14 | 11 | 3 | 6 | 3 | oui |
-| 4 | Institutions (`institutions`) | 24 | 20 | 4 | 4 | 6 | 3 |  |
-| 5 | École (`ecole`) | 24 | 17 | 7 | 4 | 6 | 3 |  |
-| 6 | Climat (`climat`) | 23 | 16 | 7 | 5 | 6 | 3 |  |
-| 7 | Impôts (`impots`) | 22 | 19 | 3 | 6 | 6 | 3 |  |
-| 8 | Sécurité (`securite`) | 22 | 18 | 4 | 6 | 6 | 3 |  |
-| 9 | Logement (`logement`) | 20 | 12 | 8 | 8 | 6 | 3 | oui |
-| 10 | Retraites (`retraites`) | 20 | 12 | 8 | 8 | 6 | 3 | oui |
+| 1 | Travail (`travail`) | 26 | 20 | 6 | 3 | 7 | 1 |  |
+| 2 | Europe et monde (`europe-et-monde`) | 26 | 20 | 6 | 3 | 7 | 1 |  |
+| 3 | Santé (`sante`) | 26 | 15 | 11 | 3 | 7 | 1 | oui |
+| 4 | Institutions (`institutions`) | 25 | 21 | 4 | 4 | 7 | 1 |  |
+| 5 | École (`ecole`) | 25 | 17 | 8 | 4 | 7 | 1 |  |
+| 6 | Climat (`climat`) | 24 | 17 | 7 | 5 | 7 | 1 |  |
+| 7 | Sécurité (`securite`) | 23 | 19 | 4 | 6 | 7 | 1 |  |
+| 8 | Impôts (`impots`) | 22 | 19 | 3 | 7 | 7 | 1 |  |
+| 9 | Logement (`logement`) | 21 | 12 | 9 | 8 | 7 | 1 | oui |
+| 10 | Retraites (`retraites`) | 20 | 12 | 8 | 9 | 7 | 1 | oui |
 
-Les dix thèmes sont séparés par 5 position(s) seulement (de 20 à 25 sur 37 candidats) ; 9 candidats sur 37 n’ont aucun document lisible (accès « bloqué » ou « aucun site »), donc aucune position sur aucun des 10 thèmes. L’ordre fin du classement est donc dans la marge d’erreur de la mesure, d’où la règle ci-dessous.
+Les dix thèmes sont séparés par 6 position(s) seulement (de 20 à 26 sur 37 candidats) ; 8 candidats sur 37 n’ont aucun document lisible (accès « bloqué » ou « aucun site »), donc aucune position sur aucun des 10 thèmes. L’ordre fin du classement est donc dans la marge d’erreur de la mesure, d’où la règle ci-dessous.
 
 ## Règle de choix des trois thèmes
 
@@ -106,7 +106,7 @@ Règle fixée avant la mesure : on retient les trois thèmes que les sources pri
 - Une position est une case « fort » ou « partiel » : « silence », « aucun » et « inaccessible » ne comptent jamais.
 - Classement : positions décroissantes, puis nombre de cases « fort » décroissant, puis ordre de la spec.
 - Règle des trois thèmes : un écart de 2 candidats au plus = égalité (marge d’erreur de la mesure).
-- Les thèmes qui devancent le quatrième du classement de 2 positions ou plus (P4 = 24, seuil 26) sont retenus d’office, trois au plus.
+- Les thèmes qui devancent le quatrième du classement de 2 positions ou plus (P4 = 25, seuil 27) sont retenus d’office, trois au plus.
 - Pour chaque place restante, on garde les thèmes à 2 positions ou moins du meilleur reste, et on retient d’abord le thème prioritaire Aîné (logement, retraites, sante), puis celui qui a le plus de positions, de cases « fort », puis le premier de l’ordre de la spec.
 - Thèmes retenus (règle de la marge) : sante, travail, europe-et-monde.
 - Trois premiers du classement littéral (sans marge ni départage Aîné) : travail, europe-et-monde, sante.
@@ -119,28 +119,31 @@ Règle fixée avant la mesure : on retient les trois thèmes que les sources pri
 | Santé, Travail, Europe et monde (`sante`, `travail`, `europe-et-monde`) | Travail, Europe et monde, Santé (`travail`, `europe-et-monde`, `sante`) | Institutions, Impôts, Retraites (`institutions`, `impots`, `retraites`) |
 
 - **Règle de la marge et classement littéral** : mêmes trois thèmes, dans un ordre différent. La règle de la marge place d’abord Santé (thème prioritaire Aîné).
-- **Institutions** (liste provisoire) : non retenu, 24 positions contre 25, 25, 25 pour les thèmes retenus.
-- **Impôts** (liste provisoire) : non retenu, 22 positions contre 25, 25, 25 pour les thèmes retenus.
-- **Retraites** (liste provisoire) : non retenu, 20 positions contre 25, 25, 25 pour les thèmes retenus.
+- **Institutions** (liste provisoire) : non retenu, 25 positions contre 26, 26, 26 pour les thèmes retenus.
+- **Impôts** (liste provisoire) : non retenu, 22 positions contre 26, 26, 26 pour les thèmes retenus.
+- **Retraites** (liste provisoire) : non retenu, 20 positions contre 26, 26, 26 pour les thèmes retenus.
 
-La mesure **ne confirme pas** la liste provisoire de la recherche (une estimation du même jour, faite par mots-clés, sans lecture complète). Cette divergence est soumise à la décision d’Erwan Henry avant tout travail de rédaction sur les thèmes (plan 03-05).
+La mesure **ne confirme pas** la liste provisoire de la recherche (une estimation du même jour, faite par mots-clés, sans lecture complète).
 
-## Sources inaccessibles (captures manuelles à faire)
+## Thèmes pilotes retenus : santé, travail, Europe et monde
 
-Adresses signalées dans `urls_bloquees` pour les candidats en accès « bloqué » ou « partiel ». Elles n’ont pas été contournées ; une capture manuelle est demandée.
+Thèmes pilotes retenus : `sante`, `travail`, `europe-et-monde`. Erwan Henry les a confirmés explicitement le 2026-11-03, après avoir vu le classement mesuré. Ils sont identiques au choix de la règle de la marge et au classement littéral (`choix` = `top3Litteral`, à l’ordre près) : aucune dérogation n’est nécessaire (`pilote.derogation: null`). Ils diffèrent entièrement de la liste provisoire (`institutions`, `impots`, `retraites`), qui était une estimation par mots-clés. Le classement reste fragile (dix thèmes séparés par 6 positions) ; Travail est le seul thème présent dans tous les trios de la sensibilité calculée en 03-04.
 
-- **Delphine Batho** (bloqué) :
-  - https://www.delphinebatho.fr/
-  - https://generationecologie.fr/
-- **Sylvain Durif** (bloqué) :
-  - https://durif2027.com/le-projet
+## Sources inaccessibles (état après les captures du 2026-11-03)
+
+Adresses restant dans `urls_bloquees` pour les candidats en accès « bloqué » ou « partiel ». Aucune n’a été contournée.
+
+- **Delphine Batho** (partiel) : priorités 1, 2 et 4 de https://www.delphinebatho.fr/priorites/ lues et archivées (captures de navigateur du 2026-11-03). Restent non lues :
+  - https://www.delphinebatho.fr/priorites/priorite-3/ (« La beauté pour vivre mieux »)
+  - https://generationecologie.fr/ (HTTP 403)
 - **Jean-Luc Mélenchon** (partiel) :
-  - https://melenchon2027.fr/programme2025/livre/
+  - https://melenchon2027.fr/programme2025/livre/ (redirige vers l’accueil, le livre n’est pas en ligne)
 - **Erwan Rohou** (bloqué) :
   - https://www.les-ecologistes-mei.org/notre-programme
 - **Marine Tondelier** (partiel) :
-  - https://marinetondelier.fr/le-programme
-  - https://lesecologistes.fr/pages/6ImK65GKUnvibm33WGkjkj/projet-2027
+  - https://lesecologistes.fr/document/3N4JsAEmq6vsx42IITGNZa/vdef-programme-1.pdf (programme complet de 557 mesures, HTTP 403 à l’outil ; téléchargement dans un navigateur à autoriser par Erwan)
+
+**Sylvain Durif** n’est plus bloqué : la page https://durif2027.com/le-projet, affichée dans un navigateur réel le 2026-11-03, ne montre qu’un communiqué « CAMPAGNE DU MINISTÈRE DU CRINGE SUSPENDUE … jusqu’à nouvel ordre cosmique » et aucun programme ; ses dix cases sont « aucun » (accès `aucun_site`).
 
 Cas particulier : la page de programme du Mouvement écologiste indépendant (Erwan Rohou) est lisible mais n’est pas conservée dans le dépôt, car son pied de page publie l’adresse, le téléphone mobile et des adresses de messagerie de particuliers. Une capture expurgée est demandée ; en attendant, les dix cases sont « inaccessibles » et non « aucun », puisqu’un programme existe.
 

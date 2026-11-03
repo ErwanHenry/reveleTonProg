@@ -1,0 +1,15 @@
+version_schema: 1
+id: delphine-batho-priorite-2
+type: site_candidat
+auteur: candidat
+candidats:
+  - delphine-batho
+titre: "Priorité 2 : La sécurité climatique et la paix"
+url: https://www.delphinebatho.fr/priorites/priorite-2/
+date_publication: 2026-11
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/delphine-batho/8355d55c2354.txt
+  sha256: 8355d55c235413d03b416db19d3ca38096d028288669720c1ce78e2ea973bc4b
+  capture_le: 2026-11-03T22:00:00+01:00
+  binaire_sha256: fdff48faf9813244155ad5d7bbd85c4e78f31bd38e49feae11e0b47077099912

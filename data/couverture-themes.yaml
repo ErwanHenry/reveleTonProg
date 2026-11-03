@@ -279,48 +279,52 @@ candidats:
         niveau: fort
         note: "thématique « Démocratie » (7 mesures : journée référendaire annuelle, référendums locaux, nominations aux hautes fonctions, maire)"
   - id: delphine-batho
-    acces: bloque
+    acces: partiel
     urls_bloquees:
-      - https://www.delphinebatho.fr/
+      - https://www.delphinebatho.fr/priorites/priorite-3/
       - https://generationecologie.fr/
-    sources: []
+    sources:
+      - delphine-batho-priorite-1
+      - delphine-batho-priorite-2
+      - delphine-batho-priorite-4
     urls_consultees:
-      - https://www.delphinebatho.fr/ (HTTP 403, site de campagne)
-      - https://www.delphinebatho.fr/programme (HTTP 403)
-      - https://generationecologie.fr/ (HTTP 403, site du parti)
-      - https://www.generationecologie.fr/ (HTTP 403)
-      - "recherche web « Delphine Batho programme présidentielle 2027 » : seuls des agrégateurs et des articles de presse, aucun autre site du candidat, non utilisés"
+      - "https://www.delphinebatho.fr/priorites/priorite-1/ (La pleine santé, capturée dans un navigateur le 2026-11-03, archivée par --file)"
+      - "https://www.delphinebatho.fr/priorites/priorite-2/ (La sécurité climatique et la paix, idem, archivée)"
+      - "https://www.delphinebatho.fr/priorites/priorite-3/ (La beauté pour vivre mieux : capture non disponible, source bloquée non lue)"
+      - "https://www.delphinebatho.fr/priorites/priorite-4/ (La République terrestre, idem priorité 1, archivée)"
+      - "https://generationecologie.fr/ (HTTP 403, site du parti, non lu)"
+      - "https://www.delphinebatho.fr/ et /programme (HTTP 403 aux clients automatisés à la mesure du 2026-11-03)"
     cellules:
       logement:
-        niveau: inaccessible
-        note: "source bloquée non lue : https://www.delphinebatho.fr/ et https://generationecologie.fr/ répondent HTTP 403 aux clients automatisés ; capture manuelle à demander (plan 03-05)"
+        niveau: partiel
+        note: "priorité 2 : un énoncé, rénovation des logements pour réduire la consommation d’énergie ; source bloquée non lue : https://www.delphinebatho.fr/priorites/priorite-3/ (priorité 3 « La beauté pour vivre mieux », capture non disponible) et https://generationecologie.fr/ (HTTP 403)"
       ecole:
-        niveau: inaccessible
-        note: "source bloquée non lue : https://www.delphinebatho.fr/ et https://generationecologie.fr/ répondent HTTP 403 aux clients automatisés ; capture manuelle à demander (plan 03-05)"
+        niveau: partiel
+        note: "priorité 2 : un énoncé, robustesse des écoles et des hôpitaux face au climat (sécurité sociale climatique) ; source bloquée non lue : https://www.delphinebatho.fr/priorites/priorite-3/ (priorité 3 « La beauté pour vivre mieux », capture non disponible) et https://generationecologie.fr/ (HTTP 403)"
       retraites:
-        niveau: inaccessible
-        note: "source bloquée non lue : https://www.delphinebatho.fr/ et https://generationecologie.fr/ répondent HTTP 403 aux clients automatisés ; capture manuelle à demander (plan 03-05)"
+        niveau: silence
+        note: "aucun énoncé sur les retraites dans les priorités 1, 2 et 4 ; source bloquée non lue : https://www.delphinebatho.fr/priorites/priorite-3/ (priorité 3 « La beauté pour vivre mieux », capture non disponible) et https://generationecologie.fr/ (HTTP 403)"
       sante:
-        niveau: inaccessible
-        note: "source bloquée non lue : https://www.delphinebatho.fr/ et https://generationecologie.fr/ répondent HTTP 403 aux clients automatisés ; capture manuelle à demander (plan 03-05)"
+        niveau: fort
+        note: "priorité 1 « La pleine santé » : déserts médicaux, Défenseur de la santé humaine et animale, pleine santé inscrite dans la Constitution, eau, alimentation ; source bloquée non lue : https://www.delphinebatho.fr/priorites/priorite-3/ (priorité 3 « La beauté pour vivre mieux », capture non disponible) et https://generationecologie.fr/ (HTTP 403)"
       securite:
-        niveau: inaccessible
-        note: "source bloquée non lue : https://www.delphinebatho.fr/ et https://generationecologie.fr/ répondent HTTP 403 aux clients automatisés ; capture manuelle à demander (plan 03-05)"
+        niveau: fort
+        note: "priorité 2 : ministère régalien de la sécurité civile et loi de programmation pour les pompiers ; priorité 4 : État centré sur la défense et la sécurité, pluriannualité pour la défense et la sécurité intérieure ; source bloquée non lue : https://www.delphinebatho.fr/priorites/priorite-3/ (priorité 3 « La beauté pour vivre mieux », capture non disponible) et https://generationecologie.fr/ (HTTP 403)"
       climat:
-        niveau: inaccessible
-        note: "source bloquée non lue : https://www.delphinebatho.fr/ et https://generationecologie.fr/ répondent HTTP 403 aux clients automatisés ; capture manuelle à demander (plan 03-05)"
+        niveau: fort
+        note: "priorité 2 « La sécurité climatique et la paix » : section dédiée, sortie des énergies fossiles, adaptation, sécurité sociale climatique ; source bloquée non lue : https://www.delphinebatho.fr/priorites/priorite-3/ (priorité 3 « La beauté pour vivre mieux », capture non disponible) et https://generationecologie.fr/ (HTTP 403)"
       travail:
-        niveau: inaccessible
-        note: "source bloquée non lue : https://www.delphinebatho.fr/ et https://generationecologie.fr/ répondent HTTP 403 aux clients automatisés ; capture manuelle à demander (plan 03-05)"
+        niveau: partiel
+        note: "énoncés de principe : stratégie industrielle (1 million d’emplois cité en objectif), règle d’or de la constance pour les entreprises, dialogue social (priorités 2 et 4), pas de section dédiée ; source bloquée non lue : https://www.delphinebatho.fr/priorites/priorite-3/ (priorité 3 « La beauté pour vivre mieux », capture non disponible) et https://generationecologie.fr/ (HTTP 403)"
       impots:
-        niveau: inaccessible
-        note: "source bloquée non lue : https://www.delphinebatho.fr/ et https://generationecologie.fr/ répondent HTTP 403 aux clients automatisés ; capture manuelle à demander (plan 03-05)"
+        niveau: silence
+        note: "aucun énoncé fiscal dans les priorités 1, 2 et 4 (pluriannualité budgétaire seulement) ; source bloquée non lue : https://www.delphinebatho.fr/priorites/priorite-3/ (priorité 3 « La beauté pour vivre mieux », capture non disponible) et https://generationecologie.fr/ (HTTP 403)"
       europe-et-monde:
-        niveau: inaccessible
-        note: "source bloquée non lue : https://www.delphinebatho.fr/ et https://generationecologie.fr/ répondent HTTP 403 aux clients automatisés ; capture manuelle à demander (plan 03-05)"
+        niveau: partiel
+        note: "priorité 4, point 08 : stratégie géopolitique « offensive » de la France ; priorité 2 : stratégie de défense en profondeur, protection de la paix ; énoncés de principe ; source bloquée non lue : https://www.delphinebatho.fr/priorites/priorite-3/ (priorité 3 « La beauté pour vivre mieux », capture non disponible) et https://generationecologie.fr/ (HTTP 403)"
       institutions:
-        niveau: inaccessible
-        note: "source bloquée non lue : https://www.delphinebatho.fr/ et https://generationecologie.fr/ répondent HTTP 403 aux clients automatisés ; capture manuelle à demander (plan 03-05)"
+        niveau: fort
+        note: "priorité 4 « La République terrestre » : en finir avec le présidentialisme, loi de séparation des lobbies et de l’État, États généraux des Outre-mer, pluriannualité budgétaire ; priorité 1 : Constitution ; source bloquée non lue : https://www.delphinebatho.fr/priorites/priorite-3/ (priorité 3 « La beauté pour vivre mieux », capture non disponible) et https://generationecologie.fr/ (HTTP 403)"
   - id: olivier-becht
     acces: ok
     urls_bloquees: []
@@ -703,47 +707,46 @@ candidats:
         niveau: fort
         note: "page « Refonder et moraliser notre démocratie » : référendum d’initiative citoyenne, référendum obligatoire pour la Constitution, retour au septennat ; badgée « Projet 2027 »"
   - id: sylvain-durif
-    acces: bloque
-    urls_bloquees:
-      - https://durif2027.com/le-projet
+    acces: aucun_site
+    urls_bloquees: []
     sources: []
     urls_consultees:
-      - "https://durif2027.com/ (page d’accueil : bandeau « Communiqué officiel, campagne du Ministère du Cringe suspendue », pas de texte de programme dans le HTML)"
-      - https://durif2027.com/le-projet (titre « 50 engagements pour 2027-2032 », contenu rendu côté client, illisible sans navigateur ; le paquet JavaScript du site contient un texte structuré, lu comme texte brut, non archivé car non vérifiable)
-      - https://durif2027.com/le-candidat et /ma-vision (même coquille côté client)
-      - https://ministereducringe.com (HTTP 429 à la lecture)
-      - https://sylvaindurif.fr (domaine inexistant)
+      - "https://durif2027.com/le-projet (rendue dans un navigateur réel le 2026-11-03 : communiqué « Campagne du Ministère du Cringe suspendue … jusqu’à nouvel ordre cosmique », aucun programme affiché)"
+      - "https://durif2027.com/ (accueil : même bandeau de communiqué, pas de texte de programme)"
+      - "https://durif2027.com/le-candidat et /ma-vision (même coquille côté client)"
+      - "https://ministereducringe.com (HTTP 429 à la lecture)"
+      - "https://sylvaindurif.fr (domaine inexistant)"
     cellules:
       logement:
-        niveau: inaccessible
-        note: "source bloquée non lue : https://durif2027.com/le-projet (page rendue côté client, le HTML servi ne contient qu’un bandeau « Campagne du Ministère du Cringe suspendue »)"
+        niveau: aucun
+        note: "aucun programme visible sur le site de campagne : la page https://durif2027.com/le-projet affiche seulement un communiqué « CAMPAGNE DU MINISTÈRE DU CRINGE SUSPENDUE … suspendue jusqu’à nouvel ordre cosmique » ; consultée le 2026-11-03, vérifié dans un navigateur réel"
       ecole:
-        niveau: inaccessible
-        note: "source bloquée non lue : https://durif2027.com/le-projet (page rendue côté client, le HTML servi ne contient qu’un bandeau « Campagne du Ministère du Cringe suspendue »)"
+        niveau: aucun
+        note: "aucun programme visible sur le site de campagne : la page https://durif2027.com/le-projet affiche seulement un communiqué « CAMPAGNE DU MINISTÈRE DU CRINGE SUSPENDUE … suspendue jusqu’à nouvel ordre cosmique » ; consultée le 2026-11-03, vérifié dans un navigateur réel"
       retraites:
-        niveau: inaccessible
-        note: "source bloquée non lue : https://durif2027.com/le-projet (page rendue côté client, le HTML servi ne contient qu’un bandeau « Campagne du Ministère du Cringe suspendue »)"
+        niveau: aucun
+        note: "aucun programme visible sur le site de campagne : la page https://durif2027.com/le-projet affiche seulement un communiqué « CAMPAGNE DU MINISTÈRE DU CRINGE SUSPENDUE … suspendue jusqu’à nouvel ordre cosmique » ; consultée le 2026-11-03, vérifié dans un navigateur réel"
       sante:
-        niveau: inaccessible
-        note: "source bloquée non lue : https://durif2027.com/le-projet (page rendue côté client, le HTML servi ne contient qu’un bandeau « Campagne du Ministère du Cringe suspendue »)"
+        niveau: aucun
+        note: "aucun programme visible sur le site de campagne : la page https://durif2027.com/le-projet affiche seulement un communiqué « CAMPAGNE DU MINISTÈRE DU CRINGE SUSPENDUE … suspendue jusqu’à nouvel ordre cosmique » ; consultée le 2026-11-03, vérifié dans un navigateur réel"
       securite:
-        niveau: inaccessible
-        note: "source bloquée non lue : https://durif2027.com/le-projet (page rendue côté client, le HTML servi ne contient qu’un bandeau « Campagne du Ministère du Cringe suspendue »)"
+        niveau: aucun
+        note: "aucun programme visible sur le site de campagne : la page https://durif2027.com/le-projet affiche seulement un communiqué « CAMPAGNE DU MINISTÈRE DU CRINGE SUSPENDUE … suspendue jusqu’à nouvel ordre cosmique » ; consultée le 2026-11-03, vérifié dans un navigateur réel"
       climat:
-        niveau: inaccessible
-        note: "source bloquée non lue : https://durif2027.com/le-projet (page rendue côté client, le HTML servi ne contient qu’un bandeau « Campagne du Ministère du Cringe suspendue »)"
+        niveau: aucun
+        note: "aucun programme visible sur le site de campagne : la page https://durif2027.com/le-projet affiche seulement un communiqué « CAMPAGNE DU MINISTÈRE DU CRINGE SUSPENDUE … suspendue jusqu’à nouvel ordre cosmique » ; consultée le 2026-11-03, vérifié dans un navigateur réel"
       travail:
-        niveau: inaccessible
-        note: "source bloquée non lue : https://durif2027.com/le-projet (page rendue côté client, le HTML servi ne contient qu’un bandeau « Campagne du Ministère du Cringe suspendue »)"
+        niveau: aucun
+        note: "aucun programme visible sur le site de campagne : la page https://durif2027.com/le-projet affiche seulement un communiqué « CAMPAGNE DU MINISTÈRE DU CRINGE SUSPENDUE … suspendue jusqu’à nouvel ordre cosmique » ; consultée le 2026-11-03, vérifié dans un navigateur réel"
       impots:
-        niveau: inaccessible
-        note: "source bloquée non lue : https://durif2027.com/le-projet (page rendue côté client, le HTML servi ne contient qu’un bandeau « Campagne du Ministère du Cringe suspendue »)"
+        niveau: aucun
+        note: "aucun programme visible sur le site de campagne : la page https://durif2027.com/le-projet affiche seulement un communiqué « CAMPAGNE DU MINISTÈRE DU CRINGE SUSPENDUE … suspendue jusqu’à nouvel ordre cosmique » ; consultée le 2026-11-03, vérifié dans un navigateur réel"
       europe-et-monde:
-        niveau: inaccessible
-        note: "source bloquée non lue : https://durif2027.com/le-projet (page rendue côté client, le HTML servi ne contient qu’un bandeau « Campagne du Ministère du Cringe suspendue »)"
+        niveau: aucun
+        note: "aucun programme visible sur le site de campagne : la page https://durif2027.com/le-projet affiche seulement un communiqué « CAMPAGNE DU MINISTÈRE DU CRINGE SUSPENDUE … suspendue jusqu’à nouvel ordre cosmique » ; consultée le 2026-11-03, vérifié dans un navigateur réel"
       institutions:
-        niveau: inaccessible
-        note: "source bloquée non lue : https://durif2027.com/le-projet (page rendue côté client, le HTML servi ne contient qu’un bandeau « Campagne du Ministère du Cringe suspendue »)"
+        niveau: aucun
+        note: "aucun programme visible sur le site de campagne : la page https://durif2027.com/le-projet affiche seulement un communiqué « CAMPAGNE DU MINISTÈRE DU CRINGE SUSPENDUE … suspendue jusqu’à nouvel ordre cosmique » ; consultée le 2026-11-03, vérifié dans un navigateur réel"
   - id: clara-egger
     acces: ok
     urls_bloquees: []
@@ -1673,8 +1676,7 @@ candidats:
   - id: marine-tondelier
     acces: partiel
     urls_bloquees:
-      - https://marinetondelier.fr/le-programme
-      - https://lesecologistes.fr/pages/6ImK65GKUnvibm33WGkjkj/projet-2027
+      - https://lesecologistes.fr/document/3N4JsAEmq6vsx42IITGNZa/vdef-programme-1.pdf
     sources:
       - marine-tondelier-livret-montagne
       - marine-tondelier-livret-sante-environnementale
@@ -1686,7 +1688,7 @@ candidats:
     urls_consultees:
       - "https://marinetondelier.fr/ (site de campagne : menu « Le programme », « 557 mesures », livrets thématiques, carnets de doctrine, manifeste)"
       - "https://marinetondelier.fr/le-programme (« 557 mesures » : redirige vers https://lesecologistes.fr/share/page/6ImK65GKUnvibm33WGkjkj/projet, HTTP 403, page de contrôle anti-robot « Just a moment » : source bloquée non lue)"
-      - "https://lesecologistes.fr/pages/6ImK65GKUnvibm33WGkjkj/projet-2027 (projet 2027 des Écologistes : HTTP 403, source bloquée non lue)"
+      - "https://lesecologistes.fr/pages/6ImK65GKUnvibm33WGkjkj/projet-2027 (page « Projet 2027 » : son contenu est un lien vers le programme complet de 557 mesures, vdef-programme-1.pdf, HTTP 403 à l’outil ; téléchargement dans un navigateur à autoriser par Erwan, à capturer)"
       - "https://lesecologistes.fr/posts/… (articles de présentation des livrets santé environnementale, solitude, montagne, enfance : HTTP 403, non lus ; les PDF des mêmes livrets sont lus)"
       - "https://marinetondelier.fr/livrets-thematiques (index des livrets, lu) et PDF : Livret-montagne, Livret-sante-environnementale, Livret-solitude, Livret-sante-reproductive, Livret-littoraux, livret-enfance-vf (archivés)"
       - https://marinetondelier.fr/carnets-de-doctrine (index des carnets, lu) ; CARNET-DE-DOCTRINE-INTERNATIONAL.pdf (archivé) ; Carnet-numerique.pdf (numérique, aucun thème de la spec, non archivé)
@@ -1694,34 +1696,34 @@ candidats:
     cellules:
       logement:
         niveau: fort
-        note: "énoncés dispersés dans 3 livrets (littoraux : protéger le logement à l’année, limiter les locations de courte durée ; enfance : 10 000 places d’hébergement d’urgence, parcours vers le logement ; montagne : logement à l’année), pas de livret logement ; source bloquée non lue : https://marinetondelier.fr/le-programme"
+        note: "énoncés dispersés dans 3 livrets (littoraux : protéger le logement à l’année, limiter les locations de courte durée ; enfance : 10 000 places d’hébergement d’urgence, parcours vers le logement ; montagne : logement à l’année), pas de livret logement ; source bloquée non lue : https://lesecologistes.fr/document/3N4JsAEmq6vsx42IITGNZa/vdef-programme-1.pdf"
       ecole:
         niveau: fort
-        note: "livret « Pays à hauteur d’enfants » (19 engagements sur l’école, la cantine, les programmes) et livret « Solitude » ; source bloquée non lue : https://marinetondelier.fr/le-programme"
+        note: "livret « Pays à hauteur d’enfants » (19 engagements sur l’école, la cantine, les programmes) et livret « Solitude » ; source bloquée non lue : https://lesecologistes.fr/document/3N4JsAEmq6vsx42IITGNZa/vdef-programme-1.pdf"
       retraites:
         niveau: partiel
-        note: "livret « Santé environnementale » p. 27 : droit de départ anticipé à la retraite pour les salariés exposés à des produits dangereux ; 1 énoncé ; source bloquée non lue : https://marinetondelier.fr/le-programme"
+        note: "livret « Santé environnementale » p. 27 : droit de départ anticipé à la retraite pour les salariés exposés à des produits dangereux ; 1 énoncé ; source bloquée non lue : https://lesecologistes.fr/document/3N4JsAEmq6vsx42IITGNZa/vdef-programme-1.pdf"
       sante:
         niveau: fort
-        note: "livrets « Santé environnementale » (44 pages) et « Santé reproductive » (52 pages), plus de 50 engagements ; source bloquée non lue : https://marinetondelier.fr/le-programme"
+        note: "livrets « Santé environnementale » (44 pages) et « Santé reproductive » (52 pages), plus de 50 engagements ; source bloquée non lue : https://lesecologistes.fr/document/3N4JsAEmq6vsx42IITGNZa/vdef-programme-1.pdf"
       securite:
         niveau: fort
-        note: "carnet de doctrine « L’Europe comme puissance écologique » (sécurité globale, politique militaire, plus de 15 engagements) ; rien sur la police ni la justice pénale dans les 7 sources lues ; source bloquée non lue : https://marinetondelier.fr/le-programme"
+        note: "carnet de doctrine « L’Europe comme puissance écologique » (sécurité globale, politique militaire, plus de 15 engagements) ; rien sur la police ni la justice pénale dans les 7 sources lues ; source bloquée non lue : https://lesecologistes.fr/document/3N4JsAEmq6vsx42IITGNZa/vdef-programme-1.pdf"
       climat:
         niveau: fort
-        note: "livrets « Littoraux », « Montagne », « Santé environnementale » et carnet international (plus de 30 engagements) ; source bloquée non lue : https://marinetondelier.fr/le-programme"
+        note: "livrets « Littoraux », « Montagne », « Santé environnementale » et carnet international (plus de 30 engagements) ; source bloquée non lue : https://lesecologistes.fr/document/3N4JsAEmq6vsx42IITGNZa/vdef-programme-1.pdf"
       travail:
         niveau: fort
-        note: "livret « Solitude », section « Remettre le lien au cœur du travail », livret « Littoraux » (emplois et réindustrialisation), livret « Santé reproductive » (santé au travail) ; source bloquée non lue : https://marinetondelier.fr/le-programme"
+        note: "livret « Solitude », section « Remettre le lien au cœur du travail », livret « Littoraux » (emplois et réindustrialisation), livret « Santé reproductive » (santé au travail) ; source bloquée non lue : https://lesecologistes.fr/document/3N4JsAEmq6vsx42IITGNZa/vdef-programme-1.pdf"
       impots:
         niveau: fort
-        note: "TVA verte (livret Santé environnementale), hausse de la taxe sur les surfaces commerciales (livret Solitude), taxe sur les résidences secondaires (livret Montagne), défiscalisation des pensions alimentaires (livret Enfance) ; plus de 4 énoncés ; source bloquée non lue : https://marinetondelier.fr/le-programme"
+        note: "TVA verte (livret Santé environnementale), hausse de la taxe sur les surfaces commerciales (livret Solitude), taxe sur les résidences secondaires (livret Montagne), défiscalisation des pensions alimentaires (livret Enfance) ; plus de 4 énoncés ; source bloquée non lue : https://lesecologistes.fr/document/3N4JsAEmq6vsx42IITGNZa/vdef-programme-1.pdf"
       europe-et-monde:
         niveau: fort
-        note: "carnet de doctrine « L’Europe comme puissance écologique » (32 pages, plus de 70 engagements : diplomatie, commerce, défense européenne) ; source bloquée non lue : https://marinetondelier.fr/le-programme"
+        note: "carnet de doctrine « L’Europe comme puissance écologique » (32 pages, plus de 70 engagements : diplomatie, commerce, défense européenne) ; source bloquée non lue : https://lesecologistes.fr/document/3N4JsAEmq6vsx42IITGNZa/vdef-programme-1.pdf"
       institutions:
         niveau: partiel
-        note: "livret « Enfance » : Assemblée nationale des enfants, enfance « priorité institutionnelle » ; livret « Santé reproductive » : droit inscrit dans la Constitution rendu accessible ; 2 énoncés ; source bloquée non lue : https://marinetondelier.fr/le-programme"
+        note: "livret « Enfance » : Assemblée nationale des enfants, enfance « priorité institutionnelle » ; livret « Santé reproductive » : droit inscrit dans la Constitution rendu accessible ; 2 énoncés ; source bloquée non lue : https://lesecologistes.fr/document/3N4JsAEmq6vsx42IITGNZa/vdef-programme-1.pdf"
   - id: eric-zemmour
     acces: ok
     urls_bloquees: []
@@ -1772,7 +1774,10 @@ pilote:
     - institutions
     - impots
     - retraites
-  themes: []
+  themes:
+    - sante
+    - travail
+    - europe-et-monde
   livres: []
   derogation: null
   relecture_ouverte: false
