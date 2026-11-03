@@ -1,0 +1,22 @@
+{
+  "piege": "même trou d'équité en mode preview : simple avertissement",
+  "regle": "REGLE-08",
+  "mode": "preview",
+  "remplacer": [
+    {
+      "fichier": "src/content/couverture/logement.yaml",
+      "de": "  - candidat: jean-imaginaire\n    etat: programme_non_publie\n    verifie_le: 2026-10-21\n    verifie_par: Erwan Henry\n",
+      "par": ""
+    }
+  ],
+  "supprimer": [],
+  "attendu": [
+    {
+      "code": "EQUITE_CANDIDAT_MANQUANT",
+      "severite": "warning",
+      "fichier": "src/content/themes/logement.yaml",
+      "pointer": "/statut_relecture",
+      "ligne": 11
+    }
+  ]
+}

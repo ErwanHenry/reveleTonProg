@@ -1,5 +1,6 @@
 import { regleArchives, regleSources } from './archives.ts';
 import { regleChamps } from './champs.ts';
+import { regleEquite } from './equite.ts';
 import { regleIdsVerrouilles, regleReferences } from './references.ts';
 import type { Famille } from './types.ts';
 
@@ -8,5 +9,5 @@ export const famille: Famille = {
   id: 'corpus',
   fichier: [regleChamps],
   entree: [],
-  corpus: [regleSources, regleArchives, regleReferences, regleIdsVerrouilles],
+  corpus: [regleSources, regleArchives, regleReferences, regleIdsVerrouilles, regleEquite],
 };
