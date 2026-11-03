@@ -24,7 +24,8 @@ export default defineConfig({
     timeout: 15_000,
   },
   projects: [
-    { name: 'avec-js', testIgnore: /sans-js/ },
+    { name: 'avec-js', testIgnore: /sans-js|4g/ },
+    { name: '4g', testMatch: /4g\.spec\.ts/, use: { ...devices['Desktop Chrome'] } },
     { name: 'sans-js', testMatch: /sans-js\.spec\.ts/, use: { javaScriptEnabled: false } },
   ],
 });
