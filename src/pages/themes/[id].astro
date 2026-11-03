@@ -22,6 +22,7 @@ const n = vue.autresPersonnalites;
   titre={`${theme.nom} : positions des candidats, reveleTonProg`}
   description={`Ce que chaque candidat propose sur le thème ${theme.nom}, avec sa source.`}
   miseAJour={vue.miseAJour}
+  avecSignalement={mesuresAffichees.length > 0}
 >
   <main id="contenu" class="conteneur" data-theme={id}>
     <nav class="fil" aria-label="Fil d'Ariane">

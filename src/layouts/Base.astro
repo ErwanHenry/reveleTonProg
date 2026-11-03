@@ -7,9 +7,11 @@ interface Props {
   description: string;
   /** Date ISO maximale des contenus affichés sur la page ; `undefined` si rien n'est publié. */
   miseAJour: string | undefined;
+  /** Vrai si la page affiche au moins une mesure : ajoute la phrase de signalement avant le pied de page. */
+  avecSignalement?: boolean;
 }
 
-const { titre, description, miseAJour } = Astro.props;
+const { titre, description, miseAJour, avecSignalement = false } = Astro.props;
 const corpus = await getCorpus();
 ---
 <!doctype html>
@@ -29,6 +31,11 @@ const corpus = await getCorpus();
       </div>
     </header>
     <slot />
+    {avecSignalement && (
+      <div class="conteneur">
+        <p class="signalement-intro">Vous avez repéré une erreur ? Signalez-la : l'identifiant de la mesure est déjà indiqué dans le message.</p>
+      </div>
+    )}
     <footer class="pied">
       <div class="conteneur">
         {miseAJour === undefined ? (
