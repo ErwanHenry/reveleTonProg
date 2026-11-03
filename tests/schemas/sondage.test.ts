@@ -36,6 +36,8 @@ describe('sondage : cas invalides', () => {
     ['terrain.fin manquant', swap('  fin: 2026-10-03\n', ''), [{ code: 'SCHEMA_REQUIRED', pointer: '/terrain' }]],
     ['champ inconnu bloc', `${FIXTURE}bloc: gauche\n`, [{ code: 'SCHEMA_UNEVALUATEDPROPERTIES', pointer: '/bloc' }]],
     ['version_schema 2', swap('version_schema: 1', 'version_schema: 2'), [{ code: 'SCHEMA_CONST', pointer: '/version_schema' }]],
+    ['publié sans relecteur (WR-04)', swap('statut_relecture: brouillon', 'statut_relecture: publie\ndate_relecture: 2026-10-06'), [{ code: 'SCHEMA_REQUIRED', pointer: '' }]],
+    ['relu sans date_relecture (WR-04)', swap('statut_relecture: brouillon', 'statut_relecture: relu\nrelecteur: Erwan Henry'), [{ code: 'SCHEMA_REQUIRED', pointer: '' }]],
   ];
   for (const [name, text, expected] of bad) it(name, () => expectErrors('sondage', text, expected));
 });

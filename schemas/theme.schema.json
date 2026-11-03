@@ -28,5 +28,9 @@
     "statut_relecture": { "$ref": "urn:reveletonprog:schema:common#/$defs/statutRelecture" },
     "relecteur":        { "$ref": "urn:reveletonprog:schema:common#/$defs/texte" },
     "date_relecture":   { "$ref": "urn:reveletonprog:schema:common#/$defs/dateComplete" }
-  }
+  },
+  "allOf": [
+    { "if": { "properties": { "statut_relecture": { "enum": ["relu", "publie"] } }, "required": ["statut_relecture"] },
+      "then": { "required": ["relecteur", "date_relecture"], "properties": { "relecteur": true, "date_relecture": true } } }
+  ]
 }

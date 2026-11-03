@@ -50,6 +50,8 @@ describe('theme : cas invalides', () => {
     ['champ inconnu', `${BASE}couleur: bleu\n`, [{ code: 'SCHEMA_UNEVALUATEDPROPERTIES', pointer: '/couleur' }]],
     ['mots_cles en double', swap('  - habitat\n', '  - loyer\n'), [{ code: 'SCHEMA_UNIQUEITEMS', pointer: '/mots_cles' }]],
     ['statut_relecture absent', swap('statut_relecture: publie\n', ''), [{ code: 'SCHEMA_REQUIRED', pointer: '' }]],
+    ['publié sans relecteur (WR-04)', swap('relecteur: Erwan Henry\n', ''), [{ code: 'SCHEMA_REQUIRED', pointer: '' }]],
+    ['relu sans date_relecture (WR-04)', swap('date_relecture: 2026-10-21\n', '').replace('statut_relecture: publie', 'statut_relecture: relu'), [{ code: 'SCHEMA_REQUIRED', pointer: '' }]],
   ];
   for (const [name, text, expected] of bad) it(name, () => expectErrors('theme', text, expected));
 });
