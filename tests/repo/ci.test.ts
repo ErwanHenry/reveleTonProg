@@ -21,7 +21,7 @@ type Workflow = {
   on: Record<string, unknown>;
   permissions: Record<string, string>;
   env: Record<string, string>;
-  jobs: Record<string, Job>;
+  jobs: { verifier: Job; secrets: Job } & Record<string, Job>;
 };
 type Update = {
   'package-ecosystem': string;
@@ -97,8 +97,8 @@ describe('ci.yml : actions épinglées', () => {
   it('setup-node lit .nvmrc et met npm en cache', () => {
     const node = allSteps().filter((s) => s.uses?.startsWith('actions/setup-node@'));
     assert.equal(node.length, 1);
-    assert.equal(node[0].with?.['node-version-file'], '.nvmrc');
-    assert.equal(node[0].with?.cache, 'npm');
+    assert.equal(node[0]?.with?.['node-version-file'], '.nvmrc');
+    assert.equal(node[0]?.with?.cache, 'npm');
   });
 });
 
@@ -174,7 +174,7 @@ describe('dependabot.yml', () => {
     for (const u of dependabot.updates) {
       assert.equal(u.schedule.interval, 'weekly');
       assert.equal(u.schedule.timezone, 'Europe/Paris');
-      assert.ok(u.cooldown['default-days'] >= 1);
+      assert.ok((u.cooldown['default-days'] ?? 0) >= 1);
     }
   });
 

@@ -73,7 +73,7 @@ describe('docs/ARCHITECTURE.md', () => {
   it('a un diagramme Mermaid avec content-core', () => {
     const block = architecture.match(/```mermaid\n([\s\S]*?)```/);
     assert.ok(block, 'bloc mermaid absent');
-    assert.ok(block[1].includes('content-core'));
+    assert.ok(block[1]?.includes('content-core'));
   });
 
   it('a exactement un ADR par décision D-1 à D-13', () => {
