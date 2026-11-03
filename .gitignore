@@ -1,0 +1,44 @@
+# Secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+secrets/
+
+# Dépendances
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Build
+dist/
+build/
+.next/
+
+# Backups locaux
+*.dump
+*.sql.gz
+backups/
+
+# n8n
+.n8n/
+n8n_data/
+
+# Astro
+.astro/
