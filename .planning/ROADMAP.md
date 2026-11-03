@@ -194,7 +194,37 @@ Plans:
   4. Le niveau Aîné affiche une police ≥ 20 px, des cibles ≥ 44 px et le bloc « ce qui me concerne ». Au niveau Enfant, les mots soulignés ouvrent une définition au clic ou au focus, et la liste « Mots expliqués » est disponible.
   5. La build `RTP_MODE=preview` affiche les brouillons avec le badge « brouillon, non relu ». La build production n'en contient aucun. Le contrôle post-build fait échouer la CI dans plusieurs cas : une page au-delà de 500 Ko bruts ou 100 Ko gzip, une ressource tierce, des mots collés, une mesure sans source datée, un nombre de cellules différent du nombre de candidats.
 
-**Plans**: TBD
+**Plans**: 9 plans (6 waves)
+
+Plans:
+**Wave 1**
+
+- [ ] 04-01-PLAN.md — Corpus fictif `corpus-m1` en surcouche de `corpus-valide` (renonce, pressenti, statut non relu, accents et particule, brouillon piège, thème relu, marqueurs de glossaire) et son test de scénario (wave 1)
+- [ ] 04-02-PLAN.md — Contrôle post-build `check-dist` (bibliothèque + CLI, un test d'injection de faute par règle) et harnais unique de build `tests/dist/site.test.ts` avec cas `*.cas.ts` (remplace `skeleton.test.ts`) (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 04-03-PLAN.md — Page thème : vue-modèle pure + `getCorpus()`, cartes à structure fixe, états vides typés et datés, ligne de couverture, « Ne se présentent pas », filtre production, date de mise à jour, CSS de base, assets externes hachés (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 04-04-PLAN.md — Source primaire complète (Wayback, extrait sha256), liens « signaler une erreur », `config/site.yml`, badges et bannière de prévisualisation, noindex et robots.txt (wave 3)
+- [ ] 04-05-PLAN.md — Bascule 4 niveaux sans JS (radios + `:has()`), `niveau.js` (mémorisation `rtp:niveau`), Gros caractères et bloc « Ce qui me concerne » (wave 3)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 04-06-PLAN.md — Pages candidat (statut daté et sourcé, parti revendiqué), accueil, `/themes/`, `/candidats/`, navigation et liens croisés (wave 4)
+- [ ] 04-07-PLAN.md — Niveau Enfant : mots expliqués en Popover API, définitions adjacentes, liste « Mots expliqués » et repli (wave 4)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 04-08-PLAN.md — Ordre alphabétique par défaut, ordre aléatoire à la demande (`ordre.js`, Fisher-Yates non biaisé, `rtp:ordre`) (wave 5)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 04-09-PLAN.md — Intégration : `check-dist` en CI, cas croisés, documentation et ADR (dont « taille fixe = structure fixe »), verrou de phase sur les corpus fictifs et réel, vérification humaine de la preview (wave 6)
+
+**Note d'exécution** : les pages sont construites sur la racine explicite `corpus-m1` (jamais la racine par défaut que 03-09 bascule vers `.`). Fichiers partagés avec la Phase 3 : `tests/dist/skeleton.test.ts` (04-02 le supprime), `src/pages/index.astro` (04-06 le remplace), et `package.json`, `tests/repo/scaffold.test.ts`, `.github/workflows/ci.yml`, `tests/repo/ci.test.ts`, `README.md`, `docs/RUNBOOK.md`, `docs/ARCHITECTURE.md`, `tests/repo/docs.test.ts` (04-09) : 04-09 et 03-09 ne s'exécutent jamais en même temps.
 **UI hint**: yes
 **Research flag**: oui. Comportement de `popovertarget` avec les lecteurs d'écran, repli `:has()` sur Safari 15.x, interaction entre le bfcache et la restauration de l'état des formulaires.
 
@@ -252,7 +282,7 @@ Phase 1 ──┬──> Phase 2 (règles) ──────────┐
 | 1. Fondations, schémas v1 et content-core | 7/7 | Complete    | 2026-11-03 |
 | 2. Règles éditoriales et pièges | 7/7 | Complete    | 2026-11-03 |
 | 3. Import data.gouv et corpus pilote | 3/9 | In Progress|  |
-| 4. Référentiel M1 et 4 niveaux de lecture | 0/TBD | Not started | - |
+| 4. Référentiel M1 et 4 niveaux de lecture | 0/9 | Planned | - |
 | 5. Pages institutionnelles, qualité et URL de test | 0/TBD | Not started | - |
 
 ---
