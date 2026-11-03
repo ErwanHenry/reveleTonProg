@@ -1,4 +1,4 @@
-import { DUEL, SOMME_SONDAGE } from './config.ts';
+import { DUEL, FENETRES_BLOCAGE, SOMME_SONDAGE } from './config.ts';
 import { citer } from './types.ts';
 import type { EntryRule, Famille, Finding, LoadedEntry } from './types.ts';
 
@@ -38,10 +38,34 @@ function lireHypothese(brut: unknown): Hypothese {
 const centiemes = (pct: number): number => Math.round(pct * 100);
 const decimale = (centi: number): string => (centi / 100).toFixed(1).replace('.', ',');
 
+/**
+ * Fenêtre de blocage légal contenant cet instant, sinon undefined. `iso` porte son décalage horaire
+ * (le schéma l'impose) : `Date.parse` donne un instant absolu, comparé aux bornes UTC de la config
+ * (début inclus, fin exclue). Aucun constructeur de date en heure locale : le verdict ne dépend pas
+ * du fuseau du processus.
+ */
+export function fenetreDe(iso: string): (typeof FENETRES_BLOCAGE)[number] | undefined {
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) return undefined;
+  return FENETRES_BLOCAGE.find((w) => t >= w.debut && t < w.fin);
+}
+
 const sondage: EntryRule = {
   id: 'sondage',
   run(e: LoadedEntry): Finding[] {
     const out: Finding[] = [];
+
+    if (typeof e.data.date_publication === 'string') {
+      const w = fenetreDe(e.data.date_publication);
+      if (w) {
+        out.push({
+          code: 'SONDAGE_FENETRE_BLOCAGE',
+          pointer: '/date_publication',
+          message: `publication d'un sondage interdite ${w.libelle} (blocage légal, loi 77-808 art. 11)`,
+        });
+      }
+    }
+
     const hypotheses = Array.isArray(e.data.hypotheses) ? e.data.hypotheses : [];
     const tour = e.data.tour;
 
