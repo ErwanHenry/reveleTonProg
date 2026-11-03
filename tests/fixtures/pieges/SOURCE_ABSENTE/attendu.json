@@ -1,0 +1,22 @@
+{
+  "piege": "§12 : une mesure sans source",
+  "regle": "REGLE-01",
+  "mode": "production",
+  "remplacer": [
+    {
+      "fichier": "src/content/mesures/marie-fictive/encadrement-loyers.yaml",
+      "de": "source: marie-fictive-programme\n",
+      "par": ""
+    }
+  ],
+  "supprimer": [],
+  "attendu": [
+    {
+      "code": "SOURCE_ABSENTE",
+      "severite": "error",
+      "fichier": "src/content/mesures/marie-fictive/encadrement-loyers.yaml",
+      "pointer": "",
+      "ligne": 7
+    }
+  ]
+}
