@@ -86,7 +86,6 @@ None yet.
 
 ### Blockers/Concerns
 
-- Node local en v22.23.3 : mise à niveau vers Node 24 requise avant la Phase 1 (Astro 7 exige >=24.12 côté projet)
 - Churn des statuts autour du 10-13 déc. 2026 : `statuts[]` (Phase 1) et import par diff (Phase 3) doivent exister avant
 - Jalon spec : lots 1 à 3 avant le 2026-12-15 ; le Lot 3 (hébergement) est en v1.1 et dépend du domaine et de la décision VPS
 - VPS Hetzner saturé (RAM 3,7 Go, disque 90 %) : décision d'Erwan attendue pendant le Lot 2 (sans impact sur v1.0, preview = artefact CI ou locale)
