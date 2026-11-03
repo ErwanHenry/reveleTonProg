@@ -4,8 +4,8 @@ milestone: v1.1
 milestone_name: milestone
 status: executing
 stopped_at: Completed 01-01-PLAN.md
-last_updated: "2026-11-03T14:50:17.301Z"
-last_activity: 2026-11-03 -- Phase 2 planning complete
+last_updated: "2026-11-03T14:50:29.335Z"
+last_activity: 2026-11-03 -- Phase 2 execution started
 progress:
   total_phases: 5
   completed_phases: 1
@@ -21,15 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-11-03)
 
 **Core value:** Un visiteur choisit un thème et lit, en moins de 3 minutes, la position de chaque candidat au niveau de détail qui lui convient — chaque mesure affichée étant rattachée à une source primaire datée, sans jamais prendre parti.
-**Current focus:** Phase 2 — règles éditoriales et pièges
+**Current focus:** Phase 2 — Règles éditoriales et pièges
 **Milestone:** v1.0 — Lots 1 & 2 (squelette, données, référentiel M1)
 
 ## Current Position
 
-Phase: 2
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-11-03 -- Phase 2 planning complete
+Phase: 2 (Règles éditoriales et pièges) — EXECUTING
+Plan: 1 of 7
+Status: Executing Phase 2
+Last activity: 2026-11-03 -- Phase 2 execution started
 
 Progress: [██████████] 100%
 
