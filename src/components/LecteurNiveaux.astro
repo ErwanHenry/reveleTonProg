@@ -1,11 +1,13 @@
 ---
 // Enveloppe de lecture d'une page : sélecteur de niveau (4 radios natifs), script de mémorisation,
 // bloc « Ce qui me concerne », contenu de la page (slot par défaut) et rappel du niveau.
-// Le plan 04-07 ajoutera ici la liste « Mots expliqués » : les pages n'ont pas à changer.
+// La liste « Mots expliqués » (mots du glossaire des textes enfant de la page) suit le contenu : les pages n'ont rien à passer.
 import '../styles/niveaux.css';
 import niveauUrl from '../scripts/niveau.js?url';
 import ConcerneAine from './ConcerneAine.astro';
-import { LIBELLES_NIVEAUX, NIVEAUX } from '../lib/corpus/index.ts';
+import MotsExpliques from './MotsExpliques.astro';
+import { termesDe } from '../lib/corpus/enfant.ts';
+import { LIBELLES_NIVEAUX, NIVEAUX, getCorpus } from '../lib/corpus/index.ts';
 import type { Contexte, VueMesure } from '../lib/corpus/index.ts';
 
 interface Props {
@@ -14,6 +16,7 @@ interface Props {
 }
 
 const { contexte, mesures } = Astro.props;
+const corpus = await getCorpus();
 ---
 <div class="lecteur" data-contexte={contexte.type} data-nb-mesures={mesures.length}>
   <fieldset class="niveaux" id="niveaux" aria-describedby="niveaux-aide">
@@ -32,6 +35,7 @@ const { contexte, mesures } = Astro.props;
   <div class="lecteur-contenu">
     <ConcerneAine contexte={contexte} mesures={mesures} />
     <slot />
+    <MotsExpliques termes={termesDe(mesures, corpus.glossaire)} />
     <p class="rappel-niveau"><a href="#niveaux">Changer le niveau de lecture</a></p>
   </div>
 </div>

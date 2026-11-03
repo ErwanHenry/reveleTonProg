@@ -272,3 +272,93 @@ describe('styles : niveaux de lecture', () => {
     for (const x of reglesNiveaux) assert.ok(!x.declarations.some((d) => d.prop === 'order'), `${x.selecteur} { order }`);
   });
 });
+
+// ---------------------------------------------------------------------------
+// enfant.css : mots du glossaire en popover, liste « Mots expliqués » (plan 04-07)
+// ---------------------------------------------------------------------------
+
+const ENFANT_CSS = sourcesCss.find((s) => s.fichier === 'enfant.css')?.texte ?? '';
+const reglesEnfant = regles.filter((r) => r.fichier === 'enfant.css');
+const selEnfant = (sel: string): Regle | undefined => reglesEnfant.find((x) => x.selecteur.split(/\s*,\s*/).includes(sel));
+
+describe('styles : glossaire enfant', () => {
+  it('enfant.css existe', () => {
+    assert.ok(ENFANT_CSS !== '', 'src/styles/enfant.css absent');
+  });
+
+  it('.terme : pointillé de 2px, décalé de 4px, zone de 24 px (padding-block: 0.25rem)', () => {
+    const r = selEnfant('.terme');
+    assert.ok(r, 'règle .terme absente');
+    assert.match(decl(r, 'text-decoration') ?? '', /underline dotted/);
+    assert.equal(decl(r, 'text-decoration-thickness'), '2px');
+    assert.equal(decl(r, 'text-underline-offset'), '4px');
+    assert.equal(decl(r, 'padding-block'), '0.25rem');
+  });
+
+  it('.terme::after : « ? » ASCII dessiné en CSS, déclaration simple puis variante à texte alternatif vide', () => {
+    const r = selEnfant('.terme::after');
+    assert.ok(r, 'règle .terme::after absente');
+    const contenus = r.declarations.filter((d) => d.prop === 'content').map((d) => d.valeur);
+    assert.deepEqual(contenus, ['"?"', '"?" / ""']);
+    assert.equal(decl(r, 'font-size'), '0.75em');
+  });
+
+  it('aucune valeur `content:` ne contient de caractère hors ASCII (ni ⓘ, ni emoji)', () => {
+    for (const { fichier, texte } of sourcesCss) {
+      for (const m of texte.matchAll(/content\s*:\s*([^;}]*)/g)) {
+        assert.ok(/^[\x20-\x7E]*$/.test(m[1] ?? ''), `${fichier} : content: ${m[1]}`);
+      }
+    }
+  });
+
+  it("l'état ouvert du terme repose sur :popover-open (aria-expanded n'est pas reflété dans le DOM)", () => {
+    const r = reglesEnfant.find((x) => /\.terme:has\(\+ \.definition:popover-open\)/.test(x.selecteur));
+    assert.ok(r, 'règle d’état ouvert absente');
+    assert.equal(decl(r, 'background'), 'var(--panneau)');
+  });
+
+  it('.definition : boîte du UI-SPEC, sans display (la feuille UA gère l’ouverture), fond de page assombri', () => {
+    const r = selEnfant('.definition');
+    assert.ok(r, 'règle .definition absente');
+    assert.equal(decl(r, 'background'), 'var(--carte)');
+    assert.equal(decl(r, 'border'), '2px solid var(--encre)');
+    assert.equal(decl(r, 'border-radius'), '4px');
+    assert.equal(decl(r, 'padding'), '1rem');
+    assert.equal(decl(r, 'max-width'), 'min(calc(100vw - 2rem), 24rem)');
+    assert.equal(decl(r, 'max-height'), '80vh');
+    assert.equal(decl(r, 'overflow'), 'auto');
+    assert.equal(decl(r, 'font-size'), 'var(--t-corps)');
+    assert.ok(!r.declarations.some((d) => d.prop === 'display'), '.definition ne fixe pas display');
+    assert.ok(selEnfant('.definition::backdrop'), '::backdrop absent');
+  });
+
+  it('repli : @supports not selector(:popover-open) masque .definition et montre l’aide', () => {
+    assert.match(ENFANT_CSS, /@supports not selector\(:popover-open\)/);
+    const bloc = ENFANT_CSS.slice(ENFANT_CSS.indexOf('@supports not selector(:popover-open)'));
+    const internes = [...bloc.matchAll(/([^{}]+)\{([^{}]*)\}/g)].slice(0, 4).map((m) => ({
+      sel: (m[1] ?? '').trim().replace(/\s+/g, ' '),
+      corps: m[2] ?? '',
+    }));
+    assert.ok(internes.some((b) => b.sel === '.definition' && /display:\s*none/.test(b.corps)), '.definition masqué');
+    assert.ok(internes.some((b) => b.sel === '.terme::after' && /content:\s*none/.test(b.corps)), 'marqueur retiré');
+    assert.ok(internes.some((b) => b.sel === '.terme' && /text-decoration:\s*none/.test(b.corps)), 'terme sans soulignement');
+    assert.ok(internes.some((b) => b.sel === '.mots-aide-repli' && /display:\s*block/.test(b.corps)), 'aide affichée');
+    assert.equal(decl(selEnfant('.mots-aide-repli'), 'display'), 'none', 'aide masquée par défaut');
+  });
+
+  it('« Mots expliqués » et son aide masqués hors du niveau enfant, sans casser les navigateurs sans :has()', () => {
+    const r = selEnfant('.lecteur:not(:has(> .niveaux #niv-enfant:checked)) .mots-expliques');
+    assert.ok(r, 'règle de masquage absente');
+    assert.equal(decl(r, 'display'), 'none');
+    const aide = selEnfant('.lecteur:not(:has(> .niveaux #niv-enfant:checked)) .mots-aide-repli');
+    assert.ok(aide, 'l’aide de repli suit le même interrupteur');
+    assert.equal(decl(aide, 'display'), 'none');
+  });
+
+  it('summary de 44 px minimum et contraste forcé', () => {
+    const r = selEnfant('details.mots-expliques summary');
+    assert.ok(r, 'règle summary absente');
+    assert.equal(decl(r, 'min-height'), '2.75rem');
+    assert.match(ENFANT_CSS, /@media \(forced-colors: active\)/);
+  });
+});
