@@ -1,6 +1,7 @@
 ---
 import Base from '../../layouts/Base.astro';
 import BadgeBrouillon from '../../components/BadgeBrouillon.astro';
+import OrdreCandidats from '../../components/OrdreCandidats.astro';
 import { BADGES, LIBELLES_STATUT, formatDate, getCorpus } from '../../lib/corpus/index.ts';
 
 const corpus = await getCorpus();
@@ -26,6 +27,7 @@ const corpus = await getCorpus();
     ) : (
       <>
         <p>Toutes les personnalités du jeu de données, dans l'ordre choisi ci-dessus. Le statut est celui de la dernière source consultée.</p>
+        <OrdreCandidats />
         <ul class="lignes" data-ordonnable>
           {corpus.candidats.map((c) => {
             const statut = c.statutAffiche;

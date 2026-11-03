@@ -3,6 +3,7 @@ import Base from '../../layouts/Base.astro';
 import BadgeBrouillon from '../../components/BadgeBrouillon.astro';
 import Cellule from '../../components/Cellule.astro';
 import LecteurNiveaux from '../../components/LecteurNiveaux.astro';
+import OrdreCandidats from '../../components/OrdreCandidats.astro';
 import { LIBELLES_MOTIF, formatDate, getCorpus, phraseCouverture } from '../../lib/corpus/index.ts';
 import type { VueMesure } from '../../lib/corpus/index.ts';
 
@@ -40,6 +41,7 @@ const n = vue.autresPersonnalites;
     <p>Voici la position de chaque candidat sur ce thème. Cliquez sur un nom pour voir toutes ses mesures.</p>
     <LecteurNiveaux contexte={{ type: 'theme', id }} mesures={mesuresAffichees}>
       <p class="couverture">{phraseCouverture(vue.couverture)}</p>
+      <OrdreCandidats />
       <h2>Les candidats</h2>
       {vue.cellules.length === 0 ? (
         <>
