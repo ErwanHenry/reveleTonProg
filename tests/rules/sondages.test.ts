@@ -1,11 +1,15 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { LineCounter, parseDocument } from 'yaml';
-import { famille } from '../../src/lib/content-core/rules/sondages.ts';
+import { FENETRES_BLOCAGE } from '../../src/lib/content-core/rules/config.ts';
+import { famille, fenetreDe } from '../../src/lib/content-core/rules/sondages.ts';
 import type { Finding, LoadedEntry, RuleContext } from '../../src/lib/content-core/rules/types.ts';
 import { BASE_CORPUS } from '../helpers/overlay.ts';
+import { REPO_ROOT } from '../helpers/validate-yaml.ts';
 
 const FIXTURE = readFileSync(path.join(BASE_CORPUS, 'src', 'content', 'sondages', 'sondage-fictif-1.yaml'), 'utf8');
 
@@ -101,5 +105,95 @@ describe('sondages : doublon de candidat', () => {
     const f = regle(texte);
     assert.deepEqual(codes(f), ['SONDAGE_CANDIDAT_DOUBLON']);
     assert.equal(f[0]?.pointer, '/hypotheses/0/scores/1');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Fenêtres de blocage légal (heure de Paris), indépendantes du fuseau du processus
+// ---------------------------------------------------------------------------
+
+const DANS_FENETRE = [
+  '2027-04-17T00:00:00+02:00',
+  '2027-04-16T22:00:00Z',
+  '2027-04-17T00:00:00+01:00',
+  '2027-04-18T19:59:59+02:00',
+  '2027-05-01T00:00:00+02:00',
+  '2027-05-02T19:59:59+02:00',
+  '2027-04-17T10:00:00-04:00',
+];
+const HORS_FENETRE = [
+  '2027-04-16T23:59:59+02:00',
+  '2027-04-18T20:00:00+02:00',
+  '2027-04-18T18:00:00Z',
+  '2027-04-30T23:59:59+02:00',
+  '2027-05-02T20:00:00+02:00',
+  '2026-10-05T08:00:00+02:00',
+];
+
+describe('sondages : fenetreDe', () => {
+  for (const iso of DANS_FENETRE) {
+    it(`${iso} est dans une fenêtre de blocage`, () => {
+      assert.ok(fenetreDe(iso), `${iso} devrait être bloqué`);
+    });
+  }
+  for (const iso of HORS_FENETRE) {
+    it(`${iso} est hors fenêtre`, () => {
+      assert.equal(fenetreDe(iso), undefined);
+    });
+  }
+  it('une date illisible n’est dans aucune fenêtre (le schéma la refuse déjà)', () => {
+    assert.equal(fenetreDe('pas une date'), undefined);
+  });
+
+  it('chaque fenêtre commence un samedi à 00:00 et finit un dimanche à 20:00, heure de Paris', () => {
+    const parts = (t: number): Record<string, string> => {
+      const fmt = new Intl.DateTimeFormat('fr-FR', {
+        timeZone: 'Europe/Paris',
+        weekday: 'long',
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23',
+      });
+      return Object.fromEntries(fmt.formatToParts(new Date(t)).map((p) => [p.type, p.value]));
+    };
+    assert.equal(FENETRES_BLOCAGE.length, 2);
+    for (const w of FENETRES_BLOCAGE) {
+      const d = parts(w.debut);
+      const f = parts(w.fin);
+      assert.deepEqual([d.weekday, d.hour, d.minute], ['samedi', '00', '00'], w.libelle);
+      assert.deepEqual([f.weekday, f.hour, f.minute], ['dimanche', '20', '00'], w.libelle);
+    }
+  });
+
+  it('même verdict sous cinq fuseaux de processus', () => {
+    const url = pathToFileURL(path.join(REPO_ROOT, 'src', 'lib', 'content-core', 'rules', 'sondages.ts')).href;
+    const toutes = [...DANS_FENETRE, ...HORS_FENETRE];
+    const script = `import { fenetreDe } from ${JSON.stringify(url)};
+const out = ${JSON.stringify(toutes)}.map((d) => fenetreDe(d) !== undefined);
+console.log(JSON.stringify(out));`;
+    const attendu = toutes.map((iso) => DANS_FENETRE.includes(iso));
+    for (const TZ of ['UTC', 'Europe/Paris', 'America/Los_Angeles', 'Pacific/Auckland', 'Asia/Tokyo']) {
+      const r = spawnSync(process.execPath, ['--input-type=module', '-e', script], { env: { ...process.env, TZ }, encoding: 'utf8' });
+      assert.equal(r.status, 0, `TZ=${TZ} : ${r.stderr}`);
+      assert.deepEqual(JSON.parse(r.stdout), attendu, `TZ=${TZ}`);
+    }
+  });
+});
+
+describe('sondages : règle de fenêtre', () => {
+  for (const statut of ['brouillon', 'relu\nrelecteur: Erwan Henry\ndate_relecture: 2026-10-06']) {
+    it(`date_publication dans une fenêtre : SONDAGE_FENETRE_BLOCAGE (statut ${statut.split('\n')[0]})`, () => {
+      const texte = swap('date_publication: 2026-10-05T08:00:00+02:00', 'date_publication: 2027-05-01T12:00:00+02:00').replace(
+        'statut_relecture: brouillon',
+        `statut_relecture: ${statut}`,
+      );
+      const f = regle(texte);
+      assert.deepEqual(codes(f), ['SONDAGE_FENETRE_BLOCAGE']);
+      assert.equal(f[0]?.pointer, '/date_publication');
+      assert.match(f[0]?.message ?? '', /1er mai 2027/);
+    });
+  }
+  it('une date hors fenêtre n’est pas signalée', () => {
+    assert.deepEqual(regle(swap('date_publication: 2026-10-05T08:00:00+02:00', 'date_publication: 2027-04-16T23:59:59+02:00')), []);
   });
 });
