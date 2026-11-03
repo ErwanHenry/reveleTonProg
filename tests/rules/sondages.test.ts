@@ -197,3 +197,24 @@ describe('sondages : règle de fenêtre', () => {
     assert.deepEqual(regle(swap('date_publication: 2026-10-05T08:00:00+02:00', 'date_publication: 2027-04-16T23:59:59+02:00')), []);
   });
 });
+
+describe('sondages : la règle ne vaut que pour la collection sondages (CR-02)', () => {
+  for (const date of ['2027-04-17', '2027-04-18', '2027-05-01', '2027-05-02']) {
+    it(`une source datée ${date} n’est pas signalée`, () => {
+      const lc = new LineCounter();
+      const doc = parseDocument(`id: source-fictive\ndate_publication: ${date}\n`, { schema: 'core', lineCounter: lc });
+      const entree = {
+        collection: 'sources',
+        id: 'source-fictive',
+        file: '/tmp/source-fictive.yaml',
+        data: doc.toJS() as Record<string, unknown>,
+        doc,
+        lc,
+      } as LoadedEntry;
+      const ctx = { mode: 'production', contentRoot: '/tmp', corpus: undefined, cache: new Map() } as unknown as RuleContext;
+      const r = famille.entree.find((x) => x.id === 'sondage');
+      assert.ok(r);
+      assert.deepEqual(r.run(entree, ctx), []);
+    });
+  }
+});

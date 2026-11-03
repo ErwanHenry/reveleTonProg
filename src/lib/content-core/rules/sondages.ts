@@ -53,6 +53,9 @@ export function fenetreDe(iso: string): (typeof FENETRES_BLOCAGE)[number] | unde
 const sondage: EntryRule = {
   id: 'sondage',
   run(e: LoadedEntry): Finding[] {
+    // CR-02 : la règle ne vaut que pour les sondages ; une source (date_publication) ou toute
+    // autre collection n'est pas un sondage publié.
+    if (e.collection !== 'sondages') return [];
     const out: Finding[] = [];
 
     if (typeof e.data.date_publication === 'string') {
