@@ -134,12 +134,65 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
+| FOND-01 | Phase 1 | Pending |
+| FOND-02 | Phase 1 | Pending |
+| FOND-03 | Phase 1 | Pending |
+| FOND-04 | Phase 1 | Pending |
+| FOND-05 | Phase 1 | Pending |
+| DATA-01 | Phase 1 | Pending |
+| DATA-02 | Phase 1 | Pending |
+| DATA-03 | Phase 1 | Pending |
+| DATA-04 | Phase 1 | Pending |
+| DATA-05 | Phase 1 | Pending |
+| DATA-06 | Phase 1 | Pending |
+| DATA-07 | Phase 1 | Pending |
+| DATA-08 | Phase 1 | Pending |
+| REGLE-01 | Phase 2 | Pending |
+| REGLE-02 | Phase 2 | Pending |
+| REGLE-03 | Phase 2 | Pending |
+| REGLE-04 | Phase 2 | Pending |
+| REGLE-05 | Phase 2 | Pending |
+| REGLE-06 | Phase 2 | Pending |
+| REGLE-07 | Phase 2 | Pending |
+| REGLE-08 | Phase 2 | Pending |
+| REGLE-09 | Phase 2 | Pending |
+| REGLE-10 | Phase 2 | Pending |
+| REGLE-11 | Phase 2 | Pending |
+| REGLE-12 | Phase 2 | Pending |
+| CONT-01 | Phase 3 | Pending |
+| CONT-02 | Phase 3 | Pending |
+| CONT-03 | Phase 3 | Pending |
+| CONT-04 | Phase 3 | Pending |
+| CONT-05 | Phase 3 | Pending |
+| CONT-06 | Phase 3 | Pending |
+| M1-01 | Phase 4 | Pending |
+| M1-02 | Phase 4 | Pending |
+| M1-03 | Phase 4 | Pending |
+| M1-04 | Phase 4 | Pending |
+| M1-05 | Phase 4 | Pending |
+| M1-06 | Phase 4 | Pending |
+| M1-07 | Phase 4 | Pending |
+| M1-08 | Phase 4 | Pending |
+| M1-09 | Phase 4 | Pending |
+| M1-10 | Phase 4 | Pending |
+| M1-11 | Phase 4 | Pending |
+| M1-12 | Phase 4 | Pending |
+| INST-01 | Phase 5 | Pending |
+| INST-02 | Phase 5 | Pending |
+| INST-03 | Phase 5 | Pending |
+| INST-04 | Phase 5 | Pending |
+| QUAL-01 | Phase 4 | Pending |
+| QUAL-02 | Phase 5 | Pending |
+| QUAL-03 | Phase 5 | Pending |
+| QUAL-04 | Phase 5 | Pending |
+| QUAL-05 | Phase 5 | Pending |
+| QUAL-06 | Phase 5 | Pending |
 
 **Coverage:**
 - v1 requirements: 53 total
-- Mapped to phases: 0
-- Unmapped: 53 ⚠️
+- Mapped to phases: 53
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-11-03*
-*Last updated: 2026-11-03 after initialization*
+*Last updated: 2026-11-03 after roadmap creation*
