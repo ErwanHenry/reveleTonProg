@@ -1,0 +1,10 @@
+version_schema: 1
+id: parti-imaginaire
+type: parti
+libelle: Parti Imaginaire
+definition: Le Parti Imaginaire se présente comme un mouvement fictif qui défend, dans ce jeu de données de test, des idées inventées.
+source:
+  type: parti
+  titre: Page de présentation du Parti Imaginaire
+  url: https://parti-imaginaire.exemple.invalid/presentation
+  date_consultation: 2026-10-20

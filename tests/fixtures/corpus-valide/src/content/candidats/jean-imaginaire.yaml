@@ -1,0 +1,19 @@
+version_schema: 1
+id: jean-imaginaire
+prenom: Jean
+nom: Imaginaire
+nom_tri: Imaginaire
+parti: null
+ids_externes:
+  2027etmoi: fictif-002
+statuts:
+  - code: declare
+    date: 2026-10-12
+    source:
+      type: candidat
+      titre: Annonce de candidature (fictive)
+      url: https://jean-imaginaire.exemple.invalid/candidature
+      date_consultation: 2026-10-13
+    statut_relecture: relu
+    relecteur: Erwan Henry
+    date_relecture: 2026-10-14

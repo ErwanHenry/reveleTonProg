@@ -1,0 +1,5 @@
+version_schema: 1
+id: loyer
+type: terme
+libelle: loyer
+definition: Le loyer est la somme d'argent qu'on paie chaque mois pour habiter dans un logement qui appartient à quelqu'un d'autre.
