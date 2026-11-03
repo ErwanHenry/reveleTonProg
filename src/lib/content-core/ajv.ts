@@ -133,6 +133,12 @@ export interface CodeOverride {
   when?: (value: unknown, params: Record<string, unknown>) => boolean;
   code: string;
   message?: (value: unknown, params: Record<string, unknown>) => string;
+  /**
+   * Pointeur JSON servant uniquement au positionnement (préférence « clé ») : une propriété
+   * manquante n'a pas de ligne, on vise alors une propriété voisine toujours présente. Le
+   * diagnostic garde le pointeur d'Ajv. Si l'ancre est absente, le positionnement d'origine s'applique.
+   */
+  anchor?: string;
 }
 
 export const OVERRIDES: CodeOverride[] = [
@@ -144,6 +150,43 @@ export const OVERRIDES: CodeOverride[] = [
     code: 'SCHEMA_VERSION_OBSOLETE',
     message: (value, params) =>
       `version_schema ${String(value)} en retard sur ${String(params.allowedValue)} : lancer \`npm run migrate -- --write\``,
+  },
+  // REGLE-01 : codes métier stables pour « pas de source primaire archivée ». Le piège §12 « une
+  // mesure sans source » doit nommer le problème (SOURCE_ABSENTE) et viser une ligne utile.
+  {
+    schema: 'mesure',
+    keyword: 'required',
+    pointer: /^$/,
+    when: (_value, params) => params.missingProperty === 'source',
+    code: 'SOURCE_ABSENTE',
+    message: () => 'mesure sans source : le champ « source » (identifiant d\'une source primaire archivée) est obligatoire',
+    anchor: '/texte_source',
+  },
+  {
+    schema: 'mesure',
+    keyword: 'required',
+    pointer: /^$/,
+    when: (_value, params) => params.missingProperty === 'texte_source',
+    code: 'TEXTE_SOURCE_ABSENT',
+    message: () => 'mesure sans « texte_source » : la citation de la source primaire est obligatoire',
+    anchor: '/titre',
+  },
+  {
+    schema: 'source',
+    keyword: 'enum',
+    pointer: /^\/type$/,
+    code: 'SOURCE_NON_PRIMAIRE',
+    message: (_value, params) =>
+      `type de source non primaire (seules les sources primaires sont admises : ${(params.allowedValues as unknown[]).map(String).join(', ')})`,
+  },
+  {
+    schema: 'source',
+    keyword: 'required',
+    pointer: /^$/,
+    when: (_value, params) => params.missingProperty === 'archive',
+    code: 'ARCHIVE_ABSENTE',
+    message: () => 'source sans « archive » : un extrait archivé (chemin et empreinte sha256) est obligatoire',
+    anchor: '/url',
   },
 ];
 
@@ -231,17 +274,22 @@ export function validateData(
     let code = e.keyword === 'false schema' ? 'SCHEMA_FALSE' : `SCHEMA_${e.keyword.toUpperCase()}`;
     let message = frenchMessage(e);
     const value = valueAt(data, e.instancePath);
+    let anchor: string | undefined;
     for (const o of OVERRIDES) {
       if (o.keyword !== e.keyword || (o.schema !== undefined && o.schema !== schemaName) || !o.pointer.test(pointer)) continue;
       if (o.when && !o.when(value, params)) continue;
       code = o.code;
       message = o.message ? o.message(value, params) : message;
+      anchor = o.anchor;
       break;
     }
     const key = `${code}|${pointer}|${message}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    const pos = pointerToPos(ctx.doc, ctx.lc, pointer, e.keyword === 'required' ? 'node' : 'key');
+    const pos =
+      anchor !== undefined && valueAt(data, anchor) !== undefined
+        ? pointerToPos(ctx.doc, ctx.lc, anchor, 'key')
+        : pointerToPos(ctx.doc, ctx.lc, pointer, e.keyword === 'required' ? 'node' : 'key');
     out.push({ code, severity: 'error', file: ctx.file, line: pos.line, col: pos.col, pointer, message });
   }
   return out;
