@@ -35,6 +35,41 @@ describe('quoteIn : citations refusées', () => {
   for (const [nom, q] of ko) it(nom, () => assert.equal(quoteIn(q, hay), false, q));
 });
 
+describe('WR-11 : fragments d’une citation à ellipse', () => {
+  const mots = (n: number, p: string): string => Array.from({ length: n }, (_, i) => `${p}${i}`).join(' ');
+  const h = haystack(`alpha beta gamma ${mots(10, 'x')} delta epsilon zeta ${mots(100, 'y')} eta theta iota`);
+
+  it('fragments dans l’ordre et proches : accepté', () => {
+    assert.equal(quoteIn('alpha beta […] delta epsilon', h), true);
+  });
+  it('fragments dans le désordre : refusé', () => {
+    assert.equal(quoteIn('delta epsilon […] alpha beta', h), false);
+  });
+  it('fragments éloignés de plus de 60 mots : refusé', () => {
+    assert.equal(quoteIn('delta epsilon […] eta theta', h), false);
+  });
+  it('écart de 60 mots exactement : accepté', () => {
+    const h60 = haystack(`un deux ${mots(60, 'z')} trois quatre`);
+    assert.equal(quoteIn('un deux […] trois quatre', h60), true);
+    const h61 = haystack(`un deux ${mots(61, 'z')} trois quatre`);
+    assert.equal(quoteIn('un deux […] trois quatre', h61), false);
+  });
+  it('un fragment d’un seul mot dans une citation à ellipse : refusé', () => {
+    assert.equal(quoteIn('alpha beta […] delta […] epsilon zeta', h), false);
+  });
+  it('« 40 000 […] postes […] supprimés » recollé de loin est refusé', () => {
+    const src = haystack('Nous créerons 40 000 emplois. Beaucoup plus loin dans le texte, ces postes seront gardés. Ailleurs, des services supprimés.');
+    assert.equal(quoteIn('40 000 […] postes […] supprimés', src), false);
+  });
+  it('un fragment qui commence où le précédent finit est accepté (espace partagé)', () => {
+    assert.equal(quoteIn('alpha beta […] gamma x0', h), true);
+  });
+  it('le premier fragment peut avoir plusieurs occurrences : la bonne est retenue', () => {
+    const h2 = haystack(`un deux ${mots(80, 'q')} un deux trois quatre`);
+    assert.equal(quoteIn('un deux […] trois quatre', h2), true);
+  });
+});
+
 describe('WR-06 : élisions découpées comme words()', () => {
   const h = haystack("il combat l'extrême droite et l'école, aujourd'hui");
   it('on peut citer le mot sans son élision', () => {

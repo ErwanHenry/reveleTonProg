@@ -1,9 +1,9 @@
-import { CHAMPS_CHIFFRES, CHAMPS_CHIFFRES_AVERTIS, TEXTE_SOURCE_MOTS } from './config.ts';
+import { CHAMPS_CHIFFRES, CHAMPS_CHIFFRES_AVERTIS, FRAGMENTS_CITATION, TEXTE_SOURCE_MOTS } from './config.ts';
 import { lireArchive } from './archives.ts';
 import { champsEditoriaux } from './redaction.ts';
 import { sansMarqueurs } from './text/normalize.ts';
 import { extractNumberWords, extractNumbers } from './text/numbers.ts';
-import { haystack, quoteIn } from './text/verbatim.ts';
+import { aEllipse, haystack, quoteIn } from './text/verbatim.ts';
 import { extractWordNumbers } from './text/word-numbers.ts';
 import { countWords, quoteSpans } from './text/words.ts';
 import { citer } from './types.ts';
@@ -14,6 +14,12 @@ import type { CorpusRule, EntryRule, Famille, Finding, LoadedEntry, RuleContext 
 
 const texteSourceDe = (m: Pick<LoadedEntry, 'data'>): string | undefined =>
   typeof m.data.texte_source === 'string' ? sansMarqueurs(m.data.texte_source) : undefined;
+
+/** Rappel des conditions d'une citation à ellipse, ajouté au message quand elle en contient une. */
+const indiceEllipse = (citation: string): string =>
+  aEllipse(citation)
+    ? ` Avec une ellipse, chaque fragment compte au moins ${FRAGMENTS_CITATION.motsMin} mots, suit le précédent dans l'ordre de la source et en est éloigné de ${FRAGMENTS_CITATION.ecartMax} mots au plus.`
+    : '';
 
 const chiffrageDe = (m: Pick<LoadedEntry, 'data'>): string | undefined => {
   const c = m.data.chiffrage;
@@ -87,7 +93,7 @@ const chiffresCitations: EntryRule = {
         out.push({
           code: 'CITATION_HORS_SOURCE',
           pointer,
-          message: `la citation « ${citer(citation)} » ne figure pas mot pour mot dans texte_source.`,
+          message: `la citation « ${citer(citation)} » ne figure pas mot pour mot dans texte_source.${indiceEllipse(citation)}`,
         });
       }
     }
@@ -144,7 +150,7 @@ const textesArchives: CorpusRule = {
           code: 'TEXTE_SOURCE_HORS_ARCHIVE',
           pointer: '/texte_source',
           file: m.file,
-          message: `texte_source ne figure pas mot pour mot dans l'extrait archivé de la source « ${sourceId} » : « ${citer(ts)} »`,
+          message: `texte_source ne figure pas mot pour mot dans l'extrait archivé de la source « ${sourceId} » : « ${citer(ts)} »${indiceEllipse(ts)}`,
         });
       }
       const ch = chiffrageDe(m);
@@ -153,7 +159,7 @@ const textesArchives: CorpusRule = {
           code: 'CHIFFRAGE_HORS_ARCHIVE',
           pointer: '/chiffrage/texte',
           file: m.file,
-          message: `chiffrage.texte ne figure pas mot pour mot dans l'extrait archivé de la source « ${sourceId} » : « ${citer(ch)} »`,
+          message: `chiffrage.texte ne figure pas mot pour mot dans l'extrait archivé de la source « ${sourceId} » : « ${citer(ch)} »${indiceEllipse(ch)}`,
         });
       }
     }

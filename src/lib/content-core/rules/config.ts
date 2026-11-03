@@ -149,9 +149,17 @@ export const NORMALISATION_CITATIONS: readonly string[] = [
   'La ligature « œ » vaut « oe » et le trait d’union sépare deux mots (« peut-être » = « peut être »).',
   'Les élisions sont séparées comme pour le décompte des mots (« l’école » = « l’ » + « école ») : une citation peut commencer ou finir de part et d’autre d’une élision.',
   'Une citation ne peut ni commencer ni finir au milieu d’un mot de la source.',
-  'Les marques […], (...), … et ... découpent une citation en fragments ; chaque fragment doit figurer, contigu, dans la source (l’ordre entre fragments n’est pas imposé).',
+  'Les marques […], (...), … et ... découpent une citation en fragments ; chaque fragment doit figurer, contigu, dans la source, dans le même ordre que dans la citation, et à moins de 60 mots du fragment précédent ; chaque fragment d’une citation à ellipse compte au moins 2 mots.',
   'Une citation vide est toujours refusée.',
 ];
+
+/**
+ * Citation à ellipse (WR-11) : sans ces bornes, des fragments recollés de n'importe où dans l'archive
+ * (« 40 000 […] postes […] supprimés ») fabriqueraient une phrase qui n'existe pas. Chaque fragment
+ * compte au moins `motsMin` mots, suit le précédent dans l'ordre de la source et en est éloigné de
+ * `ecartMax` mots au plus (un paragraphe).
+ */
+export const FRAGMENTS_CITATION = { motsMin: 2, ecartMax: 60 } as const;
 
 export const ARCHIVE_TAILLE_MAX = 5 * 1024 * 1024;
 

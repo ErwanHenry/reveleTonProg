@@ -1,3 +1,4 @@
+import { FRAGMENTS_CITATION } from '../config.ts';
 import { cleanText, mergeDigitGroups } from './normalize.ts';
 import { ELISION } from './words.ts';
 
@@ -38,8 +39,41 @@ export function haystack(text: string): string {
   return ` ${tokens(text).join(' ')} `;
 }
 
-/** Chaque fragment figure, mot pour mot et contigu, dans `hay`. Une citation vide est fausse. */
+/** Vrai si la citation contient une marque d'ellipse (donc plusieurs fragments). */
+export const aEllipse = (quote: string): boolean => fragments(quote).length > 1;
+
+/** Positions (début de l'espace de tête) de ` f ` dans `hay`, chevauchements compris. */
+function occurrences(hay: string, f: string): number[] {
+  const out: number[] = [];
+  const needle = ` ${f} `;
+  for (let i = hay.indexOf(needle); i !== -1; i = hay.indexOf(needle, i + 1)) out.push(i);
+  return out;
+}
+
+/** Les fragments `frs[k..]` se suivent dans l'ordre, chacun à `ecartMax` mots au plus du précédent. */
+function enchaine(hay: string, frs: readonly string[], k: number, finPrecedent: number): boolean {
+  const f = frs[k];
+  if (f === undefined) return true;
+  for (const i of occurrences(hay, f)) {
+    if (finPrecedent >= 0) {
+      if (i < finPrecedent) continue;
+      const ecart = hay.slice(finPrecedent, i).split(' ').length - 1; // mots entre les deux fragments
+      if (ecart > FRAGMENTS_CITATION.ecartMax) continue;
+    }
+    if (enchaine(hay, frs, k + 1, i + 1 + f.length)) return true;
+  }
+  return false;
+}
+
+/**
+ * Chaque fragment figure, mot pour mot et contigu, dans `hay`. Une citation vide est fausse. Une
+ * citation à ellipse (WR-11) exige en plus que chaque fragment compte au moins `motsMin` mots, que
+ * les fragments se suivent dans l'ordre de la source, à `ecartMax` mots au plus les uns des autres.
+ */
 export function quoteIn(quote: string, hay: string): boolean {
   const frs = fragments(quote);
-  return frs.length > 0 && frs.every((f) => hay.includes(` ${f} `));
+  if (frs.length === 0) return false;
+  if (frs.length === 1) return hay.includes(` ${frs[0]} `);
+  if (frs.some((f) => f.split(' ').length < FRAGMENTS_CITATION.motsMin)) return false;
+  return enchaine(hay, frs, 0, -1);
 }
