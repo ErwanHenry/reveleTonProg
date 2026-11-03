@@ -1,12 +1,19 @@
-import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
+import { existsSync, lstatSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { LineCounter, parseDocument, visit } from 'yaml';
 import type { Document } from 'yaml';
 import { hasSchema, validateData } from './ajv.ts';
 import { COLLECTIONS, COLLECTION_NAMES } from './collections.ts';
 import type { CollectionName } from './collections.ts';
+import { readContained } from './contained.ts';
 import { pointerToPos } from './diagnostics.ts';
 import type { Diagnostic } from './diagnostics.ts';
+import { FAMILLES, appliquerRegles } from './rules/index.ts';
+import type { FichierAnalyse, Famille, LoadedEntry, Mode } from './rules/types.ts';
+
+// checkContained/readContained vivent dans un module feuille (les règles ne doivent jamais importer
+// load.ts : cycle) ; on les ré-exporte pour que les importeurs existants continuent de fonctionner.
+export { checkContained, readContained } from './contained.ts';
 
 // Un seul chemin de parsing pour la CLI, la CI et Astro (DATA-07) : schéma YAML 1.2 "core"
 // sans balises personnalisées, donc 2026-11-03 reste une chaîne, jamais une Date.
@@ -22,6 +29,10 @@ export interface Entry {
 }
 export interface LoadOptions {
   schemasDir: string;
+  /** `production` par défaut (fail-closed) ; `preview` relâche seulement les règles « selon_mode ». */
+  mode?: Mode;
+  /** Familles de règles ; par défaut FAMILLES (les tests en injectent de synthétiques). */
+  familles?: readonly Famille[];
 }
 export interface LoadResult {
   entries: Entry[];
@@ -200,40 +211,14 @@ export function listContentFiles(contentRoot: string): {
   return { files, diagnostics };
 }
 
-/**
- * Lecture sûre d'un fichier de contenu, juste avant usage (le listage seul laisse une fenêtre
- * TOCTOU) : refuse lien symbolique, fichier non régulier et tout chemin dont le realpath sort de la
- * racine de contenu. Une erreur d'E/S devient un diagnostic, jamais une exception.
- */
-export function checkContained(contentRoot: string, file: string): Diagnostic | undefined {
-  try {
-    const st = lstatSync(file);
-    if (st.isSymbolicLink()) return diag('FICHIER_LIEN_SYMBOLIQUE', file, 1, 1, 'lien symbolique refusé (jamais suivi)');
-    if (!st.isFile()) return diag('FICHIER_NON_REGULIER', file, 1, 1, 'fichier non régulier refusé (tube, socket, périphérique...)');
-    const rootReal = realpathSync(contentRoot);
-    if (!realpathSync(file).startsWith(rootReal + path.sep)) {
-      return diag('FICHIER_HORS_RACINE', file, 1, 1, 'le fichier se résout hors de la racine de contenu : refusé');
-    }
-    return undefined;
-  } catch (e) {
-    return diag('FICHIER_ILLISIBLE', file, 1, 1, `fichier illisible (${e instanceof Error ? e.message : String(e)})`);
-  }
-}
-
-export function readContained(contentRoot: string, file: string): { text: string } | { diagnostic: Diagnostic } {
-  const diagnostic = checkContained(contentRoot, file);
-  if (diagnostic) return { diagnostic };
-  try {
-    return { text: readFileSync(file, 'utf8') };
-  } catch (e) {
-    return { diagnostic: diag('FICHIER_ILLISIBLE', file, 1, 1, `fichier illisible (${e instanceof Error ? e.message : String(e)})`) };
-  }
-}
-
 export function loadAll(contentRoot: string, opts: LoadOptions): LoadResult {
   const listed = listContentFiles(contentRoot);
   const diagnostics: Diagnostic[] = [...listed.diagnostics];
   const entries: Entry[] = [];
+  const chargees: LoadedEntry[] = [];
+  const fichiers: FichierAnalyse[] = [];
+  const listes = new Map<CollectionName, Set<string>>(COLLECTION_NAMES.map((c) => [c, new Set<string>()]));
+  for (const f of listed.files) listes.get(f.collection)?.add(f.id);
   for (const f of listed.files) {
     const schemaName = COLLECTIONS[f.collection].schema;
     if (!hasSchema(opts.schemasDir, schemaName)) {
@@ -247,12 +232,27 @@ export function loadAll(contentRoot: string, opts: LoadOptions): LoadResult {
     }
     const res = validateYamlText(schemaName, read.text, f.file, opts);
     const own = [...res.diagnostics];
+    // Les règles de fichier voient tout fichier dont le YAML s'est lu, même si son schéma échoue.
+    if (!own.some((d) => d.code.startsWith('YAML_'))) fichiers.push({ collection: f.collection, id: f.id, file: f.file, doc: res.doc, lc: res.lc });
     if (!own.some((d) => d.severity === 'error')) own.push(...checkPathCoherence(f, res.data as Record<string, unknown>, res.doc, res.lc));
     diagnostics.push(...own);
     if (!own.some((d) => d.severity === 'error')) {
-      entries.push({ collection: f.collection, id: f.id, file: f.file, data: res.data as Record<string, unknown> });
+      const data = res.data as Record<string, unknown>;
+      entries.push({ collection: f.collection, id: f.id, file: f.file, data });
+      chargees.push({ collection: f.collection, id: f.id, file: f.file, data, doc: res.doc, lc: res.lc });
     }
   }
-  diagnostics.sort((a, b) => (a.file < b.file ? -1 : a.file > b.file ? 1 : a.line - b.line || a.col - b.col));
+  diagnostics.push(
+    ...appliquerRegles({
+      mode: opts.mode ?? 'production',
+      contentRoot,
+      familles: opts.familles ?? FAMILLES,
+      fichiers,
+      entries: chargees,
+      listes,
+    }),
+  );
+  const cmp = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+  diagnostics.sort((a, b) => cmp(a.file, b.file) || a.line - b.line || a.col - b.col || cmp(a.code, b.code) || cmp(a.message, b.message));
   return { entries, diagnostics, files: listed.files.length };
 }

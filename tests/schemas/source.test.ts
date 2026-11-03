@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { expectErrors, expectOk } from '../helpers/validate-yaml.ts';
+import { validateYamlText } from '../../src/lib/content-core/load.ts';
+import { SCHEMAS_DIR, expectErrors, expectOk } from '../helpers/validate-yaml.ts';
 
 const SHA = 'a'.repeat(64);
 
@@ -44,9 +45,9 @@ describe('source : cas valides', () => {
 describe('source : cas invalides', () => {
   const sansArchive = BASE.slice(0, BASE.indexOf('archive:'));
   const bad: [string, string, { code: string; pointer: string }[]][] = [
-    ['type presse (D-3)', swap('type: programme', 'type: presse'), [{ code: 'SCHEMA_ENUM', pointer: '/type' }]],
+    ['type presse (D-3)', swap('type: programme', 'type: presse'), [{ code: 'SOURCE_NON_PRIMAIRE', pointer: '/type' }]],
     ['auteur journaliste', swap('auteur: candidat', 'auteur: journaliste'), [{ code: 'SCHEMA_ENUM', pointer: '/auteur' }]],
-    ['archive absente', sansArchive, [{ code: 'SCHEMA_REQUIRED', pointer: '' }]],
+    ['archive absente', sansArchive, [{ code: 'ARCHIVE_ABSENTE', pointer: '' }]],
     ['candidats vide', swap('candidats:\n  - marie-fictive\n', 'candidats: []\n'), [{ code: 'SCHEMA_MINITEMS', pointer: '/candidats' }]],
     ['candidats en double', swap('  - marie-fictive\n', '  - marie-fictive\n  - marie-fictive\n'), [{ code: 'SCHEMA_UNIQUEITEMS', pointer: '/candidats' }]],
     ['extrait avec ..', swap('archives/marie-fictive/aaaaaaaaaaaa.txt', 'archives/../secret.txt'), [{ code: 'SCHEMA_PATTERN', pointer: '/archive/extrait' }]],
@@ -62,3 +63,28 @@ describe('source : cas invalides', () => {
   ];
   for (const [name, text, expected] of bad) it(name, () => expectErrors('source', text, expected));
 });
+
+describe('source : codes métier positionnés (REGLE-01)', () => {
+  const diagnostics = (text: string) => validateYamlText('source', text, '/tmp/inline.yaml', { schemasDir: SCHEMAS_DIR }).diagnostics;
+  const ligne = (text: string, cle: string): number => text.split('\n').findIndex((l) => l.startsWith(`${cle}:`)) + 1;
+
+  it('ARCHIVE_ABSENTE vise la ligne de url', () => {
+    const text = BASE.slice(0, BASE.indexOf('archive:'));
+    const ds = diagnostics(text);
+    assert.equal(ds.length, 1, JSON.stringify(ds));
+    assert.equal(ds[0]?.code, 'ARCHIVE_ABSENTE');
+    assert.equal(ds[0]?.pointer, '');
+    assert.equal(ds[0]?.line, ligne(text, 'url'));
+  });
+
+  it('SOURCE_NON_PRIMAIRE vise la clé type et nomme les types admis', () => {
+    const text = swap('type: programme', 'type: presse');
+    const ds = diagnostics(text);
+    assert.equal(ds.length, 1, JSON.stringify(ds));
+    assert.equal(ds[0]?.code, 'SOURCE_NON_PRIMAIRE');
+    assert.equal(ds[0]?.pointer, '/type');
+    assert.equal(ds[0]?.line, ligne(text, 'type'));
+    assert.match(ds[0]?.message ?? '', /programme.*depot_cc/);
+  });
+});
+

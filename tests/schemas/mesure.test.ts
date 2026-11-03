@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { expectErrors, expectOk } from '../helpers/validate-yaml.ts';
+import { validateYamlText } from '../../src/lib/content-core/load.ts';
+import { SCHEMAS_DIR, expectErrors, expectOk } from '../helpers/validate-yaml.ts';
 
 // Mesure de base entièrement fictive ; chaque cas modifie un seul champ.
 const PUBLIE = `version_schema: 1
@@ -65,8 +66,8 @@ describe('mesure : cas invalides', () => {
     ['publiée sans aîné', sansAine, [{ code: 'SCHEMA_REQUIRED', pointer: '/redactions' }]],
     ['publiée sans relecteur', without(PUBLIE, 'relecteur: Erwan Henry\n'), [{ code: 'SCHEMA_REQUIRED', pointer: '' }]],
     ['relue sans date_relecture', swap(without(PUBLIE, 'date_relecture: 2026-10-21\n'), 'statut_relecture: publie', 'statut_relecture: relu'), [{ code: 'SCHEMA_REQUIRED', pointer: '' }]],
-    ['texte_source absent', without(PUBLIE, 'texte_source: Les loyers seront encadrés dans les villes de plus de 50 000 habitants.\n'), [{ code: 'SCHEMA_REQUIRED', pointer: '' }]],
-    ['source absente', without(PUBLIE, 'source: marie-fictive-programme\n'), [{ code: 'SCHEMA_REQUIRED', pointer: '' }]],
+    ['texte_source absent', without(PUBLIE, 'texte_source: Les loyers seront encadrés dans les villes de plus de 50 000 habitants.\n'), [{ code: 'TEXTE_SOURCE_ABSENT', pointer: '' }]],
+    ['source absente', without(PUBLIE, 'source: marie-fictive-programme\n'), [{ code: 'SOURCE_ABSENTE', pointer: '' }]],
     ['champ inconnu evaluation', `${PUBLIE}evaluation: bonne\n`, [{ code: 'SCHEMA_UNEVALUATEDPROPERTIES', pointer: '/evaluation' }]],
     ['rédaction inconnue ado', swap(PUBLIE, 'redactions:\n', 'redactions:\n  ado: Texte pour les ados.\n'), [{ code: 'SCHEMA_UNEVALUATEDPROPERTIES', pointer: '/redactions/ado' }]],
     ['statut_relecture valide', swap(PUBLIE, 'statut_relecture: publie', 'statut_relecture: valide'), [{ code: 'SCHEMA_ENUM', pointer: '/statut_relecture' }]],
@@ -79,3 +80,41 @@ describe('mesure : cas invalides', () => {
 
   it('brouillon : aucune erreur même sans relecteur (garde contre un faux positif)', () => expectOk('mesure', BROUILLON));
 });
+
+describe('mesure : codes métier positionnés sur une ancre (REGLE-01)', () => {
+  const lignes = (text: string, cle: string): number => text.split('\n').findIndex((l) => l.startsWith(`${cle}:`)) + 1;
+  const diagnostics = (text: string) => validateYamlText('mesure', text, '/tmp/inline.yaml', { schemasDir: SCHEMAS_DIR }).diagnostics;
+
+  it('SOURCE_ABSENTE vise la ligne de texte_source', () => {
+    const text = without(PUBLIE, 'source: marie-fictive-programme\n');
+    const ds = diagnostics(text);
+    assert.equal(ds.length, 1, JSON.stringify(ds));
+    assert.equal(ds[0]?.code, 'SOURCE_ABSENTE');
+    assert.equal(ds[0]?.pointer, '');
+    assert.equal(ds[0]?.line, lignes(text, 'texte_source'));
+    assert.match(ds[0]?.message ?? '', /mesure sans source/);
+  });
+
+  it('TEXTE_SOURCE_ABSENT vise la ligne de titre', () => {
+    const text = without(PUBLIE, 'texte_source: Les loyers seront encadrés dans les villes de plus de 50 000 habitants.\n');
+    const ds = diagnostics(text);
+    assert.equal(ds.length, 1, JSON.stringify(ds));
+    assert.equal(ds[0]?.code, 'TEXTE_SOURCE_ABSENT');
+    assert.equal(ds[0]?.line, lignes(text, 'titre'));
+  });
+
+  it('ancre absente : repli sur la position d\'origine, sans plantage', () => {
+    const text = without(without(PUBLIE, 'source: marie-fictive-programme\n'), 'texte_source: Les loyers seront encadrés dans les villes de plus de 50 000 habitants.\n');
+    const ds = diagnostics(text);
+    const source = ds.find((d) => d.code === 'SOURCE_ABSENTE');
+    assert.ok(source, JSON.stringify(ds));
+    assert.equal(source.line, 1);
+    assert.ok(ds.some((d) => d.code === 'TEXTE_SOURCE_ABSENT'));
+  });
+
+  it('les autres propriétés manquantes gardent SCHEMA_REQUIRED', () => {
+    const ds = diagnostics(without(PUBLIE, 'relecteur: Erwan Henry\n'));
+    assert.ok(ds.some((d) => d.code === 'SCHEMA_REQUIRED' && d.pointer === ''), JSON.stringify(ds));
+  });
+});
+
