@@ -1,10 +1,11 @@
 import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, cpSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { loadAll } from '../../src/lib/content-core/load.ts';
 import { inspectVersions, migrateText, runMigrations } from '../../src/lib/content-core/migrate.ts';
+import type { Migration } from '../../src/lib/content-core/migrate.ts';
 import { REPO_ROOT, SCHEMAS_DIR } from '../helpers/validate-yaml.ts';
 import { fakeMigration } from './fake-migration.ts';
 
@@ -176,5 +177,76 @@ describe('runMigrations : jamais d\'écriture hors de la racine de contenu (CR-0
   it('inspectVersions signale la racine introuvable', () => {
     const res = inspectVersions(path.join(os.tmpdir(), 'rtp-inexistant-xyz'), { schemasDir: SCHEMAS_DIR });
     assert.deepEqual(res.diagnostics.map((d) => d.code), ['RACINE_INTROUVABLE']);
+  });
+});
+
+describe('runMigrations : tout ou rien (WR-02)', () => {
+  const failOnJean: Migration = {
+    schema: 'candidat',
+    from: 0,
+    to: 1,
+    migrate(doc) {
+      if (doc.get('id') === 'jean-imaginaire') throw new Error('boum');
+      fakeMigration.migrate(doc);
+    },
+  };
+
+  /** Deux candidats en v0 : marie-fictive (migrable) puis jean-imaginaire (la migration y échoue). */
+  function deuxCandidats(): { root: string; marie: string; jean: string } {
+    const { root, file: marie } = tmpRoot(AVANT);
+    const jean = path.join(path.dirname(marie), 'jean-imaginaire.yaml');
+    writeFileSync(jean, AVANT.replace('id: marie-fictive', 'id: jean-imaginaire'));
+    return { root, marie, jean };
+  }
+
+  it('une migration qui lève sur le 2e fichier : aucun fichier réécrit, diagnostic localisé', () => {
+    const { root, marie, jean } = deuxCandidats();
+    const beforeJean = readFileSync(jean, 'utf8');
+    const res = runMigrations(root, { schemasDir: SCHEMAS_DIR, registry: [failOnJean], write: true });
+    assert.deepEqual(res.ecrits, []);
+    assert.equal(readFileSync(marie, 'utf8'), AVANT);
+    assert.equal(readFileSync(jean, 'utf8'), beforeJean);
+    const d = res.diagnostics.find((x) => x.code === 'MIGRATION_ECHEC');
+    assert.ok(d, JSON.stringify(res.diagnostics));
+    assert.equal(d.file, jean);
+    assert.match(d.message, /boum/);
+    assert.deepEqual(readdirSync(path.dirname(marie)).filter((n) => n.endsWith('.tmp')), []);
+  });
+
+  it('une chaîne manquante bloque tout : registre vide, deux fichiers en retard, rien d\'écrit', () => {
+    const { root, marie } = deuxCandidats();
+    const res = runMigrations(root, { schemasDir: SCHEMAS_DIR, registry: [], write: true });
+    assert.deepEqual(res.ecrits, []);
+    assert.equal(res.diagnostics.filter((d) => d.code === 'MIGRATION_CHAINE_MANQUANTE').length, 2);
+    assert.equal(readFileSync(marie, 'utf8'), AVANT);
+  });
+
+  it('succès : tous les fichiers réécrits, aucun fichier temporaire', () => {
+    const { root, marie, jean } = deuxCandidats();
+    const res = runMigrations(root, { schemasDir: SCHEMAS_DIR, registry: [fakeMigration], write: true });
+    assert.deepEqual(res.diagnostics, []);
+    assert.deepEqual([...res.ecrits].sort(), [jean, marie].sort());
+    assert.equal(readFileSync(marie, 'utf8'), APRES);
+    assert.deepEqual(readdirSync(path.dirname(marie)).filter((n) => n.endsWith('.tmp')), []);
+  });
+
+  it('échec d\'écriture sur le 2e fichier : le 1er est restauré (corpus inchangé)', { skip: process.getuid?.() === 0 }, () => {
+    const { root, file: marie } = tmpRoot(AVANT);
+    const glossaireDir = path.join(root, 'src', 'content', 'glossaire');
+    mkdirSync(glossaireDir, { recursive: true });
+    const loyer = path.join(glossaireDir, 'loyer.yaml');
+    const loyerText = readFileSync(path.join(REPO_ROOT, 'tests', 'fixtures', 'corpus-valide', 'src', 'content', 'glossaire', 'loyer.yaml'), 'utf8').replace('version_schema: 1', 'version_schema: 0');
+    writeFileSync(loyer, loyerText);
+    const glossaireV1: Migration = { schema: 'glossaire', from: 0, to: 1, migrate() {} };
+    chmodSync(glossaireDir, 0o555); // création du fichier temporaire impossible
+    try {
+      const res = runMigrations(root, { schemasDir: SCHEMAS_DIR, registry: [fakeMigration, glossaireV1], write: true });
+      assert.deepEqual(res.ecrits, []);
+      assert.ok(res.diagnostics.some((d) => d.code === 'MIGRATION_ECRITURE_ECHEC' && d.file === loyer), JSON.stringify(res.diagnostics));
+      assert.equal(readFileSync(marie, 'utf8'), AVANT);
+      assert.equal(readFileSync(loyer, 'utf8'), loyerText);
+    } finally {
+      chmodSync(glossaireDir, 0o755);
+    }
   });
 });

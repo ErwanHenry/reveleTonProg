@@ -2,7 +2,8 @@
 // Moitié "écriture" du squelette : tout passe par l'API Document de `yaml`, jamais par un
 // dump de toJS, pour que commentaires, ordre des clés et guillemets survivent.
 // Aucun import Astro : ce module sert aussi la CLI et la CI.
-import { writeFileSync } from 'node:fs';
+import { renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
 import { LineCounter, parseDocument } from 'yaml';
 import type { Document } from 'yaml';
 import { schemaVersion } from './ajv.ts';
@@ -117,6 +118,30 @@ export function migrateText(text: string, schema: string, from: number, to: numb
   return doc.toString(TO_STRING_OPTS);
 }
 
+interface Pending {
+  file: string;
+  original: string;
+  migrated: string;
+}
+
+/** Écriture atomique : fichier temporaire voisin (ignoré par le listage, nom caché) puis renameSync. */
+function writeAtomic(file: string, text: string): void {
+  const tmp = path.join(path.dirname(file), `.${path.basename(file)}.${process.pid}.tmp`);
+  try {
+    writeFileSync(tmp, text, { flag: 'wx', mode: statSync(file).mode & 0o777 });
+    renameSync(tmp, file);
+  } catch (e) {
+    rmSync(tmp, { force: true });
+    throw e;
+  }
+}
+
+/**
+ * Migre en deux phases : (1) calcul du texte migré de TOUS les fichiers en retard, toute erreur
+ * devenant un diagnostic localisé ; (2) écriture, seulement si la phase 1 n'a produit aucune erreur
+ * de migration. Un échec en cours d'écriture restaure les fichiers déjà réécrits : le corpus est
+ * migré en entier ou pas du tout.
+ */
 export function runMigrations(
   contentRoot: string,
   opts: { schemasDir: string; registry: readonly Migration[]; write: boolean },
@@ -124,36 +149,50 @@ export function runMigrations(
   const { fichiers, diagnostics: inspected } = inspectVersions(contentRoot, { schemasDir: opts.schemasDir });
   // Les fichiers en retard sont migrés ci-dessous ; leur diagnostic ne reste que pour un simple contrôle.
   const diagnostics = inspected.filter((d) => opts.write ? d.code !== 'MIGRATION_EN_RETARD' : true);
-  const ecrits: string[] = [];
+  const pending: Pending[] = [];
+  let failed = false;
 
   for (const f of fichiers) {
     if (f.etat !== 'en_retard' || f.version === null) continue; // les autres fichiers ne sont jamais réécrits
     const read = readContained(contentRoot, f.file);
     if ('diagnostic' in read) {
       diagnostics.push(read.diagnostic);
+      failed = true;
       continue;
     }
     const text = read.text;
-    let migrated: string;
     try {
-      migrated = migrateText(text, f.schema, f.version, f.courante, opts.registry);
+      const migrated = migrateText(text, f.schema, f.version, f.courante, opts.registry);
+      if (migrated !== text) pending.push({ file: f.file, original: text, migrated });
     } catch (e) {
-      if (e instanceof Error && (e as { code?: string }).code === 'MIGRATION_CHAINE_MANQUANTE') {
-        const { doc, lc } = parse(text);
-        const pos = versionPos(doc, lc);
-        diagnostics.push(diag('MIGRATION_CHAINE_MANQUANTE', f.file, pos.line, pos.col, e.message));
-        continue;
-      }
-      throw e;
+      const { doc, lc } = parse(text);
+      const pos = versionPos(doc, lc);
+      const code = e instanceof Error && (e as { code?: string }).code === 'MIGRATION_CHAINE_MANQUANTE' ? 'MIGRATION_CHAINE_MANQUANTE' : 'MIGRATION_ECHEC';
+      const msg = e instanceof Error ? e.message : String(e);
+      diagnostics.push(diag(code, f.file, pos.line, pos.col, code === 'MIGRATION_ECHEC' ? `la migration a échoué : ${msg}` : msg));
+      failed = true;
     }
-    if (opts.write && migrated !== text) {
-      const unsafe = checkContained(contentRoot, f.file); // revérifié juste avant l'écriture (TOCTOU)
-      if (unsafe) {
-        diagnostics.push(unsafe);
-        continue;
+  }
+  if (!opts.write || failed) return { diagnostics, ecrits: [] };
+
+  const ecrits: string[] = [];
+  for (const p of pending) {
+    try {
+      const unsafe = checkContained(contentRoot, p.file); // revérifié juste avant l'écriture (TOCTOU)
+      if (unsafe) throw new Error(unsafe.message);
+      writeAtomic(p.file, p.migrated); // p.file vient de listContentFiles : toujours sous la racine de contenu
+      ecrits.push(p.file);
+    } catch (e) {
+      diagnostics.push(diag('MIGRATION_ECRITURE_ECHEC', p.file, 1, 1, `écriture impossible, migration annulée : ${e instanceof Error ? e.message : String(e)}`));
+      for (const done of ecrits.splice(0)) {
+        const back = pending.find((x) => x.file === done);
+        try {
+          if (back) writeAtomic(done, back.original);
+        } catch {
+          diagnostics.push(diag('MIGRATION_RESTAURATION_ECHEC', done, 1, 1, 'restauration impossible : rétablir ce fichier avec git checkout'));
+        }
       }
-      writeFileSync(f.file, migrated); // f.file vient de listContentFiles : toujours sous la racine de contenu
-      ecrits.push(f.file);
+      break;
     }
   }
   return { diagnostics, ecrits };
