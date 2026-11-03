@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:reveletonprog:schema:source",
+  "title": "Source primaire",
+  "type": "object",
+  "required": ["version_schema", "id", "type", "auteur", "candidats", "titre", "url", "date_publication", "date_consultation", "archive"],
+  "unevaluatedProperties": false,
+  "properties": {
+    "version_schema": { "const": 1 },
+    "id":     { "$ref": "urn:reveletonprog:schema:common#/$defs/slug" },
+    "type":   { "enum": ["programme", "site_candidat", "site_parti", "discours", "tribune", "depot_cc"] },
+    "auteur": { "enum": ["candidat", "parti_du_candidat", "coalition"] },
+    "candidats": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": { "$ref": "urn:reveletonprog:schema:common#/$defs/idCandidat" }
+    },
+    "titre":             { "$ref": "urn:reveletonprog:schema:common#/$defs/texte" },
+    "url":               { "$ref": "urn:reveletonprog:schema:common#/$defs/urlHttps" },
+    "date_publication":  { "$ref": "urn:reveletonprog:schema:common#/$defs/dateOuPartielle" },
+    "date_consultation": { "$ref": "urn:reveletonprog:schema:common#/$defs/dateComplete" },
+    "archive":           { "$ref": "urn:reveletonprog:schema:common#/$defs/archive" }
+  }
+}

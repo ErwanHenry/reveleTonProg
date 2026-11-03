@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:reveletonprog:schema:theme",
+  "title": "Thème",
+  "type": "object",
+  "required": ["version_schema", "id", "nom", "ordre", "sous_themes", "statut_relecture"],
+  "unevaluatedProperties": false,
+  "properties": {
+    "version_schema": { "const": 1 },
+    "id":    { "$ref": "urn:reveletonprog:schema:common#/$defs/slug" },
+    "nom":   { "$ref": "urn:reveletonprog:schema:common#/$defs/texte" },
+    "ordre": { "type": "integer", "minimum": 1 },
+    "mots_cles": {
+      "type": "array", "uniqueItems": true,
+      "items": { "$ref": "urn:reveletonprog:schema:common#/$defs/texte" }
+    },
+    "prioritaire_aine": { "type": "boolean" },
+    "sous_themes": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "required": ["id", "nom"], "unevaluatedProperties": false,
+        "properties": {
+          "id":  { "$ref": "urn:reveletonprog:schema:common#/$defs/slug" },
+          "nom": { "$ref": "urn:reveletonprog:schema:common#/$defs/texte" }
+        }
+      }
+    },
+    "statut_relecture": { "$ref": "urn:reveletonprog:schema:common#/$defs/statutRelecture" },
+    "relecteur":        { "$ref": "urn:reveletonprog:schema:common#/$defs/texte" },
+    "date_relecture":   { "$ref": "urn:reveletonprog:schema:common#/$defs/dateComplete" }
+  }
+}

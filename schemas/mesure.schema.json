@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:reveletonprog:schema:mesure",
+  "title": "Mesure",
+  "type": "object",
+  "required": ["version_schema", "id", "candidat", "theme", "sous_theme", "titre", "texte_source", "source", "redactions", "statut_relecture"],
+  "unevaluatedProperties": false,
+  "properties": {
+    "version_schema": { "const": 1 },
+    "id":         { "type": "string", "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)+/[a-z0-9]+(-[a-z0-9]+)*$" },
+    "candidat":   { "$ref": "urn:reveletonprog:schema:common#/$defs/idCandidat" },
+    "theme":      { "$ref": "urn:reveletonprog:schema:common#/$defs/slug" },
+    "sous_theme": { "$ref": "urn:reveletonprog:schema:common#/$defs/slug" },
+    "titre":         { "$ref": "urn:reveletonprog:schema:common#/$defs/texte" },
+    "texte_source":  { "$ref": "urn:reveletonprog:schema:common#/$defs/texte" },
+    "source":              { "$ref": "urn:reveletonprog:schema:common#/$defs/slug" },
+    "source_localisation": { "$ref": "urn:reveletonprog:schema:common#/$defs/texte" },
+    "redactions": {
+      "type": "object", "required": ["resume", "detaille"], "unevaluatedProperties": false,
+      "properties": {
+        "resume":   { "$ref": "urn:reveletonprog:schema:common#/$defs/texte" },
+        "detaille": { "$ref": "urn:reveletonprog:schema:common#/$defs/texte" },
+        "enfant":   { "$ref": "urn:reveletonprog:schema:common#/$defs/texte" },
+        "aine":     { "$ref": "urn:reveletonprog:schema:common#/$defs/texte" }
+      }
+    },
+    "chiffrage": {
+      "type": "object", "required": ["texte"], "unevaluatedProperties": false,
+      "properties": { "texte": { "$ref": "urn:reveletonprog:schema:common#/$defs/texte" },
+                      "source_localisation": { "$ref": "urn:reveletonprog:schema:common#/$defs/texte" } }
+    },
+    "statut_relecture": { "$ref": "urn:reveletonprog:schema:common#/$defs/statutRelecture" },
+    "relecteur":        { "$ref": "urn:reveletonprog:schema:common#/$defs/texte" },
+    "date_relecture":   { "$ref": "urn:reveletonprog:schema:common#/$defs/dateComplete" }
+  },
+  "allOf": [
+    { "if": { "properties": { "statut_relecture": { "const": "publie" } }, "required": ["statut_relecture"] },
+      "then": { "properties": { "redactions": { "type": "object", "required": ["enfant", "aine"], "properties": { "enfant": true, "aine": true } } } } },
+    { "if": { "properties": { "statut_relecture": { "enum": ["relu", "publie"] } }, "required": ["statut_relecture"] },
+      "then": { "required": ["relecteur", "date_relecture"], "properties": { "relecteur": true, "date_relecture": true } } }
+  ]
+}
