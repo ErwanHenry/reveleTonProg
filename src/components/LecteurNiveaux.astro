@@ -1,7 +1,11 @@
 ---
-// Enveloppe de lecture d'une page : le contenu de la page est le slot par défaut.
-// Le plan 04-05 ajoute ici le sélecteur de niveau (fieldset) et le bloc « Ce qui me concerne »,
-// le plan 04-07 la liste « Mots expliqués » : les pages n'ont pas à changer.
+// Enveloppe de lecture d'une page : sélecteur de niveau (4 radios natifs), script de mémorisation,
+// bloc « Ce qui me concerne », contenu de la page (slot par défaut) et rappel du niveau.
+// Le plan 04-07 ajoutera ici la liste « Mots expliqués » : les pages n'ont pas à changer.
+import '../styles/niveaux.css';
+import niveauUrl from '../scripts/niveau.js?url';
+import ConcerneAine from './ConcerneAine.astro';
+import { LIBELLES_NIVEAUX, NIVEAUX } from '../lib/corpus/index.ts';
 import type { Contexte, VueMesure } from '../lib/corpus/index.ts';
 
 interface Props {
@@ -12,7 +16,22 @@ interface Props {
 const { contexte, mesures } = Astro.props;
 ---
 <div class="lecteur" data-contexte={contexte.type} data-nb-mesures={mesures.length}>
+  <fieldset class="niveaux" id="niveaux" aria-describedby="niveaux-aide">
+    <legend>Niveau de lecture</legend>
+    {NIVEAUX.map((niveau) => (
+      <span class="niveau">
+        <input type="radio" name="niveau" id={`niv-${niveau}`} value={niveau} checked={niveau === 'resume'} autocomplete="off" />
+        <label for={`niv-${niveau}`}>{LIBELLES_NIVEAUX[niveau]}</label>
+      </span>
+    ))}
+    <p id="niveaux-aide" class="aide">Ce choix s'applique à toutes les mesures de la page.</p>
+    <p class="aide aide-sansjs">Sans JavaScript, votre choix n'est pas mémorisé d'une page à l'autre : il faut le refaire sur chaque page.</p>
+    <p class="sr-only" role="status" data-niveau-annonce></p>
+  </fieldset>
+  <script is:inline src={niveauUrl}></script>
   <div class="lecteur-contenu">
+    <ConcerneAine contexte={contexte} mesures={mesures} />
     <slot />
+    <p class="rappel-niveau"><a href="#niveaux">Changer le niveau de lecture</a></p>
   </div>
 </div>
