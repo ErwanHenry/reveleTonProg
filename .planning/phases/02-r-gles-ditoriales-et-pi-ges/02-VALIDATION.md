@@ -28,7 +28,7 @@ created: 2026-11-03
 ## Sampling Rate
 
 - **After every task commit:** the task's `<automated>` command (quick run on the touched test files)
-- **After every plan wave:** wave 1 and wave 2 plans run their own files plus the regression files listed in their `<verify>`; the full suite runs once, in plan 02-06 (wave 3, alone), per orchestrator decision
+- **After every plan wave:** wave 1 and wave 2 plans run their own files plus the regression files listed in their `<verify>`; the full suite runs once, in plan 02-06 (wave 3, in parallel with the docs-only plan 02-07, which runs tests/repo/docs.test.ts only), per orchestrator decision
 - **Before `/gsd:verify-work`:** full suite green (02-06 Task 3)
 - **Max feedback latency:** 15 seconds per task (the full suite only at phase gate)
 
@@ -47,14 +47,16 @@ created: 2026-11-03
 | 2-03-02 | 03 | 2 | REGLE-03 | T-02-13 | linear tokenizer | unit | `fnm exec --using=24 node --test tests/text/words.test.ts tests/rules/redaction.test.ts` | ✅ (from 2-03-01) | ⬜ pending |
 | 2-03-03 | 03 | 2 | REGLE-06 | — | N/A (warning-only score, status-dependent sentence rule) | unit | `fnm exec --using=24 node --test tests/text/sentences.test.ts tests/text/syllables.test.ts tests/rules/redaction.test.ts` | ❌ W0 (created by task) | ⬜ pending |
 | 2-04-01 | 04 | 2 | REGLE-01 | T-02-15, T-02-16, T-02-17, T-02-18 | containment + 5 MB cap before read; sha256 on raw bytes; no hostname heuristics | unit | `fnm exec --using=24 node --test tests/rules/archives.test.ts tests/pieges/pieges.test.ts` | ❌ W0 (created by task) | ⬜ pending |
-| 2-04-02 | 04 | 2 | REGLE-07, REGLE-12 | T-02-15, T-02-20 | AST key scan (no grep); lock read through readContained | unit | `fnm exec --using=24 node --test tests/rules/references.test.ts tests/rules/champs.test.ts tests/content-core/load.test.ts tests/content-core/validate-cli.test.ts` | ❌ W0 (created by task) | ⬜ pending |
+| 2-04-02 | 04 | 2 | REGLE-07, REGLE-12 | T-02-15, T-02-20 | AST key scan (no grep); lock read through readContained (contained.ts, no import cycle) | unit | `fnm exec --using=24 node --test tests/rules/references.test.ts tests/rules/champs.test.ts tests/content-core/load.test.ts tests/content-core/validate-cli.test.ts tests/migrations/migrate.test.ts tests/migrations/cli.test.ts` | ❌ W0 (created by task) | ⬜ pending |
 | 2-04-03 | 04 | 2 | REGLE-08 | T-02-19 | only equite.ts reads ctx.mode | unit + trap | `fnm exec --using=24 node --test tests/rules/equite.test.ts tests/pieges/pieges.test.ts` | ❌ W0 (created by task) | ⬜ pending |
 | 2-05-01 | 05 | 2 | REGLE-09 | T-02-24, T-02-25 | sums in hundredths; notice from schema `required` | unit + trap | `fnm exec --using=24 node --test tests/rules/sondages.test.ts tests/schemas/sondage.test.ts tests/pieges/pieges.test.ts` | ❌ W0 (created by task) | ⬜ pending |
 | 2-05-02 | 05 | 2 | REGLE-09 | T-02-23 | windows identical under 5 time zones | unit (spawn per TZ) | `fnm exec --using=24 node --test tests/rules/sondages.test.ts` | ✅ (from 2-05-01) | ⬜ pending |
 | 2-05-03 | 05 | 2 | REGLE-11 | T-02-21, T-02-22 | invalid mode exits 2 / fails build; annotations only via formatGithub | CLI integration | `fnm exec --using=24 node --test tests/content-core/validate-cli.test.ts tests/content-core/astro-parity.test.ts` | ✅ (extended) | ⬜ pending |
 | 2-06-01 | 06 | 3 | REGLE-04, REGLE-05 | T-02-26, T-02-27, T-02-28, T-02-29 | figures and quotes traced to the archive; chiffrage verified | unit + trap | `fnm exec --using=24 node --test tests/text/numbers.test.ts tests/text/verbatim.test.ts tests/rules/citations.test.ts tests/pieges/pieges.test.ts` | ❌ W0 (created by task) | ⬜ pending |
 | 2-06-02 | 06 | 3 | REGLE-10, REGLE-11, REGLE-08 | T-02-31 | missing/passing §12 trap or untested code fails npm test | meta + CLI | `fnm exec --using=24 node --test tests/pieges/couverture.test.ts tests/content-core/validate-cli.test.ts` | ❌ W0 (created by task) | ⬜ pending |
-| 2-06-03 | 06 | 3 | all REGLE-01…12 | T-02-30 | CI pins `--mode production` (asserted by ci.test.ts) | full gate | full suite command above | ✅ | ⬜ pending |
+| 2-06-03 | 06 | 3 | REGLE-07 + all REGLE-01…12 (gate) | T-02-30, T-02-32 | CI pins `--mode production`; ids.lock removal vs base commit refused; event values via env | CLI + full gate | `fnm exec --using=24 node --test tests/content-core/ids-cli.test.ts tests/repo/ci.test.ts`, then the full suite command above | ✅ (extended) | ⬜ pending |
+| 2-07-01 | 07 | 3 | REGLE-10, REGLE-11 | T-02-33, T-02-34 | no secret in docs; false-positive procedure requires review | docs test | `fnm exec --using=24 node --test tests/repo/docs.test.ts` | ✅ (extended) | ⬜ pending |
+| 2-07-02 | 07 | 3 | REGLE-10, REGLE-11 | — | N/A (documentation) | docs test | `fnm exec --using=24 node --test tests/repo/docs.test.ts` | ✅ (extended) | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 

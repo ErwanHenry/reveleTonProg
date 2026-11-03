@@ -103,7 +103,7 @@ Plans:
   4. Les sondages pièges sont rejetés : sans notice, somme hors 95-105 %, hypothèse de second tour rangée en premier tour, publication dans les fenêtres de blocage des 17-18 avril et 1-2 mai 2027 (heure de Paris).
   5. Chaque piège §12 applicable est une fixture dans `tests/fixtures/pieges/` avec son code attendu. `npm test` échoue dès qu'un piège passe la validation.
 
-**Plans**: 6 plans (3 waves)
+**Plans**: 7 plans (3 waves)
 
 Plans:
 - [ ] 02-01-PLAN.md — Corpus fictif prêt pour les règles (wayback, phrase enfant, ids.lock, .gitattributes) et `npm run ids -- --check|--write` (wave 1)
@@ -111,7 +111,8 @@ Plans:
 - [ ] 02-03-PLAN.md — Rédactions : mots interdits, verbes connotés, longueurs, phrases enfant, Kandel-Moles (wave 2)
 - [ ] 02-04-PLAN.md — Corpus : sources et archives sur disque, références, ids.lock, équité, champs non importables (wave 2)
 - [ ] 02-05-PLAN.md — Sondages pièges et fenêtres de blocage, `--mode preview|production`, annotations GitHub (wave 2)
-- [ ] 02-06-PLAN.md — Chiffres et citations vérifiés contre l'archive, couverture des 7 pièges §12, CI en production, docs (wave 3)
+- [ ] 02-06-PLAN.md — Chiffres et citations vérifiés contre l'archive, couverture des 7 pièges §12, CI en production, ids.lock en ajout seul vérifié en CI (wave 3)
+- [ ] 02-07-PLAN.md — Documentation : codes du validateur, modes, ids.lock, pièges, ADR des hypothèses A1-A12 (wave 3)
 **Notes reportées de la Phase 1**: règle `archive.wayback_url` obligatoire pour toute source citée par une mesure `statut_relecture: publie` (le schéma v1 le laisse optionnel, hypothèse A3 ; règle Phase 2, sans changement de schéma).
 **Research flag**: oui. Normalisation et comptage de mots en français, extraction des nombres, heuristique de syllabes Kandel-Moles, règles de normalisation des citations.
 
