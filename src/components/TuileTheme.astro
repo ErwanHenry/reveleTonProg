@@ -1,0 +1,17 @@
+---
+// Tuile d'un thème (accueil et /themes/) : barre latérale à la couleur du thème, nom en lien, nombre de candidats.
+import BadgeBrouillon from './BadgeBrouillon.astro';
+import type { VueTheme } from '../lib/corpus/index.ts';
+
+interface Props {
+  vue: VueTheme;
+}
+
+const { vue } = Astro.props;
+const n = vue.cellules.length;
+---
+<li class="tuile" data-theme={vue.theme.id}>
+  <a class="tuile-lien" href={`/themes/${vue.theme.id}/`}>{vue.theme.nom}</a>
+  <span class="tuile-compte">{n > 1 ? `${n} candidats` : `${n} candidat`}</span>
+  <BadgeBrouillon texte={vue.badge} />
+</li>
