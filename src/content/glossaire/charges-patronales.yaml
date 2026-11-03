@@ -1,0 +1,5 @@
+version_schema: 1
+id: charges-patronales
+type: terme
+libelle: "Charges patronales"
+definition: "Les charges patronales sont des sommes que l'employeur verse en plus du salaire, par exemple pour financer la Sécurité sociale."

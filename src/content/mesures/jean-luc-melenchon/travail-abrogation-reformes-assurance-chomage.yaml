@@ -1,0 +1,24 @@
+version_schema: 1
+id: jean-luc-melenchon/travail-abrogation-reformes-assurance-chomage
+candidat: jean-luc-melenchon
+theme: travail
+sous_theme: chomage-et-emploi
+titre: "Abrogation des réformes de l'assurance chômage"
+texte_source: >-
+  De même, les gouvernements d’Emmanuel Macron ont réduit les droits à l’assurance chômage en tous points : conditions d’accès, montant, durée et dégressivité de l’indemnité. Nous proposons, dès l’année prochaine, d’abroger ces réformes pour un coût de 3 milliards d’euros.
+source: jean-luc-melenchon-comptes-publics
+source_localisation: "page 11, partie sur les réponses aux urgences"
+redactions:
+  resume: >-
+    Jean-Luc Mélenchon propose d'abroger, dès l'année prochaine, les réformes de l'assurance chômage, pour un coût de 3 milliards d'euros.
+  detaille: >-
+    Dans le document d'orientations budgétaires de Jean-Luc Mélenchon, le texte indique que les gouvernements d'Emmanuel Macron ont réduit les droits à l'assurance chômage en tous points : conditions d'accès, montant, durée et dégressivité de l'indemnité. Il propose d'abroger ces réformes dès l'année prochaine, pour un coût de 3 milliards d'euros. Le programme ne précise pas quelles règles s'appliqueraient ensuite pour chacun de ces points, ni à partir de quelle date exacte l'abrogation prendrait effet.
+  enfant: >-
+    Jean-Luc Mélenchon veut supprimer des réformes de l'[[assurance chômage|assurance-chomage]]. Elles viennent des gouvernements d'Emmanuel Macron. Selon le texte, elles ont réduit les droits des chômeurs. Il veut le faire dès l'année prochaine. Cela coûterait 3 milliards d'euros.
+  aine: >-
+    Dans le document d'orientations budgétaires de Jean-Luc Mélenchon, le texte estime que les gouvernements d'Emmanuel Macron ont réduit les droits à l'assurance chômage en tous points : conditions d'accès, montant, durée et dégressivité de l'indemnité. Jean-Luc Mélenchon propose d'abroger ces réformes dès l'année prochaine, pour un coût de 3 milliards d'euros. Le programme ne précise pas quelles règles remplaceraient les règles actuelles.
+chiffrage:
+  texte: >-
+    pour un coût de 3 milliards d’euros
+  source_localisation: "page 11, partie sur les réponses aux urgences"
+statut_relecture: brouillon

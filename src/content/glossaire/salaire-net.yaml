@@ -1,0 +1,5 @@
+version_schema: 1
+id: salaire-net
+type: terme
+libelle: "Salaire net"
+definition: "Le salaire net est la somme que le salarié reçoit une fois les cotisations retirées du salaire brut."

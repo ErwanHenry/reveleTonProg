@@ -1,0 +1,5 @@
+version_schema: 1
+id: branche-professionnelle
+type: terme
+libelle: "Branche professionnelle"
+definition: "Une branche professionnelle regroupe les entreprises d'un même secteur d'activité, par exemple le commerce ou le bâtiment."

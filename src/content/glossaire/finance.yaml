@@ -1,0 +1,5 @@
+version_schema: 1
+id: finance
+type: terme
+libelle: "Finance"
+definition: "La finance désigne les activités liées à l'argent, comme les banques, la Bourse et les placements."

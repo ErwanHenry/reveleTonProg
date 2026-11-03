@@ -1,0 +1,5 @@
+version_schema: 1
+id: capital
+type: terme
+libelle: "Capital"
+definition: "Le capital, ce sont l'argent et les biens qui rapportent de l'argent, comme des actions, des immeubles ou des placements."

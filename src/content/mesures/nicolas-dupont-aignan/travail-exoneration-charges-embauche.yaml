@@ -1,0 +1,20 @@
+version_schema: 1
+id: nicolas-dupont-aignan/travail-exoneration-charges-embauche
+candidat: nicolas-dupont-aignan
+theme: travail
+sous_theme: chomage-et-emploi
+titre: "Exonération de charges patronales pour certains CDI"
+texte_source: >-
+  Exonérer de charges patronales : pendant trois mois, le premier emploi en CDI d’un jeune de moins de 26 ans, pendant deux ans, le CDI d’un chômeur de longue durée (5 ans) pour insérer les personnes en extrême difficulté sociale.
+source: nicolas-dupont-aignan-travail-economie-travail
+source_localisation: "page Économie du projet, rubrique des mesures pour relancer le pouvoir d'achat"
+redactions:
+  resume: >-
+    Nicolas Dupont-Aignan propose d'exonérer de charges patronales deux types de CDI : jeunes de moins de 26 ans, chômeurs de longue durée.
+  detaille: >-
+    Dans le projet de Debout la France, présenté sur la page Économie, Nicolas Dupont-Aignan propose d'exonérer de charges patronales deux types d'embauche en CDI. Le premier emploi en CDI d'un jeune de moins de 26 ans serait exonéré pendant trois mois. Le CDI d'un chômeur de longue durée serait exonéré pendant deux ans. Le texte indique « (5 ans) » après « chômeur de longue durée », sans préciser ce que ce chiffre désigne, et donne pour but d'insérer les personnes en « extrême difficulté sociale ». Le programme ne précise pas le coût de cette mesure ni sa date de mise en œuvre.
+  enfant: >-
+    Nicolas Dupont-Aignan veut que des employeurs ne paient pas de [[charges patronales|charges-patronales]]. C'est prévu pour deux cas de [[contrat à durée indéterminée|contrat-a-duree-indeterminee]]. Le premier emploi d'un jeune de moins de 26 ans, pendant trois mois. L'emploi d'une personne au chômage depuis longtemps, pendant deux ans.
+  aine: >-
+    Dans le projet de Debout la France, Nicolas Dupont-Aignan propose d'exonérer de charges patronales deux types de contrat à durée indéterminée. Le premier emploi en CDI d'un jeune de moins de 26 ans serait concerné pendant trois mois, et le CDI d'un chômeur de longue durée pendant deux ans. Le texte précise que l'objectif est d'insérer les personnes en « extrême difficulté sociale ». Le programme ne dit pas combien coûterait cette mesure ni à partir de quand elle s'appliquerait.
+statut_relecture: brouillon

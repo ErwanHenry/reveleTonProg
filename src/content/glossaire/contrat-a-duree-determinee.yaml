@@ -1,0 +1,5 @@
+version_schema: 1
+id: contrat-a-duree-determinee
+type: terme
+libelle: "Contrat à durée déterminée"
+definition: "Un contrat à durée déterminée, ou CDD, est un contrat de travail qui a une date de fin prévue à l'avance."

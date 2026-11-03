@@ -1,0 +1,5 @@
+version_schema: 1
+id: licenciement
+type: terme
+libelle: "Licenciement"
+definition: "Un licenciement, c'est quand un employeur met fin au contrat de travail d'un salarié."

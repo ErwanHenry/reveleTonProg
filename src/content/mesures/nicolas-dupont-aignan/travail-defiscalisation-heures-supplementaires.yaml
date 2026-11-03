@@ -1,0 +1,20 @@
+version_schema: 1
+id: nicolas-dupont-aignan/travail-defiscalisation-heures-supplementaires
+candidat: nicolas-dupont-aignan
+theme: travail
+sous_theme: salaires
+titre: "Défiscalisation des heures supplémentaires"
+texte_source: >-
+  Défiscaliser les heures supplémentaires : au-delà de 1 607 h/an pour un temps plein, chaque heure effectuée sera défiscalisée dans la limite de 100 heures/an. Cette défiscalisation concernera les cotisations salariales (le net sera égal au brut).
+source: nicolas-dupont-aignan-travail-economie-travail
+source_localisation: "page Économie du projet, rubrique des mesures pour relancer le pouvoir d'achat"
+redactions:
+  resume: >-
+    Nicolas Dupont-Aignan propose de défiscaliser les heures supplémentaires au-delà de 1 607 h/an, dans la limite de 100 heures/an.
+  detaille: >-
+    Dans le projet de Debout la France, présenté sur la page Économie, Nicolas Dupont-Aignan propose de défiscaliser les heures supplémentaires. Pour un temps plein, chaque heure effectuée au-delà de 1 607 h/an serait défiscalisée, dans la limite de 100 heures/an. Cette défiscalisation concernerait aussi les cotisations salariales, et le texte précise que « le net sera égal au brut ». Le programme ne précise pas ce que deviendraient les cotisations versées par l'employeur sur ces heures, ni le coût de la mesure pour l'État, ni la date de sa mise en œuvre.
+  enfant: >-
+    Nicolas Dupont-Aignan veut ne plus taxer les [[heures en plus|heure-supplementaire]]. Cela vaut pour un temps plein. Cela commence après 1 607 heures par an. Cela va jusqu'à 100 heures par an, pas plus. Les [[cotisations|cotisation]] du salarié sont aussi visées.
+  aine: >-
+    Dans le projet de Debout la France, Nicolas Dupont-Aignan propose de défiscaliser les heures supplémentaires. Pour un temps plein, les heures effectuées au-delà de 1 607 h/an seraient défiscalisées, dans la limite de 100 heures/an. Cette défiscalisation concernerait aussi les cotisations salariales : d'après le texte, le net serait égal au brut. Le programme ne précise pas le coût de la mesure ni sa date de mise en œuvre.
+statut_relecture: brouillon

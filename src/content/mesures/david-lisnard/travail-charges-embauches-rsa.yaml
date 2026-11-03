@@ -1,0 +1,20 @@
+version_schema: 1
+id: david-lisnard/travail-charges-embauches-rsa
+candidat: david-lisnard
+theme: travail
+sous_theme: chomage-et-emploi
+titre: "Suppression des charges des employeurs à domicile au niveau du SMIC et charges patronales négatives pour l'embauche de personnes au RSA"
+texte_source: >-
+  Par ailleurs, les charges pour les employeurs à domicile au niveau du SMIC seront supprimées. Un système de charges patronales négatives pour les embauches de personnes au RSA depuis plus de 2 ans sera créé.
+source: david-lisnard-axe-2-ambition-francaise
+source_localisation: "axe Réussir une nouvelle ambition française, partie sur le retour au plein-emploi"
+redactions:
+  resume: >-
+    David Lisnard propose de supprimer les charges des employeurs à domicile au niveau du SMIC et de créer des charges patronales négatives pour certaines embauches.
+  detaille: >-
+    Dans l'axe du programme de Nouvelle Énergie consacré à une nouvelle ambition française, David Lisnard annonce deux mesures sur les charges des employeurs. Les charges pour les employeurs à domicile au niveau du SMIC seraient supprimées. Un système de charges patronales négatives serait créé pour les embauches de personnes au RSA depuis plus de 2 ans. Le programme ne précise pas ce qu'est une charge patronale négative, ni son montant, ni le coût de ces deux mesures. Il ne donne pas non plus de date de mise en œuvre.
+  enfant: >-
+    David Lisnard veut supprimer certaines [[charges patronales|charges-patronales]]. Cela concerne les employeurs à domicile, au niveau du salaire minimum. Il veut aussi des charges « négatives » pour embaucher des personnes au [[RSA|revenu-de-solidarite-active]]. Cela vise celles qui y sont depuis plus de 2 ans. Le texte ne dit pas ce que cela veut dire.
+  aine: >-
+    Dans l'axe du programme de Nouvelle Énergie consacré à une nouvelle ambition française, David Lisnard prévoit de supprimer les charges pour les employeurs à domicile au niveau du SMIC. Il prévoit aussi un système de charges patronales négatives pour l'embauche de personnes au revenu de solidarité active (RSA) depuis plus de 2 ans. Le programme ne précise pas le fonctionnement ni le montant de ces charges négatives, ni le coût des deux mesures, ni leur date de mise en œuvre.
+statut_relecture: brouillon

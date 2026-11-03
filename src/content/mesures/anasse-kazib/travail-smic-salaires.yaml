@@ -1,0 +1,20 @@
+version_schema: 1
+id: anasse-kazib/travail-smic-salaires
+candidat: anasse-kazib
+theme: travail
+sous_theme: salaires
+titre: "Hausse du SMIC et des salaires, indexation sur l'inflation"
+texte_source: >-
+  SMIC à 2000 € net, revalorisation de toutes les allocations, augmentation des salaires de 500 €, indexation sur l'inflation.
+source: anasse-kazib-programme
+source_localisation: "page Programme, axe 1 (vivre, et plus survivre), rubrique des mesures voulues, première ligne"
+redactions:
+  resume: >-
+    Anasse Kazib propose un SMIC à 2000 € net, une augmentation des salaires de 500 € et leur indexation sur l'inflation.
+  detaille: >-
+    Dans les propositions de campagne d'Anasse Kazib, l'axe consacré à vivre et non plus survivre comprend une ligne qui réunit plusieurs mesures : un SMIC à 2000 € net, la revalorisation de toutes les allocations, une augmentation des salaires de 500 € et l'indexation sur l'inflation. Le programme ne précise pas si l'augmentation de 500 € s'ajouterait au SMIC à 2000 € net, ni sur quels salaires elle porterait, ni qui financerait ces hausses, ni à quelle date elles auraient lieu. Il ne dit pas non plus quelles allocations seraient revalorisées ni de combien.
+  enfant: >-
+    Anasse Kazib veut un salaire minimum de 2000 euros [[net|salaire-net]]. Il veut augmenter les salaires de 500 euros. Il veut aussi augmenter toutes les allocations. Les salaires suivraient la hausse des prix, c'est l'[[inflation]]. Le texte ne dit pas qui paierait.
+  aine: >-
+    Anasse Kazib propose, dans son programme de campagne, un salaire minimum (SMIC) à 2000 € net, la revalorisation de toutes les allocations et une augmentation des salaires de 500 €. Il propose aussi une indexation sur l'inflation, c'est-à-dire un ajustement en fonction de la hausse des prix. Le programme ne précise pas si les 500 € s'ajouteraient au SMIC annoncé, ni comment ces hausses seraient financées, ni leur calendrier.
+statut_relecture: brouillon

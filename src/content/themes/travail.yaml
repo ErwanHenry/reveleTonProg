@@ -31,4 +31,6 @@ sous_themes:
     nom: Dialogue social et négociation
   - id: travail-illegal
     nom: Travail dissimulé et contrôles
+  - id: fiscalite-et-financement
+    nom: Fiscalité du travail et financement de la protection sociale
 statut_relecture: brouillon

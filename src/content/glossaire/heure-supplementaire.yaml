@@ -1,0 +1,5 @@
+version_schema: 1
+id: heure-supplementaire
+type: terme
+libelle: "Heure supplémentaire"
+definition: "Une heure supplémentaire est une heure travaillée en plus de la durée de travail prévue dans le contrat."

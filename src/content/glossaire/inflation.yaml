@@ -1,0 +1,5 @@
+version_schema: 1
+id: inflation
+type: terme
+libelle: "Inflation"
+definition: "L'inflation, c'est la hausse générale des prix : avec la même somme d'argent, on peut acheter moins de choses."

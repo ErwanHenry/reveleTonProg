@@ -1,0 +1,20 @@
+version_schema: 1
+id: david-lisnard/travail-contrat-unique
+candidat: david-lisnard
+theme: travail
+sous_theme: droit-du-travail
+titre: "Contrat de travail unique pour les nouveaux emplois"
+texte_source: >-
+  Une mesure essentielle sera l’instauration d’un contrat de travail unique pour les nouveaux emplois, fusionnant CDI et CDD avec des indemnités de licenciement qui seraient progressives.
+source: david-lisnard-axe-2-ambition-francaise
+source_localisation: "axe Réussir une nouvelle ambition française, partie sur le retour au plein-emploi"
+redactions:
+  resume: >-
+    David Lisnard propose un contrat de travail unique pour les nouveaux emplois, qui fusionnerait CDI et CDD, avec des indemnités de licenciement progressives.
+  detaille: >-
+    Dans l'axe du programme de Nouvelle Énergie consacré à une nouvelle ambition française, David Lisnard présente comme « une mesure essentielle » l'instauration d'un contrat de travail unique pour les nouveaux emplois. Ce contrat fusionnerait le CDI et le CDD, c'est-à-dire le contrat à durée indéterminée et le contrat à durée déterminée. Il s'accompagnerait d'indemnités de licenciement qui seraient progressives. Le programme ne précise pas comment ces indemnités augmenteraient, ni ce qui deviendrait des contrats déjà signés, ni la date de mise en place.
+  enfant: >-
+    David Lisnard veut un seul contrat de travail pour les nouveaux emplois. Il prendrait la place de ces contrats. L'un est le [[contrat sans date de fin|contrat-a-duree-indeterminee]]. L'autre est le [[contrat avec date de fin|contrat-a-duree-determinee]]. Un salarié renvoyé toucherait une indemnité progressive. Le texte ne dit pas comment elle serait calculée.
+  aine: >-
+    Dans l'axe du programme de Nouvelle Énergie consacré à une nouvelle ambition française, David Lisnard présente comme « une mesure essentielle » un contrat de travail unique pour les nouveaux emplois. Il fusionnerait le contrat à durée indéterminée (CDI) et le contrat à durée déterminée (CDD), avec des indemnités de licenciement qui seraient progressives. Le programme ne précise pas selon quelle règle elles progresseraient, ce qu'il adviendrait des contrats existants, ni la date de mise en œuvre.
+statut_relecture: brouillon

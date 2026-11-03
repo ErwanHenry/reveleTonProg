@@ -1,0 +1,20 @@
+version_schema: 1
+id: jean-luc-melenchon/travail-smic-1700
+candidat: jean-luc-melenchon
+theme: travail
+sous_theme: salaires
+titre: "Hausse du SMIC, conférence sur les salaires et indexation sur l'inflation"
+texte_source: >-
+  Ces mesures d’urgence sociale doivent être complétées par une hausse du SMIC à 1 700 euros net. Cette hausse sera accompagnée de la convocation d’une conférence exceptionnelle sur les salaires et d’une indexation généralisée de ceux-ci sur l’inflation.
+source: jean-luc-melenchon-comptes-publics
+source_localisation: "page 8, partie sur les réponses aux urgences"
+redactions:
+  resume: >-
+    Jean-Luc Mélenchon propose une hausse du SMIC à 1 700 euros net, une conférence exceptionnelle sur les salaires et leur indexation sur l'inflation.
+  detaille: >-
+    Dans le document d'orientations budgétaires de Jean-Luc Mélenchon, la partie consacrée aux urgences prévoit une hausse du SMIC à 1 700 euros net. Selon le texte, cette hausse sera accompagnée de la convocation d'une conférence exceptionnelle sur les salaires et d'une indexation généralisée des salaires sur l'inflation. Le texte présente ces mesures comme un complément des mesures d'urgence sociale. Le programme ne précise pas à quelle date le SMIC atteindrait ce niveau, ni qui participerait à la conférence, ni comment l'indexation fonctionnerait.
+  enfant: >-
+    Jean-Luc Mélenchon veut que le salaire minimum monte à 1 700 euros [[net|salaire-net]]. Il veut aussi une grande réunion sur les salaires. Il veut que tous les salaires suivent la hausse des prix, c'est l'[[inflation]]. Le texte ne dit pas quand cela arriverait.
+  aine: >-
+    Dans le document d'orientations budgétaires de Jean-Luc Mélenchon, une hausse du salaire minimum (SMIC) à 1 700 euros net est prévue, en complément des mesures d'urgence sociale. Elle serait accompagnée d'une conférence exceptionnelle sur les salaires et d'une indexation généralisée des salaires sur l'inflation, c'est-à-dire sur la hausse des prix. Le programme ne précise pas la date de cette hausse, la composition de la conférence ni les règles de l'indexation.
+statut_relecture: brouillon

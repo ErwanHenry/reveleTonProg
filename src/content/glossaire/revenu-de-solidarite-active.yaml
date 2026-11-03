@@ -1,0 +1,5 @@
+version_schema: 1
+id: revenu-de-solidarite-active
+type: terme
+libelle: "Revenu de solidarité active"
+definition: "Le revenu de solidarité active, ou RSA, est une somme versée à certaines personnes sans emploi ou à faibles revenus."

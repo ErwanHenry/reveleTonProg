@@ -1,0 +1,15 @@
+version_schema: 1
+id: nicolas-dupont-aignan-travail-economie-travail
+type: site_parti
+auteur: parti_du_candidat
+candidats:
+  - nicolas-dupont-aignan
+titre: "Debout la France, projet : Économie et travail"
+url: https://www.debout-la-france.fr/projet/economie-travail/
+date_publication: 2026-11
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/nicolas-dupont-aignan/2595f453aa7d.txt
+  sha256: 2595f453aa7d92067e7e8b266c094f03ea373ed2d69e852ee664e035bd4d7a33
+  capture_le: 2026-11-03T23:15:07+01:00
+  binaire_sha256: d45fe117753f8dd7e8a037b3328f2471b7aeac5bf0fe41c2dcccf2492de89658
