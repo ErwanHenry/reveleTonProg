@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-01-PLAN.md
-last_updated: "2026-11-03T14:50:29.335Z"
-last_activity: 2026-11-03 -- Phase 2 execution started
+stopped_at: Completed 02-01-PLAN.md
+last_updated: "2026-11-03T14:53:49.092Z"
+last_activity: 2026-11-03
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 14
-  completed_plans: 7
+  completed_plans: 8
   percent: 20
 ---
 
@@ -27,11 +27,11 @@ See: .planning/PROJECT.md (updated 2026-11-03)
 ## Current Position
 
 Phase: 2 (Règles éditoriales et pièges) — EXECUTING
-Plan: 1 of 7
-Status: Executing Phase 2
-Last activity: 2026-11-03 -- Phase 2 execution started
+Plan: 2 of 7
+Status: Ready to execute
+Last activity: 2026-11-03
 
-Progress: [██████████] 100%
+Progress: [██████░░░░] 57%
 
 ## Performance Metrics
 
@@ -58,6 +58,7 @@ Progress: [██████████] 100%
 | Phase 01 P04 | 25min | 2 tasks | 8 files |
 | Phase 01 P06 | 25min | 2 tasks | 14 files |
 | Phase 01 P07 | 40min | 3 tasks | 10 files |
+| Phase 02 P01 | 20min | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -79,6 +80,7 @@ Recent decisions affecting current work:
 - [Phase 01-04]: Astro loader memo key includes projectRoot+contentRoot besides file fingerprint; only errors abort build, warnings logged once
 - [Phase 01]: [01-06] Fixture texte_source is a single-line substring of the hashed archive extract; file named <sha12>.txt, verified by skeleton test case (d) — Lets Phase 2 verify quotes and hashes without rewriting the fixture
 - [Phase 01]: [01-06] source.type has no presse; theme/source/mesure schemas copied from RESEARCH Pattern 1 under unmodified Ajv strict — D-3: press never backs a measure
+- [Phase 02]: [Phase 02-01]: ids.lock rewritten only when ids are added or file absent; ajouterIds refuses invalid candidat ids
 
 ### Pending Todos
 
@@ -101,6 +103,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-11-03T12:16:21.490Z
-Stopped at: Completed 01-01-PLAN.md
+Last session: 2026-11-03T14:53:49.067Z
+Stopped at: Completed 02-01-PLAN.md
 Resume file: None
