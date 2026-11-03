@@ -56,6 +56,10 @@ describe('scaffold Node 24', () => {
     assert.ok(fs.existsSync(path.join(ROOT, 'src', 'content', '.gitkeep')));
   });
 
+  it('.npmrc coupe les scripts de cycle de vie des dépendances (WR-07)', () => {
+    assert.ok(read('.npmrc').split('\n').includes('ignore-scripts=true'));
+  });
+
   it('le Node qui exécute les tests est >= 24', () => {
     assert.ok(Number(process.versions.node.split('.')[0]) >= 24, process.version);
   });

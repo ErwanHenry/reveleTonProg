@@ -39,6 +39,10 @@ const runsOf = (job: Job): string[] =>
   job.steps.filter((s) => typeof s.run === 'string').map((s) => (s.run as string).trim());
 
 describe('ci.yml : déclencheurs et droits', () => {
+  it('push limité à main : une PR ne déclenche pas la CI deux fois (WR-07)', () => {
+    assert.deepEqual((ci.on.push as { branches?: string[] } | null)?.branches, ['main']);
+  });
+
   it('se déclenche sur push et pull_request, jamais pull_request_target', () => {
     assert.ok('push' in ci.on);
     assert.ok('pull_request' in ci.on);
