@@ -32,7 +32,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Fondations, schémas v1 et content-core** - Dépôt Node 24 + Astro 7 statique, CI durcie, hygiène, schémas JSON 2020-12 et loader/validateur unique (completed 2026-11-03)
 - [x] **Phase 2: Règles éditoriales et pièges** - La CI refuse une mesure sans source et tous les pièges §12 applicables (livrable Lot 1) (completed 2026-11-03)
 - [ ] **Phase 3: Import data.gouv et corpus pilote** - 59 fiches candidats sourcées, outil d'archivage, 3 thèmes pilotes réels en brouillon (parallélisable avec 2 et 4)
-- [ ] **Phase 4: Référentiel M1 et 4 niveaux de lecture** - Pages thème et candidat, bascule de niveau sans JS, ordre alphabétique/aléatoire, Aîné et Enfant, contrôle post-build (parallélisable avec 2 et 3)
+- [x] **Phase 4: Référentiel M1 et 4 niveaux de lecture** - Pages thème et candidat, bascule de niveau sans JS, ordre alphabétique/aléatoire, Aîné et Enfant, contrôle post-build (parallélisable avec 2 et 3) (completed 2026-11-03)
 - [ ] **Phase 5: Pages institutionnelles, qualité et URL de test** - Méthode, Mentions légales, Qui sommes-nous, suite a11y/4G, test croisé, preview livrée (livrable Lot 2)
 
 ## Phase Details
@@ -159,7 +159,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 03-05-PLAN.md — Captures manuelles des sites bloqués (checkpoint conditionnel), thèmes pilotes arrêtés (checkpoint conditionnel), tests du corpus pilote réel (wave 3)
+- [x] 03-05-PLAN.md — Captures manuelles des sites bloqués (checkpoint conditionnel), thèmes pilotes arrêtés (checkpoint conditionnel), tests du corpus pilote réel (wave 3)
 
 **Wave 4 → 6** *(séquentiels : glossaire, sources, dépôt privé et quotas Wave partagés)*
 
@@ -222,7 +222,7 @@ Plans:
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 04-09-PLAN.md — Intégration : `check-dist` en CI, cas croisés, documentation et ADR (dont « taille fixe = structure fixe »), verrou de phase sur les corpus fictifs et réel, vérification humaine de la preview (wave 6)
+- [x] 04-09-PLAN.md — Intégration : `check-dist` en CI, cas croisés, documentation et ADR (dont « taille fixe = structure fixe »), verrou de phase sur les corpus fictifs et réel, vérification humaine de la preview (wave 6)
 
 **Note d'exécution** : les pages sont construites sur la racine explicite `corpus-m1` (jamais la racine par défaut que 03-09 bascule vers `.`). Fichiers partagés avec la Phase 3 : `tests/dist/skeleton.test.ts` (04-02 le supprime), `src/pages/index.astro` (04-06 le remplace), et `package.json`, `tests/repo/scaffold.test.ts`, `.github/workflows/ci.yml`, `tests/repo/ci.test.ts`, `README.md`, `docs/RUNBOOK.md`, `docs/ARCHITECTURE.md`, `tests/repo/docs.test.ts` (04-09) : 04-09 et 03-09 ne s'exécutent jamais en même temps.
 **UI hint**: yes
@@ -281,8 +281,8 @@ Phase 1 ──┬──> Phase 2 (règles) ──────────┐
 |-------|----------------|--------|-----------|
 | 1. Fondations, schémas v1 et content-core | 7/7 | Complete    | 2026-11-03 |
 | 2. Règles éditoriales et pièges | 7/7 | Complete    | 2026-11-03 |
-| 3. Import data.gouv et corpus pilote | 4/9 | In Progress|  |
-| 4. Référentiel M1 et 4 niveaux de lecture | 8/9 | In Progress|  |
+| 3. Import data.gouv et corpus pilote | 5/9 | In Progress|  |
+| 4. Référentiel M1 et 4 niveaux de lecture | 9/9 | Complete   | 2026-11-03 |
 | 5. Pages institutionnelles, qualité et URL de test | 0/TBD | Not started | - |
 
 ---
