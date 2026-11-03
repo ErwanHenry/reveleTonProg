@@ -1,0 +1,373 @@
+version: 1
+correspondances:
+  melenchon:
+    id: jean-luc-melenchon
+    prenom: Jean-Luc
+    nom: Mélenchon
+    nom_tri: Mélenchon
+    type_source_statut: presse
+  faure:
+    id: olivier-faure
+    prenom: Olivier
+    nom: Faure
+    nom_tri: Faure
+    motif: elimine_primaire
+    type_source_statut: presse
+  glucksmann:
+    id: raphael-glucksmann
+    prenom: Raphaël
+    nom: Glucksmann
+    nom_tri: Glucksmann
+    type_source_statut: presse
+  guedj:
+    id: jerome-guedj
+    prenom: Jérôme
+    nom: Guedj
+    nom_tri: Guedj
+    motif: elimine_primaire
+    type_source_statut: presse
+  royal:
+    id: segolene-royal
+    prenom: Ségolène
+    nom: Royal
+    nom_tri: Royal
+    motif: elimine_primaire
+    type_source_statut: presse
+  maurel:
+    id: emmanuel-maurel
+    prenom: Emmanuel
+    nom: Maurel
+    nom_tri: Maurel
+    motif: elimine_primaire
+    type_source_statut: presse
+  roussel:
+    id: fabien-roussel
+    prenom: Fabien
+    nom: Roussel
+    nom_tri: Roussel
+    type_source_statut: presse
+  ruffin:
+    id: francois-ruffin
+    prenom: François
+    nom: Ruffin
+    nom_tri: Ruffin
+    type_source_statut: presse
+  cazeneuve:
+    id: bernard-cazeneuve
+    prenom: Bernard
+    nom: Cazeneuve
+    nom_tri: Cazeneuve
+    type_source_statut: presse
+  bouamrane:
+    id: karim-bouamrane
+    prenom: Karim
+    nom: Bouamrane
+    nom_tri: Bouamrane
+    type_source_statut: presse
+  hollande:
+    id: francois-hollande
+    prenom: François
+    nom: Hollande
+    nom_tri: Hollande
+    type_source_statut: presse
+  arthaud:
+    id: nathalie-arthaud
+    prenom: Nathalie
+    nom: Arthaud
+    nom_tri: Arthaud
+    type_source_statut: presse
+  kazib:
+    id: anasse-kazib
+    prenom: Anasse
+    nom: Kazib
+    nom_tri: Kazib
+    type_source_statut: parti
+  labib:
+    id: selma-labib
+    prenom: Selma
+    nom: Labib
+    nom_tri: Labib
+    type_source_statut: parti
+  tondelier:
+    id: marine-tondelier
+    prenom: Marine
+    nom: Tondelier
+    nom_tri: Tondelier
+    type_source_statut: presse
+  batho:
+    id: delphine-batho
+    prenom: Delphine
+    nom: Batho
+    nom_tri: Batho
+    type_source_statut: candidat
+  vallaud:
+    id: boris-vallaud
+    prenom: Boris
+    nom: Vallaud
+    nom_tri: Vallaud
+    motif: ralliement
+    type_source_statut: presse
+  autain:
+    id: clementine-autain
+    prenom: Clémentine
+    nom: Autain
+    nom_tri: Autain
+    motif: retrait
+    type_source_statut: presse
+  castets:
+    id: lucie-castets
+    prenom: Lucie
+    nom: Castets
+    nom_tri: Castets
+    motif: non_candidat
+    type_source_statut: presse
+  poutou:
+    id: philippe-poutou
+    prenom: Philippe
+    nom: Poutou
+    nom_tri: Poutou
+    motif: non_candidat
+    type_source_statut: presse
+  philippe:
+    id: edouard-philippe
+    prenom: Édouard
+    nom: Philippe
+    nom_tri: Philippe
+    type_source_statut: presse
+  attal:
+    id: gabriel-attal
+    prenom: Gabriel
+    nom: Attal
+    nom_tri: Attal
+    type_source_statut: presse
+  becht:
+    id: olivier-becht
+    prenom: Olivier
+    nom: Becht
+    nom_tri: Becht
+    type_source_statut: presse
+  villepin:
+    id: dominique-de-villepin
+    prenom: Dominique
+    nom: de Villepin
+    nom_tri: Villepin
+    type_source_statut: presse
+  le-maire:
+    id: bruno-le-maire
+    prenom: Bruno
+    nom: Le Maire
+    nom_tri: Le Maire
+    type_source_statut: presse
+  darmanin:
+    id: gerald-darmanin
+    prenom: Gérald
+    nom: Darmanin
+    nom_tri: Darmanin
+    motif: ralliement
+    type_source_statut: presse
+  bayrou:
+    id: francois-bayrou
+    prenom: François
+    nom: Bayrou
+    nom_tri: Bayrou
+    motif: non_candidat
+    type_source_statut: presse
+  retailleau:
+    id: bruno-retailleau
+    prenom: Bruno
+    nom: Retailleau
+    nom_tri: Retailleau
+    type_source_statut: parti
+  lisnard:
+    id: david-lisnard
+    prenom: David
+    nom: Lisnard
+    nom_tri: Lisnard
+    type_source_statut: presse
+  platret:
+    id: gilles-platret
+    prenom: Gilles
+    nom: Platret
+    nom_tri: Platret
+    type_source_statut: presse
+  bertrand:
+    id: xavier-bertrand
+    prenom: Xavier
+    nom: Bertrand
+    nom_tri: Bertrand
+    type_source_statut: presse
+  wauquiez:
+    id: laurent-wauquiez
+    prenom: Laurent
+    nom: Wauquiez
+    nom_tri: Wauquiez
+    motif: non_candidat
+    type_source_statut: presse
+  barnier:
+    id: michel-barnier
+    prenom: Michel
+    nom: Barnier
+    nom_tri: Barnier
+    motif: non_candidat
+    type_source_statut: presse
+  le-pen:
+    id: marine-le-pen
+    prenom: Marine
+    nom: Le Pen
+    nom_tri: Le Pen
+    type_source_statut: presse
+  bardella:
+    id: jordan-bardella
+    prenom: Jordan
+    nom: Bardella
+    nom_tri: Bardella
+    motif: non_candidat
+    type_source_statut: presse
+  zemmour:
+    id: eric-zemmour
+    prenom: Éric
+    nom: Zemmour
+    nom_tri: Zemmour
+    type_source_statut: presse
+  knafo:
+    id: sarah-knafo
+    prenom: Sarah
+    nom: Knafo
+    nom_tri: Knafo
+    motif: non_candidat
+    type_source_statut: presse
+  marechal:
+    id: marion-marechal
+    prenom: Marion
+    nom: Maréchal
+    nom_tri: Maréchal
+    motif: ralliement
+    type_source_statut: presse
+  dupont-aignan:
+    id: nicolas-dupont-aignan
+    prenom: Nicolas
+    nom: Dupont-Aignan
+    nom_tri: Dupont-Aignan
+    type_source_statut: presse
+  philippot:
+    id: florian-philippot
+    prenom: Florian
+    nom: Philippot
+    nom_tri: Philippot
+    type_source_statut: presse
+  asselineau:
+    id: francois-asselineau
+    prenom: François
+    nom: Asselineau
+    nom_tri: Asselineau
+    type_source_statut: parti
+  lassalle:
+    id: jean-lassalle
+    prenom: Jean
+    nom: Lassalle
+    nom_tri: Lassalle
+    type_source_statut: presse
+  mlekuz:
+    id: manolo-mlekuz
+    prenom: Manolo
+    nom: Mlekuz
+    nom_tri: Mlekuz
+    type_source_statut: presse
+  egger:
+    id: clara-egger
+    prenom: Clara
+    nom: Egger
+    nom_tri: Egger
+    type_source_statut: parti
+  mathieu:
+    id: benoit-mathieu
+    prenom: Benoît
+    nom: Mathieu
+    nom_tri: Mathieu
+    type_source_statut: presse
+  lalanne:
+    id: francis-lalanne
+    prenom: Francis
+    nom: Lalanne
+    nom_tri: Lalanne
+    type_source_statut: presse
+  branco:
+    id: juan-branco
+    prenom: Juan
+    nom: Branco
+    nom_tri: Branco
+    type_source_statut: presse
+  durif:
+    id: sylvain-durif
+    prenom: Sylvain
+    nom: Durif
+    nom_tri: Durif
+    type_source_statut: presse
+  mikolajczak:
+    id: antoine-mikolajczak
+    prenom: Antoine
+    nom: Mikolajczak
+    nom_tri: Mikolajczak
+    type_source_statut: presse
+  polony:
+    id: natacha-polony
+    prenom: Natacha
+    nom: Polony
+    nom_tri: Polony
+    type_source_statut: presse
+  billetdoux:
+    id: augustin-billetdoux
+    prenom: Augustin
+    nom: Billetdoux
+    nom_tri: Billetdoux
+    type_source_statut: presse
+  collovati:
+    id: christian-collovati
+    prenom: Christian
+    nom: Collovati
+    nom_tri: Collovati
+    type_source_statut: presse
+  legendre:
+    id: jean-francois-legendre
+    prenom: Jean-François
+    nom: Legendre
+    nom_tri: Legendre
+    type_source_statut: presse
+  markovic:
+    id: mira-markovic
+    prenom: Mira
+    nom: Markovic
+    nom_tri: Markovic
+    type_source_statut: presse
+  rohou:
+    id: erwan-rohou
+    prenom: Erwan
+    nom: Rohou
+    nom_tri: Rohou
+    type_source_statut: presse
+  dubuisson:
+    id: emmanuel-dubuisson
+    prenom: Emmanuel
+    nom: Dubuisson
+    nom_tri: Dubuisson
+    type_source_statut: institution
+  massard:
+    id: lydie-massard
+    prenom: Lydie
+    nom: Massard
+    nom_tri: Massard
+    type_source_statut: presse
+  lucas-lundy:
+    id: benjamin-lucas-lundy
+    prenom: Benjamin
+    nom: Lucas-Lundy
+    nom_tri: Lucas-Lundy
+    motif: retrait
+    type_source_statut: presse
+  brun:
+    id: philippe-brun
+    prenom: Philippe
+    nom: Brun
+    nom_tri: Brun
+    motif: elimine_primaire
+    type_source_statut: presse

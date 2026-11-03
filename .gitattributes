@@ -4,3 +4,5 @@ tests/fixtures/**/archives/** -text
 # ids.lock est comparé ligne à ligne : toujours LF.
 ids.lock text eol=lf
 **/ids.lock text eol=lf
+# Instantanés data.gouv hachés octet par octet : aucune conversion de fin de ligne.
+data/import/*.json -text
