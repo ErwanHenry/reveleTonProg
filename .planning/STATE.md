@@ -4,13 +4,13 @@ milestone: v1.1
 milestone_name: milestone
 status: executing
 stopped_at: Completed 01-01-PLAN.md
-last_updated: "2026-11-03T12:03:10.705Z"
+last_updated: "2026-11-03T12:07:34.210Z"
 last_activity: 2026-11-03
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 7
-  completed_plans: 5
+  completed_plans: 6
   percent: 0
 ---
 
@@ -27,11 +27,11 @@ See: .planning/PROJECT.md (updated 2026-11-03)
 ## Current Position
 
 Phase: 1 (Fondations, schémas v1 et content-core) — EXECUTING
-Plan: 6 of 7
+Plan: 7 of 7
 Status: Ready to execute
 Last activity: 2026-11-03
 
-Progress: [██████░░░░] 57%
+Progress: [█████████░] 86%
 
 ## Performance Metrics
 
@@ -56,6 +56,7 @@ Progress: [██████░░░░] 57%
 | Phase 01 P01 | 25min | 2 tasks | 13 files |
 | Phase 01 P02 | 35min | 2 tasks | 13 files |
 | Phase 01 P04 | 25min | 2 tasks | 8 files |
+| Phase 01 P06 | 25min | 2 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -75,6 +76,8 @@ Recent decisions affecting current work:
 - [Phase 01]: [01-01] .gitignore dist/ anchored to /dist/ so tests/dist/ is tracked
 - [Phase 01]: [01-02] Ajv dedupe key = code+pointer+message so multiple missing required props on one object all surface; empty RTP_CONTENT_ROOT treated as unset
 - [Phase 01-04]: Astro loader memo key includes projectRoot+contentRoot besides file fingerprint; only errors abort build, warnings logged once
+- [Phase 01]: [01-06] Fixture texte_source is a single-line substring of the hashed archive extract; file named <sha12>.txt, verified by skeleton test case (d) — Lets Phase 2 verify quotes and hashes without rewriting the fixture
+- [Phase 01]: [01-06] source.type has no presse; theme/source/mesure schemas copied from RESEARCH Pattern 1 under unmodified Ajv strict — D-3: press never backs a measure
 
 ### Pending Todos
 
@@ -98,6 +101,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-11-03T12:01:23.821Z
+Last session: 2026-11-03T12:07:09.357Z
 Stopped at: Completed 01-01-PLAN.md
 Resume file: None

@@ -70,7 +70,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 01-06-PLAN.md — Sourced-measure slice: theme/source/mesure schemas, fictional measure + archive, rendered on the page (wave 4)
+- [x] 01-06-PLAN.md — Sourced-measure slice: theme/source/mesure schemas, fictional measure + archive, rendered on the page (wave 4)
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -204,7 +204,7 @@ Phase 1 ──┬──> Phase 2 (règles) ──────────┐
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Fondations, schémas v1 et content-core | 5/7 | In Progress|  |
+| 1. Fondations, schémas v1 et content-core | 6/7 | In Progress|  |
 | 2. Règles éditoriales et pièges | 0/TBD | Not started | - |
 | 3. Import data.gouv et corpus pilote | 0/TBD | Not started | - |
 | 4. Référentiel M1 et 4 niveaux de lecture | 0/TBD | Not started | - |

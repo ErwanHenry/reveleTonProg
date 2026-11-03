@@ -21,8 +21,8 @@
 
 - [x] **DATA-01**: Les schémas JSON Schema 2020-12 dans `schemas/` (candidat, theme, mesure, source, couverture, glossaire, sondage, journal) sont la seule source de vérité structurelle, chacun avec `version_schema`
 - [x] **DATA-02**: Un candidat a un id `prenom-nom` ASCII figé, `prenom`, `nom`, `nom_tri`, parti tel que revendiqué avec `parti_source`, `ids_externes`, `ordre_cc` réservé, et un historique `statuts[]` append-only (code, `motif` si `renonce`, date, source typée `candidat|parti|institution|presse`)
-- [ ] **DATA-03**: Une mesure a candidat, thème, sous-thème, titre neutre, `texte_source` cité, référence de source, 4 rédactions, chiffrage du candidat, `statut_relecture` (`brouillon|relu|publie`), relecteur, date ; enfant et aîné obligatoires pour `publie` (if/then)
-- [ ] **DATA-04**: Une source a type primaire (programme, site candidat/parti, discours, tribune, dépôt CC), auteur (`candidat|parti_du_candidat|coalition`), URL, date de publication, date de consultation, et un bloc archive (chemin extrait `.txt`, sha256, date de capture, URL Wayback)
+- [x] **DATA-03**: Une mesure a candidat, thème, sous-thème, titre neutre, `texte_source` cité, référence de source, 4 rédactions, chiffrage du candidat, `statut_relecture` (`brouillon|relu|publie`), relecteur, date ; enfant et aîné obligatoires pour `publie` (if/then)
+- [x] **DATA-04**: Une source a type primaire (programme, site candidat/parti, discours, tribune, dépôt CC), auteur (`candidat|parti_du_candidat|coalition`), URL, date de publication, date de consultation, et un bloc archive (chemin extrait `.txt`, sha256, date de capture, URL Wayback)
 - [x] **DATA-05**: Une couverture par thème liste chaque candidat dans le périmètre d'équité avec un état `mesures|non_precise|programme_non_publie`, `verifie_le`, `verifie_par`, sources consultées
 - [x] **DATA-06**: Un glossaire contient des termes (définition en une phrase, niveau CM1) et des partis (`type: parti`, auto-description sourcée)
 - [x] **DATA-07**: Un loader unique (`src/lib/content-core/load`) parse le YAML sans le tag `timestamp` (dates = chaînes) et est utilisé à la fois par le validateur CI et par Astro
@@ -141,8 +141,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FOND-05 | Phase 1 | Pending |
 | DATA-01 | Phase 1 | Complete |
 | DATA-02 | Phase 1 | Complete |
-| DATA-03 | Phase 1 | Pending |
-| DATA-04 | Phase 1 | Pending |
+| DATA-03 | Phase 1 | Complete |
+| DATA-04 | Phase 1 | Complete |
 | DATA-05 | Phase 1 | Complete |
 | DATA-06 | Phase 1 | Complete |
 | DATA-07 | Phase 1 | Complete |
