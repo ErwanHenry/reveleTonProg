@@ -113,9 +113,9 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 02-03-PLAN.md — Rédactions : mots interdits, verbes connotés, longueurs, phrases enfant, Kandel-Moles (wave 2)
-- [ ] 02-04-PLAN.md — Corpus : sources et archives sur disque, références, ids.lock, équité, champs non importables (wave 2)
-- [ ] 02-05-PLAN.md — Sondages pièges et fenêtres de blocage, `--mode preview|production`, annotations GitHub (wave 2)
+- [x] 02-03-PLAN.md — Rédactions : mots interdits, verbes connotés, longueurs, phrases enfant, Kandel-Moles (wave 2)
+- [x] 02-04-PLAN.md — Corpus : sources et archives sur disque, références, ids.lock, équité, champs non importables (wave 2)
+- [x] 02-05-PLAN.md — Sondages pièges et fenêtres de blocage, `--mode preview|production`, annotations GitHub (wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -223,7 +223,7 @@ Phase 1 ──┬──> Phase 2 (règles) ──────────┐
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Fondations, schémas v1 et content-core | 7/7 | Complete    | 2026-11-03 |
-| 2. Règles éditoriales et pièges | 2/7 | In Progress|  |
+| 2. Règles éditoriales et pièges | 5/7 | In Progress|  |
 | 3. Import data.gouv et corpus pilote | 0/TBD | Not started | - |
 | 4. Référentiel M1 et 4 niveaux de lecture | 0/TBD | Not started | - |
 | 5. Pages institutionnelles, qualité et URL de test | 0/TBD | Not started | - |
