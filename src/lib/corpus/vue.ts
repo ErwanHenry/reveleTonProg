@@ -48,6 +48,12 @@ export const LIBELLES_MOTIF: Record<MotifRenoncement, string> = {
 
 export const BADGES = { brouillon: 'brouillon, non relu', relu: 'relu, pas encore publié' } as const;
 
+/** Textes des deux cases vides datées, de part et d'autre de la date (partagés par EtatVide et la page Méthode). */
+export const ETAT_VIDE_TEXTES = {
+  non_precise: { avant: 'Non précisé dans les sources consultées le', apres: '.' },
+  programme_non_publie: { avant: 'Programme non publié à ce jour. Vérifié le', apres: '.' },
+} as const;
+
 export type EtatCellule = 'mesures' | 'non_precise' | 'programme_non_publie' | 'non_verifie';
 
 export interface Brut {
