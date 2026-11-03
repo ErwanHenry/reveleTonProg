@@ -69,8 +69,18 @@ function relPosix(file: string, cwd: string): string {
   return (rel === '' ? file : rel).split(path.sep).join('/');
 }
 
+/**
+ * Neutralise les caractères de contrôle (dont \n, \r, ESC, NEL, U+2028/2029) en \uXXXX. Les
+ * messages embarquent du texte contrôlé par les contributeurs (clés inconnues, valeurs, extraits
+ * YAML) : sans cela, une clé YAML contenant un retour à la ligne ferait commencer une ligne du
+ * journal par `::stop-commands::` ou `::warning ...::`, que le runner GitHub exécute.
+ */
+export function safe(s: string): string {
+  return s.replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`);
+}
+
 export function formatText(d: Diagnostic, cwd: string = process.cwd()): string {
-  return `${relPosix(d.file, cwd)}:${d.line}:${d.col} ${d.code} ${d.message} (${d.pointer === '' ? '/' : d.pointer})`;
+  return `${safe(relPosix(d.file, cwd))}:${d.line}:${d.col} ${safe(d.code)} ${safe(d.message)} (${safe(d.pointer === '' ? '/' : d.pointer)})`;
 }
 
 /** Encodage des données d'une commande de workflow GitHub : % \r \n. */
