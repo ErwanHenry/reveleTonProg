@@ -249,6 +249,21 @@ describe('checkDist : ressources tierces, scripts et styles', () => {
     assert.deepEqual(checkDist(bon, { mode: 'production', deploiement: true }), []);
   });
 
+  it('WR-05 : liste blanche de schémas de lien (data:, vbscript:, ftp:, file:, blob:, tel:) et contrôles C0 ignorés par le navigateur', () => {
+    for (const href of ['data:text/html,x', 'vbscript:x', 'ftp://x.exemple.invalid/', 'file:///etc/passwd', 'blob:https://x', 'tel:+33123456789', '\u0001javascript:alert(1)', ' \u0000data:text/html,x']) {
+      exactement('LIEN_EXTERNE_NON_PROTEGE', { 'index.html': page({ corps: `<a href="${href}">x</a>` }) });
+    }
+    const ok = page({ corps: '<a href="/themes/logement/">t</a><a href="mailto:a@x.exemple.fr">m</a>' });
+    assert.deepEqual(verifier(distPropre({ 'index.html': ok })).codes, []);
+  });
+
+  it('WR-05 : gestionnaires on*, <meta http-equiv=refresh> et <base> sont refusés', () => {
+    exactement('SCRIPT_EN_LIGNE', { 'index.html': page({ corps: '<p onclick="x()">t</p>' }) });
+    exactement('SCRIPT_EN_LIGNE', { 'index.html': page({ corps: '<img src="/_astro/a.css" alt="" onerror="x()">' }) });
+    exactement('META_REFRESH', { 'index.html': page({ head: '<meta http-equiv="refresh" content="0;url=https://x.exemple.invalid/">' }) });
+    exactement('BASE_INTERDITE', { 'index.html': page({ head: '<base href="https://x.exemple.invalid/">' }) });
+  });
+
   it('SCRIPT_EN_LIGNE : <script> sans src', () => {
     exactement('SCRIPT_EN_LIGNE', { 'index.html': page({ head: '<script>var a=1;</script>' }) });
   });

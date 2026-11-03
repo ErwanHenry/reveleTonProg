@@ -46,6 +46,8 @@ export const CODES_CHECK_DIST = [
   'MARQUEUR_RESIDUEL',
   'DIST_VIDE',
   'CONTACT_PROVISOIRE',
+  'META_REFRESH',
+  'BASE_INTERDITE',
 ] as const;
 export type CodeCheckDist = (typeof CODES_CHECK_DIST)[number];
 
@@ -71,8 +73,11 @@ export interface OptionsCheckDist {
 
 const SCHEMA = /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i;
 
-/** Valeur d'attribut telle que la lit un navigateur : sans espaces de bord ni tabulations/retours internes. */
-const nettoyerUrl = (v: string): string => v.replace(/[\t\n\r]/g, '').trim();
+/**
+ * Valeur d'attribut telle que la lit un navigateur : sans tabulations/retours internes, ni
+ * caractères de contrôle C0 ou espaces de bord (« \u0001javascript:… » est lu comme « javascript:… »).
+ */
+const nettoyerUrl = (v: string): string => v.replace(/[\t\n\r]/g, '').replace(/^[\u0000-\u0020]+|[\u0000-\u0020]+$/g, '');
 const estAbsolue = (v: string): boolean => SCHEMA.test(nettoyerUrl(v));
 
 const posix = (p: string): string => p.split(path.sep).join('/');
@@ -252,6 +257,13 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
           signaler('SCRIPT_NON_BLOQUANT', rel, `<script src="${nettoyerUrl(n.attrs.src)}"> doit rester bloquant (ni type=module, ni async, ni defer)`);
         }
       }
+      for (const nom of Object.keys(n.attrs)) {
+        if (/^on/i.test(nom)) signaler('SCRIPT_EN_LIGNE', rel, `gestionnaire d'événement en ligne « ${nom.slice(0, 30)} » sur <${n.tag}> interdit (CSP script-src 'self')`);
+      }
+      if (n.tag === 'meta' && (n.attrs['http-equiv'] ?? '').toLowerCase() === 'refresh') {
+        signaler('META_REFRESH', rel, `<meta http-equiv="refresh"> interdit (redirection hors de contrôle) : ${(n.attrs.content ?? '').slice(0, 60)}`);
+      }
+      if (n.tag === 'base') signaler('BASE_INTERDITE', rel, '<base> interdit : il réécrit tous les liens relatifs de la page');
       if (n.tag === 'style') signaler('STYLE_EN_LIGNE', rel, "<style> interdit : la feuille de style doit être un fichier du site (CSP style-src 'self')");
       if (n.attrs.style !== undefined) signaler('STYLE_EN_LIGNE', rel, `attribut style sur <${n.tag}> interdit (CSP style-src 'self')`);
     }
@@ -278,7 +290,7 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
         }
         continue;
       }
-      if (href === '' || /^tel:/i.test(href)) continue;
+      if (href === '') continue;
       if (/^javascript:/i.test(href)) {
         signaler('LIEN_EXTERNE_NON_PROTEGE', rel, `lien javascript: interdit : ${href.slice(0, 60)}`);
       } else if (href.startsWith('//')) {
@@ -289,7 +301,10 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
         if (!(n.attrs.rel ?? '').toLowerCase().split(/\s+/).includes('noopener')) {
           signaler('LIEN_EXTERNE_NON_PROTEGE', rel, `lien externe sans rel="noopener noreferrer" : ${href.slice(0, 80)}`);
         }
-      } else if (!SCHEMA.test(href)) {
+      } else if (SCHEMA.test(href)) {
+        // Liste blanche : seuls https:, mailto: et les liens relatifs passent (data:, vbscript:, ftp:, file:, blob:, tel:…).
+        signaler('LIEN_EXTERNE_NON_PROTEGE', rel, `schéma de lien non autorisé (https:, mailto: ou lien relatif seulement) : ${href.slice(0, 60)}`);
+      } else {
         const c = cible(rel, href);
         if (c === undefined) signaler('LIEN_INTERNE_CASSE', rel, `lien interne vers une page absente du dist : ${href.slice(0, 80)}`);
         else if (c.frag !== '' && c.rel.endsWith('.html')) {
