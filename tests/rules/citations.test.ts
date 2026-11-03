@@ -198,10 +198,22 @@ describe('REGLE-05 : texte_source et archive', () => {
     return `${TEXTE} ${Array.from({ length: n }, () => 'alpha').join(' ')}`;
   };
 
-  it('texte_source de 121 mots, fidèle à l’archive : seul avertissement TROP_LONG', () => {
+  it('WR-04 : texte_source de 121 mots, fidèle à l’archive : TROP_LONG est une erreur en production', () => {
     const t = long(121);
     assert.equal(countWords(t), 121);
-    comparer(avecArchive([r(MESURE, `texte_source: ${TEXTE}`, `texte_source: ${t}`)], `\n\n${t}\n`), [warn('TEXTE_SOURCE_TROP_LONG', '/texte_source')]);
+    comparer(avecArchive([r(MESURE, `texte_source: ${TEXTE}`, `texte_source: ${t}`)], `\n\n${t}\n`), [err('TEXTE_SOURCE_TROP_LONG', '/texte_source')]);
+  });
+
+  it('WR-04 : le même texte_source n’est qu’un avertissement en preview', () => {
+    const t = long(121);
+    const racine = construireRacine(spec([r(MESURE, `texte_source: ${TEXTE}`, `texte_source: ${t}`)], { mode: 'preview' }));
+    const fichier = path.join(racine, ARCHIVE);
+    appendFileSync(fichier, `\n\n${t}\n`);
+    const sha = createHash('sha256').update(readFileSync(fichier)).digest('hex');
+    const src = path.join(racine, SOURCE);
+    writeFileSync(src, readFileSync(src, 'utf8').replace(SHA, sha));
+    const res = loadAll(racine, { schemasDir: SCHEMAS_DIR, mode: 'preview' });
+    assert.deepEqual(res.diagnostics.filter((d) => d.code === 'TEXTE_SOURCE_TROP_LONG').map((d) => d.severity), ['warning']);
   });
 
   it('texte_source de 120 mots, fidèle à l’archive : aucun diagnostic', () => {

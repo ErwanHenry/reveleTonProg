@@ -78,7 +78,7 @@ export function extractNumbers(text: string): string[] {
 }
 
 const NUMBER_WORDS = new Set(
-  'zero deux trois quatre cinq six sept huit neuf dix onze douze treize quatorze quinze seize vingt vingts trente quarante cinquante soixante septante huitante nonante cent cents mille million millions milliard milliards dizaine dizaines douzaine douzaines centaine centaines millier milliers'.split(
+  'zero deux trois quatre cinq six sept huit neuf dix onze douze treize quatorze quinze seize vingt vingts trente quarante cinquante soixante septante huitante nonante cent cents mille million millions milliard milliards dizaine dizaines douzaine douzaines quinzaine quinzaines vingtaine vingtaines trentaine trentaines quarantaine quarantaines cinquantaine cinquantaines soixantaine soixantaines centaine centaines millier milliers moitie moities demi demie demis demies tiers quart quarts double doubles triple triples quadruple quadruples premier premiere premiers premieres second seconde seconds secondes deuxieme deuxiemes troisieme troisiemes quatrieme quatriemes cinquieme cinquiemes sixieme sixiemes septieme septiemes huitieme huitiemes neuvieme neuviemes dixieme dixiemes'.split(
     ' ',
   ),
 );

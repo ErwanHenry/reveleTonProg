@@ -73,6 +73,12 @@ describe('extractNumberWords : nombres en lettres', () => {
   it('trois, cinquante et millions sont extraits', () => {
     assert.deepEqual(extractNumberWords('trois villes, cinquante communes et des millions'), ['trois', 'cinquante', 'millions']);
   });
+  it('WR-04 : moitié, double, triple, tiers, quart, -aines et ordinaux en lettres sont extraits', () => {
+    assert.deepEqual(
+      extractNumberWords('La moitié, le double, le triple, un tiers, un quart, une trentaine, une soixantaine, la deuxième, le second, le premier'),
+      ['moitie', 'double', 'triple', 'tiers', 'quart', 'trentaine', 'soixantaine', 'deuxieme', 'second', 'premier'],
+    );
+  });
   it('un et une sont des articles, « pour cent » est exclu', () => {
     assert.deepEqual(extractNumberWords('un loyer, une ville'), []);
     assert.deepEqual(extractNumberWords('dix pour cent'), ['dix']);

@@ -127,7 +127,7 @@ export const CHAMPS_CHIFFRES = ['/redactions/resume', '/redactions/enfant', '/re
  * réserve l'erreur à résumé, enfant et aîné. Un chiffre dérivé (une somme) s'établit dans texte_source.
  */
 export const CHAMPS_CHIFFRES_AVERTIS = ['/titre', '/redactions/detaille'] as const;
-/** Garde-fou anti-contournement : longueur (en mots) plausible d'un texte_source (avertissement). */
+/** Garde-fou anti-contournement : longueur (en mots) plausible d'un texte_source : trop court = avertissement, trop long = erreur en production (WR-04). */
 export const TEXTE_SOURCE_MOTS = { min: 4, max: 120 } as const;
 
 /** Ce que signifie « mot pour mot après normalisation » (affiché tel quel sur la page Méthode). */
@@ -217,7 +217,7 @@ export const CATALOGUE: readonly EntreeCatalogue[] = [
   { code: 'TEXTE_SOURCE_HORS_ARCHIVE', regle: 'REGLE-05', severite: 'erreur', piege: null, libelle: 'Le texte de la source ne figure pas mot pour mot dans l’extrait archivé.' },
   { code: 'CHIFFRAGE_HORS_ARCHIVE', regle: 'REGLE-05', severite: 'erreur', piege: null, libelle: 'Le texte du chiffrage ne figure pas mot pour mot dans l’extrait archivé.' },
   { code: 'TEXTE_SOURCE_TROP_COURT', regle: 'REGLE-05', severite: 'avertissement', piege: null, libelle: 'Le texte de la source est anormalement court.' },
-  { code: 'TEXTE_SOURCE_TROP_LONG', regle: 'REGLE-05', severite: 'avertissement', piege: null, libelle: 'Le texte de la source est anormalement long.' },
+  { code: 'TEXTE_SOURCE_TROP_LONG', regle: 'REGLE-05', severite: 'selon_mode', piege: null, libelle: 'Le texte de la source est anormalement long.' },
   // REGLE-06 : lisibilité du niveau enfant
   { code: 'PHRASE_ENFANT_LONGUE', regle: 'REGLE-06', severite: 'selon_statut', piege: null, libelle: 'Une phrase de la rédaction enfant dépasse la longueur maximale.' },
   { code: 'LISIBILITE_ENFANT_FAIBLE', regle: 'REGLE-06', severite: 'avertissement', piege: null, libelle: 'L’indice de lisibilité Kandel-Moles de la rédaction enfant est trop bas.' },

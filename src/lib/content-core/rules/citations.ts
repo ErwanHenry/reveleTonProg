@@ -29,7 +29,7 @@ const chiffrageDe = (m: Pick<LoadedEntry, 'data'>): string | undefined => {
  */
 const chiffresCitations: EntryRule = {
   id: 'chiffres_citations',
-  run(e) {
+  run(e, ctx) {
     if (e.collection !== 'mesures') return [];
     const source = texteSourceDe(e);
     if (source === undefined) return [];
@@ -87,9 +87,11 @@ const chiffresCitations: EntryRule = {
     } else if (n > TEXTE_SOURCE_MOTS.max) {
       out.push({
         code: 'TEXTE_SOURCE_TROP_LONG',
-        severity: 'warning',
+        // Garde-fou anti-contournement (WR-04) : un texte_source démesuré légitimerait tous les
+        // chiffres et toutes les citations. Erreur en production, avertissement en preview.
+        severity: ctx.mode === 'production' ? 'error' : 'warning',
         pointer: '/texte_source',
-        message: `texte_source compte ${n} mots (maximum conseillé ${TEXTE_SOURCE_MOTS.max}) : citer l'extrait précis qui fonde la mesure.`,
+        message: `texte_source compte ${n} mots (maximum ${TEXTE_SOURCE_MOTS.max}) : citer l'extrait précis qui fonde la mesure.`,
       });
     }
     return out;
