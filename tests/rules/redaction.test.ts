@@ -2,6 +2,7 @@ import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import { parse } from 'yaml';
 import { construireRacine, executerPiege, nettoyerRacines } from '../helpers/overlay.ts';
 import type { DiagnosticPiege, Remplacement } from '../helpers/overlay.ts';
 import { champsEditoriaux } from '../../src/lib/content-core/rules/redaction.ts';
@@ -130,6 +131,64 @@ describe('redaction : guillemets, verbes, caractères suspects', () => {
   it('un contrôle bidirectionnel (U+202E) est une erreur', () => {
     const d = diag([r(MESURE, 'Encadrement des loyers', 'Encadrement des \u202Eloyers')]);
     assert.deepEqual(d.map((x) => [x.code, x.pointer]), [['CARACTERE_SUSPECT', '/titre']]);
+  });
+});
+
+const fixture = parse(readFileSync(path.join(BASE, MESURE), 'utf8')) as { redactions: Record<'resume' | 'detaille' | 'enfant' | 'aine', string> };
+type Niveau = keyof typeof fixture.redactions;
+
+/** Texte de `n` mots (« mot mot … mot. »), pour viser une borne exacte. */
+const mots = (n: number): string => `${Array.from({ length: n - 1 }, () => 'mot').join(' ')} mot.`;
+const surNiveau = (niveau: Niveau, texte: string): Remplacement[] => [r(MESURE, fixture.redactions[niveau], texte)];
+const longueurs = (niveau: Niveau, n: number): DiagnosticPiege[] => diag(surNiveau(niveau, mots(n))).filter((d) => d.code === 'LONGUEUR_HORS_BORNES');
+
+describe('redaction : LONGUEUR_HORS_BORNES aux bornes', () => {
+  const cas: [Niveau, number, boolean][] = [
+    ['resume', 25, true], ['resume', 26, false],
+    ['detaille', 79, false], ['detaille', 80, true], ['detaille', 200, true], ['detaille', 201, false],
+    ['enfant', 39, false], ['enfant', 40, true], ['enfant', 60, true], ['enfant', 61, false],
+    ['aine', 59, false], ['aine', 60, true], ['aine', 120, true], ['aine', 121, false],
+  ];
+  for (const [niveau, n, ok] of cas) {
+    it(`${niveau} : ${n} mots ${ok ? 'accepté' : 'refusé'}`, () => {
+      const d = longueurs(niveau, n);
+      if (ok) assert.deepEqual(d, []);
+      else assert.deepEqual(d.map((x) => [x.severite, x.pointer]), [['error', `/redactions/${niveau}`]]);
+    });
+  }
+
+  it('le message donne le décompte et les bornes', () => {
+    const racine = construireRacine({ piege: 'unitaire', regle: 'REGLE-03', remplacer: surNiveau('resume', mots(26)), attendu: [] });
+    const m = loadAll(racine, { schemasDir: SCHEMAS_DIR }).diagnostics.find((x) => x.code === 'LONGUEUR_HORS_BORNES');
+    assert.match(m?.message ?? '', /26 mots, attendu : au plus 25/);
+    const racine2 = construireRacine({ piege: 'unitaire', regle: 'REGLE-03', remplacer: surNiveau('detaille', mots(79)), attendu: [] });
+    const m2 = loadAll(racine2, { schemasDir: SCHEMAS_DIR }).diagnostics.find((x) => x.code === 'LONGUEUR_HORS_BORNES');
+    assert.match(m2?.message ?? '', /79 mots, attendu : entre 80 et 200/);
+  });
+
+  it('la ligne est celle de la clé du niveau', () => {
+    const d = longueurs('resume', 26);
+    assert.equal(d[0]?.ligne, ligneDe(MESURE, '  resume:'));
+  });
+
+  it('une longueur hors bornes est une erreur même en brouillon (A4)', () => {
+    const d = diag([...surNiveau('resume', mots(26)), r(MESURE, 'statut_relecture: publie', 'statut_relecture: brouillon')]);
+    assert.deepEqual(d.filter((x) => x.code === 'LONGUEUR_HORS_BORNES').map((x) => x.severite), ['error']);
+  });
+
+  it('un niveau facultatif absent en brouillon ne produit rien', () => {
+    const d = diag([
+      r(MESURE, 'statut_relecture: publie', 'statut_relecture: brouillon'),
+      r(MESURE, `  enfant: >-\n    ${fixture.redactions.enfant}\n`, ''),
+      r(MESURE, `  aine: >-\n    ${fixture.redactions.aine}\n`, ''),
+    ]);
+    assert.deepEqual(d.filter((x) => x.code === 'LONGUEUR_HORS_BORNES'), []);
+  });
+
+  it('les marqueurs de glossaire comptent pour leurs mots affichés', () => {
+    const base = `${Array.from({ length: 24 }, () => 'mot').join(' ')} [[loyer|loyer]]`;
+    assert.deepEqual(diag(surNiveau('resume', base)).filter((x) => x.code === 'LONGUEUR_HORS_BORNES'), []);
+    assert.equal(diag(surNiveau('resume', `${base} mot`)).filter((x) => x.code === 'LONGUEUR_HORS_BORNES').length, 1);
   });
 });
 

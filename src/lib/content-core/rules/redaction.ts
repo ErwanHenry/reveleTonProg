@@ -1,7 +1,7 @@
-import { CARACTERES_SUSPECTS, CHAMPS_EDITORIAUX } from './config.ts';
+import { CARACTERES_SUSPECTS, CHAMPS_EDITORIAUX, LONGUEURS } from './config.ts';
 import { motsInterdits, verbesConnotes } from './text/forbidden.ts';
 import { cleanText, sansMarqueurs } from './text/normalize.ts';
-import { quotesBalanced } from './text/words.ts';
+import { countWords, quotesBalanced } from './text/words.ts';
 import { citer } from './types.ts';
 import type { EntryRule, Famille, Finding, LoadedEntry } from './types.ts';
 
@@ -80,4 +80,44 @@ const neutralite: EntryRule = {
   },
 };
 
-export const famille: Famille = { id: 'redaction', fichier: [], entree: [neutralite], corpus: [] };
+const NIVEAUX = ['resume', 'detaille', 'enfant', 'aine'] as const;
+type Niveau = (typeof NIVEAUX)[number];
+
+/** Rédaction d'un niveau de lecture si elle est présente et textuelle. */
+function redaction(e: LoadedEntry, niveau: Niveau): string | undefined {
+  const r = e.data.redactions;
+  if (r === null || typeof r !== 'object' || Array.isArray(r)) return undefined;
+  const t = (r as Record<string, unknown>)[niveau];
+  return typeof t === 'string' ? t : undefined;
+}
+
+function attendu(b: { min?: number; max?: number }): string {
+  if (b.min !== undefined && b.max !== undefined) return `entre ${b.min} et ${b.max}`;
+  if (b.max !== undefined) return `au plus ${b.max}`;
+  return `au moins ${b.min ?? 0}`;
+}
+
+/** REGLE-03 : bornes de longueur par niveau, comptées comme les autres règles (count français). */
+const longueurs: EntryRule = {
+  id: 'longueurs',
+  run(e) {
+    if (e.collection !== 'mesures') return [];
+    const out: Finding[] = [];
+    for (const niveau of NIVEAUX) {
+      const texte = redaction(e, niveau);
+      if (texte === undefined) continue;
+      const bornes: { min?: number; max?: number } = LONGUEURS[niveau];
+      const n = countWords(sansMarqueurs(texte));
+      if ((bornes.min !== undefined && n < bornes.min) || (bornes.max !== undefined && n > bornes.max)) {
+        out.push({
+          code: 'LONGUEUR_HORS_BORNES',
+          pointer: `/redactions/${niveau}`,
+          message: `rédaction « ${niveau} » : ${n} mot${n > 1 ? 's' : ''}, attendu : ${attendu(bornes)}.`,
+        });
+      }
+    }
+    return out;
+  },
+};
+
+export const famille: Famille = { id: 'redaction', fichier: [], entree: [neutralite, longueurs], corpus: [] };

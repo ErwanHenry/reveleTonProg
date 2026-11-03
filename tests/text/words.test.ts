@@ -1,6 +1,10 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { parse } from 'yaml';
 import { cleanText, foldKey, mergeDigitGroups, sansMarqueurs } from '../../src/lib/content-core/rules/text/normalize.ts';
+import { REPO_ROOT } from '../helpers/validate-yaml.ts';
 import { countWords, quoteSpans, quotesBalanced, withoutQuotes, words } from '../../src/lib/content-core/rules/text/words.ts';
 
 // Ces tests servent aussi de canaris ICU (Pitfall 15) : si l'un échoue après une montée de version
@@ -79,5 +83,22 @@ describe('normalize', () => {
   it('sansMarqueurs peut être appelé plusieurs fois de suite (regex globale partagée)', () => {
     assert.equal(sansMarqueurs('[[a]]'), 'a');
     assert.equal(sansMarqueurs('[[a]]'), 'a');
+  });
+});
+
+describe('words : décompte de la fixture (canari de segmentation, valeurs exactes)', () => {
+  const mesure = parse(
+    readFileSync(path.join(REPO_ROOT, 'tests/fixtures/corpus-valide/src/content/mesures/marie-fictive/encadrement-loyers.yaml'), 'utf8'),
+  ) as { redactions: Record<string, string> };
+  const attendus: [string, number][] = [['resume', 22], ['detaille', 99], ['enfant', 51], ['aine', 73]];
+  for (const [niveau, n] of attendus) {
+    it(`${niveau} : ${n} mots`, () => assert.equal(countWords(sansMarqueurs(mesure.redactions[niveau] ?? '')), n));
+  }
+  it('un marqueur de glossaire compte comme son texte affiché', () => {
+    assert.equal(countWords(sansMarqueurs('Le [[loyer|loyer]] baisse')), 3);
+  });
+  it('« 1 500 000 » compte pour un mot, « l’école » pour deux', () => {
+    assert.equal(countWords('1\u202F500\u202F000'), 1);
+    assert.equal(countWords('l’école'), 2);
   });
 });
