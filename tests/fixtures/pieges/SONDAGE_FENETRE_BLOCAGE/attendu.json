@@ -1,0 +1,22 @@
+{
+  "piege": "§12 : une date de publication dans la fenêtre de blocage légal",
+  "regle": "REGLE-09",
+  "mode": "production",
+  "remplacer": [
+    {
+      "fichier": "src/content/sondages/sondage-fictif-1.yaml",
+      "de": "date_publication: 2026-10-05T08:00:00+02:00",
+      "par": "date_publication: 2027-04-17T09:00:00+02:00"
+    }
+  ],
+  "supprimer": [],
+  "attendu": [
+    {
+      "code": "SONDAGE_FENETRE_BLOCAGE",
+      "severite": "error",
+      "fichier": "src/content/sondages/sondage-fictif-1.yaml",
+      "pointer": "/date_publication",
+      "ligne": 8
+    }
+  ]
+}

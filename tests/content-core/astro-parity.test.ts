@@ -151,3 +151,81 @@ describe('robustesse du loader (WR-05)', () => {
     await assert.rejects(withEnv(FIXTURE_ROOT, () => contentCoreLoader('candidats').load(custom as unknown as Ctx)));
   });
 });
+
+describe('mode de validation et empreinte du loader (REGLE-11)', () => {
+  /** Charge la collection `candidats` ; renvoie les messages d'information (un par recalcul du mémo). */
+  async function charger(root: string, mode: string | undefined, watcher?: unknown): Promise<string[]> {
+    const infos: string[] = [];
+    const { ctx } = makeContext([]);
+    const custom = { ...ctx, watcher, logger: { ...ctx.logger, info: (m: string) => infos.push(m) } };
+    const before = process.env.RTP_MODE;
+    if (mode === undefined) delete process.env.RTP_MODE;
+    else process.env.RTP_MODE = mode;
+    try {
+      await withEnv(root, () => contentCoreLoader('candidats').load(custom as unknown as Ctx));
+    } finally {
+      if (before === undefined) delete process.env.RTP_MODE;
+      else process.env.RTP_MODE = before;
+    }
+    return infos.filter((m) => m.startsWith('racine de contenu'));
+  }
+  function copieFixture(): string {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rtp-modeloader-'));
+    tmpDirs.push(dir);
+    fs.cpSync(FIXTURE_ROOT, dir, { recursive: true });
+    return dir;
+  }
+
+  it('la clé du mémo contient le mode : preview puis production recalcule, deux fois le même mode non', async () => {
+    const racine = copieFixture();
+    const a = await charger(racine, 'preview');
+    assert.equal(a.length, 1, a.join(' | '));
+    assert.match(a[0] ?? '', /preview/);
+    const b = await charger(racine, 'preview');
+    assert.equal(b.length, 0, 'même mode, même empreinte : le mémo sert');
+    const c = await charger(racine, 'production');
+    assert.equal(c.length, 1, 'changement de mode : recalcul');
+    assert.match(c[0] ?? '', /production/);
+  });
+
+  it('un RTP_MODE invalide fait rejeter le chargement du build et nomme RTP_MODE', async () => {
+    await assert.rejects(charger(FIXTURE_ROOT, 'prod'), /RTP_MODE/);
+  });
+
+  it('dev : un RTP_MODE invalide est journalisé, le serveur ne tombe pas', async () => {
+    const messages: string[] = [];
+    const { ctx } = makeContext(messages);
+    const watcher = { add: () => {}, on: () => {} };
+    const before = process.env.RTP_MODE;
+    process.env.RTP_MODE = 'prod';
+    try {
+      await withEnv(FIXTURE_ROOT, () => contentCoreLoader('candidats').load({ ...ctx, watcher } as unknown as Ctx));
+    } finally {
+      if (before === undefined) delete process.env.RTP_MODE;
+      else process.env.RTP_MODE = before;
+    }
+    assert.ok(messages.some((m) => m.startsWith('content-core : ') && /RTP_MODE/.test(m)), messages.join(' | '));
+  });
+
+  it('l’empreinte couvre ids.lock et archives/ : les modifier relance le calcul', async () => {
+    const racine = copieFixture();
+    assert.equal((await charger(racine, undefined)).length, 1);
+    assert.equal((await charger(racine, undefined)).length, 0, 'rien n’a changé');
+    fs.appendFileSync(path.join(racine, 'ids.lock'), '\n# modifié\n');
+    assert.equal((await charger(racine, undefined)).length, 1, 'ids.lock modifié');
+    const extrait = path.join(racine, 'archives', 'marie-fictive', 'nouveau-extrait.txt');
+    fs.writeFileSync(extrait, 'extrait');
+    assert.equal((await charger(racine, undefined)).length, 1, 'fichier ajouté dans archives/');
+    fs.appendFileSync(extrait, ' modifié');
+    assert.equal((await charger(racine, undefined)).length, 1, 'extrait d’archive modifié');
+  });
+
+  it('le watcher surveille aussi ids.lock et archives/', async () => {
+    const racine = copieFixture();
+    const ajoutes: string[] = [];
+    const watcher = { add: (p: string) => void ajoutes.push(p), on: () => {} };
+    await charger(racine, undefined, watcher);
+    assert.ok(ajoutes.includes(path.join(racine, 'ids.lock')), ajoutes.join(' | '));
+    assert.ok(ajoutes.includes(path.join(racine, 'archives')), ajoutes.join(' | '));
+  });
+});

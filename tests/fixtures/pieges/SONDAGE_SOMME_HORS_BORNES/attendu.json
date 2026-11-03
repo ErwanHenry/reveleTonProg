@@ -1,0 +1,21 @@
+{
+  "piege": "§12 : un sondage dont les scores font 112 %",
+  "regle": "REGLE-09",
+  "mode": "production",
+  "remplacer": [
+    {
+      "fichier": "src/content/sondages/sondage-fictif-1.yaml",
+      "de": "autres_pct: 7\n",
+      "par": "autres_pct: 19\n"
+    }
+  ],
+  "supprimer": [],
+  "attendu": [
+    {
+      "code": "SONDAGE_SOMME_HORS_BORNES",
+      "severite": "error",
+      "fichier": "src/content/sondages/sondage-fictif-1.yaml",
+      "pointer": "/hypotheses/0"
+    }
+  ]
+}

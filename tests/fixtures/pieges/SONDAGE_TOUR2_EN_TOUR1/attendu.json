@@ -1,0 +1,19 @@
+{
+  "piege": "§12 : une hypothèse de second tour glissée dans le premier tour",
+  "regle": "REGLE-09",
+  "mode": "production",
+  "remplacer": [
+    { "fichier": "src/content/sondages/sondage-fictif-1.yaml", "de": "pct: 52\n", "par": "pct: 55\n" },
+    { "fichier": "src/content/sondages/sondage-fictif-1.yaml", "de": "pct: 41\n", "par": "pct: 45\n" },
+    { "fichier": "src/content/sondages/sondage-fictif-1.yaml", "de": "    autres_pct: 7\n", "par": "" }
+  ],
+  "supprimer": [],
+  "attendu": [
+    {
+      "code": "SONDAGE_TOUR2_EN_TOUR1",
+      "severite": "error",
+      "fichier": "src/content/sondages/sondage-fictif-1.yaml",
+      "pointer": "/hypotheses/0"
+    }
+  ]
+}

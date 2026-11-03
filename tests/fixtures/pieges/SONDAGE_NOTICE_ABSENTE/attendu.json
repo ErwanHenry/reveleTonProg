@@ -1,0 +1,22 @@
+{
+  "piege": "§12 : un sondage sans notice",
+  "regle": "REGLE-09",
+  "mode": "production",
+  "remplacer": [
+    {
+      "fichier": "src/content/sondages/sondage-fictif-1.yaml",
+      "de": "url_notice: https://institut-fictif.exemple.invalid/notice\n",
+      "par": ""
+    }
+  ],
+  "supprimer": [],
+  "attendu": [
+    {
+      "code": "SONDAGE_NOTICE_ABSENTE",
+      "severite": "error",
+      "fichier": "src/content/sondages/sondage-fictif-1.yaml",
+      "pointer": "",
+      "ligne": 15
+    }
+  ]
+}
