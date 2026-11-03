@@ -1,0 +1,33 @@
+---
+import { getCandidats, statutCourant } from '../lib/corpus/index.ts';
+
+const candidats = await getCandidats();
+---
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>reveleTonProg — squelette (corpus fictif)</title>
+  </head>
+  <body>
+    <h1>reveleTonProg — squelette</h1>
+    {candidats.length === 0 ? (
+      <p>Aucun candidat dans ce corpus.</p>
+    ) : (
+      <ul>
+        {candidats.map((c) => {
+          const statut = statutCourant(c);
+          return (
+            <li>
+              {c.prenom} {c.nom}, {c.parti ?? 'Sans étiquette'} : {statut.code} — {statut.date}
+            </li>
+          );
+        })}
+      </ul>
+    )}
+    <p><span>Données fictives</span>
+à des fins de test.</p>
+  </body>
+</html>
