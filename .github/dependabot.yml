@@ -11,6 +11,13 @@ updates:
       default-days: 7
       semver-major-days: 14
     open-pull-requests-limit: 5
+    # Majeures figées par la stack (STACK.md) : @astrojs/check exige typescript ^5 || ^6,
+    # @types/node suit Node 24 LTS. À lever par décision explicite, pas par PR automatique.
+    ignore:
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
     groups:
       astro:
         patterns:
