@@ -1,0 +1,5 @@
+version_schema: 1
+id: collectivite-locale
+type: terme
+libelle: "Collectivité locale"
+definition: "Les collectivités locales sont les communes, les départements et les régions. Chacune est dirigée par des élus."

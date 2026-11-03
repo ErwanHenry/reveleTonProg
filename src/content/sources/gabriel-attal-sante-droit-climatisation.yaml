@@ -1,0 +1,15 @@
+version_schema: 1
+id: gabriel-attal-sante-droit-climatisation
+type: programme
+auteur: candidat
+candidats:
+  - gabriel-attal
+titre: "Gabriel Attal, mesure : instaurer un droit à la climatisation"
+url: https://attalpresident.fr/programme/mesures/droit-a-la-climatisation
+date_publication: 2026-11
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/gabriel-attal/0ea9698010c3.txt
+  sha256: 0ea9698010c3facfe6e6ac7a201ea97097008b1c217a056513727d52745197fa
+  capture_le: 2026-11-03T22:12:36+01:00
+  binaire_sha256: 45c5014a40ed66be2456b408d2bde34778babd725dfb951ec81f635e351c8955

@@ -1,0 +1,5 @@
+version_schema: 1
+id: sante-mentale
+type: terme
+libelle: "Santé mentale"
+definition: "La santé mentale, c'est le fait d'aller bien dans sa tête et dans ses émotions."

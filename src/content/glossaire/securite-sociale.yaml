@@ -1,0 +1,5 @@
+version_schema: 1
+id: securite-sociale
+type: terme
+libelle: "Sécurité sociale"
+definition: "La Sécurité sociale est l'organisation qui rembourse une partie des soins, verse les retraites et les allocations familiales."

@@ -1,0 +1,20 @@
+version_schema: 1
+id: emmanuel-dubuisson/sante-parcours-soins-simple
+candidat: emmanuel-dubuisson
+theme: sante
+sous_theme: acces-aux-soins
+titre: "Un parcours de soins plus simple"
+texte_source: >-
+  Les Français doivent pouvoir obtenir une réponse claire, rapidement, sans se perdre entre plusieurs portes. Le patient doit savoir où aller. Le médecin doit pouvoir soigner sans perdre son temps dans des démarches inutiles.
+source: emmanuel-dubuisson-sante-publique-medecine
+source_localisation: "dossier 3 Santé publique et médecine , section Un parcours de soins plus simple"
+redactions:
+  resume: >-
+    Emmanuel Dubuisson veut que le patient obtienne une réponse claire, sache où aller et que le médecin perde moins de temps en démarches inutiles.
+  detaille: >-
+    Dans la section sur le parcours de soins de son dossier Santé publique et médecine, Emmanuel Dubuisson écrit que les Français doivent pouvoir obtenir une réponse claire, rapidement, sans se perdre entre plusieurs portes. Il ajoute que le patient doit savoir où aller et que le médecin doit pouvoir soigner sans perdre son temps dans des démarches inutiles. Le texte ne dit pas quelles démarches seraient supprimées, ni quel organisme donnerait la réponse. Il ne donne ni délai, ni budget, ni calendrier.
+  enfant: >-
+    Emmanuel Dubuisson veut que les soins soient plus simples. Les gens doivent obtenir une réponse claire et rapide. Ils ne doivent pas se perdre entre plusieurs portes. Le patient doit savoir où aller. Le médecin doit pouvoir soigner sans perdre son temps en démarches inutiles.
+  aine: >-
+    Emmanuel Dubuisson écrit que les Français doivent pouvoir obtenir une réponse claire et rapide, sans se perdre entre plusieurs portes. Selon lui, le patient doit savoir où aller, et le médecin doit pouvoir soigner sans perdre son temps dans des démarches inutiles. Le texte ne précise pas quelles démarches seraient supprimées ni qui organiserait ce parcours, et il ne donne ni délai ni calendrier.
+statut_relecture: brouillon

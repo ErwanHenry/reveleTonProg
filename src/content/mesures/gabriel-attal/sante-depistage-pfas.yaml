@@ -1,0 +1,20 @@
+version_schema: 1
+id: gabriel-attal/sante-depistage-pfas
+candidat: gabriel-attal
+theme: sante
+sous_theme: sante-environnementale
+titre: "Dépistage automatique des polluants éternels dans les captages d'eau potable"
+texte_source: >-
+  Gabriel Attal veut rendre automatique le dépistage des PFAS dans tous les captages d'eau potable : il ne dépend plus d'un signalement, d'une alerte locale ou de la vigilance d'une collectivité. Le principe pollueur-payeur doit s'appliquer, avec des sanctions dissuasives contre ceux qui déversent et violent les règles.
+source: gabriel-attal-sante-depistage-pfas
+source_localisation: "page de la mesure Dépister automatiquement les polluants éternels dans les captages d'eau potable , paragraphe de présentation"
+redactions:
+  resume: >-
+    Gabriel Attal veut un dépistage automatique des PFAS dans tous les captages d'eau potable, avec des sanctions contre ceux qui déversent.
+  detaille: >-
+    Sur son site de campagne, Gabriel Attal veut rendre automatique le dépistage des PFAS dans tous les captages d'eau potable. Le texte précise que ce dépistage ne dépendrait plus d'un signalement, d'une alerte locale ou de la vigilance d'une collectivité. Il ajoute que le principe pollueur-payeur doit s'appliquer, avec des sanctions dissuasives contre ceux qui déversent et violent les règles. Le texte ne précise pas qui réaliserait les analyses, à quelle fréquence, ni selon quel calendrier. Il ne donne pas non plus le montant des sanctions ni la liste des substances recherchées.
+  enfant: >-
+    Gabriel Attal veut chercher les [[PFAS]] dans l'eau potable. Ce serait fait dans tous les endroits où l'on prélève cette eau. La recherche serait automatique. Elle ne dépendrait plus d'une alerte ou d'une demande locale. Des sanctions sont prévues contre ceux qui déversent et violent les règles.
+  aine: >-
+    Gabriel Attal propose de rendre automatique le dépistage des PFAS (des substances chimiques aussi appelées polluants éternels) dans tous les captages d'eau potable, c'est-à-dire les lieux où l'on prélève l'eau destinée à la consommation. Ce dépistage ne dépendrait plus d'un signalement, d'une alerte locale ou de la vigilance d'une collectivité. Le texte prévoit aussi des sanctions dissuasives contre ceux qui déversent et violent les règles. Il ne précise pas qui ferait les contrôles ni à quelle date la mesure s'appliquerait.
+statut_relecture: brouillon

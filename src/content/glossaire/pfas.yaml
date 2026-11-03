@@ -1,0 +1,5 @@
+version_schema: 1
+id: pfas
+type: terme
+libelle: "PFAS"
+definition: "Les PFAS sont des substances chimiques qui se dégradent très difficilement dans la nature. On les appelle aussi polluants éternels."

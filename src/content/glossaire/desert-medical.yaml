@@ -1,0 +1,5 @@
+version_schema: 1
+id: desert-medical
+type: terme
+libelle: "Désert médical"
+definition: "Un désert médical est un endroit où il y a trop peu de médecins pour soigner tous les habitants."

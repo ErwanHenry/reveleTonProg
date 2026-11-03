@@ -1,0 +1,15 @@
+version_schema: 1
+id: gabriel-attal-sante-thematique
+type: programme
+auteur: candidat
+candidats:
+  - gabriel-attal
+titre: "Gabriel Attal, programme : thématique Santé"
+url: https://attalpresident.fr/programme/thematiques/sante
+date_publication: 2026-11
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/gabriel-attal/633953387eca.txt
+  sha256: 633953387ecae20cac3bdc03d341bc662a0d9dcd3f4cfaa70cb271b6ba1336bf
+  capture_le: 2026-11-03T22:12:07+01:00
+  binaire_sha256: d73dc168c1fe74c340db4efdd0009d38e0ff5e1fdd31f2009d0ff47aff241866

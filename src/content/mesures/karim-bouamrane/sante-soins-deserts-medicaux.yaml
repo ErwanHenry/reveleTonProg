@@ -1,0 +1,20 @@
+version_schema: 1
+id: karim-bouamrane/sante-soins-deserts-medicaux
+candidat: karim-bouamrane
+theme: sante
+sous_theme: acces-aux-soins
+titre: "Accès aux soins, lutte contre les déserts médicaux et préparation au vieillissement"
+texte_source: >-
+  Une France où chacun peut accéder facilement à des soins de qualité, quels que soient son lieu de résidence, ses revenus, son origine, sa couleur de peau, son orientation sexuelle, son genre, sa religion. Une France qui lutte contre les déserts médicaux et qui prépare notre système de santé aux défis du vieillissement et des maladies chroniques.
+source: karim-bouamrane-manifeste
+source_localisation: "manifeste, section Soigner"
+redactions:
+  resume: >-
+    Karim Bouamrane veut des soins de qualité accessibles à tous, la lutte contre les déserts médicaux et un système de santé prêt pour le vieillissement.
+  detaille: >-
+    Dans la section Soigner de son manifeste, Karim Bouamrane décrit une France où chacun peut accéder facilement à des soins de qualité, quels que soient son lieu de résidence, ses revenus, son origine, sa couleur de peau, son orientation sexuelle, son genre ou sa religion. Il décrit aussi une France qui lutte contre les déserts médicaux et qui prépare le système de santé aux défis du vieillissement et des maladies chroniques. Le manifeste ne précise pas par quels moyens ces objectifs seraient atteints. Il ne donne ni chiffre, ni calendrier, ni financement.
+  enfant: >-
+    Karim Bouamrane veut que tout le monde puisse se soigner facilement. Les soins seraient de qualité, où que l'on habite. Il veut lutter contre les [[déserts médicaux|desert-medical]]. Il veut aussi préparer le système de santé au vieillissement. Il parle aussi des maladies chroniques, qui durent longtemps.
+  aine: >-
+    Dans la section Soigner de son manifeste, Karim Bouamrane souhaite que chacun puisse accéder facilement à des soins de qualité, où qu'il habite et quels que soient ses revenus, son origine, sa couleur de peau, son orientation sexuelle, son genre ou sa religion. Il veut aussi lutter contre les déserts médicaux et préparer le système de santé aux défis du vieillissement et des maladies chroniques. Le manifeste ne détaille ni les moyens, ni le calendrier, ni le coût.
+statut_relecture: brouillon

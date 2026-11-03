@@ -1,0 +1,15 @@
+version_schema: 1
+id: gabriel-attal-sante-depistage-pfas
+type: programme
+auteur: candidat
+candidats:
+  - gabriel-attal
+titre: "Gabriel Attal, mesure : dépister automatiquement les polluants éternels dans les captages d'eau potable"
+url: https://attalpresident.fr/programme/mesures/depistage-pfas-captages
+date_publication: 2026-11
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/gabriel-attal/6191539ef917.txt
+  sha256: 6191539ef917fa1adce63473f9eb9596e00d976dff5524f74d9c89d1757cf94c
+  capture_le: 2026-11-03T22:12:34+01:00
+  binaire_sha256: cf18bc01c032955a37046eba4e1e2f59dbbfc6c2a9671b75e6e36f092152b3c5

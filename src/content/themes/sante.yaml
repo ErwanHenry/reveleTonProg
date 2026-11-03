@@ -1,0 +1,34 @@
+version_schema: 1
+id: sante
+nom: Santé
+ordre: 4
+mots_cles:
+  - santé
+  - hôpital
+  - hospitali
+  - médecin
+  - médical
+  - soignant
+  - médicament
+  - urgences
+  - infirmier
+  - ehpad
+  - dépendance
+  - assurance maladie
+prioritaire_aine: true
+sous_themes:
+  - id: acces-aux-soins
+    nom: Accès aux soins
+  - id: hopital-et-soignants
+    nom: Hôpital et soignants
+  - id: prevention
+    nom: Prévention
+  - id: sante-environnementale
+    nom: Santé et environnement
+  - id: gouvernance-sante
+    nom: Organisation et pilotage du système de santé
+  - id: assurance-maladie
+    nom: Sécurité sociale et assurance maladie
+  - id: grand-age
+    nom: Grand âge et dépendance
+statut_relecture: brouillon

@@ -1,0 +1,52 @@
+version_schema: 1
+id: sante
+theme: sante
+cases:
+  - candidat: nathalie-arthaud
+    etat: mesures
+    verifie_le: 2026-11-03
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: francois-asselineau
+    etat: programme_non_publie
+    verifie_le: 2026-11-03
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: gabriel-attal
+    etat: mesures
+    verifie_le: 2026-11-03
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: delphine-batho
+    etat: mesures
+    verifie_le: 2026-11-03
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: olivier-becht
+    etat: mesures
+    verifie_le: 2026-11-03
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: xavier-bertrand
+    etat: programme_non_publie
+    verifie_le: 2026-11-03
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: augustin-billetdoux
+    etat: programme_non_publie
+    verifie_le: 2026-11-03
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: karim-bouamrane
+    etat: mesures
+    verifie_le: 2026-11-03
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: juan-branco
+    etat: mesures
+    verifie_le: 2026-11-03
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: bernard-cazeneuve
+    etat: mesures
+    verifie_le: 2026-11-03
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: christian-collovati
+    etat: mesures
+    verifie_le: 2026-11-03
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: emmanuel-dubuisson
+    etat: mesures
+    verifie_le: 2026-11-03
+    verifie_par: Claude (agent), à relire par Erwan Henry

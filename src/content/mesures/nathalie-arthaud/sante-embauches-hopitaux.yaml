@@ -1,0 +1,20 @@
+version_schema: 1
+id: nathalie-arthaud/sante-embauches-hopitaux
+candidat: nathalie-arthaud
+theme: sante
+sous_theme: hopital-et-soignants
+titre: "Liste des embauches nécessaires établie par le personnel des hôpitaux, des Ehpad, de l'éducation et des transports publics"
+texte_source: >-
+  Si nous demandions au personnel des hôpitaux, des Ehpad, de l’éducation, des transports publics, d’établir une liste d’embauches dont ils auraient besoin, on arriverait à des centaines de milliers d’emplois à créer tout de suite !
+source: nathalie-arthaud-brochure-campagne
+source_localisation: "brochure de campagne, page 12 du PDF, rubrique sur le partage du travail"
+redactions:
+  resume: >-
+    Nathalie Arthaud évoque une liste d'embauches que dresserait le personnel des hôpitaux, des Ehpad, de l'éducation et des transports publics.
+  detaille: >-
+    Dans sa brochure de campagne, Nathalie Arthaud avance l'idée de demander au personnel des hôpitaux, des Ehpad, de l'éducation et des transports publics d'établir une liste des embauches dont il aurait besoin. La phrase est écrite au conditionnel : elle décrit une démarche possible. Selon le texte, on arriverait alors à des centaines de milliers d'emplois à créer tout de suite. L'extrait ne dit pas combien d'embauches concerneraient les hôpitaux ou les Ehpad, ni comment elles seraient financées. Il ne précise pas non plus qui rassemblerait ces listes ni dans quel délai.
+  enfant: >-
+    Nathalie Arthaud parle d'une liste d'embauches. Ce serait fait par le personnel des hôpitaux et des [[Ehpad]]. Ce serait aussi fait par celui de l'éducation et des transports publics. Chacun noterait les embauches dont il a besoin. Selon le texte, cela ferait des centaines de milliers d'emplois à créer.
+  aine: >-
+    Nathalie Arthaud évoque, dans sa brochure de campagne, une liste d'embauches. Elle serait établie par le personnel des hôpitaux, des Ehpad (établissements d'hébergement pour personnes âgées dépendantes), de l'éducation et des transports publics. Chacun indiquerait les embauches dont son service aurait besoin. D'après le texte, on arriverait à des centaines de milliers d'emplois à créer tout de suite. Le texte ne dit pas combien d'embauches concerneraient les hôpitaux, ni comment elles seraient payées.
+statut_relecture: brouillon

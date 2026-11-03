@@ -1,0 +1,5 @@
+version_schema: 1
+id: ehpad
+type: terme
+libelle: "Ehpad"
+definition: "Un Ehpad est un établissement d'hébergement pour personnes âgées dépendantes. C'est une maison de retraite où des soignants s'occupent des résidents."

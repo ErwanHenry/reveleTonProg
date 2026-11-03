@@ -1,0 +1,20 @@
+version_schema: 1
+id: christian-collovati/sante-securite-sociale-endettement
+candidat: christian-collovati
+theme: sante
+sous_theme: assurance-maladie
+titre: "Freinage de la dépense sociale et de l'endettement de la sécurité sociale et des collectivités locales"
+texte_source: >-
+  Freiner la dépense sociale, l'endettement de la sécurité sociale et des collectivités locales
+source: christian-collovati-site-campagne
+source_localisation: "page d'accueil du site, liste Constat de la situation actuelle en France"
+redactions:
+  resume: >-
+    Christian Collovati veut freiner la dépense sociale ainsi que l'endettement de la sécurité sociale et des collectivités locales.
+  detaille: >-
+    Sur son site de campagne, Christian Collovati liste parmi ses objectifs de freiner la dépense sociale, l'endettement de la sécurité sociale et celui des collectivités locales. La mention figure dans une liste de points, sans développement. Le texte ne dit pas quelles dépenses seraient concernées, de quel montant la dépense serait freinée, ni sur quelle durée. Il ne précise pas non plus si les soins ou les remboursements de l'assurance maladie seraient touchés, ni quelles économies sont attendues. Il n'indique pas comment l'endettement serait mesuré.
+  enfant: >-
+    Christian Collovati veut freiner les dépenses sociales. Il veut aussi freiner les dettes de la [[Sécurité sociale|securite-sociale]]. Il parle aussi des dettes des [[collectivités locales|collectivite-locale]]. Le texte ne dit pas comment il ferait. Il ne dit pas non plus quelles dépenses seraient touchées.
+  aine: >-
+    Christian Collovati veut freiner la dépense sociale, l'endettement de la sécurité sociale et celui des collectivités locales, c'est-à-dire des communes, des départements et des régions. Cette phrase figure dans une liste de points de son site de campagne, sans développement. Le texte ne précise pas quelles dépenses seraient concernées, de combien elles baisseraient, ni si les remboursements de soins seraient touchés.
+statut_relecture: brouillon

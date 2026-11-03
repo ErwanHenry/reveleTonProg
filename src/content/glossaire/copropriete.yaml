@@ -1,0 +1,5 @@
+version_schema: 1
+id: copropriete
+type: terme
+libelle: "Copropriété"
+definition: "Une copropriété est un immeuble dont les logements appartiennent à plusieurs propriétaires. Ils prennent ensemble les décisions sur les parties communes."

@@ -1,0 +1,20 @@
+version_schema: 1
+id: christian-collovati/sante-reduction-ame
+candidat: christian-collovati
+theme: sante
+sous_theme: assurance-maladie
+titre: "Réduction de l'Aide médicale d'État"
+texte_source: >-
+  Réduire l'AME (Aide Médicale d'Etat)(1,3 milliard €)
+source: christian-collovati-site-campagne
+source_localisation: "page d'accueil du site, liste Constat de la situation actuelle en France"
+redactions:
+  resume: >-
+    Christian Collovati veut réduire l'AME (Aide médicale d'État), avec la mention de 1,3 milliard € dans la liste.
+  detaille: >-
+    Sur son site de campagne, Christian Collovati liste parmi ses objectifs de réduire l'AME, l'Aide médicale d'État. Le texte fait suivre cette mention du chiffre de 1,3 milliard €, sans dire s'il s'agit d'un coût actuel, d'une économie attendue ou d'un autre montant. La phrase tient en une ligne de liste. Elle ne précise pas de combien l'aide serait réduite, quelles personnes ou quels soins seraient concernés, ni à quelle date la réduction interviendrait.
+  enfant: >-
+    Christian Collovati veut réduire l'[[aide médicale d'État|aide-medicale-d-etat]]. Le texte écrit le chiffre de 1,3 milliard € à côté de cette aide. Il ne dit pas de combien elle baisserait. Il ne dit pas non plus qui serait concerné par cette baisse.
+  aine: >-
+    Christian Collovati veut réduire l'AME, l'Aide médicale d'État. Le texte écrit entre parenthèses le chiffre de 1,3 milliard €, sans expliquer ce qu'il représente. La phrase figure dans une liste de points de son site de campagne. Elle ne dit pas de combien l'aide baisserait, quelles personnes seraient concernées ni à partir de quand. Il ne dit pas non plus si d'autres aides seraient modifiées.
+statut_relecture: brouillon

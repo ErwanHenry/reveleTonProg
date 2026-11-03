@@ -1,0 +1,5 @@
+version_schema: 1
+id: addiction
+type: terme
+libelle: "Addiction"
+definition: "Une addiction, c'est quand on ne peut plus se passer d'un produit ou d'une habitude, même si cela fait du mal. Le tabac et l'alcool en sont des exemples."

@@ -1,0 +1,20 @@
+version_schema: 1
+id: juan-branco/sante-plan-urgence-deserts-medicaux
+candidat: juan-branco
+theme: sante
+sous_theme: acces-aux-soins
+titre: "Plan d'urgence contre les déserts médicaux"
+texte_source: >-
+  Plan d’urgence d’éradication des déserts médicaux.
+source: juan-branco-la-voie-programme
+source_localisation: "programme La Voie, section 07 · La Santé , première mesure de la liste"
+redactions:
+  resume: >-
+    Le programme La Voie, publié par Les Ruches qui soutiennent Juan Branco, prévoit un plan d'urgence d'éradication des déserts médicaux.
+  detaille: >-
+    Le programme La Voie est publié par le mouvement Les Ruches, qui soutient Juan Branco. Dans sa section consacrée à la santé, un plan d'urgence d'éradication des déserts médicaux figure en tête de la liste. La phrase tient en une ligne. Elle ne dit pas ce que contiendrait ce plan, sur quelle durée il s'étendrait, quels territoires seraient visés d'abord, ni quel budget lui serait consacré. Elle ne précise pas non plus quels moyens humains seraient mobilisés ni qui piloterait ce plan.
+  enfant: >-
+    Le programme La Voie propose un plan d'urgence. Ce plan veut faire disparaître les [[déserts médicaux|desert-medical]]. Ce programme est publié par le mouvement Les Ruches. Ce mouvement soutient Juan Branco. Le texte ne dit pas comment le plan fonctionnerait.
+  aine: >-
+    Le programme La Voie, publié par le mouvement Les Ruches qui soutient Juan Branco, prévoit un plan d'urgence d'éradication des déserts médicaux. Cette mesure figure en tête de sa section consacrée à la santé. Le texte tient en une ligne : il ne dit pas en quoi consisterait ce plan, à quel rythme il serait appliqué, ni combien il coûterait.
+statut_relecture: brouillon

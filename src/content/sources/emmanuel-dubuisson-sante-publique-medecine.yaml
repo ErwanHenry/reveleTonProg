@@ -1,0 +1,15 @@
+version_schema: 1
+id: emmanuel-dubuisson-sante-publique-medecine
+type: programme
+auteur: candidat
+candidats:
+  - emmanuel-dubuisson
+titre: "Emmanuel Dubuisson, dossier 3 : Santé publique et médecine"
+url: https://www.dubuisson2027.fr/dossiers/3-sante-publique-medecine
+date_publication: 2026-11
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/emmanuel-dubuisson/5348eef1d87b.txt
+  sha256: 5348eef1d87be3a3c6b81b4dd97eef5730f24bf6fd16c3453d9dcfb7c65615f9
+  capture_le: 2026-11-03T22:12:14+01:00
+  binaire_sha256: cd6b75461b144c0c7eeb3b17aee79d51d3ff759436566ba4289df406e23dcfc6

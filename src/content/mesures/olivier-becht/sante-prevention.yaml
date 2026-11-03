@@ -1,0 +1,20 @@
+version_schema: 1
+id: olivier-becht/sante-prevention
+candidat: olivier-becht
+theme: sante
+sous_theme: prevention
+titre: "Priorité à la prévention et cours d'hygiène et de santé dès le plus jeune âge"
+texte_source: >-
+  Ce nouveau modèle donnera la priorité à la prévention, aujourd’hui trop souvent reléguée au second plan. Des cours d’hygiène et de santé seront dispensés dès le plus jeune âge, ainsi qu’une véritable politique de sensibilisation à l’activité sportive, aux addictions et à une alimentation saine et responsable, pour agir en amont plutôt que d’en subir les conséquences.
+source: olivier-becht-refondation-sante
+source_localisation: "page La santé des 5 refondations, section Un nouveau modèle de prévention"
+redactions:
+  resume: >-
+    Olivier Becht veut donner la priorité à la prévention, avec des cours d'hygiène et de santé dès le plus jeune âge.
+  detaille: >-
+    Olivier Becht écrit que son modèle de santé donnera la priorité à la prévention, qu'il juge aujourd'hui trop souvent reléguée au second plan. Il prévoit des cours d'hygiène et de santé dès le plus jeune âge. Il prévoit aussi une politique de sensibilisation à l'activité sportive, aux addictions et à une alimentation saine et responsable. L'objectif indiqué est d'agir en amont plutôt que d'en subir les conséquences. Le texte ne précise pas à quel âge commenceraient ces cours, qui les donnerait, ni quel budget serait consacré à la prévention.
+  enfant: >-
+    Olivier Becht veut donner la priorité à la prévention. Prévenir, c'est agir avant, au lieu d'en subir les conséquences. Des cours d'hygiène et de santé seraient donnés dès le plus jeune âge. Il veut aussi informer sur le sport, sur les [[addictions|addiction]] et sur une alimentation saine.
+  aine: >-
+    Olivier Becht veut donner la priorité à la prévention en santé, qu'il juge trop souvent reléguée au second plan. Il prévoit des cours d'hygiène et de santé dès le plus jeune âge, ainsi qu'une politique de sensibilisation à l'activité sportive, aux addictions et à une alimentation saine et responsable. L'objectif est d'agir en amont plutôt que d'en subir les conséquences. Le texte ne dit pas combien coûterait cette politique ni à partir de quand elle s'appliquerait.
+statut_relecture: brouillon

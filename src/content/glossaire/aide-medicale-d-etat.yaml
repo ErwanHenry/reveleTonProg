@@ -1,0 +1,5 @@
+version_schema: 1
+id: aide-medicale-d-etat
+type: terme
+libelle: "Aide médicale d'État"
+definition: "L'aide médicale d'État est une aide de l'État. Elle permet à des étrangers en situation irrégulière, qui vivent en France avec peu de ressources, d'être soignés sans avancer l'argent."
