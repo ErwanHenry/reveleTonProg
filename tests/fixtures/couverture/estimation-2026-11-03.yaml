@@ -1,0 +1,616 @@
+# Estimation de la recherche du 2026-11-03 (03-RESEARCH.md, matrice 37 x 10), figée.
+# Donnée de recherche : sert uniquement à tester le classement des thèmes. Jamais lue par les tests du vrai corpus.
+version: 1
+mesure_le: 2026-11-03
+mesure_par: Claude (agent), estimation de recherche à re-vérifier
+regle: { marge_egalite: 2 }
+themes:
+  - { id: logement, nom: Logement, prioritaire_aine: true }
+  - { id: ecole, nom: École, prioritaire_aine: false }
+  - { id: retraites, nom: Retraites, prioritaire_aine: true }
+  - { id: sante, nom: Santé, prioritaire_aine: true }
+  - { id: securite, nom: Sécurité, prioritaire_aine: false }
+  - { id: climat, nom: Climat, prioritaire_aine: false }
+  - { id: travail, nom: Travail, prioritaire_aine: false }
+  - { id: impots, nom: Impôts, prioritaire_aine: false }
+  - { id: europe-et-monde, nom: Europe et monde, prioritaire_aine: false }
+  - { id: institutions, nom: Institutions, prioritaire_aine: false }
+candidats:
+  - id: nathalie-arthaud
+    acces: aucun_site
+    urls_bloquees: []
+    sources: []
+    urls_consultees: []
+    cellules:
+      logement: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      ecole: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      retraites: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      sante: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      securite: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      climat: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      travail: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      impots: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      europe-et-monde: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      institutions: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+  - id: francois-asselineau
+    acces: aucun_site
+    urls_bloquees: []
+    sources: []
+    urls_consultees: []
+    cellules:
+      logement: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      ecole: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      retraites: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      sante: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      securite: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      climat: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      travail: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      impots: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      europe-et-monde: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      institutions: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+  - id: gabriel-attal
+    acces: ok
+    urls_bloquees: []
+    sources: []
+    urls_consultees: []
+    cellules:
+      logement: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      ecole: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      retraites: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      sante: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      securite: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      climat: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      travail: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      impots: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      europe-et-monde: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      institutions: { niveau: fort, note: "estimation recherche 2026-11-03" }
+  - id: delphine-batho
+    acces: aucun_site
+    urls_bloquees: []
+    sources: []
+    urls_consultees: []
+    cellules:
+      logement: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      ecole: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      retraites: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      sante: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      securite: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      climat: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      travail: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      impots: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      europe-et-monde: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      institutions: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+  - id: olivier-becht
+    acces: ok
+    urls_bloquees: []
+    sources: []
+    urls_consultees: []
+    cellules:
+      logement: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      ecole: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      retraites: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      sante: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      securite: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      climat: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      travail: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      impots: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      europe-et-monde: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      institutions: { niveau: fort, note: "estimation recherche 2026-11-03" }
+  - id: xavier-bertrand
+    acces: aucun_site
+    urls_bloquees: []
+    sources: []
+    urls_consultees: []
+    cellules:
+      logement: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      ecole: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      retraites: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      sante: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      securite: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      climat: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      travail: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      impots: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      europe-et-monde: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      institutions: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+  - id: augustin-billetdoux
+    acces: aucun_site
+    urls_bloquees: []
+    sources: []
+    urls_consultees: []
+    cellules:
+      logement: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      ecole: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      retraites: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      sante: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      securite: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      climat: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      travail: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      impots: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      europe-et-monde: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      institutions: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+  - id: karim-bouamrane
+    acces: ok
+    urls_bloquees: []
+    sources: []
+    urls_consultees: []
+    cellules:
+      logement: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      ecole: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      retraites: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      sante: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      securite: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      climat: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      travail: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      impots: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      europe-et-monde: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      institutions: { niveau: silence, note: "estimation recherche 2026-11-03" }
+  - id: juan-branco
+    acces: ok
+    urls_bloquees: []
+    sources: []
+    urls_consultees: []
+    cellules:
+      logement: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      ecole: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      retraites: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      sante: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      securite: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      climat: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      travail: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      impots: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      europe-et-monde: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      institutions: { niveau: fort, note: "estimation recherche 2026-11-03" }
+  - id: bernard-cazeneuve
+    acces: ok
+    urls_bloquees: []
+    sources: []
+    urls_consultees: []
+    cellules:
+      logement: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      ecole: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      retraites: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      sante: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      securite: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      climat: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      travail: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      impots: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      europe-et-monde: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      institutions: { niveau: fort, note: "estimation recherche 2026-11-03" }
+  - id: christian-collovati
+    acces: ok
+    urls_bloquees: []
+    sources: []
+    urls_consultees: []
+    cellules:
+      logement: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      ecole: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      retraites: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      sante: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      securite: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      climat: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      travail: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      impots: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      europe-et-monde: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      institutions: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+  - id: emmanuel-dubuisson
+    acces: ok
+    urls_bloquees: []
+    sources: []
+    urls_consultees: []
+    cellules:
+      logement: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      ecole: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      retraites: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      sante: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      securite: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      climat: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      travail: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      impots: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      europe-et-monde: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      institutions: { niveau: fort, note: "estimation recherche 2026-11-03" }
+  - id: nicolas-dupont-aignan
+    acces: ok
+    urls_bloquees: []
+    sources: []
+    urls_consultees: []
+    cellules:
+      logement: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      ecole: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      retraites: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      sante: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      securite: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      climat: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      travail: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      impots: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      europe-et-monde: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      institutions: { niveau: fort, note: "estimation recherche 2026-11-03" }
+  - id: sylvain-durif
+    acces: aucun_site
+    urls_bloquees: []
+    sources: []
+    urls_consultees: []
+    cellules:
+      logement: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      ecole: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      retraites: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      sante: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      securite: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      climat: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      travail: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      impots: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      europe-et-monde: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      institutions: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+  - id: clara-egger
+    acces: ok
+    urls_bloquees: []
+    sources: []
+    urls_consultees: []
+    cellules:
+      logement: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      ecole: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      retraites: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      sante: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      securite: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      climat: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      travail: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      impots: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      europe-et-monde: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      institutions: { niveau: fort, note: "estimation recherche 2026-11-03" }
+  - id: raphael-glucksmann
+    acces: ok
+    urls_bloquees: []
+    sources: []
+    urls_consultees: []
+    cellules:
+      logement: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      ecole: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      retraites: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      sante: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      securite: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      climat: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      travail: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      impots: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      europe-et-monde: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      institutions: { niveau: fort, note: "estimation recherche 2026-11-03" }
+  - id: anasse-kazib
+    acces: ok
+    urls_bloquees: []
+    sources: []
+    urls_consultees: []
+    cellules:
+      logement: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      ecole: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      retraites: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      sante: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      securite: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      climat: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      travail: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      impots: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      europe-et-monde: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      institutions: { niveau: fort, note: "estimation recherche 2026-11-03" }
+  - id: selma-labib
+    acces: aucun_site
+    urls_bloquees: []
+    sources: []
+    urls_consultees: []
+    cellules:
+      logement: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      ecole: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      retraites: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      sante: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      securite: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      climat: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      travail: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      impots: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      europe-et-monde: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      institutions: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+  - id: francis-lalanne
+    acces: aucun_site
+    urls_bloquees: []
+    sources: []
+    urls_consultees: []
+    cellules:
+      logement: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      ecole: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      retraites: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      sante: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      securite: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      climat: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      travail: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      impots: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      europe-et-monde: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      institutions: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+  - id: marine-le-pen
+    acces: ok
+    urls_bloquees: []
+    sources: []
+    urls_consultees: []
+    cellules:
+      logement: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      ecole: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      retraites: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      sante: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      securite: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      climat: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      travail: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      impots: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      europe-et-monde: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      institutions: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+  - id: jean-francois-legendre
+    acces: ok
+    urls_bloquees: []
+    sources: []
+    urls_consultees: []
+    cellules:
+      logement: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      ecole: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      retraites: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      sante: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      securite: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      climat: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      travail: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      impots: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      europe-et-monde: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      institutions: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+  - id: david-lisnard
+    acces: ok
+    urls_bloquees: []
+    sources: []
+    urls_consultees: []
+    cellules:
+      logement: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      ecole: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      retraites: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      sante: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      securite: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      climat: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      travail: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      impots: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      europe-et-monde: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      institutions: { niveau: fort, note: "estimation recherche 2026-11-03" }
+  - id: mira-markovic
+    acces: ok
+    urls_bloquees: []
+    sources: []
+    urls_consultees: []
+    cellules:
+      logement: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      ecole: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      retraites: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      sante: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      securite: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      climat: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      travail: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      impots: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      europe-et-monde: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      institutions: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+  - id: benoit-mathieu
+    acces: ok
+    urls_bloquees: []
+    sources: []
+    urls_consultees: []
+    cellules:
+      logement: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      ecole: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      retraites: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      sante: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      securite: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      climat: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      travail: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      impots: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      europe-et-monde: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      institutions: { niveau: fort, note: "estimation recherche 2026-11-03" }
+  - id: jean-luc-melenchon
+    acces: ok
+    urls_bloquees: []
+    sources: []
+    urls_consultees: []
+    cellules:
+      logement: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      ecole: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      retraites: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      sante: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      securite: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      climat: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      travail: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      impots: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      europe-et-monde: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      institutions: { niveau: silence, note: "estimation recherche 2026-11-03" }
+  - id: antoine-mikolajczak
+    acces: ok
+    urls_bloquees: []
+    sources: []
+    urls_consultees: []
+    cellules:
+      logement: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      ecole: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      retraites: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      sante: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      securite: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      climat: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      travail: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      impots: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      europe-et-monde: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      institutions: { niveau: fort, note: "estimation recherche 2026-11-03" }
+  - id: manolo-mlekuz
+    acces: ok
+    urls_bloquees: []
+    sources: []
+    urls_consultees: []
+    cellules:
+      logement: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      ecole: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      retraites: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      sante: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      securite: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      climat: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      travail: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      impots: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      europe-et-monde: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      institutions: { niveau: fort, note: "estimation recherche 2026-11-03" }
+  - id: edouard-philippe
+    acces: ok
+    urls_bloquees: []
+    sources: []
+    urls_consultees: []
+    cellules:
+      logement: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      ecole: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      retraites: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      sante: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      securite: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      climat: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      travail: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      impots: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      europe-et-monde: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      institutions: { niveau: silence, note: "estimation recherche 2026-11-03" }
+  - id: florian-philippot
+    acces: ok
+    urls_bloquees: []
+    sources: []
+    urls_consultees: []
+    cellules:
+      logement: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      ecole: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      retraites: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      sante: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      securite: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      climat: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      travail: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      impots: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      europe-et-monde: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      institutions: { niveau: fort, note: "estimation recherche 2026-11-03" }
+  - id: gilles-platret
+    acces: aucun_site
+    urls_bloquees: []
+    sources: []
+    urls_consultees: []
+    cellules:
+      logement: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      ecole: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      retraites: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      sante: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      securite: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      climat: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      travail: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      impots: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      europe-et-monde: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      institutions: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+  - id: natacha-polony
+    acces: ok
+    urls_bloquees: []
+    sources: []
+    urls_consultees: []
+    cellules:
+      logement: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      ecole: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      retraites: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      sante: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      securite: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      climat: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      travail: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      impots: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      europe-et-monde: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      institutions: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+  - id: bruno-retailleau
+    acces: ok
+    urls_bloquees: []
+    sources: []
+    urls_consultees: []
+    cellules:
+      logement: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      ecole: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      retraites: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      sante: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      securite: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      climat: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      travail: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      impots: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      europe-et-monde: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      institutions: { niveau: fort, note: "estimation recherche 2026-11-03" }
+  - id: erwan-rohou
+    acces: ok
+    urls_bloquees: []
+    sources: []
+    urls_consultees: []
+    cellules:
+      logement: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      ecole: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      retraites: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      sante: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      securite: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      climat: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      travail: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      impots: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      europe-et-monde: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      institutions: { niveau: silence, note: "estimation recherche 2026-11-03" }
+  - id: fabien-roussel
+    acces: ok
+    urls_bloquees: []
+    sources: []
+    urls_consultees: []
+    cellules:
+      logement: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      ecole: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      retraites: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      sante: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      securite: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      climat: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      travail: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      impots: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      europe-et-monde: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      institutions: { niveau: silence, note: "estimation recherche 2026-11-03" }
+  - id: francois-ruffin
+    acces: ok
+    urls_bloquees: []
+    sources: []
+    urls_consultees: []
+    cellules:
+      logement: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      ecole: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      retraites: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      sante: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      securite: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      climat: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      travail: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      impots: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      europe-et-monde: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      institutions: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+  - id: marine-tondelier
+    acces: ok
+    urls_bloquees: []
+    sources: []
+    urls_consultees: []
+    cellules:
+      logement: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      ecole: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      retraites: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      sante: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      securite: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      climat: { niveau: fort, note: "estimation recherche 2026-11-03" }
+      travail: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      impots: { niveau: partiel, note: "estimation recherche 2026-11-03" }
+      europe-et-monde: { niveau: silence, note: "estimation recherche 2026-11-03" }
+      institutions: { niveau: silence, note: "estimation recherche 2026-11-03" }
+  - id: eric-zemmour
+    acces: aucun_site
+    urls_bloquees: []
+    sources: []
+    urls_consultees: []
+    cellules:
+      logement: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      ecole: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      retraites: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      sante: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      securite: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      climat: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      travail: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      impots: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      europe-et-monde: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+      institutions: { niveau: aucun, note: "estimation recherche 2026-11-03" }
+pilote:
+  provisoires: [institutions, impots, retraites]
+  themes: []
+  livres: []
+  derogation: null
+  relecture_ouverte: false
