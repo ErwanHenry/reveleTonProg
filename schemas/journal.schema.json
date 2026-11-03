@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:reveletonprog:schema:journal",
+  "title": "Entrée du journal public",
+  "type": "object",
+  "required": ["version_schema", "id", "date", "type", "collection_cible", "id_cible", "resume", "auteur"],
+  "unevaluatedProperties": false,
+  "properties": {
+    "version_schema": { "const": 1 },
+    "id":   { "type": "string", "pattern": "^[0-9]{8}-[0-9]{3}$" },
+    "date": { "$ref": "urn:reveletonprog:schema:common#/$defs/dateHeure" },
+    "type": { "enum": ["ajout", "correction", "retrait"] },
+    "collection_cible": { "enum": ["candidats", "themes", "mesures", "sources", "couverture", "glossaire", "sondages"] },
+    "id_cible": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*(/[a-z0-9]+(-[a-z0-9]+)*)?$", "maxLength": 160 },
+    "resume":   { "$ref": "urn:reveletonprog:schema:common#/$defs/texte" },
+    "source":   { "$ref": "urn:reveletonprog:schema:common#/$defs/urlHttps" },
+    "auteur":   { "$ref": "urn:reveletonprog:schema:common#/$defs/texte" }
+  }
+}

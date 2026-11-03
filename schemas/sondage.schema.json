@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:reveletonprog:schema:sondage",
+  "title": "Sondage",
+  "type": "object",
+  "required": [
+    "version_schema", "id", "institut", "commanditaire", "terrain", "date_publication",
+    "echantillon", "methode", "base", "marges_erreur", "url_notice", "url_publication",
+    "tour", "hypotheses", "statut_relecture"
+  ],
+  "unevaluatedProperties": false,
+  "properties": {
+    "version_schema": { "const": 1 },
+    "id":            { "$ref": "urn:reveletonprog:schema:common#/$defs/slug" },
+    "institut":      { "$ref": "urn:reveletonprog:schema:common#/$defs/texte" },
+    "commanditaire": { "$ref": "urn:reveletonprog:schema:common#/$defs/texte" },
+    "terrain": {
+      "type": "object",
+      "required": ["debut", "fin"],
+      "unevaluatedProperties": false,
+      "properties": {
+        "debut": { "$ref": "urn:reveletonprog:schema:common#/$defs/dateComplete" },
+        "fin":   { "$ref": "urn:reveletonprog:schema:common#/$defs/dateComplete" }
+      }
+    },
+    "date_publication": { "$ref": "urn:reveletonprog:schema:common#/$defs/dateHeure" },
+    "echantillon": { "type": "integer", "minimum": 1 },
+    "methode":     { "enum": ["en_ligne", "telephone", "mixte"] },
+    "base":        { "enum": ["inscrits", "certains_aller_voter"] },
+    "marges_erreur": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["score_pct", "marge_pct"],
+        "unevaluatedProperties": false,
+        "properties": {
+          "score_pct": { "type": "number", "minimum": 0, "maximum": 100 },
+          "marge_pct": { "type": "number", "exclusiveMinimum": 0, "maximum": 100 }
+        }
+      }
+    },
+    "url_notice":      { "$ref": "urn:reveletonprog:schema:common#/$defs/urlHttps" },
+    "url_publication": { "$ref": "urn:reveletonprog:schema:common#/$defs/urlHttps" },
+    "tour": { "enum": [1, 2] },
+    "hypotheses": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["nom", "scores"],
+        "unevaluatedProperties": false,
+        "properties": {
+          "nom": { "$ref": "urn:reveletonprog:schema:common#/$defs/texte" },
+          "scores": {
+            "type": "array", "minItems": 2,
+            "items": {
+              "type": "object",
+              "required": ["candidat", "pct"],
+              "unevaluatedProperties": false,
+              "properties": {
+                "candidat": { "$ref": "urn:reveletonprog:schema:common#/$defs/idCandidat" },
+                "pct":      { "type": "number", "minimum": 0, "maximum": 100 }
+              }
+            }
+          },
+          "autres_pct": { "type": "number", "minimum": 0, "maximum": 100 }
+        }
+      }
+    },
+    "statut_relecture": { "$ref": "urn:reveletonprog:schema:common#/$defs/statutRelecture" },
+    "relecteur":        { "$ref": "urn:reveletonprog:schema:common#/$defs/texte" },
+    "date_relecture":   { "$ref": "urn:reveletonprog:schema:common#/$defs/dateComplete" }
+  }
+}

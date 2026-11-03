@@ -1,0 +1,8 @@
+version_schema: 1
+id: 20261103-001
+date: 2026-11-03T12:00:00+01:00
+type: ajout
+collection_cible: mesures
+id_cible: marie-fictive/encadrement-loyers
+resume: Ajout d'une mesure fictive de test
+auteur: Erwan Henry
