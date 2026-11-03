@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:reveletonprog:schema:common",
+  "title": "Définitions communes",
+  "$defs": {
+    "slug":            { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$", "maxLength": 80 },
+    "idCandidat":      { "type": "string", "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)+$", "maxLength": 80 },
+    "dateComplete":    { "type": "string", "format": "date" },
+    "datePartielle":   { "type": "string", "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$" },
+    "dateOuPartielle": { "anyOf": [ { "$ref": "#/$defs/dateComplete" }, { "$ref": "#/$defs/datePartielle" } ] },
+    "dateHeure":       { "type": "string", "format": "date-time" },
+    "urlHttps":        { "type": "string", "format": "https-url" },
+    "sha256":          { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "texte":           { "type": "string", "minLength": 1 },
+    "statutRelecture": { "enum": ["brouillon", "relu", "publie"] },
+    "archive": {
+      "type": "object",
+      "required": ["extrait", "sha256", "capture_le"],
+      "unevaluatedProperties": false,
+      "properties": {
+        "extrait":        { "type": "string", "pattern": "^archives/([a-z0-9-]+/)*[a-z0-9._-]+\\.txt$" },
+        "sha256":         { "$ref": "#/$defs/sha256" },
+        "capture_le":     { "$ref": "#/$defs/dateHeure" },
+        "wayback_url":    { "type": "string", "format": "https-url", "pattern": "^https://web\\.archive\\.org/web/[0-9]{14}/" },
+        "binaire_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "sourceStatut": {
+      "type": "object",
+      "required": ["type", "url", "date_consultation"],
+      "unevaluatedProperties": false,
+      "properties": {
+        "type":              { "enum": ["candidat", "parti", "institution", "presse"] },
+        "titre":             { "$ref": "#/$defs/texte" },
+        "url":               { "$ref": "#/$defs/urlHttps" },
+        "date_publication":  { "$ref": "#/$defs/dateOuPartielle" },
+        "date_consultation": { "$ref": "#/$defs/dateComplete" },
+        "archive":           { "$ref": "#/$defs/archive" }
+      }
+    }
+  }
+}

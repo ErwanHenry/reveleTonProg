@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:reveletonprog:schema:candidat",
+  "title": "Candidat",
+  "type": "object",
+  "required": ["version_schema", "id", "prenom", "nom", "nom_tri", "parti", "statuts"],
+  "unevaluatedProperties": false,
+  "properties": {
+    "version_schema": { "const": 1 },
+    "id":      { "$ref": "urn:reveletonprog:schema:common#/$defs/idCandidat" },
+    "prenom":  { "$ref": "urn:reveletonprog:schema:common#/$defs/texte" },
+    "nom":     { "$ref": "urn:reveletonprog:schema:common#/$defs/texte" },
+    "nom_tri": { "$ref": "urn:reveletonprog:schema:common#/$defs/texte" },
+    "parti":   { "type": ["string", "null"], "minLength": 1 },
+    "parti_source": {
+      "$ref": "urn:reveletonprog:schema:common#/$defs/sourceStatut",
+      "type": "object",
+      "properties": { "type": { "enum": ["candidat", "parti"] } }
+    },
+    "site_officiel":    { "$ref": "urn:reveletonprog:schema:common#/$defs/urlHttps" },
+    "mandats_en_cours": { "type": "array", "uniqueItems": true, "items": { "$ref": "urn:reveletonprog:schema:common#/$defs/texte" } },
+    "ids_externes": {
+      "type": "object",
+      "properties": { "2027etmoi": { "type": "string", "minLength": 1 }, "wikidata": { "type": "string", "pattern": "^Q[0-9]+$" } },
+      "additionalProperties": { "type": "string", "minLength": 1 }
+    },
+    "ordre_cc": { "type": "integer", "minimum": 1 },
+    "statuts": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["code", "date", "source", "statut_relecture"],
+        "unevaluatedProperties": false,
+        "properties": {
+          "code":   { "enum": ["declare", "primaire", "pressenti", "empeche", "renonce"] },
+          "motif":  { "enum": ["retrait", "elimine_primaire", "ralliement", "non_candidat"] },
+          "date":   { "$ref": "urn:reveletonprog:schema:common#/$defs/dateOuPartielle" },
+          "source": { "$ref": "urn:reveletonprog:schema:common#/$defs/sourceStatut" },
+          "statut_relecture": { "$ref": "urn:reveletonprog:schema:common#/$defs/statutRelecture" },
+          "relecteur":        { "$ref": "urn:reveletonprog:schema:common#/$defs/texte" },
+          "date_relecture":   { "$ref": "urn:reveletonprog:schema:common#/$defs/dateComplete" }
+        },
+        "allOf": [
+          { "if": { "properties": { "code": { "const": "renonce" } }, "required": ["code"] },
+            "then": { "required": ["motif"], "properties": { "motif": true } },
+            "else": { "properties": { "motif": false } } },
+          { "if": { "properties": { "statut_relecture": { "const": "brouillon" } }, "required": ["statut_relecture"] },
+            "else": { "required": ["relecteur", "date_relecture"],
+                      "properties": { "relecteur": true, "date_relecture": true,
+                                      "date": { "$ref": "urn:reveletonprog:schema:common#/$defs/dateComplete" } } } }
+        ]
+      }
+    }
+  },
+  "if":   { "properties": { "parti": { "type": "string" } }, "required": ["parti"] },
+  "then": { "required": ["parti_source"], "properties": { "parti_source": true } }
+}
