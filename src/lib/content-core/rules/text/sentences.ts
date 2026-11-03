@@ -15,7 +15,7 @@ const segmenter = new Intl.Segmenter('fr', { granularity: 'sentence' });
  */
 export function sentences(raw: string): string[] {
   let s = cleanText(raw);
-  s = s.replace(/«[^»]*»/g, (q) => q.replace(/[.!?…]/g, MASK));
+  s = s.replace(/«[^«»]*»/g, (q) => q.replace(/[.!?…]/g, MASK));
   s = s.replace(ABBR, (m) => m.slice(0, -1) + MASK).replace(INITIALE, `$1${MASK}`);
   const out: string[] = [];
   for (const seg of segmenter.segment(s)) {

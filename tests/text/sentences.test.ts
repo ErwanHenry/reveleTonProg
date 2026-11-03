@@ -24,6 +24,11 @@ describe('sentences', () => {
   it('le texte restitué garde les points masqués', () => {
     assert.deepEqual(sentences('Il dit « Non. Jamais. » puis part.'), ['Il dit « Non. Jamais. » puis part.']);
   });
+  it('WR-09 : 60 Ko de « sans » reste linéaire (pas de regex quadratique)', () => {
+    const t0 = performance.now();
+    sentences('« a '.repeat(15_000));
+    assert.ok(performance.now() - t0 < 1000, `trop lent : ${Math.round(performance.now() - t0)} ms`);
+  });
   it('un texte vide ne donne aucune phrase', () => {
     assert.deepEqual(sentences(''), []);
     assert.deepEqual(sentences('   '), []);
