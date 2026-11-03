@@ -1,6 +1,7 @@
 // CLI `npm run migrate -- --check|--write` : aucune règle ici, tout passe par content-core.
 import path from 'node:path';
 import { parseArgs } from 'node:util';
+import { SchemaLoadError, checkSchemas } from '../src/lib/content-core/ajv.ts';
 import { formatGithub, formatText } from '../src/lib/content-core/diagnostics.ts';
 import type { Diagnostic } from '../src/lib/content-core/diagnostics.ts';
 import { loadAll } from '../src/lib/content-core/load.ts';
@@ -20,6 +21,19 @@ const USAGE = `Usage : npm run migrate -- (--check | --write) [--root <dossier>]
 function usageError(message: string): never {
   process.stderr.write(`${message}\n\n${USAGE}`);
   process.exit(2);
+}
+
+// Schémas illisibles, invalides ou manquants : erreur de configuration (code 2), distincte des erreurs de contenu (code 1).
+function requireValidSchemas(dir: string): void {
+  try {
+    checkSchemas(dir);
+  } catch (e) {
+    if (e instanceof SchemaLoadError) {
+      process.stderr.write(`Schémas inutilisables : ${e.message}\n`);
+      process.exit(2);
+    }
+    throw e;
+  }
 }
 
 let values: { check?: boolean; write?: boolean; root?: string; schemas?: string; format?: string };
@@ -48,6 +62,7 @@ if (format !== 'text' && format !== 'github') usageError(`Format inconnu : « ${
 const projectRoot = process.cwd();
 const contentRoot = values.root !== undefined ? path.resolve(projectRoot, values.root) : resolveContentRoot(projectRoot);
 const schemasDir = values.schemas !== undefined ? path.resolve(projectRoot, values.schemas) : schemasDirOf(projectRoot);
+requireValidSchemas(schemasDir);
 const rel = (p: string): string => path.relative(projectRoot, p).split(path.sep).join('/') || '.';
 
 function print(ds: Diagnostic[]): void {

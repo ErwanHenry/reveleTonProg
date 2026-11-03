@@ -3,6 +3,7 @@ import path from 'node:path';
 import Ajv2020 from 'ajv/dist/2020.js';
 import type { ErrorObject } from 'ajv/dist/2020.js';
 import type { Document, LineCounter } from 'yaml';
+import { COLLECTIONS } from './collections.ts';
 import { pointerToPos } from './diagnostics.ts';
 import type { Diagnostic } from './diagnostics.ts';
 
@@ -43,6 +44,16 @@ export function clearSchemaCache(): void {
   cache.clear();
 }
 
+/** Schémas illisibles, mal formés ou qui ne compilent pas : erreur de configuration, pas de contenu. */
+export class SchemaLoadError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'SchemaLoadError';
+  }
+}
+
+const reason = (e: unknown): string => (e instanceof Error ? e.message : String(e));
+
 function context(schemasDir: string): SchemaContext {
   const hit = cache.get(schemasDir);
   if (hit) return hit;
@@ -53,18 +64,48 @@ function context(schemasDir: string): SchemaContext {
   ajv.addFormat('https-url', { type: 'string', validate: httpsUrl });
   const schemas = new Map<string, Record<string, unknown>>();
   const files = ['defs/common.schema.json'];
-  for (const name of readdirSync(schemasDir).sort()) {
+  let names: string[];
+  try {
+    names = readdirSync(schemasDir).sort();
+  } catch (e) {
+    throw new SchemaLoadError(`dossier des schémas illisible (${schemasDir}) : ${reason(e)}`);
+  }
+  for (const name of names) {
     if (name.endsWith('.schema.json')) files.push(name);
   }
   for (const rel of files) {
-    const json = JSON.parse(readFileSync(path.join(schemasDir, rel), 'utf8')) as Record<string, unknown>;
-    ajv.addSchema(json);
-    const id = String(json.$id ?? '');
-    if (id.startsWith(SCHEMA_URN_PREFIX)) schemas.set(id.slice(SCHEMA_URN_PREFIX.length), json);
+    try {
+      const json = JSON.parse(readFileSync(path.join(schemasDir, rel), 'utf8')) as Record<string, unknown>;
+      const id = typeof json.$id === 'string' ? json.$id : '';
+      if (!id.startsWith(SCHEMA_URN_PREFIX)) throw new Error(`$id absent ou hors du préfixe ${SCHEMA_URN_PREFIX}`);
+      ajv.addSchema(json);
+      schemas.set(id.slice(SCHEMA_URN_PREFIX.length), json);
+    } catch (e) {
+      throw new SchemaLoadError(`schéma ${rel} invalide : ${reason(e)}`);
+    }
+  }
+  // Compilation immédiate : le mode strict signale ici les fautes de schéma (mot-clé inconnu,
+  // required hors properties, $ref cassé), même pour une collection qui n'a encore aucun fichier.
+  for (const name of schemas.keys()) {
+    try {
+      ajv.getSchema(SCHEMA_URN_PREFIX + name);
+    } catch (e) {
+      throw new SchemaLoadError(`schéma « ${name} » ne compile pas : ${reason(e)}`);
+    }
   }
   const ctx = { ajv, schemas };
   cache.set(schemasDir, ctx);
   return ctx;
+}
+
+/**
+ * Contrôle de configuration pour les CLI : les schémas se chargent et compilent, et chaque
+ * collection déclarée dans COLLECTIONS a le sien. Lève SchemaLoadError sinon.
+ */
+export function checkSchemas(schemasDir: string): void {
+  const { schemas } = context(schemasDir);
+  const missing = [...new Set(Object.values(COLLECTIONS).map((c) => c.schema))].filter((n) => !schemas.has(n));
+  if (missing.length > 0) throw new SchemaLoadError(`schéma(s) manquant(s) dans ${schemasDir} : ${missing.join(', ')}`);
 }
 
 export function createAjv(schemasDir: string): Ajv2020 {
@@ -172,12 +213,12 @@ export function validateData(
   data: unknown,
   ctx: { file: string; doc: Document.Parsed; lc: LineCounter },
 ): Diagnostic[] {
-  const unknown = (): Diagnostic[] => [
+  const schemaInconnu = (): Diagnostic[] => [
     { code: 'SCHEMA_INCONNU', severity: 'error', file: ctx.file, line: 1, col: 1, pointer: '', message: `aucun schéma « ${schemaName} » dans ${path.basename(schemasDir)}/` },
   ];
-  if (!hasSchema(schemasDir, schemaName)) return unknown();
+  if (!hasSchema(schemasDir, schemaName)) return schemaInconnu();
   const validate = createAjv(schemasDir).getSchema(SCHEMA_URN_PREFIX + schemaName);
-  if (!validate) return unknown();
+  if (!validate) return schemaInconnu();
   if (validate(data)) return [];
 
   const out: Diagnostic[] = [];
