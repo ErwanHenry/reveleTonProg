@@ -88,6 +88,8 @@ jobs:
         run: npm test
       - name: Construire le site
         run: npm run build
+      - name: Contrôler le site construit (poids, tiers, sources datées, cellules, brouillons)
+        run: npm run check-dist
 
   secrets:
     name: Chercher des secrets (gitleaks, historique complet)

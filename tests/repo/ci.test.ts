@@ -121,6 +121,7 @@ describe('ci.yml : job verifier', () => {
     'npm run check',
     'npm test',
     'npm run build',
+    'npm run check-dist',
   ];
 
   it('enchaîne les commandes dans l’ordre attendu', () => {
