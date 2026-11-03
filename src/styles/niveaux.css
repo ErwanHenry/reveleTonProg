@@ -1,0 +1,230 @@
+/*
+  Niveaux de lecture (plan 04-05) : sélecteur à 4 radios, un seul niveau de rédaction affiché par mesure,
+  mode Gros caractères. Tout repose sur les radios natifs : le CSS lit leur état avec :has(), le script
+  (niveau.js) ne fait que mémoriser le choix. Sans :has(), les quatre niveaux restent affichés avec leur
+  étiquette visible (règle de base.css) et la page reste complète.
+
+  Les règles :has() sont ancrées sur .lecteur avec le combinateur enfant (> .niveaux) pour limiter le
+  coût de recalcul des styles. Aucune propriété `order` : l'ordre du DOM est l'ordre de lecture.
+*/
+
+/* Un seul niveau de rédaction affiché ; les autres sont display: none, donc absents de l'arbre d'accessibilité */
+.lecteur:has(> .niveaux #niv-resume:checked) .redaction:not([data-niveau="resume"]),
+.lecteur:has(> .niveaux #niv-detaille:checked) .redaction:not([data-niveau="detaille"]),
+.lecteur:has(> .niveaux #niv-enfant:checked) .redaction:not([data-niveau="enfant"]),
+.lecteur:has(> .niveaux #niv-aine:checked) .redaction:not([data-niveau="aine"]) {
+  display: none;
+}
+
+/* Quand :has() est pris en charge, le nom du niveau reste lu par les lecteurs d'écran mais n'est plus dessiné */
+@supports selector(:has(*)) {
+  .lecteur .redaction > .etiquette {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+}
+
+/* Sélecteur de niveau */
+.niveaux {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  min-inline-size: 0;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  border: 0;
+}
+
+.niveaux legend {
+  margin-bottom: 0.5rem;
+  padding: 0;
+  font-size: var(--t-label);
+  font-weight: 600;
+}
+
+.niveaux .aide {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--encre-douce);
+  font-size: var(--t-label);
+}
+
+html[data-js-niveau] .aide-sansjs {
+  display: none;
+}
+
+.niveau {
+  position: relative;
+  display: flex;
+}
+
+/* Le radio natif est superposé, transparent mais jamais display: none : il reste focalisable et cliquable */
+.niveau input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.niveau label {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 1rem;
+  background: var(--carte);
+  color: var(--encre);
+  border: 2px solid var(--bord-fort);
+  border-radius: 4px;
+  font-size: var(--t-label);
+  font-weight: 600;
+  line-height: 1.2;
+  overflow-wrap: break-word;
+}
+
+/* Pastille : creuse (non choisi), pleine (choisi) : l'état ne repose pas sur la seule couleur */
+.niveau label::before {
+  content: "";
+  flex: none;
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+}
+
+.niveau:hover label {
+  background: var(--panneau);
+}
+
+.niveau input:checked + label {
+  background: var(--encre);
+  color: var(--carte);
+  border-color: var(--encre);
+}
+
+.niveau input:checked + label::before {
+  background: var(--carte);
+}
+
+.niveau input:focus-visible + label {
+  outline: 3px solid var(--encre);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--carte);
+}
+
+@media (min-width: 37.5em) {
+  .niveaux {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .niveaux .aide {
+    flex: 1 0 100%;
+  }
+}
+
+/* Rappel en fin de contenu */
+.rappel-niveau {
+  margin: 2rem 0 0;
+  font-size: var(--t-label);
+}
+
+.rappel-niveau a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+}
+
+/* « Ce qui me concerne » : premier élément du contenu dans le DOM, visible seulement en Gros caractères */
+.concerne-aine {
+  display: none;
+}
+
+.concerne-liste {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+  gap: 0.5rem;
+  margin: 0;
+  list-style: none;
+}
+
+.concerne-liste li {
+  background: var(--carte);
+  border: 1px solid var(--bord-carte);
+  border-inline-start: 8px solid var(--theme);
+  border-radius: 4px;
+}
+
+.concerne-liste a {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 0.5rem;
+  min-height: 3rem;
+  padding: 0.5rem 1rem;
+  font-size: var(--t-corps);
+  font-weight: 600;
+  overflow-wrap: break-word;
+}
+
+.concerne-liste .courant {
+  font-weight: 400;
+}
+
+/* Gros caractères : les jetons typographiques sont REMPLACÉS (20/22/28/36 px), aucun multiplicateur par-dessus */
+main:has(> .lecteur > .niveaux #niv-aine:checked) {
+  --t-label: 1.25rem;
+  --t-corps: 1.375rem;
+  --t-titre: 1.75rem;
+  --t-affiche: 2.25rem;
+  font-size: var(--t-corps);
+}
+
+.lecteur:has(> .niveaux #niv-aine:checked) :is(a, button, label, summary):not(.terme) {
+  min-height: 3rem;
+}
+
+.lecteur:has(> .niveaux #niv-aine:checked) .cellules {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+}
+
+.lecteur:has(> .niveaux #niv-aine:checked) .concerne-aine {
+  display: block;
+  margin: 0 0 2rem;
+  padding: 1rem;
+  background: var(--panneau);
+}
+
+@media (forced-colors: active) {
+  .niveau label {
+    background: Canvas;
+    color: CanvasText;
+    border-color: CanvasText;
+  }
+
+  .niveau input:checked + label {
+    background: Highlight;
+    color: HighlightText;
+    border: 4px solid Highlight;
+  }
+
+  .niveau input:checked + label::before {
+    background: HighlightText;
+  }
+
+  .concerne-liste li {
+    border: 1px solid CanvasText;
+  }
+}

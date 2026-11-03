@@ -188,3 +188,87 @@ describe('styles : échelle et interdits', () => {
     for (const { fichier, texte } of sourcesCss) assert.ok(!/!important/.test(texte), `${fichier} : !important`);
   });
 });
+
+// ---------------------------------------------------------------------------
+// niveaux.css : sélecteur de niveau, Gros caractères (plan 04-05)
+// ---------------------------------------------------------------------------
+
+const NIVEAUX_CSS = sourcesCss.find((s) => s.fichier === 'niveaux.css')?.texte ?? '';
+const reglesNiveaux = regles.filter((r) => r.fichier === 'niveaux.css');
+const decl = (r: Regle | undefined, prop: string): string | undefined => r?.declarations.find((d) => d.prop === prop)?.valeur;
+const AINE = '.lecteur:has(> .niveaux #niv-aine:checked)';
+
+describe('styles : niveaux de lecture', () => {
+  it('niveaux.css existe', () => {
+    assert.ok(NIVEAUX_CSS !== '', 'src/styles/niveaux.css absent');
+  });
+
+  it('quatre règles :has() ancrées sur .lecteur (combinateur enfant) masquent les autres rédactions', () => {
+    for (const n of ['resume', 'detaille', 'enfant', 'aine']) {
+      const sel = `.lecteur:has(> .niveaux #niv-${n}:checked) .redaction:not([data-niveau="${n}"])`;
+      const r = reglesNiveaux.find((x) => x.selecteur.split(/\s*,\s*/).includes(sel));
+      assert.ok(r, `règle de masquage ${n} absente`);
+      assert.equal(decl(r, 'display'), 'none');
+    }
+  });
+
+  it('Gros caractères REMPLACE les jetons typographiques (20/22/28/36 px), sans multiplicateur', () => {
+    const r = reglesNiveaux.find((x) => x.selecteur === 'main:has(> .lecteur > .niveaux #niv-aine:checked)');
+    assert.ok(r, 'surcharge des jetons sur main:has(> .lecteur > .niveaux #niv-aine:checked) absente');
+    assert.equal(decl(r, '--t-label'), '1.25rem');
+    assert.equal(decl(r, '--t-corps'), '1.375rem');
+    assert.equal(decl(r, '--t-titre'), '1.75rem');
+    assert.equal(decl(r, '--t-affiche'), '2.25rem');
+    assert.equal(decl(r, 'font-size'), 'var(--t-corps)', 'le texte hérité repart du jeton remplacé');
+    for (const x of reglesNiveaux) {
+      for (const d of x.declarations) {
+        if (d.prop === 'font-size') assert.ok(!/\d(em|%)$/.test(d.valeur), `${x.selecteur} { font-size: ${d.valeur} } : multiplicateur interdit`);
+      }
+    }
+  });
+
+  it('cibles de 3rem (48 px) pour a, button, label, summary hors .terme sous Gros caractères', () => {
+    const r = reglesNiveaux.find((x) => x.selecteur === `${AINE} :is(a, button, label, summary):not(.terme)`);
+    assert.ok(r, 'règle min-height Gros caractères absente');
+    assert.equal(decl(r, 'min-height'), '3rem');
+  });
+
+  it('la grille de cartes s’élargit sous Gros caractères', () => {
+    const r = reglesNiveaux.find((x) => x.selecteur === `${AINE} .cellules`);
+    assert.ok(r, 'règle .cellules sous Gros caractères absente');
+    assert.match(decl(r, 'grid-template-columns') ?? '', /minmax\(min\(100%, 22rem\), 1fr\)/);
+  });
+
+  it('les radios sont transparents (opacity: 0) et jamais display: none', () => {
+    const radio = reglesNiveaux.find((x) => x.selecteur === '.niveau input');
+    assert.ok(radio, 'règle .niveau input absente');
+    assert.equal(decl(radio, 'opacity'), '0');
+    for (const x of reglesNiveaux) {
+      if (/\binput\b/.test(x.selecteur)) assert.notEqual(decl(x, 'display'), 'none', `${x.selecteur}`);
+    }
+  });
+
+  it('le focus clavier est dessiné sur l’étiquette (input:focus-visible + label)', () => {
+    const r = reglesNiveaux.find((x) => /input:focus-visible \+ label/.test(x.selecteur) && decl(x, 'outline') !== undefined);
+    assert.ok(r, 'outline sur input:focus-visible + label absent');
+  });
+
+  it('l’étiquette de niveau est masquée visuellement (jamais display: none) quand :has() est pris en charge', () => {
+    assert.match(NIVEAUX_CSS, /@supports selector\(:has\(\*\)\)/);
+    const r = reglesNiveaux.find((x) => /\.redaction > \.etiquette/.test(x.selecteur) && decl(x, 'clip-path') !== undefined);
+    assert.ok(r, 'masquage visuel de .etiquette absent');
+    assert.equal(decl(r, 'width'), '1px');
+    assert.equal(decl(r, 'height'), '1px');
+    assert.notEqual(decl(r, 'display'), 'none');
+  });
+
+  it('« Ce qui me concerne » masqué par défaut, affiché sous Gros caractères', () => {
+    assert.equal(decl(reglesNiveaux.find((x) => x.selecteur === '.concerne-aine'), 'display'), 'none');
+    assert.equal(decl(reglesNiveaux.find((x) => x.selecteur === `${AINE} .concerne-aine`), 'display'), 'block');
+  });
+
+  it('mode contraste forcé et jamais de réordonnancement CSS', () => {
+    assert.match(NIVEAUX_CSS, /@media \(forced-colors: active\)/);
+    for (const x of reglesNiveaux) assert.ok(!x.declarations.some((d) => d.prop === 'order'), `${x.selecteur} { order }`);
+  });
+});
