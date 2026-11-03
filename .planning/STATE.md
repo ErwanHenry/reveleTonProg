@@ -4,13 +4,13 @@ milestone: v1.1
 milestone_name: milestone
 status: executing
 stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-11-03T16:42:50.566Z"
-last_activity: 2026-11-03
+last_updated: "2026-11-03T17:52:18.233Z"
+last_activity: 2026-11-03 -- Phase 4 execution started
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 23
-  completed_plans: 17
+  total_plans: 32
+  completed_plans: 19
   percent: 40
 ---
 
@@ -21,15 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-11-03)
 
 **Core value:** Un visiteur choisit un thème et lit, en moins de 3 minutes, la position de chaque candidat au niveau de détail qui lui convient — chaque mesure affichée étant rattachée à une source primaire datée, sans jamais prendre parti.
-**Current focus:** Phase 3 — Import data.gouv et corpus pilote
+**Current focus:** Phase 4 — Référentiel M1 et 4 niveaux de lecture
 **Milestone:** v1.0 — Lots 1 & 2 (squelette, données, référentiel M1)
 
 ## Current Position
 
-Phase: 3 (Import data.gouv et corpus pilote) — EXECUTING
-Plan: 4 of 9
-Status: Ready to execute
-Last activity: 2026-11-03
+Phase: 4 (Référentiel M1 et 4 niveaux de lecture) — EXECUTING
+Plan: 1 of 9
+Status: Executing Phase 4
+Last activity: 2026-11-03 -- Phase 4 execution started
 
 Progress: [██████░░░░] 57%
 

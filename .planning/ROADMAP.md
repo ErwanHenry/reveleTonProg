@@ -199,8 +199,8 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 04-01-PLAN.md — Corpus fictif `corpus-m1` en surcouche de `corpus-valide` (renonce, pressenti, statut non relu, accents et particule, brouillon piège, thème relu, marqueurs de glossaire) et son test de scénario (wave 1)
-- [ ] 04-02-PLAN.md — Contrôle post-build `check-dist` (bibliothèque + CLI, un test d'injection de faute par règle) et harnais unique de build `tests/dist/site.test.ts` avec cas `*.cas.ts` (remplace `skeleton.test.ts`) (wave 1)
+- [x] 04-01-PLAN.md — Corpus fictif `corpus-m1` en surcouche de `corpus-valide` (renonce, pressenti, statut non relu, accents et particule, brouillon piège, thème relu, marqueurs de glossaire) et son test de scénario (wave 1)
+- [x] 04-02-PLAN.md — Contrôle post-build `check-dist` (bibliothèque + CLI, un test d'injection de faute par règle) et harnais unique de build `tests/dist/site.test.ts` avec cas `*.cas.ts` (remplace `skeleton.test.ts`) (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -282,7 +282,7 @@ Phase 1 ──┬──> Phase 2 (règles) ──────────┐
 | 1. Fondations, schémas v1 et content-core | 7/7 | Complete    | 2026-11-03 |
 | 2. Règles éditoriales et pièges | 7/7 | Complete    | 2026-11-03 |
 | 3. Import data.gouv et corpus pilote | 3/9 | In Progress|  |
-| 4. Référentiel M1 et 4 niveaux de lecture | 0/9 | Planned | - |
+| 4. Référentiel M1 et 4 niveaux de lecture | 2/9 | In Progress|  |
 | 5. Pages institutionnelles, qualité et URL de test | 0/TBD | Not started | - |
 
 ---
