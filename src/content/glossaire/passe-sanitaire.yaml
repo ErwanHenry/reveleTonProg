@@ -1,0 +1,5 @@
+version_schema: 1
+id: passe-sanitaire
+type: terme
+libelle: "Passe sanitaire"
+definition: "Le passe sanitaire était un document à présenter pour entrer dans certains lieux pendant l'épidémie de Covid-19. Il montrait, par exemple, qu'on était vacciné ou qu'on avait fait un test."

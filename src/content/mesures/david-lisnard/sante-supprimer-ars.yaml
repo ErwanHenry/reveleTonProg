@@ -1,0 +1,20 @@
+version_schema: 1
+id: david-lisnard/sante-supprimer-ars
+candidat: david-lisnard
+theme: sante
+sous_theme: gouvernance-sante
+titre: "Suppression des agences régionales de santé et transfert de leurs responsabilités aux préfets et aux élus"
+texte_source: >-
+  Nous voulons supprimer les ARS, transférer les responsabilités aux préfets et aux élus, redonner aux maires la présidence des conseils d’administration des hôpitaux.
+source: david-lisnard-sante-programme
+source_localisation: "page Santé du programme, point 2 En finir avec la bureaucratie sanitaire "
+redactions:
+  resume: >-
+    Dans le programme de Nouvelle Énergie, David Lisnard veut supprimer les ARS et transférer leurs responsabilités aux préfets et aux élus.
+  detaille: >-
+    Dans la page Santé du programme de Nouvelle Énergie, parti de David Lisnard, un point consacré à la bureaucratie sanitaire veut supprimer les ARS, les agences régionales de santé, transférer les responsabilités aux préfets et aux élus, et redonner aux maires la présidence des conseils d'administration des hôpitaux. Le texte ne précise ni les responsabilités précises qui seraient transférées, ni ce que deviendrait le personnel des agences, ni le calendrier. Il ne donne pas de chiffrage. Il ne dit pas non plus ce que deviendraient les conseils d'administration actuels.
+  enfant: >-
+    David Lisnard veut supprimer les [[agences régionales de santé|agence-regionale-de-sante]]. Il confierait leur travail aux [[préfets|prefet]] et aux élus. Les maires seraient à la tête du [[conseil d'administration|conseil-d-administration]] des hôpitaux. Le texte ne dit pas quand. Il ne donne pas le coût.
+  aine: >-
+    Dans le programme de Nouvelle Énergie, parti de David Lisnard, la page Santé veut supprimer les ARS, c'est-à-dire les agences régionales de santé. Leurs responsabilités seraient transférées aux préfets et aux élus, et les maires retrouveraient la présidence des conseils d'administration des hôpitaux. Le texte ne précise pas quelles responsabilités seraient concernées, ni à quelle date, ni avec quels moyens.
+statut_relecture: brouillon

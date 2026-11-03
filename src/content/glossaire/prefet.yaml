@@ -1,0 +1,5 @@
+version_schema: 1
+id: prefet
+type: terme
+libelle: "Préfet"
+definition: "Un préfet représente l'État dans un département ou une région. Il est nommé par le gouvernement et veille à l'application des lois."

@@ -1,0 +1,15 @@
+version_schema: 1
+id: nicolas-dupont-aignan-sante-projet-dlf
+type: site_parti
+auteur: parti_du_candidat
+candidats:
+  - nicolas-dupont-aignan
+titre: "Debout la France, projet : Santé"
+url: https://www.debout-la-france.fr/projet/sante/
+date_publication: 2026-11
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/nicolas-dupont-aignan/e3eae3f78fa1.txt
+  sha256: e3eae3f78fa12501da27dc4ed4bbd1bf4e1df853006daf6fa9162eb149673698
+  capture_le: 2026-11-03T22:24:55+01:00
+  binaire_sha256: 8138f6a32cb0cb67d227a6b5cba463b6390b7d58c8db82e8ccfc322535b277fc

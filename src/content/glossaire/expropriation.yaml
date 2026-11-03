@@ -1,0 +1,5 @@
+version_schema: 1
+id: expropriation
+type: terme
+libelle: "Expropriation"
+definition: "Exproprier, c'est retirer à un propriétaire un bien qu'il possède, par une décision d'une autorité."

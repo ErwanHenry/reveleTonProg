@@ -1,0 +1,20 @@
+version_schema: 1
+id: nicolas-dupont-aignan/sante-lits-etablissements
+candidat: nicolas-dupont-aignan
+theme: sante
+sous_theme: hopital-et-soignants
+titre: "Fin des fermetures de lits et réouverture d'un établissement de santé par département"
+texte_source: >-
+  Arrêter immédiatement les fermetures de lits (plus de 100 000 lits supprimés entre 1997 et aujourd’hui), rouvrir un établissement de santé (hôpital, maternité…) par département à l’image du Val-de-Grâce en Ile-de-France et cesser les concentrations d’établissements santé (NB : rouvrir une maternité par département nous ramènerait au niveau de 2008).
+source: nicolas-dupont-aignan-sante-projet-dlf
+source_localisation: "page Santé du projet de Debout la France, liste Quelques mesures fortes, deuxième mesure"
+redactions:
+  resume: >-
+    Nicolas Dupont-Aignan veut arrêter les fermetures de lits, rouvrir un établissement de santé par département et cesser les concentrations d'établissements.
+  detaille: >-
+    Dans la page Santé du projet de Debout la France, parti de Nicolas Dupont-Aignan, une même mesure rassemble plusieurs actions : arrêter immédiatement les fermetures de lits, rouvrir un établissement de santé (hôpital, maternité…) par département, à l'image du Val-de-Grâce en Ile-de-France, et cesser les concentrations d'établissements de santé. Le texte indique que plus de 100 000 lits ont été supprimés entre 1997 et aujourd'hui, et que rouvrir une maternité par département ramènerait au niveau de 2008. Il ne précise ni le coût, ni le financement, ni les établissements concernés, ni le calendrier.
+  enfant: >-
+    Nicolas Dupont-Aignan veut garder les lits d'hôpital. Il veut arrêter d'en fermer. Il veut aussi rouvrir un hôpital ou une maternité dans chaque département. On ne regrouperait plus les établissements de santé. Le texte ne dit pas le coût. Il ne dit pas quand.
+  aine: >-
+    Dans le projet de Debout la France, Nicolas Dupont-Aignan veut arrêter immédiatement les fermetures de lits et rouvrir un établissement de santé, hôpital ou maternité, dans chaque département, à l'image du Val-de-Grâce en Ile-de-France. Il veut aussi cesser les concentrations d'établissements de santé. Le texte indique que rouvrir une maternité par département ramènerait au niveau de 2008. Il ne précise pas le financement ni le calendrier.
+statut_relecture: brouillon

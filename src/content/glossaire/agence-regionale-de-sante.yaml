@@ -1,0 +1,5 @@
+version_schema: 1
+id: agence-regionale-de-sante
+type: terme
+libelle: "Agence régionale de santé"
+definition: "Une agence régionale de santé, ou ARS, est un organisme de l'État. Il y en a une dans chaque région. Elle s'occupe de l'organisation des soins, des hôpitaux et de la prévention."

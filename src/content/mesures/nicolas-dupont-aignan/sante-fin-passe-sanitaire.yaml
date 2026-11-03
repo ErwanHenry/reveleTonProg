@@ -1,0 +1,20 @@
+version_schema: 1
+id: nicolas-dupont-aignan/sante-fin-passe-sanitaire
+candidat: nicolas-dupont-aignan
+theme: sante
+sous_theme: gouvernance-sante
+titre: "Suppression du passe sanitaire"
+texte_source: >-
+  Prononcer la suppression immédiate, intégrale et irréversible du passe sanitaire.
+source: nicolas-dupont-aignan-sante-projet-dlf
+source_localisation: "page Santé du projet de Debout la France, liste Quelques mesures fortes, première mesure"
+redactions:
+  resume: >-
+    Nicolas Dupont-Aignan veut la suppression immédiate, intégrale et irréversible du passe sanitaire, selon le projet de Debout la France.
+  detaille: >-
+    Dans la page Santé du projet de Debout la France, parti de Nicolas Dupont-Aignan, la mesure qui ouvre la liste des mesures fortes consiste à prononcer la suppression immédiate, intégrale et irréversible du passe sanitaire. Le texte ne définit pas ce qu'il désigne par passe sanitaire. Il ne dit pas non plus par quel acte juridique cette suppression serait décidée, ni si elle concerne un dispositif en vigueur ou un dispositif futur. La page ne porte pas de date de publication visible : elle est consultable sur le site du parti à la date de capture, sans autre indication de mise à jour.
+  enfant: >-
+    Nicolas Dupont-Aignan veut supprimer le [[passe sanitaire]]. Il l'écrit dans le projet de son parti. Cette suppression serait immédiate, totale et sans retour possible. Le texte ne dit pas comment elle serait décidée. Il ne donne pas de date.
+  aine: >-
+    Dans le projet de Debout la France, Nicolas Dupont-Aignan veut prononcer la suppression immédiate, intégrale et irréversible du passe sanitaire. Cette mesure ouvre la liste des mesures fortes de la page Santé du parti. Le texte ne précise pas quel dispositif exact il vise, ni par quel texte juridique la suppression serait décidée. La page ne porte pas de date de publication visible, ce qui empêche de savoir si ce passage date de la campagne actuelle.
+statut_relecture: brouillon

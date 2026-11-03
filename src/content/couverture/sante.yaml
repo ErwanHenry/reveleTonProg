@@ -50,3 +50,62 @@ cases:
     etat: mesures
     verifie_le: 2026-11-03
     verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: nicolas-dupont-aignan
+    etat: mesures
+    verifie_le: 2026-11-03
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: sylvain-durif
+    etat: programme_non_publie
+    verifie_le: 2026-11-03
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: clara-egger
+    etat: non_precise
+    sources_consultees:
+      - clara-egger-notre-solution
+      - clara-egger-parrainage-2027
+      - clara-egger-presentation-candidate
+    verifie_le: 2026-11-03
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: raphael-glucksmann
+    etat: mesures
+    verifie_le: 2026-11-03
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: anasse-kazib
+    etat: mesures
+    verifie_le: 2026-11-03
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: selma-labib
+    etat: mesures
+    verifie_le: 2026-11-03
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: francis-lalanne
+    etat: mesures
+    verifie_le: 2026-11-03
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: marine-le-pen
+    etat: programme_non_publie
+    verifie_le: 2026-11-03
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: jean-francois-legendre
+    etat: mesures
+    verifie_le: 2026-11-03
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: david-lisnard
+    etat: mesures
+    verifie_le: 2026-11-03
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: mira-markovic
+    etat: programme_non_publie
+    verifie_le: 2026-11-03
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: benoit-mathieu
+    etat: non_precise
+    sources_consultees:
+      - benoit-mathieu-le-candidat
+      - benoit-mathieu-programme
+    verifie_le: 2026-11-03
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: jean-luc-melenchon
+    etat: mesures
+    verifie_le: 2026-11-03
+    verifie_par: Claude (agent), à relire par Erwan Henry

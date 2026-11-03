@@ -1,0 +1,20 @@
+version_schema: 1
+id: raphael-glucksmann/sante-plan-prevention
+candidat: raphael-glucksmann
+theme: sante
+sous_theme: prevention
+titre: "Plan de prévention de long terme hors de l'objectif annuel de dépense d'assurance maladie"
+texte_source: >-
+  Déployer un plan de prévention d’ampleur en sortant de l’Objectif national de dépense d’assurance maladie (ONDAM), annuel,pour enfin pouvoir développer des politiques de prévention de long terme.
+source: raphael-glucksmann-projet-acte-1
+source_localisation: "page 52 du PDF, chantier 24 Miser sur la prévention, première proposition"
+redactions:
+  resume: >-
+    Le projet de Place publique, parti de Raphaël Glucksmann, veut un plan de prévention d'ampleur, hors de l'objectif annuel d'assurance maladie.
+  detaille: >-
+    Dans le projet Acte I de Place publique, parti de Raphaël Glucksmann, le chantier consacré à la prévention prévoit de déployer un plan de prévention d'ampleur. Ce plan sortirait de l'Objectif national de dépense d'assurance maladie (ONDAM), qui est annuel, afin de pouvoir développer des politiques de prévention de long terme. Le texte ne précise ni le montant du plan, ni les actions de prévention concernées, ni la manière dont il serait financé en dehors de cet objectif.
+  enfant: >-
+    Raphaël Glucksmann et son parti veulent un grand plan de prévention. Prévenir, c'est agir avant que les gens tombent malades. Ce plan sortirait de l'objectif annuel de dépenses de l'[[assurance maladie]]. Il pourrait ainsi durer plus longtemps. Le texte ne dit pas combien il coûterait.
+  aine: >-
+    Le projet Acte I de Place publique, parti de Raphaël Glucksmann, propose de déployer un plan de prévention d'ampleur. Ce plan sortirait de l'Objectif national de dépense d'assurance maladie (ONDAM), un objectif annuel de dépenses de l'assurance maladie, afin de développer des politiques de prévention sur le long terme. Le texte ne précise pas le montant du plan, ni les actions de prévention retenues, ni son mode de financement.
+statut_relecture: brouillon

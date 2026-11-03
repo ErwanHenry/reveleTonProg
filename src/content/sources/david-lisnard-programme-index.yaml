@@ -9,8 +9,7 @@ url: https://www.unenouvelleenergie.fr/notre-programme/
 date_publication: 2026-11
 date_consultation: 2026-11-03
 archive:
-  extrait: archives/david-lisnard/aebd31c88068.txt
-  sha256: aebd31c880684d5efd448af9297df509ff9b2809940a6bb3ce8d591205b374f5
-  capture_le: 2026-11-03T18:17:05+01:00
-  wayback_url: https://web.archive.org/web/20261103183541/https://www.unenouvelleenergie.fr/notre-programme/
-  binaire_sha256: 62cd42d54f5751d897edc897e27d78d26819121a952d409a73d5ef2b9b6353f0
+  extrait: archives/david-lisnard/7d6bef916938.txt
+  sha256: 7d6bef916938b903a46b155d3715d3d880c722dcbaa808e6b12991b5e02aed0a
+  capture_le: 2026-11-03T22:25:37+01:00
+  binaire_sha256: d3615887a50346532c41c3f8e116abb37dbecc23ee2a6ead3498bef2053e30df

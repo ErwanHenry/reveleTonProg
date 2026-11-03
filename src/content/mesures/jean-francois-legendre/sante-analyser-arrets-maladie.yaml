@@ -1,0 +1,20 @@
+version_schema: 1
+id: jean-francois-legendre/sante-analyser-arrets-maladie
+candidat: jean-francois-legendre
+theme: sante
+sous_theme: assurance-maladie
+titre: "Analyse de l'augmentation des arrêts maladie"
+texte_source: >-
+  La solidarité continuera à ne laisser personne au bord de la route mais cette fois encore, les tricheurs et les abus seront sanctionnés. Par exemple, l'augmentation de 30% des arrêts maladie sur les dix dernières années doit être rigoureusement analysée.
+source: jean-francois-legendre-manifeste
+source_localisation: "manifeste, paragraphe sur la solidarité et les abus, après le passage sur l'assistanat"
+redactions:
+  resume: >-
+    Jean-François Legendre écrit que les abus seront sanctionnés et que l'augmentation des arrêts maladie sur dix ans doit être rigoureusement analysée.
+  detaille: >-
+    Dans son manifeste, Jean-François Legendre écrit que la solidarité continuera à ne laisser personne au bord de la route, mais que les tricheurs et les abus seront sanctionnés. Il donne un exemple : l'augmentation de 30% des arrêts maladie sur les dix dernières années doit être rigoureusement analysée. Le texte ne précise pas qui mènerait cette analyse, selon quelle méthode, ni quelles sanctions s'appliqueraient aux abus. Il ne dit pas non plus quelles décisions pourraient en découler. Le texte ne chiffre pas non plus le coût de ces arrêts.
+  enfant: >-
+    Jean-François Legendre parle des arrêts de travail pour maladie. Il écrit que leur hausse sur dix ans doit être étudiée avec soin. Il écrit aussi que les abus seront sanctionnés. Le texte ne dit pas comment cette étude serait faite. Il ne dit pas quelles sanctions seraient prévues.
+  aine: >-
+    Dans son manifeste, Jean-François Legendre écrit que la solidarité continuera à ne laisser personne au bord de la route, mais que les tricheurs et les abus seront sanctionnés. Il demande que l'augmentation de 30% des arrêts maladie sur les dix dernières années soit rigoureusement analysée. Le texte ne précise pas qui ferait cette analyse, ni quelles sanctions seraient prévues.
+statut_relecture: brouillon

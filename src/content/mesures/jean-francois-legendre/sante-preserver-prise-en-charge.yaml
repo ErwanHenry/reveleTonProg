@@ -1,0 +1,20 @@
+version_schema: 1
+id: jean-francois-legendre/sante-preserver-prise-en-charge
+candidat: jean-francois-legendre
+theme: sante
+sous_theme: assurance-maladie
+titre: "Préservation du système de prise en charge de la santé par des organismes de l'État"
+texte_source: >-
+  De notre naissance à notre mort, quel que soit le problème de santé que nous rencontrons, il est pris en charge intégralement par des organismes mis en place par l’État : on a juste à montrer sa carte Vitale et le reste à charge est de… 0€. C'est merveilleux, il faut préserver ce système, mais il faut savoir que cela n'existe que dans de très rares pays.
+source: jean-francois-legendre-manifeste
+source_localisation: "manifeste, paragraphe La santé de la partie sur l'assistanat"
+redactions:
+  resume: >-
+    Jean-François Legendre écrit qu'il faut préserver le système où l'État prend en charge la santé, rare selon lui dans le monde.
+  detaille: >-
+    Dans son manifeste, Jean-François Legendre décrit le système de santé français : quel que soit le problème de santé, la prise en charge est intégrale par des organismes mis en place par l'État, il suffit de montrer sa carte Vitale. Il écrit que ce système est merveilleux et qu'il faut le préserver, tout en précisant qu'il n'existe que dans de très rares pays. Le texte ne dit pas comment ce système serait préservé, ni par quels moyens, ni s'il serait modifié. Le passage figure dans une partie consacrée à l'assistanat.
+  enfant: >-
+    Jean-François Legendre décrit le système de santé français. Les soins sont pris en charge par des organismes de l'État. Il suffit de montrer la carte Vitale. Il écrit qu'il faut préserver ce système. Il note que très peu de pays font pareil.
+  aine: >-
+    Dans son manifeste, Jean-François Legendre décrit le système de santé français, où des organismes mis en place par l'État prennent en charge les soins sans reste à payer : il suffit de présenter sa carte Vitale. Il écrit qu'il faut préserver ce système, tout en rappelant qu'il n'existe que dans de très rares pays. Le texte ne précise pas les moyens de cette préservation.
+statut_relecture: brouillon

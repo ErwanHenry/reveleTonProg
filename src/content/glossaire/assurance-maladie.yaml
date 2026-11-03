@@ -1,0 +1,5 @@
+version_schema: 1
+id: assurance-maladie
+type: terme
+libelle: "Assurance maladie"
+definition: "L'assurance maladie est la partie de la Sécurité sociale qui rembourse une partie des soins, des médicaments et des arrêts de travail pour maladie."

@@ -1,0 +1,5 @@
+version_schema: 1
+id: zone-sous-dotee
+type: terme
+libelle: "Zone sous-dotée"
+definition: "Une zone sous-dotée est un endroit où il y a moins de soignants que ce dont les habitants ont besoin."

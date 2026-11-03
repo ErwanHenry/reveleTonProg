@@ -1,0 +1,20 @@
+version_schema: 1
+id: david-lisnard/sante-conventionnement-differencie
+candidat: david-lisnard
+theme: sante
+sous_theme: acces-aux-soins
+titre: "Conventionnement différencié selon les zones"
+texte_source: >-
+  Nous proposons un conventionnement différencié : la Sécurité sociale rembourse mieux les actes dans les zones sous-dotées que dans les zones saturées.
+source: david-lisnard-sante-programme
+source_localisation: "page Santé du programme, point 1 Garantir l'accès aux soins par la liberté "
+redactions:
+  resume: >-
+    David Lisnard propose que la Sécurité sociale rembourse mieux les actes dans les zones sous-dotées que dans les zones saturées.
+  detaille: >-
+    Dans la page Santé du programme de Nouvelle Énergie, parti de David Lisnard, un point intitulé Garantir l'accès aux soins par la liberté propose un conventionnement différencié : la Sécurité sociale rembourserait mieux les actes dans les zones sous-dotées que dans les zones saturées. Le texte ne précise pas de combien les remboursements différeraient, ni comment les zones sous-dotées et les zones saturées seraient délimitées. Il ne dit pas non plus quels actes seraient concernés, ni quand la mesure s'appliquerait.
+  enfant: >-
+    David Lisnard propose que la [[Sécurité sociale|securite-sociale]] rembourse mieux certains soins. Ce serait dans les [[zones sous-dotées|zone-sous-dotee]]. Dans les zones saturées, ces soins seraient moins bien remboursés. Le texte ne dit pas de combien. Il ne dit pas comment on choisirait les zones.
+  aine: >-
+    Dans le programme de Nouvelle Énergie, parti de David Lisnard, la page Santé propose un conventionnement différencié : la Sécurité sociale rembourserait mieux les actes réalisés dans les zones sous-dotées que dans les zones saturées. Le texte ne dit pas quel serait l'écart de remboursement, quels actes seraient concernés, ni comment ces zones seraient définies. Il ne donne pas de calendrier.
+statut_relecture: brouillon
