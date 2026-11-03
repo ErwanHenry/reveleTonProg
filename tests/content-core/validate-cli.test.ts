@@ -61,10 +61,21 @@ describe('npm run validate (scripts/validate.ts)', () => {
     assert.ok(out.filter((l) => l.length > 0 && !l.startsWith('::')).length >= 12);
   });
 
-  it('RTP_CONTENT_ROOT vers une racine vide : code 0 et 0 fichier', () => {
-    const res = cli([], { RTP_CONTENT_ROOT: tmpRoot() });
+  it('RTP_CONTENT_ROOT vers un src/content vide : code 0 et 0 fichier explicite', () => {
+    const root = tmpRoot();
+    mkdirSync(path.join(root, 'src', 'content'), { recursive: true });
+    const res = cli([], { RTP_CONTENT_ROOT: root });
     assert.equal(res.status, 0, res.stdout + res.stderr);
     assert.match(res.stdout, /0 fichier\(s\)/);
+  });
+
+  it('racine ou src/content introuvable : code 1 et RACINE_INTROUVABLE (CR-01)', () => {
+    const typo = cli(['--root', path.join(tmpRoot(), 'nope', 'typo')]);
+    assert.equal(typo.status, 1, typo.stdout + typo.stderr);
+    assert.match(typo.stdout, /RACINE_INTROUVABLE/);
+    const noContent = cli([], { RTP_CONTENT_ROOT: tmpRoot() });
+    assert.equal(noContent.status, 1, noContent.stdout + noContent.stderr);
+    assert.match(noContent.stdout, /RACINE_INTROUVABLE/);
   });
 
   it('--root prime sur RTP_CONTENT_ROOT', () => {

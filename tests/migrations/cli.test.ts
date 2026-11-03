@@ -1,7 +1,7 @@
 import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { REPO_ROOT } from '../helpers/validate-yaml.ts';
@@ -81,6 +81,26 @@ describe('npm run migrate (scripts/migrate.ts)', () => {
     const r = cli(['--write']);
     assert.equal(r.status, 0, r.stdout + r.stderr);
     assert.match(r.stdout, /0 fichier\(s\) réécrit\(s\), 0 erreur\(s\)/);
+  });
+
+  it('racine ou src/content introuvable : code 1 en --check comme en --write, une seule fois (CR-01)', () => {
+    const nope = path.join(tmpDir(), 'nope');
+    const check = cli(['--check', '--root', nope]);
+    assert.equal(check.status, 1, check.stdout + check.stderr);
+    assert.match(check.stdout, /RACINE_INTROUVABLE/);
+    const write = cli(['--write', '--root', nope]);
+    assert.equal(write.status, 1, write.stdout + write.stderr);
+    assert.equal(write.stdout.split('\n').filter((l) => l.includes('RACINE_INTROUVABLE')).length, 1);
+    const noContent = tmpDir();
+    assert.equal(cli(['--check', '--root', noContent]).status, 1);
+  });
+
+  it('src/content existant mais vide : code 0 (accepté jusqu’à la Phase 3)', () => {
+    const root = tmpDir();
+    mkdirSync(path.join(root, 'src', 'content'), { recursive: true });
+    const r = cli(['--check', '--root', root]);
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    assert.match(r.stdout, /0 fichier\(s\) à jour/);
   });
 
   it('sans option de mode : code 2 et usage', () => {

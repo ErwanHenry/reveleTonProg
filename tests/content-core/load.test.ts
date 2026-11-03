@@ -89,9 +89,30 @@ describe('parseYaml : erreurs refusées avec des codes stables', () => {
 });
 
 describe('listContentFiles', () => {
-  it('src/content absent : 0 entrée, 0 diagnostic', () => {
-    const res = loadAll(tmpRoot(), OPTS);
+  it('src/content existant mais vide : 0 entrée, 0 diagnostic (accepté jusqu’à la Phase 3)', () => {
+    const root = tmpRoot();
+    mkdirSync(path.join(root, 'src', 'content'), { recursive: true });
+    const res = loadAll(root, OPTS);
     assert.deepEqual(res, { entries: [], diagnostics: [], files: 0 });
+  });
+
+  it('src/content absent : RACINE_INTROUVABLE (jamais « 0 erreur » en silence)', () => {
+    const res = loadAll(tmpRoot(), OPTS);
+    assert.equal(res.files, 0);
+    assert.deepEqual(res.diagnostics.map((d) => d.code), ['RACINE_INTROUVABLE']);
+    assert.equal(res.diagnostics[0]?.severity, 'error');
+  });
+
+  it('racine inexistante : RACINE_INTROUVABLE', () => {
+    const res = loadAll(path.join(tmpRoot(), 'nope', 'typo'), OPTS);
+    assert.deepEqual(res.diagnostics.map((d) => d.code), ['RACINE_INTROUVABLE']);
+  });
+
+  it('src/content qui est un fichier et non un dossier : RACINE_INTROUVABLE', () => {
+    const root = tmpRoot();
+    mkdirSync(path.join(root, 'src'), { recursive: true });
+    writeFileSync(path.join(root, 'src', 'content'), 'x');
+    assert.deepEqual(listContentFiles(root).diagnostics.map((d) => d.code), ['RACINE_INTROUVABLE']);
   });
 
   it('.yml refusé (FICHIER_EXTENSION), fichiers cachés ignorés', () => {

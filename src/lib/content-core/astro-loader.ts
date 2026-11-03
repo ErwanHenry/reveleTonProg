@@ -59,6 +59,9 @@ export function contentCoreLoader(name: CollectionName): Loader {
         const { res, first } = shared(projectRoot, contentRoot);
         const errors = res.diagnostics.filter((d) => d.severity === 'error');
         if (first) {
+          // Jusqu'à la Phase 3 la racine par défaut est le corpus fictif : on l'affiche pour qu'un
+          // build de production ne parte jamais sur un mauvais corpus sans que ce soit visible.
+          logger.info(`racine de contenu : ${path.relative(projectRoot, contentRoot).split(path.sep).join('/') || '.'}`);
           for (const d of res.diagnostics) {
             if (d.severity === 'error') logger.error(formatText(d, projectRoot));
             else logger.warn(formatText(d, projectRoot));

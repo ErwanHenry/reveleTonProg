@@ -69,7 +69,14 @@ if (values.check) {
 const migrated = runMigrations(contentRoot, { schemasDir, registry: MIGRATIONS, write: true });
 for (const file of migrated.ecrits) console.log(`migré : ${rel(file)}`);
 const validated = loadAll(contentRoot, { schemasDir });
-const all = [...migrated.diagnostics, ...validated.diagnostics];
+// Le listage des fichiers alimente les deux sources : on dédoublonne pour ne rien afficher deux fois.
+const seen = new Set<string>();
+const all = [...migrated.diagnostics, ...validated.diagnostics].filter((d) => {
+  const key = `${d.code}|${d.file}|${d.line}|${d.col}|${d.message}`;
+  if (seen.has(key)) return false;
+  seen.add(key);
+  return true;
+});
 print(all);
 console.log(`migrate : ${migrated.ecrits.length} fichier(s) réécrit(s), ${countErrors(all)} erreur(s) — racine ${rel(contentRoot)}`);
 process.exit(countErrors(all) > 0 ? 1 : 0);

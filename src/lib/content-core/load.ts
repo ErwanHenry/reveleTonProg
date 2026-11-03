@@ -1,4 +1,4 @@
-import { existsSync, lstatSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, lstatSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { LineCounter, parseDocument, visit } from 'yaml';
 import type { Document } from 'yaml';
@@ -103,7 +103,17 @@ export function listContentFiles(contentRoot: string): {
   const files: { collection: CollectionName; id: string; file: string }[] = [];
   const diagnostics: Diagnostic[] = [];
   const base = path.join(contentRoot, 'src', 'content');
-  if (!existsSync(base)) return { files, diagnostics };
+  // Une racine ou un src/content introuvable ne doit jamais valider « 0 erreur » en silence
+  // (faute de frappe dans RTP_CONTENT_ROOT ou --root). Un src/content existant mais vide reste
+  // accepté : « 0 fichier » est explicite dans le résumé, jusqu'à l'arrivée du contenu réel (Phase 3).
+  if (!existsSync(contentRoot)) {
+    diagnostics.push(diag('RACINE_INTROUVABLE', contentRoot, 1, 1, 'racine de contenu introuvable (vérifier --root ou RTP_CONTENT_ROOT)'));
+    return { files, diagnostics };
+  }
+  if (!existsSync(base) || !statSync(base).isDirectory()) {
+    diagnostics.push(diag('RACINE_INTROUVABLE', base, 1, 1, 'dossier src/content introuvable sous la racine de contenu'));
+    return { files, diagnostics };
+  }
 
   const bad = (code: string, file: string, message: string): void => {
     diagnostics.push(diag(code, file, 1, 1, message));

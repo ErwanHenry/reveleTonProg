@@ -54,8 +54,11 @@ export function inspectVersions(
   opts: { schemasDir: string },
 ): { fichiers: FichierVersion[]; diagnostics: Diagnostic[] } {
   const fichiers: FichierVersion[] = [];
-  const diagnostics: Diagnostic[] = [];
-  for (const f of listContentFiles(contentRoot).files) {
+  // Les anomalies d'emplacement (racine introuvable, lien symbolique...) comptent : un contrôle
+  // de versions ne doit jamais réussir sur un corpus qu'il n'a pas pu lister.
+  const listed = listContentFiles(contentRoot);
+  const diagnostics: Diagnostic[] = [...listed.diagnostics];
+  for (const f of listed.files) {
     const schema = COLLECTIONS[f.collection].schema;
     const courante = schemaVersion(opts.schemasDir, schema);
     const { doc, lc } = parse(readFileSync(f.file, 'utf8'));
