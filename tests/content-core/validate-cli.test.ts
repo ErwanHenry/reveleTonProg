@@ -4,6 +4,8 @@ import { spawnSync } from 'node:child_process';
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { ModeInvalideError, resolveMode } from '../../src/lib/content-core/root.ts';
+import { PIEGES_DIR, construireRacine, lirePiege, nettoyerRacines } from '../helpers/overlay.ts';
 import { REPO_ROOT } from '../helpers/validate-yaml.ts';
 
 const FIXTURE_ROOT = path.join(REPO_ROOT, 'tests', 'fixtures', 'corpus-valide');
@@ -18,6 +20,7 @@ function tmpRoot(): string {
 }
 after(() => {
   for (const d of tmpDirs) rmSync(d, { recursive: true, force: true });
+  nettoyerRacines();
 });
 
 function cli(args: string[], env: NodeJS.ProcessEnv = {}): { status: number | null; stdout: string; stderr: string } {
@@ -91,5 +94,82 @@ describe('npm run validate (scripts/validate.ts)', () => {
     assert.equal(unknown.status, 2);
     assert.match(unknown.stderr, /Usage/);
     assert.equal(cli(['--format', 'xml']).status, 2);
+  });
+});
+
+describe('resolveMode (REGLE-11, fail-closed)', () => {
+  it('le drapeau, puis RTP_MODE, puis production', () => {
+    assert.equal(resolveMode('preview'), 'preview');
+    assert.equal(resolveMode('production'), 'production');
+    assert.equal(resolveMode(undefined, { RTP_MODE: 'preview' }), 'preview');
+    assert.equal(resolveMode('production', { RTP_MODE: 'preview' }), 'production');
+    assert.equal(resolveMode('preview', { RTP_MODE: 'n’importe quoi' }), 'preview');
+    assert.equal(resolveMode(undefined, {}), 'production');
+    assert.equal(resolveMode(undefined, { RTP_MODE: '' }), 'production');
+    assert.equal(resolveMode('', { RTP_MODE: 'preview' }), 'preview');
+  });
+
+  it('toute autre valeur lève ModeInvalideError et nomme les valeurs admises', () => {
+    for (const bad of ['prod', 'Preview', ' preview', 'xyz']) {
+      assert.throws(() => resolveMode(bad), (e: unknown) => e instanceof ModeInvalideError && /preview/.test(e.message) && /production/.test(e.message));
+      assert.throws(() => resolveMode(undefined, { RTP_MODE: bad }), ModeInvalideError);
+    }
+  });
+});
+
+describe('npm run validate : --mode et RTP_MODE', () => {
+  it('--mode xyz et RTP_MODE=xyz : code 2 et usage sur stderr', () => {
+    const flag = cli(['--mode', 'xyz']);
+    assert.equal(flag.status, 2, flag.stdout + flag.stderr);
+    assert.match(flag.stderr, /Usage/);
+    const env = cli([], { RTP_MODE: 'xyz' });
+    assert.equal(env.status, 2, env.stdout + env.stderr);
+    assert.match(env.stderr, /Usage/);
+    assert.match(env.stderr, /RTP_MODE|mode/);
+  });
+
+  it('--mode preview et --mode production : code 0 et le résumé nomme le mode', () => {
+    for (const mode of ['preview', 'production']) {
+      const res = cli(['--mode', mode]);
+      assert.equal(res.status, 0, res.stdout + res.stderr);
+      assert.match(res.stdout, /content-core : \d+ fichier\(s\), 0 erreur\(s\), 0 avertissement\(s\)/);
+      assert.match(res.stdout.trimEnd(), new RegExp(`, mode ${mode}$`));
+    }
+  });
+
+  it('par défaut production ; RTP_MODE=preview est lu ; le drapeau prime sur RTP_MODE', () => {
+    assert.match(cli([]).stdout.trimEnd(), /, mode production$/);
+    assert.match(cli([], { RTP_MODE: 'preview' }).stdout.trimEnd(), /, mode preview$/);
+    assert.match(cli([], { RTP_MODE: '' }).stdout.trimEnd(), /, mode production$/);
+    const flagWins = cli(['--mode', 'preview'], { RTP_MODE: 'xyz' });
+    assert.equal(flagWins.status, 0, flagWins.stdout + flagWins.stderr);
+    assert.match(flagWins.stdout.trimEnd(), /, mode preview$/);
+  });
+});
+
+describe('npm run validate : contrat d’annotations CI (REGLE-11)', () => {
+  const piegeRoot = (nom: string): string => {
+    const dossier = path.join(PIEGES_DIR, nom);
+    return construireRacine(lirePiege(dossier), dossier);
+  };
+
+  it('SOURCE_ABSENTE : ligne de texte et annotation ::error avec fichier, ligne, colonne et code', () => {
+    const racine = piegeRoot('SOURCE_ABSENTE');
+    const res = cli(['--root', racine, '--format', 'github', '--mode', 'production']);
+    assert.equal(res.status, 1, res.stdout + res.stderr);
+    assert.match(res.stdout, /^.*encadrement-loyers\.yaml:7:\d+ SOURCE_ABSENTE /m);
+    assert.match(res.stdout, /^::error file=[^\n]*encadrement-loyers\.yaml,line=7,col=\d+,title=SOURCE_ABSENTE::/m);
+  });
+
+  it('SONDAGE_NOTICE_ABSENTE : annotation sur la ligne d’url_publication', () => {
+    const racine = piegeRoot('SONDAGE_NOTICE_ABSENTE');
+    const res = cli(['--root', racine, '--format', 'github']);
+    assert.equal(res.status, 1, res.stdout + res.stderr);
+    assert.match(res.stdout, /^.*sondage-fictif-1\.yaml:15:\d+ SONDAGE_NOTICE_ABSENTE /m);
+    assert.match(res.stdout, /^::error file=[^\n]*sondage-fictif-1\.yaml,line=15,col=\d+,title=SONDAGE_NOTICE_ABSENTE::/m);
+  });
+
+  it('scripts/validate.ts n’écrit aucune annotation lui-même', () => {
+    assert.ok(!readFileSync(path.join(REPO_ROOT, 'scripts', 'validate.ts'), 'utf8').includes('::error'));
   });
 });
