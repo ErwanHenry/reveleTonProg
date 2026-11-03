@@ -1,0 +1,15 @@
+version_schema: 1
+id: gabriel-attal-travail-assurance-chomage
+type: site_candidat
+auteur: candidat
+candidats:
+  - gabriel-attal
+titre: "Gabriel Attal, mesure : réforme de l'assurance chômage"
+url: https://attalpresident.fr/programme/mesures/reforme-assurance-chomage-cinq-milliards
+date_publication: 2026-11
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/gabriel-attal/12e67b20d963.txt
+  sha256: 12e67b20d963ddd0d92ac905e978eb781cf6fdecc12a88d298dc8bd63f9b487d
+  capture_le: 2026-11-03T23:01:55+01:00
+  binaire_sha256: 976aaa1377b0b582b712b84db786fa02e0a3f4018520c4724f0ab5c696f543dc

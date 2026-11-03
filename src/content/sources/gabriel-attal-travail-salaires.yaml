@@ -1,0 +1,15 @@
+version_schema: 1
+id: gabriel-attal-travail-salaires
+type: site_candidat
+auteur: candidat
+candidats:
+  - gabriel-attal
+titre: "Gabriel Attal, programme : chantier capital Travail et salaires"
+url: https://attalpresident.fr/programme/travail-salaires
+date_publication: 2026-11
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/gabriel-attal/f48dcf08c739.txt
+  sha256: f48dcf08c739d9d33f2c1b3781e2bd664eea1154f5fd8795006063aca8adeeb5
+  capture_le: 2026-11-03T23:01:34+01:00
+  binaire_sha256: af8f071312dc4fd80b10c21c2e8218f14d1d49130da3d1b3ccf44f5dc2d7b0c4

@@ -1,0 +1,5 @@
+version_schema: 1
+id: cotisation
+type: terme
+libelle: "Cotisation"
+definition: "Une cotisation est une somme versée avec le salaire pour financer la Sécurité sociale, par exemple les retraites ou les soins."

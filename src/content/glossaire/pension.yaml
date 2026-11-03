@@ -1,0 +1,5 @@
+version_schema: 1
+id: pension
+type: terme
+libelle: "Pension"
+definition: "Une pension est une somme d'argent versée régulièrement à une personne, par exemple aux personnes retraitées."

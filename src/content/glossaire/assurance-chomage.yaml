@@ -1,0 +1,5 @@
+version_schema: 1
+id: assurance-chomage
+type: terme
+libelle: "Assurance chômage"
+definition: "L'assurance chômage verse de l'argent, pendant un temps, aux personnes qui ont perdu leur emploi et qui en cherchent un autre."

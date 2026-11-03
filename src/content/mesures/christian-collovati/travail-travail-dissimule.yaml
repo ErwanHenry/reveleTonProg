@@ -1,0 +1,20 @@
+version_schema: 1
+id: christian-collovati/travail-travail-dissimule
+candidat: christian-collovati
+theme: travail
+sous_theme: travail-illegal
+titre: "Traque du travail dissimulé"
+texte_source: >-
+  Le travail dissimulé devra être traqué 24h/24, les personnes employées dans ce système seront sanctionnées, les employeurs seront lourdement sanctionnés voire leur entreprise dissoute.
+source: christian-collovati-site-campagne
+source_localisation: "page d'accueil du site, liste d'actions de prise de fonctions"
+redactions:
+  resume: >-
+    Christian Collovati veut traquer le travail dissimulé 24h/24, sanctionner les personnes employées et sanctionner lourdement les employeurs.
+  detaille: >-
+    Sur son site de campagne, Christian Collovati écrit que le travail dissimulé devra être traqué 24h/24. Les personnes employées dans ce système seraient sanctionnées. Les employeurs seraient lourdement sanctionnés, voire leur entreprise dissoute. Le texte ne précise pas quelles sanctions s'appliqueraient aux personnes employées, quels services feraient les contrôles, ni comment une surveillance 24h/24 serait organisée. Il ne dit pas non plus à quelle date cette mesure serait appliquée, ni si les employeurs et les personnes employées seraient sanctionnés de la même façon.
+  enfant: >-
+    Christian Collovati veut traquer le [[travail dissimulé|travail-dissimule]]. Il veut le suivre jour et nuit. Ceux qui y sont employés seraient punis. Les employeurs aussi, très fort. Leur entreprise pourrait aussi être fermée. Le texte ne dit pas comment on le ferait.
+  aine: >-
+    Sur son site de campagne, Christian Collovati propose de traquer le travail dissimulé 24h/24. Les personnes employées dans ce système seraient sanctionnées, et les employeurs lourdement sanctionnés, voire leur entreprise dissoute. Le travail dissimulé est un travail qui n'est pas déclaré. Le texte ne précise ni les sanctions, ni les services chargés des contrôles, ni la date d'application.
+statut_relecture: brouillon

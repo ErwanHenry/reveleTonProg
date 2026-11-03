@@ -1,0 +1,5 @@
+version_schema: 1
+id: contrat-a-duree-indeterminee
+type: terme
+libelle: "Contrat à durée indéterminée"
+definition: "Un contrat à durée indéterminée est un contrat de travail sans date de fin prévue. On l'appelle aussi CDI."

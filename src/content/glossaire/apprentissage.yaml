@@ -1,0 +1,5 @@
+version_schema: 1
+id: apprentissage
+type: terme
+libelle: "Apprentissage"
+definition: "L'apprentissage permet d'apprendre un métier en alternant des cours et du travail dans une entreprise."

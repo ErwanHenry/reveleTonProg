@@ -1,0 +1,15 @@
+version_schema: 1
+id: emmanuel-dubuisson-travail-richesse
+type: site_candidat
+auteur: candidat
+candidats:
+  - emmanuel-dubuisson
+titre: "Emmanuel Dubuisson, projet : dossier 2, la richesse pour les Français"
+url: https://www.dubuisson2027.fr/dossiers/2-richesse-pour-les-francais
+date_publication: 2026-11
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/emmanuel-dubuisson/abf198cc887b.txt
+  sha256: abf198cc887b51ed60c5c575f08b6f9850004bff98c266a28fc3336356cf2f54
+  capture_le: 2026-11-03T23:04:55+01:00
+  binaire_sha256: 828ef0af518757b6b03f49775f7b20ab2eb7e08fe0ae0dd1a4a36c7944f14ef0

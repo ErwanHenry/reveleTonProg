@@ -1,0 +1,5 @@
+version_schema: 1
+id: transition-professionnelle
+type: terme
+libelle: "Transition professionnelle"
+definition: "Une transition professionnelle est le passage d'un emploi à un autre ou d'un métier à un autre, parfois avec une formation entre les deux."

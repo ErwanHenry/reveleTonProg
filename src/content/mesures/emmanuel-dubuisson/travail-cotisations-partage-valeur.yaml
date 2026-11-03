@@ -1,0 +1,20 @@
+version_schema: 1
+id: emmanuel-dubuisson/travail-cotisations-partage-valeur
+candidat: emmanuel-dubuisson
+theme: travail
+sous_theme: salaires
+titre: "Réaffectation d'une partie des cotisations et partage de la valeur"
+texte_source: >-
+  Le travail doit se voir sur la paie. Réaffecter une partie des cotisations, partager davantage la valeur et revoir les prélèvements pour redonner des choix au foyer.
+source: emmanuel-dubuisson-ce-qui-change
+source_localisation: "page Ce qui change pour vous, solution 01 Pouvoir d'achat"
+redactions:
+  resume: >-
+    Emmanuel Dubuisson veut que le travail se voie sur la paie : réaffecter une partie des cotisations, partager davantage la valeur et revoir les prélèvements.
+  detaille: >-
+    Sur la page de son site consacrée à ce qui change pour les Français, Emmanuel Dubuisson écrit : « Le travail doit se voir sur la paie ». Il propose de réaffecter une partie des cotisations, de partager davantage la valeur et de revoir les prélèvements, pour redonner des choix au foyer. Le texte ne précise pas quelle part des cotisations serait réaffectée, ni vers quoi, ni quels prélèvements seraient revus. Il ne dit pas non plus de combien la paie augmenterait ni à quelle date.
+  enfant: >-
+    Emmanuel Dubuisson veut que le travail se voie sur la paie. Il veut changer l'usage d'une partie des [[cotisations|cotisation]]. Il veut aussi mieux partager la valeur. Il veut revoir les prélèvements. La famille aurait ainsi plus de choix. Le texte ne dit pas quelle part serait changée.
+  aine: >-
+    Sur la page de son site consacrée à ce qui change pour les Français, Emmanuel Dubuisson écrit que le travail doit se voir sur la paie. Il propose de réaffecter une partie des cotisations, de partager davantage la valeur et de revoir les prélèvements, pour redonner des choix au foyer. Le texte ne dit pas quelle part des cotisations serait concernée, ni quels prélèvements seraient revus, ni de combien la paie augmenterait.
+statut_relecture: brouillon

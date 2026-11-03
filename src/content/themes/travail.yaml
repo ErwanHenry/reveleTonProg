@@ -1,0 +1,34 @@
+version_schema: 1
+id: travail
+nom: Travail
+ordre: 7
+mots_cles:
+  - travail
+  - emploi
+  - chômage
+  - salaire
+  - smic
+  - entreprise
+  - syndica
+  - apprentissage
+  - licenci
+  - contrat de travail
+prioritaire_aine: false
+sous_themes:
+  - id: salaires
+    nom: Salaires et pouvoir d'achat du travail
+  - id: temps-de-travail
+    nom: Temps de travail et partage du travail
+  - id: droit-du-travail
+    nom: Code du travail et contrats de travail
+  - id: chomage-et-emploi
+    nom: Chômage, emploi et service public de l'emploi
+  - id: formation-et-transitions
+    nom: Formation, apprentissage et transitions professionnelles
+  - id: partage-de-la-valeur
+    nom: Partage de la valeur et place des salariés dans l'entreprise
+  - id: dialogue-social
+    nom: Dialogue social et négociation
+  - id: travail-illegal
+    nom: Travail dissimulé et contrôles
+statut_relecture: brouillon

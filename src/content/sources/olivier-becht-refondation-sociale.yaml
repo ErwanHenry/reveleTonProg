@@ -1,0 +1,15 @@
+version_schema: 1
+id: olivier-becht-refondation-sociale
+type: site_candidat
+auteur: candidat
+candidats:
+  - olivier-becht
+titre: "Olivier Becht, projet : La refondation sociale"
+url: https://becht2027.fr/projet-france/les-5-refondations/refondation-sociale/
+date_publication: 2026-11
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/olivier-becht/de766fc0a381.txt
+  sha256: de766fc0a3819d8af3685e100e1e462dffb1e91d176edd8958121bf35153540b
+  capture_le: 2026-11-03T23:03:00+01:00
+  binaire_sha256: 9f963d5281ee302771ac39aca160d1a3e524b38dbc343c172c5ac261d33043ae

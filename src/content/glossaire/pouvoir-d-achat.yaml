@@ -1,0 +1,5 @@
+version_schema: 1
+id: pouvoir-d-achat
+type: terme
+libelle: "Pouvoir d'achat"
+definition: "Le pouvoir d'achat, c'est ce qu'une personne peut acheter avec son argent, par exemple de la nourriture, un loyer ou des vêtements."

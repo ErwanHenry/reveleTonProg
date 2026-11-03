@@ -1,0 +1,5 @@
+version_schema: 1
+id: actionnaire
+type: terme
+libelle: "Actionnaire"
+definition: "Un actionnaire est une personne qui possède une ou plusieurs actions. Une action est une petite part d'une entreprise."

@@ -1,0 +1,15 @@
+version_schema: 1
+id: gabriel-attal-travail-constitution
+type: site_candidat
+auteur: candidat
+candidats:
+  - gabriel-attal
+titre: "Gabriel Attal, mesure : Constitution du travail"
+url: https://attalpresident.fr/programme/mesures/constitution-du-travail
+date_publication: 2026-11
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/gabriel-attal/c9f92a0ea043.txt
+  sha256: c9f92a0ea043233370e54e5e61dedbd14818ca4f0124ddaa6fab721ace01aa83
+  capture_le: 2026-11-03T23:01:49+01:00
+  binaire_sha256: ebee4d22c70a23bbb748a26af16bf0f106063a8eefd9c316b390267a4bf36e41

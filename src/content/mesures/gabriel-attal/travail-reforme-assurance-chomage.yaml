@@ -1,0 +1,20 @@
+version_schema: 1
+id: gabriel-attal/travail-reforme-assurance-chomage
+candidat: gabriel-attal
+theme: travail
+sous_theme: chomage-et-emploi
+titre: "Réforme de l'assurance chômage"
+texte_source: >-
+  Une réforme de l'assurance chômage qui remet les Français dans l’emploi et dégage cinq milliards d'euros d'économies.
+source: gabriel-attal-travail-assurance-chomage
+source_localisation: "page de la mesure Réformer l'assurance chômage et réaliser cinq milliards d'économies, chapeau"
+redactions:
+  resume: >-
+    Gabriel Attal propose une réforme de l'assurance chômage qui remet les Français dans l'emploi et dégage cinq milliards d'euros d'économies.
+  detaille: >-
+    Gabriel Attal propose une réforme de l'assurance chômage. Selon le texte, elle remet les Français dans l'emploi et dégage cinq milliards d'euros d'économies. Le texte indique donc des effets attendus : plus de personnes en emploi et des économies. Le programme ne précise pas ce que la réforme changerait pour les personnes au chômage, par exemple le montant des allocations, leur durée ou les conditions pour en bénéficier. Il ne dit pas non plus à quelle date elle commencerait ni sur quelle période les économies seraient réalisées.
+  enfant: >-
+    Gabriel Attal veut changer l'[[assurance chômage|assurance-chomage]]. Il indique que sa réforme remet les Français dans l'emploi. Il indique aussi qu'elle fait faire cinq milliards d'euros d'économies. Faire des économies, c'est dépenser moins d'argent. Le texte ne dit pas ce qui changerait pour les personnes sans emploi.
+  aine: >-
+    Gabriel Attal propose une réforme de l'assurance chômage, c'est-à-dire du système qui verse un revenu aux personnes qui ont perdu leur emploi. Selon le texte, cette réforme remet les Français dans l'emploi et dégage cinq milliards d'euros d'économies. Le programme ne précise pas ce qui changerait pour les personnes concernées : montant des allocations, durée ou conditions. Il ne dit pas non plus à partir de quand la réforme s'appliquerait.
+statut_relecture: brouillon
