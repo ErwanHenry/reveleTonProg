@@ -155,7 +155,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 03-04-PLAN.md — Couverture mesurée en direct sur les 10 thèmes pour chaque candidat du périmètre, sources archivées, `docs/COUVERTURE-THEMES.md` (wave 2)
+- [x] 03-04-PLAN.md — Couverture mesurée en direct sur les 10 thèmes pour chaque candidat du périmètre, sources archivées, `docs/COUVERTURE-THEMES.md` (wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -204,21 +204,21 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 04-03-PLAN.md — Page thème : vue-modèle pure + `getCorpus()`, cartes à structure fixe, états vides typés et datés, ligne de couverture, « Ne se présentent pas », filtre production, date de mise à jour, CSS de base, assets externes hachés (wave 2)
+- [x] 04-03-PLAN.md — Page thème : vue-modèle pure + `getCorpus()`, cartes à structure fixe, états vides typés et datés, ligne de couverture, « Ne se présentent pas », filtre production, date de mise à jour, CSS de base, assets externes hachés (wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 04-04-PLAN.md — Source primaire complète (Wayback, extrait sha256), liens « signaler une erreur », `config/site.yml`, badges et bannière de prévisualisation, noindex et robots.txt (wave 3)
-- [ ] 04-05-PLAN.md — Bascule 4 niveaux sans JS (radios + `:has()`), `niveau.js` (mémorisation `rtp:niveau`), Gros caractères et bloc « Ce qui me concerne » (wave 3)
+- [x] 04-04-PLAN.md — Source primaire complète (Wayback, extrait sha256), liens « signaler une erreur », `config/site.yml`, badges et bannière de prévisualisation, noindex et robots.txt (wave 3)
+- [x] 04-05-PLAN.md — Bascule 4 niveaux sans JS (radios + `:has()`), `niveau.js` (mémorisation `rtp:niveau`), Gros caractères et bloc « Ce qui me concerne » (wave 3)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 04-06-PLAN.md — Pages candidat (statut daté et sourcé, parti revendiqué), accueil, `/themes/`, `/candidats/`, navigation et liens croisés (wave 4)
-- [ ] 04-07-PLAN.md — Niveau Enfant : mots expliqués en Popover API, définitions adjacentes, liste « Mots expliqués » et repli (wave 4)
+- [x] 04-06-PLAN.md — Pages candidat (statut daté et sourcé, parti revendiqué), accueil, `/themes/`, `/candidats/`, navigation et liens croisés (wave 4)
+- [x] 04-07-PLAN.md — Niveau Enfant : mots expliqués en Popover API, définitions adjacentes, liste « Mots expliqués » et repli (wave 4)
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 04-08-PLAN.md — Ordre alphabétique par défaut, ordre aléatoire à la demande (`ordre.js`, Fisher-Yates non biaisé, `rtp:ordre`) (wave 5)
+- [x] 04-08-PLAN.md — Ordre alphabétique par défaut, ordre aléatoire à la demande (`ordre.js`, Fisher-Yates non biaisé, `rtp:ordre`) (wave 5)
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
@@ -281,8 +281,8 @@ Phase 1 ──┬──> Phase 2 (règles) ──────────┐
 |-------|----------------|--------|-----------|
 | 1. Fondations, schémas v1 et content-core | 7/7 | Complete    | 2026-11-03 |
 | 2. Règles éditoriales et pièges | 7/7 | Complete    | 2026-11-03 |
-| 3. Import data.gouv et corpus pilote | 3/9 | In Progress|  |
-| 4. Référentiel M1 et 4 niveaux de lecture | 2/9 | In Progress|  |
+| 3. Import data.gouv et corpus pilote | 4/9 | In Progress|  |
+| 4. Référentiel M1 et 4 niveaux de lecture | 8/9 | In Progress|  |
 | 5. Pages institutionnelles, qualité et URL de test | 0/TBD | Not started | - |
 
 ---
