@@ -109,7 +109,7 @@ Plans:
 **Wave 1**
 
 - [x] 02-01-PLAN.md — Corpus fictif prêt pour les règles (wayback, phrase enfant, ids.lock, .gitattributes) et `npm run ids -- --check|--write` (wave 1)
-- [ ] 02-02-PLAN.md — Piège §12 « mesure sans source », codes métier Ajv, moteur de règles, config et catalogue exportables (wave 1, livrable Lot 1)
+- [x] 02-02-PLAN.md — Piège §12 « mesure sans source », codes métier Ajv, moteur de règles, config et catalogue exportables (wave 1, livrable Lot 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -223,7 +223,7 @@ Phase 1 ──┬──> Phase 2 (règles) ──────────┐
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Fondations, schémas v1 et content-core | 7/7 | Complete    | 2026-11-03 |
-| 2. Règles éditoriales et pièges | 1/7 | In Progress|  |
+| 2. Règles éditoriales et pièges | 2/7 | In Progress|  |
 | 3. Import data.gouv et corpus pilote | 0/TBD | Not started | - |
 | 4. Référentiel M1 et 4 niveaux de lecture | 0/TBD | Not started | - |
 | 5. Pages institutionnelles, qualité et URL de test | 0/TBD | Not started | - |
