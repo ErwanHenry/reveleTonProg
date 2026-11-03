@@ -45,7 +45,14 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Le validateur CLI et le loader Astro passent par le même module `src/lib/content-core/load`. Une date YAML reste une chaîne dans les deux cas, ce qu'un test vérifie.
   4. Si on monte `version_schema` sans migrer un fichier, `npm run migrate -- --check` échoue en CI. `--write` le remet à niveau, et le test avant/après de la migration fixture passe.
   5. Le dépôt contient LICENSE (code MIT, contenu Licence Ouverte 2.0, `archives/` exclu), le README aux 5 questions, `docs/ARCHITECTURE.md` (Mermaid + ADR D-1 à D-13) et un RUNBOOK. Il est poussé sur GitHub, avec Dependabot actif.
-**Plans**: TBD
+**Plans**: 5 plans (3 waves)
+
+Plans:
+- [ ] 01-01-PLAN.md — Walking skeleton: Node 24 + Astro 7 scaffold, content-core (parse + Ajv + diagnostics), candidat schema, validate CLI, Astro loader, zero-JS page from the fixture (wave 1)
+- [ ] 01-02-PLAN.md — Mesure sourcée slice: theme/source/mesure schemas, fictional measure + archive in the fixture, rendered on the page (wave 2)
+- [ ] 01-03-PLAN.md — Remaining collections: couverture, glossaire, sondage, journal schemas + fixtures + schemas/CHANGELOG.md (wave 2)
+- [ ] 01-04-PLAN.md — Repo hygiene: hardened CI, gitleaks, Dependabot, LICENSE, README, ARCHITECTURE (ADR D-1…D-13), RUNBOOK (wave 2)
+- [ ] 01-05-PLAN.md — Contract lock + migrations + phase gate: meta/corpus tests, migrate --check/--write, push, green CI, failing probe, Dependabot active (wave 3)
 **Research flag**: oui. Passe de conception sur les champs `couverture`/`sources`/archive et le vocabulaire `motif`, avec confirmation de D-3, D-7 et D-8.
 
 ### Phase 2: Règles éditoriales et pièges
@@ -157,7 +164,7 @@ Phase 1 ──┬──> Phase 2 (règles) ──────────┐
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Fondations, schémas v1 et content-core | 0/TBD | Not started | - |
+| 1. Fondations, schémas v1 et content-core | 0/5 | Not started | - |
 | 2. Règles éditoriales et pièges | 0/TBD | Not started | - |
 | 3. Import data.gouv et corpus pilote | 0/TBD | Not started | - |
 | 4. Référentiel M1 et 4 niveaux de lecture | 0/TBD | Not started | - |
