@@ -56,7 +56,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 Plans:
 **Wave 1**
 
-- [ ] 01-01-PLAN.md — Walking skeleton test-first: failing e2e test + fictional fixture, Node 24 + Astro 7 scaffold with asserted config (wave 1)
+- [x] 01-01-PLAN.md — Walking skeleton test-first: failing e2e test + fictional fixture, Node 24 + Astro 7 scaffold with asserted config (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -204,7 +204,7 @@ Phase 1 ──┬──> Phase 2 (règles) ──────────┐
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Fondations, schémas v1 et content-core | 0/7 | Not started | - |
+| 1. Fondations, schémas v1 et content-core | 1/7 | In Progress|  |
 | 2. Règles éditoriales et pièges | 0/TBD | Not started | - |
 | 3. Import data.gouv et corpus pilote | 0/TBD | Not started | - |
 | 4. Référentiel M1 et 4 niveaux de lecture | 0/TBD | Not started | - |

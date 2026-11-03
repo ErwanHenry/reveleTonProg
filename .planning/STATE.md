@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
 status: executing
-stopped_at: Roadmap v1.0 créée, en attente d'approbation
-last_updated: "2026-11-03T11:46:16.850Z"
-last_activity: 2026-11-03 -- Phase 1 planning complete
+stopped_at: Completed 01-01-PLAN.md
+last_updated: "2026-11-03T11:51:03.509Z"
+last_activity: 2026-11-03
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 7
-  completed_plans: 0
+  completed_plans: 1
   percent: 0
 ---
 
@@ -26,12 +26,12 @@ See: .planning/PROJECT.md (updated 2026-11-03)
 
 ## Current Position
 
-Phase: 1 of 5 (Fondations, schémas v1 et content-core)
-Plan: 0 of TBD in current phase
+Phase: 1 (Fondations, schémas v1 et content-core) — EXECUTING
+Plan: 2 of 7
 Status: Ready to execute
-Last activity: 2026-11-03 -- Phase 1 planning complete
+Last activity: 2026-11-03
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█░░░░░░░░░] 14%
 
 ## Performance Metrics
 
@@ -53,6 +53,7 @@ Progress: [░░░░░░░░░░] 0%
 - Trend: -
 
 *Updated after each plan completion*
+| Phase 01 P01 | 25min | 2 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -68,6 +69,8 @@ Recent decisions affecting current work:
 - [Init]: D-3, D-6…D-13 = défauts recommandés de `research/SUMMARY.md` (à confirmer en ouverture de Phase 1 pour D-3, D-7, D-8)
 - [Roadmap]: granularité coarse, 7 phases de recherche fusionnées en 5 ; Phases 2, 3, 4 parallélisables après la Phase 1
 - [Roadmap]: QUAL-01 (contrôle post-build) placé en Phase 4 pour attraper les régressions de poids dès la première page
+- [Phase 01]: [01-01] fsevents@2.3.3 (optional, darwin-only, signed, install script not run) is the single documented exception to the zero-install-script lockfile gate; plan 01-03 CI check must allow it
+- [Phase 01]: [01-01] .gitignore dist/ anchored to /dist/ so tests/dist/ is tracked
 
 ### Pending Todos
 
@@ -91,6 +94,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-11-03
-Stopped at: Roadmap v1.0 créée, en attente d'approbation
+Last session: 2026-11-03T11:51:03.495Z
+Stopped at: Completed 01-01-PLAN.md
 Resume file: None

@@ -11,8 +11,8 @@
 
 ### Fondations (FOND)
 
-- [ ] **FOND-01**: Un développeur clone le dépôt et lance `npm install && npm run validate && npm test && npm run build` avec Node 24 (`.nvmrc`, `engines >=24.12`) sans autre étape
-- [ ] **FOND-02**: La config Astro 7 produit un site 100 % statique sans JS par défaut (`compressHTML: true`, `prefetch: false`, service d'image passthrough)
+- [x] **FOND-01**: Un développeur clone le dépôt et lance `npm install && npm run validate && npm test && npm run build` avec Node 24 (`.nvmrc`, `engines >=24.12`) sans autre étape
+- [x] **FOND-02**: La config Astro 7 produit un site 100 % statique sans JS par défaut (`compressHTML: true`, `prefetch: false`, service d'image passthrough)
 - [ ] **FOND-03**: Chaque push et pull request déclenche GitHub Actions (actions épinglées par SHA, `permissions: contents: read`, `TZ=Europe/Paris`) qui exécute validate + tests + build et échoue au premier problème
 - [ ] **FOND-04**: CI détecte les secrets (gitleaks) et Dependabot ouvre des PR de mise à jour avec cooldown
 - [ ] **FOND-05**: Le dépôt contient LICENSE (code MIT, contenu éditorial Licence Ouverte 2.0, `archives/` et textes des candidats exclus) et des ADR pour D-1…D-13 dans `docs/ARCHITECTURE.md`
@@ -134,8 +134,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FOND-01 | Phase 1 | Pending |
-| FOND-02 | Phase 1 | Pending |
+| FOND-01 | Phase 1 | Complete |
+| FOND-02 | Phase 1 | Complete |
 | FOND-03 | Phase 1 | Pending |
 | FOND-04 | Phase 1 | Pending |
 | FOND-05 | Phase 1 | Pending |
