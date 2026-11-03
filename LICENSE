@@ -1,0 +1,76 @@
+Licences du projet reveleTonProg
+================================
+
+Ce dépôt applique des licences différentes selon la nature des fichiers
+(décision D-9, voir docs/ARCHITECTURE.md). Chaque fichier relève d'une seule
+des quatre catégories ci-dessous.
+
+
+1. Code (licence MIT)
+---------------------
+
+Portée : tout le dépôt, sauf les chemins et textes listés aux sections 2, 3
+et 4 (scripts/, src/lib/, src/pages/, src/components/, schemas/, tests/,
+.github/, fichiers de configuration).
+
+MIT License
+
+Copyright (c) 2026 Erwan Henry
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+2. Contenu éditorial (Licence Ouverte 2.0)
+------------------------------------------
+
+Portée : le contenu rédigé par le projet, c'est-à-dire les fichiers de
+src/content/** (résumés, rédactions enfant et aîné, thèmes, glossaire,
+couverture, journal) et la documentation docs/**.
+
+Licence : Licence Ouverte / Open Licence version 2.0 (Etalab), identifiant
+SPDX Etalab-2.0.
+Texte officiel : https://www.etalab.gouv.fr/wp-content/uploads/2017/04/ETALAB-Licence-Ouverte-v2.0.pdf
+
+Vous êtes libre de réutiliser ce contenu, y compris à des fins commerciales,
+à condition de mentionner la paternité : « Source : reveleTonProg
+(https://github.com/ErwanHenry/reveleTonProg), Licence Ouverte 2.0 » et la
+date de dernière mise à jour.
+
+
+3. Exclusions
+-------------
+
+Ne sont couverts par aucune des licences de ce projet :
+
+  - le dossier archives/ et son contenu ;
+  - tout texte cité de candidats, de partis ou de tiers : champs
+    texte_source, citations, auto-descriptions de partis, extraits de
+    programmes.
+
+Ces textes restent des droits réservés à leurs auteurs, reproduits à titre de
+preuve et de citation (CPI art. L. 122-5). Leur réutilisation relève des
+conditions fixées par leurs auteurs.
+
+
+4. Données tierces
+------------------
+
+Le jeu de données data.gouv.fr « statuts sourcés » des candidats conserve sa
+propre Licence Ouverte 2.0 et son obligation d'attribution à la source
+amont. Les modalités de mention seront détaillées en phase 3.

@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TZ: Europe/Paris
+  ASTRO_TELEMETRY_DISABLED: "1"
+
+jobs:
+  verifier:
+    name: Vérifier (migrate, validate, check, test, build)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Installer Node (version de .nvmrc)
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Installer les dépendances (npm ci)
+        run: npm ci
+      - name: Vérifier les signatures des paquets
+        run: npm audit signatures
+      - name: migrate (corpus par défaut)
+        run: npm run migrate -- --check
+      - name: migrate (corpus réel)
+        run: npm run migrate -- --check
+        env:
+          RTP_CONTENT_ROOT: "."
+      - name: validate (corpus par défaut)
+        run: npm run validate -- --format github
+      - name: validate (corpus réel)
+        run: npm run validate -- --format github
+        env:
+          RTP_CONTENT_ROOT: "."
+      - name: Vérifier les types (astro check)
+        run: npm run check
+      - name: Lancer les tests
+        run: npm test
+      - name: Construire le site
+        run: npm run build
+
+  secrets:
+    name: Chercher des secrets (gitleaks, historique complet)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Récupérer tout l'historique
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Installer gitleaks (binaire épinglé, somme de contrôle vérifiée)
+        env:
+          GITLEAKS_VERSION: 8.30.1
+          GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+        run: |
+          curl -sSfL -o "$RUNNER_TEMP/gitleaks.tgz" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  $RUNNER_TEMP/gitleaks.tgz" | sha256sum -c -
+          mkdir "$RUNNER_TEMP/gitleaks"
+          tar -xzf "$RUNNER_TEMP/gitleaks.tgz" -C "$RUNNER_TEMP/gitleaks" gitleaks
+      - name: Analyser l'historique git
+        run: '"$RUNNER_TEMP/gitleaks/gitleaks" git --no-banner --redact -v .'
