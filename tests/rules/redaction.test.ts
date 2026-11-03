@@ -192,6 +192,65 @@ describe('redaction : LONGUEUR_HORS_BORNES aux bornes', () => {
   });
 });
 
+const DERNIERE_PHRASE = "Le préfet est la personne qui parle pour l'État dans le département.";
+const BROUILLON = r(MESURE, 'statut_relecture: publie', 'statut_relecture: brouillon');
+const RELU = r(MESURE, 'statut_relecture: publie', 'statut_relecture: relu');
+/** Phrase de `n` mots commençant par une majuscule (ICU ne coupe pas avant une minuscule). */
+const phrase = (n: number): string => `M${mots(n).slice(1)}`;
+const phrases = (remplacer: Remplacement[]): DiagnosticPiege[] => diag(remplacer).filter((d) => d.code === 'PHRASE_ENFANT_LONGUE');
+
+describe('redaction : PHRASE_ENFANT_LONGUE', () => {
+  it('une phrase de 16 mots est une erreur pour une mesure publiée', () => {
+    const d = phrases([r(MESURE, DERNIERE_PHRASE, phrase(16))]);
+    assert.deepEqual(d.map((x) => [x.severite, x.pointer]), [['error', '/redactions/enfant']]);
+    assert.equal(d[0]?.ligne, ligneDe(MESURE, '  enfant:'));
+  });
+
+  it('une phrase de 16 mots est une erreur pour une mesure relue (A3)', () => {
+    assert.deepEqual(phrases([r(MESURE, DERNIERE_PHRASE, phrase(16)), RELU]).map((x) => x.severite), ['error']);
+  });
+
+  it('une phrase de 16 mots n’est qu’un avertissement pour un brouillon', () => {
+    assert.deepEqual(phrases([r(MESURE, DERNIERE_PHRASE, phrase(16)), BROUILLON]).map((x) => x.severite), ['warning']);
+  });
+
+  it('une phrase de 15 mots passe', () => {
+    assert.deepEqual(phrases([r(MESURE, DERNIERE_PHRASE, phrase(15))]), []);
+  });
+
+  it('un diagnostic par phrase trop longue, avec son décompte et ses premiers mots', () => {
+    const deux = `${phrase(16)} ${phrase(17)}`;
+    const racine = construireRacine({ piege: 'unitaire', regle: 'REGLE-06', remplacer: [r(MESURE, DERNIERE_PHRASE, deux)], attendu: [] });
+    const ms = loadAll(racine, { schemasDir: SCHEMAS_DIR }).diagnostics.filter((x) => x.code === 'PHRASE_ENFANT_LONGUE');
+    assert.equal(ms.length, 2);
+    assert.match(ms[0]?.message ?? '', /phrase de 16 mots \(maximum 15\).*« Mot mot/);
+    assert.match(ms[1]?.message ?? '', /phrase de 17 mots/);
+  });
+});
+
+describe('redaction : LISIBILITE_ENFANT_FAIBLE', () => {
+  const dur =
+    "L'administration départementale réglementerait obligatoirement. Les propriétaires institutionnels contesteraient immédiatement. Cette réglementation concernerait particulièrement les agglomérations considérables.";
+  it('un texte enfant difficile avertit, avec le score à une décimale', () => {
+    const racine = construireRacine({ piege: 'unitaire', regle: 'REGLE-06', remplacer: surNiveau('enfant', dur), attendu: [] });
+    const ms = loadAll(racine, { schemasDir: SCHEMAS_DIR }).diagnostics.filter((x) => x.code === 'LISIBILITE_ENFANT_FAIBLE');
+    assert.equal(ms.length, 1);
+    assert.equal(ms[0]?.severity, 'warning');
+    assert.match(ms[0]?.message ?? '', /de -?\d+,\d pour la rédaction enfant/);
+  });
+
+  it('jamais une erreur, quel que soit le statut', () => {
+    for (const statut of [[], [BROUILLON], [RELU]]) {
+      const d = diag([...surNiveau('enfant', dur), ...statut]).filter((x) => x.code === 'LISIBILITE_ENFANT_FAIBLE');
+      assert.deepEqual(d.map((x) => x.severite), ['warning']);
+    }
+  });
+
+  it('le texte enfant de la fixture ne déclenche pas l’avertissement', () => {
+    assert.deepEqual(diag([]).filter((x) => x.code === 'LISIBILITE_ENFANT_FAIBLE'), []);
+  });
+});
+
 describe('redaction : champsEditoriaux', () => {
   it('développe * et ignore les champs absents ou non textuels', () => {
     const res = loadAll(BASE, { schemasDir: SCHEMAS_DIR });
