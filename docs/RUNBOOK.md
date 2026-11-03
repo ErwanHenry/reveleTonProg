@@ -135,6 +135,39 @@ Le mode `production` est le défaut et le **seul mode de la CI** : les deux éta
 
 Le mode `preview` ne sert qu'en local, pour rédiger un thème sans avoir encore couvert tous les candidats : `npm run validate -- --mode preview` ou `RTP_MODE=preview npm run validate`. Seules `EQUITE_CANDIDAT_MANQUANT` et `EQUITE_COUVERTURE_INCOHERENTE` deviennent des avertissements (annotation `::warning`, code de sortie 0) ; toutes les autres règles continuent de bloquer. `--mode` l'emporte sur `RTP_MODE` et une valeur inconnue est refusée (code de sortie 2). Avant la pull request, relancer en production : c'est ce que fera la CI.
 
+### Prévisualiser les brouillons
+
+`RTP_MODE=preview npm run build` (ou `npm run dev`) affiche les mesures en brouillon et relues avec leur pastille, ajoute un bandeau de prévisualisation, met chaque page en `noindex` et écrit un `robots.txt` qui interdit tout. Sans `RTP_MODE`, c'est la production. **Ne jamais fixer `RTP_MODE` dans la CI** : `tests/repo/ci.test.ts` le vérifie.
+
+### Contrôle post-build (check-dist)
+
+`npm run check-dist` lit `dist/` (options : `--dist`, `--root`, `--mode`, `--format text|github`) et sort en erreur au premier constat bloquant. La CI le lance juste après `npm run build`. Limites : 500 000 octets bruts et 100 000 octets gzip par page (HTML plus CSS et JS liés), 2048 octets par script ; 1 Ko = 1000 octets.
+
+| Code | Sens | Correction usuelle |
+|------|------|--------------------|
+| `POIDS_BRUT` | page de plus de 500 000 octets | alléger la page ou la scinder |
+| `POIDS_GZIP` | page de plus de 100 000 octets compressés | idem ; c'est la limite qui mord en premier |
+| `SCRIPT_TROP_LOURD` | script de plus de 2048 octets | réduire le script |
+| `RESSOURCE_TIERCE` | ressource chargée depuis un autre site | héberger la ressource dans le dépôt ou la retirer |
+| `LIEN_EXTERNE_NON_PROTEGE` | lien externe sans `rel="noopener noreferrer"` | ajouter le `rel` |
+| `SCRIPT_EN_LIGNE` | `<script>` avec un corps | passer par un fichier dans `src/scripts/` |
+| `SCRIPT_DATA_URI` | script en `data:` | idem |
+| `SCRIPT_NON_BLOQUANT` | script d'ordre ou de niveau en `async`/`defer`/`module` | le remettre bloquant dans `<head>` |
+| `STYLE_EN_LIGNE` | attribut `style=` | utiliser une classe CSS |
+| `ID_DUPLIQUE` | même `id` deux fois dans une page | rendre l'id unique |
+| `ESPACE_PERDU` | mot collé à un bouton ou à une définition | remettre l'espace ou la ponctuation |
+| `MOT_INTERDIT` | mot interdit dans le texte rendu | reformuler la rédaction |
+| `MESURE_SANS_SOURCE_DATEE` | mesure affichée sans source datée | compléter la source |
+| `CELLULES_INCOHERENTES` | nombre de cellules différent du attendu pour le thème | vérifier la couverture et les candidats |
+| `THEME_INATTENDU` | page de thème absente du corpus publié | retirer la page ou publier le thème |
+| `BROUILLON_EN_PRODUCTION` | trace de brouillon dans un build de production | vérifier `RTP_MODE` et le statut de la mesure |
+| `PREVIEW_INDEXABLE` | page de prévisualisation sans `noindex` | vérifier le mode du build |
+| `LIEN_INTERNE_CASSE` | lien interne vers une page ou une ancre absente | corriger le lien |
+| `LANG_ABSENTE` | `<html>` sans `lang="fr"` | corriger la mise en page |
+| `H1_NOMBRE` | zéro ou plusieurs `h1` | un seul `h1` par page |
+| `MARQUEUR_RESIDUEL` | marqueur de gabarit resté dans le HTML | corriger le rendu |
+| `DIST_VIDE` | aucun HTML dans `dist/` | construire d'abord le site |
+
 ### Archiver une source
 
 `scripts/archive-source.ts` capture une URL (ou un fichier que vous avez enregistré), écrit l'extrait texte `archives/<candidat>/<sha12>.txt` et la source `src/content/sources/<id>.yaml` (sha256, instant de capture, date de consultation), range le binaire (PDF ou HTML) dans le dépôt privé `ErwanHenry/reveleTonProg-archives` et peut soumettre l'URL à l'Internet Archive. L'outil ne touche jamais `src/content/mesures`. **Jamais de binaire dans le dépôt public.**

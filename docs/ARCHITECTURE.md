@@ -36,7 +36,10 @@ flowchart LR
   CC --> L
   A -. preuve des sources .-> C
   PR -. binaires hors dépôt public .-> A
-  L --> B[astro build → dist/<br/>zéro JS]
+  L --> GC[getCorpus / construireCorpus<br/>seul lecteur de RTP_MODE]
+  GC --> PG[pages M1 : vues-modèles pures]
+  PG --> B[astro build → dist/<br/>zéro JS par défaut]
+  B --> CD[scripts/check-dist.ts<br/>poids, tiers, sources datées, cellules]
   V -->|échec = build refusé| B
   B -->|GitHub Actions rsync SSH, lot 3| VPS[Caddy sur VPS Hetzner]
   Cron[collecte cron VPS, lot 5] -->|pull requests brouillon| Repo
@@ -257,6 +260,42 @@ Les ADR techniques de la phase 1 (sans D-n) vont de l'ADR-017 à l'ADR-026 ; ceu
   - **A11** : « mot pour mot » = casse et ponctuation ignorées, accents significatifs. Risque moyen : une lecture plus stricte rejetterait plus de citations ; il suffit de resserrer `tokens()`.
   - **A12** : seuil Kandel-Moles à 80, avertissement seulement, même si la fixture saine a demandé une retouche. Risque faible : la calibration est renvoyée à DIFF-01.
 - **Conséquence** : tout changement de défaut passe par `HYPOTHESES` et `rules/config.ts`, relu en pull request, avec un piège qui fige le nouveau comportement.
+
+### ADR-034 : cartes à structure fixe, pas à hauteur fixe (règle des 160 %)
+- **Statut** : décidé le 2026-11-03 par l'orchestrateur au nom d'Erwan, à sa demande de trancher en autonomie (ce n'était pas une question de point de contrôle).
+- **Contexte** : l'exigence M1-08 parle de cartes « de taille fixe » par cellule thème × candidat.
+- **Décision** : « taille fixe » veut dire **structure fixe** : exactement une mesure plus la ligne « N autres mesures », les mêmes zones dans le même ordre, des largeurs égales, des rangées alignées, avec une **hauteur variable**. Une hauteur fixe en pixels couperait ou ferait déborder le texte à 160 % de zoom du texte et en « Gros caractères » (WCAG 1.4.4 et 1.4.10). La règle d'une seule mesure par cellule garde aussi les pages thème sous le budget de 100 Ko gzip.
+- **Conséquence** : aucun `height` ni `max-height` en px, aucune troncature sur les cartes, ce que `tests/ui/styles.test.ts` impose.
+
+### ADR-035 : pages M1 en vue-modèle pure, `getCorpus` seul lecteur de `RTP_MODE`, production en échec fermé
+- **Contexte** : les pages doivent afficher les mêmes données en preview (brouillons visibles, pastillées) et en production (publié seulement) sans qu'un composant décide seul de ce qui est visible.
+- **Décision** : les composants ne reçoivent que des vues-modèles pures calculées par `src/lib/corpus` ; `getCorpus` est le seul code qui lit `RTP_MODE`. Sans mode demandé, c'est la production, et un corpus invalide fait échouer le build.
+- **Conséquence** : un brouillon ne peut pas fuiter en production par oubli dans une page ; ajouter une page ne touche pas à la logique de visibilité.
+
+### ADR-036 : statuts, périmètre et copie archivée : dernier statut relu, cases pour déclaré ou primaire, badges de prévisualisation, Wayback et extrait GitHub
+- **Contexte** : hypothèses A1 à A4 de la recherche de la phase 4, adoptées par défaut en attendant la relecture d'Erwan.
+- **Décision** : A1, le statut affiché en production est celui de la dernière entrée relue, sinon « Statut en cours de vérification » ; A2, des cartes seulement pour les statuts `declare` et `primaire`, `renonce` dans la section repliée, les autres comptés sur une seule ligne ; A3, textes des badges « brouillon, non relu » et « relu, pas encore publié » ; A4, copie archivée = lien Wayback plus lien vers l'extrait (sha256) sur GitHub, en 404 tant que le dépôt n'est pas public.
+- **Conséquence** : chaque défaut est modifiable à un seul endroit ; la liste est reprise dans le SUMMARY 04-09 pour la relecture d'Erwan.
+
+### ADR-037 : pages compatibles CSP, CSS et scripts externes hachés, aucun code en ligne
+- **Contexte** : vie privée et sécurité imposent zéro script externe ; une politique CSP stricte du lot 3 ne doit pas casser les pages.
+- **Décision** : aucun `<script>` ni `style=` en ligne, CSS et scripts servis depuis `/_astro/` avec un nom haché, seules clés `localStorage` : `rtp:niveau` et `rtp:ordre`. `check-dist` rejette `SCRIPT_EN_LIGNE`, `STYLE_EN_LIGNE`, `SCRIPT_DATA_URI` et `RESSOURCE_TIERCE`.
+- **Conséquence** : la CSP du lot 3 peut interdire `unsafe-inline` ; un script de plus de 2 Ko échoue au contrôle.
+
+### ADR-038 : contrôle post-build `check-dist` sans dépendance, gzip d'abord
+- **Contexte** : le budget de poids et les règles de page doivent échouer en CI, sur ce qui est réellement servi.
+- **Décision** : `scripts/check-dist.ts` lit `dist/` avec un petit analyseur HTML maison (`scripts/lib/html.ts`) et `node:zlib`. La limite de 100 Ko gzip par page (HTML plus CSS et JS liés) mord avant celle de 500 Ko bruts. La CI l'exécute juste après `npm run build`, en production.
+- **Conséquence** : aucune dépendance ajoutée ; un brouillon, un tiers, une source sans date ou une cellule incohérente fait échouer le job.
+
+### ADR-039 : un seul fichier de test lance `astro build`, tranches en modules `.cas.ts`, `corpus-m1` en surcouche
+- **Contexte** : un build coûte plusieurs secondes ; chaque tranche voulait le sien.
+- **Décision** : `tests/dist/site.test.ts` est le seul à lancer `astro build`, mémorise chaque build par clé et charge tous les `tests/dist/cas/*.cas.ts`. Le corpus fictif `corpus-m1` est matérialisé en surcouche de `corpus-valide` dans un dossier temporaire.
+- **Conséquence** : deux builds (production et preview) servent toutes les tranches ; ajouter des assertions ne relance pas de build.
+
+### ADR-040 : niveaux de lecture par boutons radio et `:has()`, `autocomplete="off"`, ordre aléatoire à la demande
+- **Contexte** : le choix du niveau doit marcher sans JavaScript, et l'ordre des candidats ne doit jamais suivre les sondages.
+- **Décision** : le niveau est un groupe de boutons radio dont `:has(:checked)` pilote l'affichage en CSS pur, avec `autocomplete="off"` pour que le navigateur ne restaure pas un état contradictoire ; un petit script mémorise `rtp:niveau`. L'ordre par défaut est alphabétique ; l'ordre aléatoire (Fisher-Yates) n'existe que sur demande, avec JavaScript, mémorisé dans `rtp:ordre`.
+- **Conséquence** : sans JavaScript, tout fonctionne sauf la mémoire du niveau et l'ordre aléatoire, annoncé comme tel.
 
 ## Dépendances externes critiques
 

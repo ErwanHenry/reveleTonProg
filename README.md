@@ -44,8 +44,17 @@ Commandes complémentaires :
 npm run check                  # astro check : types des .astro et des scripts
 npm run migrate -- --check     # le contenu est-il au dernier schéma ?
 npm run ids -- --check         # les identifiants de candidats sont-ils tous verrouillés ?
+npm run build                  # génère dist/ (production : brouillons exclus)
+npm run check-dist             # contrôle post-build de dist/ : poids, tiers, sources datées, cellules (la CI l'exécute après le build)
 npm run preview                # sert dist/ en local
 npm run dev                    # http://localhost:4321
+```
+
+Voir les brouillons (pastillés, noindex, bandeau de prévisualisation) : `RTP_MODE=preview npm run build`. Parcourir le corpus fictif des pages M1 :
+
+```bash
+node tests/helpers/corpus-m1.ts /tmp/rtp-m1
+RTP_CONTENT_ROOT=/tmp/rtp-m1 RTP_MODE=preview npm run dev
 ```
 
 ### Règles éditoriales, mode de validation et identifiants
