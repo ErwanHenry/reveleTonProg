@@ -1,0 +1,16 @@
+version_schema: 1
+id: marine-tondelier-programme-prosperite-ecologique
+type: programme
+auteur: parti_du_candidat
+candidats:
+  - marine-tondelier
+titre: Pour une prospérité écologique — le nouveau programme des Écologistes
+url: https://lesecologistes.fr/document/3N4JsAEmq6vsx42IITGNZa/vdef-programme-1.pdf
+date_publication: 2026-07
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/marine-tondelier/77deeacd2e6e.txt
+  sha256: 77deeacd2e6e1a40079bcdd39519b274ec1e79d48f262713978e27cfb58590da
+  capture_le: 2026-11-03T22:12:00+01:00
+  wayback_url: https://web.archive.org/web/20261103212256/https://lesecologistes.fr/document/3N4JsAEmq6vsx42IITGNZa/vdef-programme-1.pdf
+  binaire_sha256: 2fafd160291ff6677207c57ce1504ae6e62608cd19d8310e01a522b95beb50fc
