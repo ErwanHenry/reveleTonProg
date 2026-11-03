@@ -36,6 +36,9 @@ Script d'import du dataset data.gouv « Candidatures à l'élection présidentie
 ### Règle de choix des thèmes (Erwan 2026-11-03)
 - regle_themes: marge — thèmes à ±2 positions considérés à égalité, priorité aux thèmes Aîné (sur l'estimation : institutions, impôts, retraites) ; le top 3 littéral reste affiché à côté dans docs/COUVERTURE-THEMES.md
 
+### Thèmes pilotes confirmés (Erwan 2026-11-03, après mesure réelle)
+- `regle_themes: marge` appliquée à la mesure complète (37 lignes) → **sante, travail, europe-et-monde** ; confirmé explicitement par Erwan (c'est aussi le top 3 littéral). Classement fragile (10 thèmes en 5 positions), documenté dans docs/COUVERTURE-THEMES.md
+
 ### Claude's Discretion
 - Outil de capture (Playwright si besoin de rendu JS, sinon fetch), structure du rapport de couverture, ordre de collecte
 
