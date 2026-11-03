@@ -162,6 +162,20 @@ describe('ci.yml : job verifier', () => {
     assert.ok(iValidate >= 0 && iValidate < iStep, 'la comparaison suit les étapes validate');
   });
 
+  it('WR-01 : la comparaison de ids.lock échoue fermé (merge-base, commit de base introuvable)', () => {
+    const step = ci.jobs.verifier.steps.find((s) => s.run?.includes('npm run ids -- --check --base') === true) as Step;
+    const run = step.run as string;
+    assert.ok(!/merge-base[^\n]*\|\|\s*true/.test(run), 'merge-base ne doit pas être avalé par || true');
+    assert.match(run, /merge-base[^\n]*\|\| \{[^\n]*exit 1/);
+    assert.ok(!run.includes('::warning::'), 'un commit de base introuvable doit être une erreur, pas un avertissement');
+    assert.match(run, /::error::Commit de base[^\n]*\n\s*exit 1/);
+  });
+
+  it('WR-01 : cancel-in-progress ne s’applique qu’aux pull requests (jamais à main)', () => {
+    const conc = (ci as unknown as { concurrency: { 'cancel-in-progress': unknown } }).concurrency;
+    assert.equal(conc['cancel-in-progress'], "${{ github.event_name == 'pull_request' }}");
+  });
+
   it('aucun corps de script ne contient d’interpolation ${{ }}', () => {
     for (const s of allSteps()) assert.ok(!(s.run ?? '').includes('${{'), `interpolation dans run : ${s.name}`);
   });
