@@ -28,6 +28,8 @@ Thumbs.db
 
 # Build
 /dist/
+/dist-reel/
+/dist-preview/
 build/
 .next/
 

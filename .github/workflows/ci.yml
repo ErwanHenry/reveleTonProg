@@ -90,6 +90,23 @@ jobs:
         run: npm run build
       - name: Contrôler le site construit (poids, tiers, sources datées, cellules, brouillons)
         run: npm run check-dist
+      - name: Construire le site du corpus réel (production)
+        run: npm run build -- --outDir dist-reel
+        env:
+          RTP_CONTENT_ROOT: "."
+      - name: Contrôler le site du corpus réel (production)
+        run: npm run check-dist -- --dist dist-reel --mode production
+        env:
+          RTP_CONTENT_ROOT: "."
+      - name: Construire le site du corpus réel (preview)
+        run: npm run build -- --outDir dist-preview
+        env:
+          RTP_CONTENT_ROOT: "."
+          RTP_MODE: preview
+      - name: Contrôler le site du corpus réel (preview, noindex et robots.txt)
+        run: npm run check-dist -- --dist dist-preview --mode preview
+        env:
+          RTP_CONTENT_ROOT: "."
 
   secrets:
     name: Chercher des secrets (gitleaks, historique complet)
