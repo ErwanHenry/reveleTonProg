@@ -1,0 +1,16 @@
+version_schema: 1
+id: bruno-retailleau-fiches-comptes-publics
+type: programme
+auteur: candidat
+candidats:
+  - bruno-retailleau
+titre: Bruno Retailleau, Rétablir l’ordre dans les comptes publics (fiches presse)
+url: https://www.avecretailleau.fr/api/media/file/20261011_Fiches_presse_comptes_publics_mise_en_page%20(1).pdf
+date_publication: 2026-10-12
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/bruno-retailleau/cdec4f89175c.txt
+  sha256: cdec4f89175c69155d4b1e9522aa7af38186a3151eaee1de7ef5b4f80ce38c88
+  capture_le: 2026-11-03T19:03:07+01:00
+  wayback_url: https://web.archive.org/web/20261103182320/https://www.avecretailleau.fr/api/media/file/20261011_Fiches_presse_comptes_publics_mise_en_page%20(1).pdf
+  binaire_sha256: 0a56ad9b9bd20c3453230312568ec5d172f5f153ecf2e7e83407b6b4514de0de

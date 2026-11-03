@@ -1,0 +1,16 @@
+version_schema: 1
+id: manolo-mlekuz-programme
+type: site_candidat
+auteur: candidat
+candidats:
+  - manolo-mlekuz
+titre: Trajectoire 2027, Programme
+url: https://trajectoire2027.fr/programme
+date_publication: 2026-11
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/manolo-mlekuz/94bd4164e697.txt
+  sha256: 94bd4164e6978d165dae3a2d17df1432b23ba1db48b1031fac1453a0e57c6996
+  capture_le: 2026-11-03T18:55:30+01:00
+  wayback_url: https://web.archive.org/web/20261103185819/https://trajectoire2027.fr/programme
+  binaire_sha256: 6a6ac50bfd93fd2fec6e6e1e39f9f419048f203f84f385d15024b6461ba7f042

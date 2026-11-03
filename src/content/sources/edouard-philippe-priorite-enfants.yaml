@@ -1,0 +1,16 @@
+version_schema: 1
+id: edouard-philippe-priorite-enfants
+type: site_candidat
+auteur: candidat
+candidats:
+  - edouard-philippe
+titre: "Édouard Philippe, Les priorités : Pour une France plus attentive à ses enfants"
+url: https://www.edouardphilippe.fr/priorites/pour-une-france-plus-attentive-a-ses-enfants
+date_publication: 2026-11
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/edouard-philippe/b132f61c329b.txt
+  sha256: b132f61c329bdeedc275cfbb43d02717701662a227b022bf5a685b299306949a
+  capture_le: 2026-11-03T18:56:53+01:00
+  wayback_url: https://web.archive.org/web/20261103183647/https://www.edouardphilippe.fr/priorites/pour-une-france-plus-attentive-a-ses-enfants
+  binaire_sha256: 2de86ced3ec5f1ab4d13b02ad66ab8fcee229039674cd4546a660980d5871e1e

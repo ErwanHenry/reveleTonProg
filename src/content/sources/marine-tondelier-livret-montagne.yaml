@@ -1,0 +1,16 @@
+version_schema: 1
+id: marine-tondelier-livret-montagne
+type: programme
+auteur: parti_du_candidat
+candidats:
+  - marine-tondelier
+titre: "Les Écologistes, Livret de campagne : Pour une montagne vivante, accueillante et résiliente"
+url: https://static1.squarespace.com/static/68b9a0c719c7a969b63b8a1a/t/6a8c159db2485369fd485d39/1787565469740/Livret+montagne.pdf
+date_publication: 2026-07-11
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/marine-tondelier/95d45b11b550.txt
+  sha256: 95d45b11b55090c67f00aa4934fbffa661bb0931413a518565855515ac9fabc8
+  capture_le: 2026-11-03T19:13:41+01:00
+  wayback_url: https://web.archive.org/web/20261103190103/https://static1.squarespace.com/static/68b9a0c719c7a969b63b8a1a/t/6a8c159db2485369fd485d39/1787565469740/Livret+montagne.pdf
+  binaire_sha256: ecb04bc64576f7b7108851fefcd050ec94e486888e5e4cb1d3a05cb1ad1e4b0a

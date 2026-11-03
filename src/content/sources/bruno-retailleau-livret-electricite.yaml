@@ -1,0 +1,16 @@
+version_schema: 1
+id: bruno-retailleau-livret-electricite
+type: programme
+auteur: parti_du_candidat
+candidats:
+  - bruno-retailleau
+titre: "Les Républicains, Nos propositions pour la France : Électricité"
+url: https://www.avecretailleau.fr/api/media/file/LR_Electricite_vFF070626-compress%C3%A9.pdf
+date_publication: 2026-11
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/bruno-retailleau/3bb3f5fc1c3a.txt
+  sha256: 3bb3f5fc1c3aafdba72dadf973d5e506237321d430556c50c2a3cee14bd2b16f
+  capture_le: 2026-11-03T19:03:04+01:00
+  wayback_url: https://web.archive.org/web/20261103182414/https://www.avecretailleau.fr/api/media/file/LR_Electricite_vFF070626-compress%C3%A9.pdf
+  binaire_sha256: 81bb7677682dbeaf29fbf91ce8824f7c85329c8166bcda0745be5d4b1be2c2b4

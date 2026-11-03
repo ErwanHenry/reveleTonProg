@@ -1,0 +1,16 @@
+version_schema: 1
+id: fabien-roussel-cahier-paix-defense
+type: programme
+auteur: parti_du_candidat
+candidats:
+  - fabien-roussel
+titre: "Parti communiste français, Les cahiers thématiques des Jours heureux : Paix et défense nationale"
+url: https://assets.nationbuilder.com/pcf/pages/41211/attachments/original/1779954906/document_cahier_paix_ppp_stc.pdf?1779954906
+date_publication: 2026-05-21
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/fabien-roussel/aa6454be94c7.txt
+  sha256: aa6454be94c7ef06b2e5bb7ef47ca4a7f8f598bc62efc6151814f2883a3ce89f
+  capture_le: 2026-11-03T19:10:08+01:00
+  wayback_url: https://web.archive.org/web/20261103184421/https://assets.nationbuilder.com/pcf/pages/41211/attachments/original/1779954906/document_cahier_paix_ppp_stc.pdf?1779954906
+  binaire_sha256: d96b754eafce4809bc487cc8dd1628a47c8477f28fc27605b2456420cc1c2337

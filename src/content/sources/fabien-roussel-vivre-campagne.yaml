@@ -1,0 +1,16 @@
+version_schema: 1
+id: fabien-roussel-vivre-campagne
+type: site_candidat
+auteur: candidat
+candidats:
+  - fabien-roussel
+titre: Fabien Roussel 2027, VIVRE !
+url: https://www.fabienroussel2027.fr/
+date_publication: 2026-11
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/fabien-roussel/2c04e36327a7.txt
+  sha256: 2c04e36327a7931d00491229e1a60f28e0881b078e87d7872fa6436b4e9aff11
+  capture_le: 2026-11-03T19:09:42+01:00
+  wayback_url: https://web.archive.org/web/20261103184544/https://www.fabienroussel2027.fr/
+  binaire_sha256: 24d02e4457501dc10faf5d222896d314c0a06900776abdae2c923f70ec497979

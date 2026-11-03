@@ -1,0 +1,16 @@
+version_schema: 1
+id: marine-tondelier-carnet-international
+type: programme
+auteur: parti_du_candidat
+candidats:
+  - marine-tondelier
+titre: "Les Écologistes, Carnet de doctrine : L’Europe comme puissance écologique"
+url: https://static1.squarespace.com/static/68b9a0c719c7a969b63b8a1a/t/6a9675934d5f917877a2f992/1788245395719/CARNET+DE+DOCTRINE+INTERNATIONAL.pdf
+date_publication: 2026-02-06
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/marine-tondelier/4e86bbdf9ffc.txt
+  sha256: 4e86bbdf9ffc7e68947b93060b02be69ee6deeb8a587c832ffe9007042ba1f69
+  capture_le: 2026-11-03T19:14:00+01:00
+  wayback_url: https://web.archive.org/web/20261103185854/https://static1.squarespace.com/static/68b9a0c719c7a969b63b8a1a/t/6a9675934d5f917877a2f992/1788245395719/CARNET+DE+DOCTRINE+INTERNATIONAL.pdf
+  binaire_sha256: cb05e1c817ee69aea55ed77a741251f3966d8a2000950bab9981abf3410b8694

@@ -1,0 +1,16 @@
+version_schema: 1
+id: bruno-retailleau-livret-industrie
+type: programme
+auteur: parti_du_candidat
+candidats:
+  - bruno-retailleau
+titre: "Les Républicains, Nos propositions pour la France : Produire plus pour vivre mieux"
+url: https://www.avecretailleau.fr/api/media/file/LR_Industrie.pdf
+date_publication: 2026-09-08
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/bruno-retailleau/a1d01f36e7e7.txt
+  sha256: a1d01f36e7e71bb82564a92c1bb747e88a0c4eccd93df41fdb72a441ecfaefd8
+  capture_le: 2026-11-03T19:03:06+01:00
+  wayback_url: https://web.archive.org/web/20261103182509/https://www.avecretailleau.fr/api/media/file/LR_Industrie.pdf
+  binaire_sha256: 6b5f80d5aa19e0e36d500a4d149950864ddfc4dd121873e10bcc6238ad2144d3

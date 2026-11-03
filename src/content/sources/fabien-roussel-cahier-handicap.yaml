@@ -1,0 +1,16 @@
+version_schema: 1
+id: fabien-roussel-cahier-handicap
+type: programme
+auteur: parti_du_candidat
+candidats:
+  - fabien-roussel
+titre: "Parti communiste français, Les cahiers thématiques des Jours heureux : Handicap"
+url: https://assets.nationbuilder.com/pcf/pages/36199/attachments/original/1766073478/document_-_cahier_handicap_ppp.pdf?1766073478
+date_publication: 2025-02-07
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/fabien-roussel/bf6471285fb9.txt
+  sha256: bf6471285fb9d890e763e8c6b959248b67824aeabfae68157c09ea75a4fe64e1
+  capture_le: 2026-11-03T19:10:45+01:00
+  wayback_url: https://web.archive.org/web/20261103184301/https://assets.nationbuilder.com/pcf/pages/36199/attachments/original/1766073478/document_-_cahier_handicap_ppp.pdf?1766073478
+  binaire_sha256: 69b699932cf06455b88644ae3db9a14c002d233d70cd768ec48885416e538934

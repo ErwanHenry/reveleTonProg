@@ -1,0 +1,15 @@
+version_schema: 1
+id: marine-tondelier-livret-solitude
+type: programme
+auteur: parti_du_candidat
+candidats:
+  - marine-tondelier
+titre: "Les Écologistes, Livret de campagne : Lutter contre la solitude, une écologie du lien"
+url: https://static1.squarespace.com/static/68b9a0c719c7a969b63b8a1a/t/6a3bf195a27b071de7a6a7aa/1782313365400/Livret+solitude.pdf
+date_publication: 2026-05-13
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/marine-tondelier/cdbc9c35510b.txt
+  sha256: cdbc9c35510b21b0e9319b00491b52f1bf9cab0ce0f2bd9eebd5b9f932620838
+  capture_le: 2026-11-03T19:13:47+01:00
+  binaire_sha256: c65a6622b7c1ecb5c0e065f1a66ddb4c8d49704002f26ae7f2cfaba3a8d8416d

@@ -1,0 +1,16 @@
+version_schema: 1
+id: bruno-retailleau-livret-logement
+type: programme
+auteur: parti_du_candidat
+candidats:
+  - bruno-retailleau
+titre: "Les Républicains, Nos propositions pour la France : Se loger mieux et moins cher"
+url: https://www.avecretailleau.fr/api/media/file/LR_Logement.pdf
+date_publication: 2026-09-08
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/bruno-retailleau/31554b34868b.txt
+  sha256: 31554b34868b01626238a9a8206a6d5f10d18eaade5c9ad97b80efc422dc2553
+  capture_le: 2026-11-03T19:02:51+01:00
+  wayback_url: https://web.archive.org/web/20261103182535/https://www.avecretailleau.fr/api/media/file/LR_Logement.pdf
+  binaire_sha256: c505459dc02e2bc443e931bfe405228ae338c5362bd384bdee2c4ffe433699bc

@@ -1,0 +1,16 @@
+version_schema: 1
+id: fabien-roussel-cahier-logement
+type: programme
+auteur: parti_du_candidat
+candidats:
+  - fabien-roussel
+titre: "Parti communiste français, Les cahiers thématiques des Jours heureux : Logement"
+url: https://assets.nationbuilder.com/pcf/pages/36197/attachments/original/1766073372/document_-_cahier_logement_ppp.pdf?1766073372
+date_publication: 2025-09-05
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/fabien-roussel/1961bb26adc0.txt
+  sha256: 1961bb26adc0388d03f3381e835f91547102cc26a55e20b33179a34a11e02c0c
+  capture_le: 2026-11-03T19:10:33+01:00
+  wayback_url: https://web.archive.org/web/20261103184328/https://assets.nationbuilder.com/pcf/pages/36197/attachments/original/1766073372/document_-_cahier_logement_ppp.pdf?1766073372
+  binaire_sha256: 776968529c796180ca87c58b6372425bfd7c701959a208d415fb981cf26ec1b1

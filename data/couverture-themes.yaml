@@ -1219,6 +1219,554 @@ candidats:
       institutions:
         niveau: fort
         note: "lettre au peuple : « passons à la Sixième République », référendum d’initiative citoyenne, droit de révoquer tout élu ; 3 énoncés en deux phrases. Livre source bloquée non lue : https://melenchon2027.fr/programme2025/livre/"
+  - id: antoine-mikolajczak
+    acces: ok
+    urls_bloquees: []
+    sources:
+      - antoine-mikolajczak-manifeste-equinoxe
+      - antoine-mikolajczak-tract-campagne
+    urls_consultees:
+      - "https://parti-equinoxe.fr/presidentielle-2027/ (page candidat : trois priorités, annonce du programme détaillé le mercredi 4 novembre 2026 à 10 h ; lue en direct, non archivée car elle republie les noms, âges, métiers et villes de membres de l’équipe de campagne, voir doutes)"
+      - https://parti-equinoxe.fr/wp-content/uploads/2026/08/Manifeste-du-parti-Equinoxe-Pour-en-finir-avec-la-demesure.pdf (manifeste du parti, texte fondateur, 28 pages, archivé)
+      - https://parti-equinoxe.fr/wp-content/uploads/2026/07/Parti-equinoxe-Tracts.pdf (tract de campagne, 2 pages, archivé)
+      - https://parti-equinoxe.fr/programme/ (page sans contenu de programme)
+      - https://parti-equinoxe.fr/notre-methode/ et https://parti-equinoxe.fr/qui-est-antoine-mikolajczak/ (méthode du parti et biographie, sans engagement, non archivées)
+      - https://parti-equinoxe.fr/programme-legislatives-2024-*, programme-europeennes-2024-*, legislatives-2022-programme-* et legislative-partielle-2025-* (programmes d’élections précédentes, exclus, non lus)
+    cellules:
+      logement:
+        niveau: silence
+        note: "aucun engagement sur le logement dans les 2 sources archivées ; manifeste p. 22 : « décarbonation [...] du logement » cité dans une liste de tournants difficiles, sans position"
+      ecole:
+        niveau: silence
+        note: "aucun engagement sur l’école dans les 2 sources archivées ; manifeste p. 22 : « éducation » cité dans une liste de tournants difficiles, sans position"
+      retraites:
+        niveau: silence
+        note: aucun passage sur ce thème dans les 2 sources archivées
+      sante:
+        niveau: fort
+        note: "tract, rubrique « Vivre en bonne santé » : accès à une alimentation de qualité et aux soins sur l’ensemble du territoire, qualité de l’air, de vie et de travail ; section dédiée, 3 énoncés de principe, pas de mesure chiffrée"
+      securite:
+        niveau: silence
+        note: aucun passage sur la sécurité, la police ou la justice dans les 2 sources archivées
+      climat:
+        niveau: partiel
+        note: "tract : production « dans le respect des limites planétaires » ; manifeste : sobriété comme principe ; la page candidat ajoute que la transition écologique est abordée de manière transversale ; pas de section dédiée ni de mesure"
+      travail:
+        niveau: partiel
+        note: "tract : améliorer la qualité « de travail » ; manifeste : le travail comme effort et engagement ; 1 ou 2 énoncés indirects"
+      impots:
+        niveau: silence
+        note: aucun passage sur la fiscalité dans les 2 sources archivées
+      europe-et-monde:
+        niveau: partiel
+        note: "tract : relocaliser les productions pour « reprendre la main sur notre souveraineté » ; énoncé indirect sur la mondialisation, rien sur l’Europe, la défense ou la diplomatie"
+      institutions:
+        niveau: fort
+        note: "tract, rubrique « Décider collectivement » : plus de pouvoirs et de moyens pour les territoires, droit plus simple et moins de normes, démocratie directe et conventions citoyennes ; section dédiée, 3 énoncés"
+  - id: manolo-mlekuz
+    acces: ok
+    urls_bloquees: []
+    sources:
+      - manolo-mlekuz-programme
+      - manolo-mlekuz-programme-detaille
+    urls_consultees:
+      - https://trajectoire2027.fr/programme (page programme, redirection depuis programme.html, archivée)
+      - https://trajectoire2027.fr/docs/programme-detaille-trajectoire.pdf (programme détaillé, 22 pages, archivé)
+      - https://trajectoire2027.fr/faq (FAQ vide de contenu, lue, non archivée)
+    cellules:
+      logement:
+        niveau: silence
+        note: aucun passage sur le logement dans les 2 sources lues (le mot n’apparaît que pour les frais des constituants tirés au sort)
+      ecole:
+        niveau: silence
+        note: aucun passage sur l’école dans les 2 sources lues (occurrences repérées par le scanner = « université » dans les titres des experts)
+      retraites:
+        niveau: silence
+        note: aucun passage sur les retraites dans les 2 sources lues (occurrences repérées = « régime » politique)
+      sante:
+        niveau: silence
+        note: aucun passage sur la santé dans les 2 sources lues
+      securite:
+        niveau: silence
+        note: aucun passage sur la sécurité, la police ou la justice dans les 2 sources lues (le mot « sécurité » n’apparaît qu’au sens de garantie de procédure)
+      climat:
+        niveau: silence
+        note: aucun passage sur le climat dans les 2 sources lues (le réchauffement n’est cité que comme un des grands défis du siècle)
+      travail:
+        niveau: silence
+        note: aucun passage sur l’emploi ou le travail dans les 2 sources lues (occurrences repérées = travail des constituants)
+      impots:
+        niveau: silence
+        note: aucun passage sur la fiscalité dans les 2 sources lues
+      europe-et-monde:
+        niveau: silence
+        note: aucun passage sur l’Europe, la défense ou la diplomatie dans les 2 sources lues (une phrase sur l’image internationale de la France, sans position)
+      institutions:
+        niveau: fort
+        note: "programme détaillé, projet entier : assemblée constituante tirée au sort, référendum d’initiative constituante, fin de la Ve République au 1er janvier 2029, référendum d’initiative citoyenne constituant ; 25 formulations d’engagement"
+  - id: edouard-philippe
+    acces: ok
+    urls_bloquees: []
+    sources:
+      - edouard-philippe-priorite-securite
+      - edouard-philippe-priorite-enfants
+      - edouard-philippe-priorite-prosperite
+      - edouard-philippe-priorite-conquerante
+    urls_consultees:
+      - "https://www.edouardphilippe.fr/ (accueil du site de campagne : renvoie aux 4 pages « priorités », sans mesure)"
+      - https://www.edouardphilippe.fr/priorites/pour-une-france-plus-sure (archivée)
+      - https://www.edouardphilippe.fr/priorites/pour-une-france-plus-attentive-a-ses-enfants (archivée)
+      - https://www.edouardphilippe.fr/priorites/pour-une-france-plus-prospere (archivée)
+      - https://www.edouardphilippe.fr/priorites/pour-une-france-plus-conquerante (archivée)
+      - https://horizonsleparti.fr/le-manifeste/ (charte de valeurs du parti Horizons, sans mesure, non archivée)
+      - "https://horizonsleparti.fr/ (accueil du parti ; articles et discours non lus ni archivés : actualités, discours, plan contre le narcotrafic redondant avec la page « plus sûre »)"
+    cellules:
+      logement:
+        niveau: partiel
+        note: "pages « conquérante » et « enfants » : rafraîchir les logements sociaux (fonds chaleur), lever les règles d’urbanisme qui freinent l’adaptation des logements, prêt à taux zéro pour les familles qui déménagent ; 3 énoncés indirects, pas de section logement"
+      ecole:
+        niveau: fort
+        note: "page « enfants », section « Pour une école de la liberté et de l’exigence » : chefs d’établissement, savoirs fondamentaux, soutien scolaire, salaire des enseignants, téléphones portables ; plus de 20 engagements"
+      retraites:
+        niveau: fort
+        note: "page « prospère » : âge de départ à 65 ans et 45 ans de cotisation, capitalisation collective, retraite progressive, maintien des départs anticipés ; plus de 4 engagements"
+      sante:
+        niveau: partiel
+        note: "page « prospère » : stabiliser les dépenses de santé en misant sur la prévention ; page « enfants » : santé mentale à l’école ; 2 énoncés, pas de section santé"
+      securite:
+        niveau: fort
+        note: "page « plus sûre » : justice (courtes peines, peines planchers), narcotrafic, frontières, armées, sécurité civile ; plus de 8 engagements"
+      climat:
+        niveau: fort
+        note: "page « conquérante », section « Pour une écologie à impact » : 8 EPR, prix du carbone aux frontières, décarbonation, plan d’adaptation, fonds d’adaptation ; plus de 10 engagements"
+      travail:
+        niveau: fort
+        note: "page « prospère » : sortie des 35 heures, heures supplémentaires exonérées, assurance chômage plafonnée à 12 mois, jours de carence, temps partiel parental ; plus de 10 engagements"
+      impots:
+        niveau: fort
+        note: "page « prospère » : 50 Md€ de baisses d’impôts de production, moratoire fiscal et normatif ; page « enfants » : impôt sur le revenu supprimé les 3 premières années de l’enfant ; plus de 5 engagements"
+      europe-et-monde:
+        niveau: fort
+        note: "pages « plus sûre » et « prospère » : verrou Schengen, régime européen de sanctions contre les passeurs, marché unique, protection face à la Chine, armées et loi de programmation militaire ; plus de 8 engagements"
+      institutions:
+        niveau: partiel
+        note: "page « prospère » : règle d’or inscrite dans la Constitution via un référendum ; page « plus sûre » : révision de la composition du CSM, autorité du Garde des Sceaux sur le parquet (comptées ici comme justice, hors thème) ; rien sur le mode de scrutin, le Parlement ou les mandats"
+  - id: florian-philippot
+    acces: ok
+    urls_bloquees: []
+    sources:
+      - florian-philippot-projet-pour-la-france
+    urls_consultees:
+      - https://les-patriotes.fr/projetpourlafrance/ (page de téléchargement du projet, archivée via le PDF)
+      - https://les-patriotes.fr/wp-content/uploads/2026/09/Projet-pour-la-France-2026-v2.pdf (Grandes orientations pour un projet patriote, 19 pages, édition 2026-2027, archivé)
+      - https://les-patriotes.fr/ (accueil du mouvement Les Patriotes, sans mesure)
+      - "https://florianphilippot2027.fr et https://philippot2027.fr (essayés : redirigent vers des sites sans rapport, politique2027.fr et ldh-france.org, aucun site de campagne trouvé)"
+    cellules:
+      logement:
+        niveau: partiel
+        note: "projet p. 5 et 11 : solution de logement pour les jeunes sortant de l’aide sociale à l’enfance, révision du droit au logement social pour les familles de mineurs récidivistes ; 2 énoncés indirects, pas de section logement"
+      ecole:
+        niveau: fort
+        note: "section « École » : transmission des savoirs fondamentaux, recentrage de l’école primaire, et autres engagements ; plus de 15 formulations d’engagement"
+      retraites:
+        niveau: partiel
+        note: "projet p. 4 : « Baisser l’âge de départ à la retraite » une fois sortie de l’Union européenne (1 énoncé, sans âge ni calendrier) ; unités en maison de retraite pour personnes handicapées vieillissantes (classé santé)"
+      sante:
+        niveau: fort
+        note: "section « Santé » et passage « Santé, travail : protéger les plus fragiles » : suppression des fermetures de lits d’hôpital et des déremboursements, handicap, et autres engagements ; plus de 10 formulations"
+      securite:
+        niveau: fort
+        note: "section « Sécurité, justice » : police de proximité, réforme de la justice des mineurs, places de prison, procédure pénale ; plus de 4 engagements"
+      climat:
+        niveau: fort
+        note: "section « Écologie et protection animale » : plus de 5 engagements, dont le moratoire sur l’éolien terrestre et en mer (rubrique industrie)"
+      travail:
+        niveau: fort
+        note: "section « Industrie, commerce et emploi » : réindustrialisation, emploi durable, fin de l’immigration de travail, rétablissement des indemnités chômage ; plus de 4 engagements"
+      impots:
+        niveau: fort
+        note: "projet p. 9 : paragraphe « grands principes fiscaux » (justice fiscale pour les classes moyennes, allègement pour indépendants et petites entreprises, moindre taxation des petits héritages, lutte contre l’optimisation fiscale) ; 5 énoncés de principe, sans chiffre de taux"
+      europe-et-monde:
+        niveau: fort
+        note: "section « Frexit » et partie « Le Frexit en 10 questions » : sortie de l’Union européenne, de l’euro et de Schengen, retour à une monnaie nationale ; plus de 15 formulations"
+      institutions:
+        niveau: fort
+        note: "section « Démocratie, institutions, corruption » : référendum d’initiative citoyenne sur tout sujet inscrit dans la Constitution, révision de la Constitution par référendum seul, suppression du Congrès ; 3 énoncés au moins"
+  - id: gilles-platret
+    acces: aucun_site
+    urls_bloquees: []
+    sources: []
+    urls_consultees:
+      - "https://www.gillesplatret.fr/ et https://www.gillesplatret.fr/à-propos (site d’historien et de maire : livres et événements, aucune mention de la candidature ni de programme)"
+      - "https://platret2027.fr, https://www.platret2027.fr, https://platret.fr (domaines essayés : n’existent pas ou ne répondent pas)"
+      - "recherche web « Gilles Platret présidentielle 2027 site programme » (résultats non fiables : uniquement presse et comparateurs, exclus par le protocole §2, aucun site de campagne trouvé)"
+    cellules:
+      logement:
+        niveau: aucun
+        note: aucun site de campagne ni document de programme trouvé après recherche web
+      ecole:
+        niveau: aucun
+        note: aucun site de campagne ni document de programme trouvé après recherche web
+      retraites:
+        niveau: aucun
+        note: aucun site de campagne ni document de programme trouvé après recherche web
+      sante:
+        niveau: aucun
+        note: aucun site de campagne ni document de programme trouvé après recherche web
+      securite:
+        niveau: aucun
+        note: aucun site de campagne ni document de programme trouvé après recherche web
+      climat:
+        niveau: aucun
+        note: aucun site de campagne ni document de programme trouvé après recherche web
+      travail:
+        niveau: aucun
+        note: aucun site de campagne ni document de programme trouvé après recherche web
+      impots:
+        niveau: aucun
+        note: aucun site de campagne ni document de programme trouvé après recherche web
+      europe-et-monde:
+        niveau: aucun
+        note: aucun site de campagne ni document de programme trouvé après recherche web
+      institutions:
+        niveau: aucun
+        note: aucun site de campagne ni document de programme trouvé après recherche web
+  - id: natacha-polony
+    acces: ok
+    urls_bloquees: []
+    sources:
+      - natacha-polony-ma-vision
+      - natacha-polony-mes-principes
+    urls_consultees:
+      - https://natachapolony2027.fr/ (accueil du site de campagne, sans mesure)
+      - https://natachapolony2027.fr/natacha-polony/ma-vision (lettre « Ma vision pour la France », archivée)
+      - https://natachapolony2027.fr/natacha-polony/mes-principes (principes et convictions, archivée)
+      - "https://www.npolony.fr/cahier (cahier de doléances : contributions de citoyens, exclu, non archivé)"
+      - "https://natachapolony2027.fr/actualites/pourquoi-nous-devons-agir (lettre aux sympathisants du 15 septembre 2026 : motivations de la candidature, sans mesure, non archivée)"
+      - https://natachapolony2027.fr/etat-de-la-france et https://natachapolony2027.fr/cahier-de-doleances (HTTP 404)
+    cellules:
+      logement:
+        niveau: silence
+        note: aucun passage sur le logement dans les 2 sources lues
+      ecole:
+        niveau: partiel
+        note: "« Ma vision » : l’école doit transmettre des connaissances, une langue, une histoire, une capacité à raisonner ; « Mes principes » : « une école exigeante » ; 2 énoncés de principe, pas de mesure"
+      retraites:
+        niveau: silence
+        note: aucun passage sur les retraites dans les 2 sources lues
+      sante:
+        niveau: partiel
+        note: "« Ma vision » : produire en France les médicaments essentiels, un pays qui « soigne ses citoyens » ; énoncé de principe, pas de mesure"
+      securite:
+        niveau: silence
+        note: aucun engagement sur la sécurité, la police ou la justice (policiers et soldats cités seulement comme exemples de personnes qui « tiennent »)
+      climat:
+        niveau: partiel
+        note: "« Mes principes » : conserver la biodiversité et les terres agricoles ; « Ma vision » : produire son énergie ; énoncés de principe, pas de mesure"
+      travail:
+        niveau: partiel
+        note: "« Ma vision » : retrouver en dix ans une puissance industrielle, « de bons emplois et de bons salaires » ; « Mes principes » : dignité du travail ; énoncés de principe"
+      impots:
+        niveau: silence
+        note: aucun passage sur la fiscalité dans les 2 sources lues (« l’argent public doit servir ceux qui investissent, forment et produisent en France » classé travail)
+      europe-et-monde:
+        niveau: partiel
+        note: "« Ma vision » et « Mes principes » : une diplomatie qui ne soit « le supplétif d’aucune puissance », ne pas se réfugier derrière Bruxelles ; 2 énoncés de principe, rien de précis sur l’Europe ou la défense"
+      institutions:
+        niveau: partiel
+        note: "« Mes principes » : consulter le peuple « par voie référendaire comme le demande notre constitution » (1 énoncé) ; chantier contre la corruption et les conflits d’intérêts (lanceurs d’alerte, portes tournantes), compté comme éthique publique et non comme réforme institutionnelle"
+  - id: bruno-retailleau
+    acces: ok
+    urls_bloquees: []
+    sources:
+      - bruno-retailleau-projet-index
+      - bruno-retailleau-manifeste-peuple-souverain
+      - bruno-retailleau-livret-travail
+      - bruno-retailleau-livret-logement
+      - bruno-retailleau-livret-ecole
+      - bruno-retailleau-livret-electricite
+      - bruno-retailleau-livret-famille
+      - bruno-retailleau-livret-industrie
+      - bruno-retailleau-fiches-comptes-publics
+    urls_consultees:
+      - "https://www.avecretailleau.fr/projet (index du projet : 18 thèmes dont 11 publiés avec 120 mesures, archivé)"
+      - "https://www.avecretailleau.fr/projet/theme/institutions, /education, /travail, /industrie-entreprises, /agriculture, /logement, /famille, /electricite, /comptes-publics, /l-ia, /retraites (pages des 11 thèmes publiés, lues en direct, non archivées : archivage par les plans de thème)"
+      - https://www.avecretailleau.fr/projet/faq (60 questions, réponses du candidat, lue, non archivée ; renvoie au livret PDF pour le chiffrage)
+      - https://www.avecretailleau.fr/api/media/file/Manifeste%20du%20peuple%20souverain%20v280826%20F.pdf (archivé)
+      - https://www.avecretailleau.fr/api/media/file/Livret_Travail.pdf, LR_Logement.pdf, LR_Ecole_vF.pdf, LR_Electricite_vFF070626-compress%C3%A9.pdf, LR_Famille.pdf, LR_Industrie.pdf (livrets thématiques « Nos propositions pour la France », archivés)
+      - https://www.avecretailleau.fr/api/media/file/20261011_Fiches_presse_comptes_publics_mise_en_page%20(1).pdf (fiches « Rétablir l’ordre dans les comptes publics », archivé)
+      - "https://www.avecretailleau.fr/api/media/file/LR_Agriculture.pdf et LR_IA.pdf (livrets sur l’agriculture et l’intelligence artificielle : aucun thème de la spec, non archivés)"
+      - https://republicains.fr/nos-propositions/ (propositions du parti Les Républicains, mêmes livrets, non archivée)
+    cellules:
+      logement:
+        niveau: fort
+        note: "page thème « Logement » (16 mesures : gel des normes, vente HLM, fin de l’encadrement des loyers, abrogation du ZAN, etc.) et livret « Se loger mieux et moins cher » (48 pages)"
+      ecole:
+        niveau: fort
+        note: "page thème « Éducation » (11 mesures : écoles autonomes, notes chiffrées, internats disciplinaires, salaires des professeurs, etc.) et livret « Éducation » (36 pages)"
+      retraites:
+        niveau: fort
+        note: "page thème « Retraites » (7 mesures : départ dès 63 ans et taux plein garanti à 65 ans, fin du couperet des 67 ans, capital retraite, pénibilité) et fiche 6 des comptes publics"
+      sante:
+        niveau: fort
+        note: "fiche 7 des comptes publics « Santé : les arrêts maladie » (réexamen par le médecin-conseil, plafonds de prescription, jour de carence, efficience réinvestie dans le soin) ; page thème « Santé » annoncée « À venir » avec une phrase de principe"
+      securite:
+        niveau: fort
+        note: mesure « Inscrire le droit à la sécurité dans la Constitution » (page thème Institutions) et mesures de défense du thème « L’IA » (moyens de l’IA de défense multipliés par cinq, protection contre les cyberattaques, réponse à la guerre informationnelle), « défense » faisant partie des mots-clés du thème ; pages « Sécurité » et « Justice » annoncées « À venir » avec une phrase de principe chacune ; pas de mesure détaillée sur la police
+      climat:
+        niveau: fort
+        note: "page thème « Électricité » (10 mesures : nucléaire jusqu’à 80 ans, EPR2, fin des subventions aux éoliennes, réacteurs de quatrième génération) et livret « Électricité » (40 pages) ; page « Écologie » annoncée « À venir »"
+      travail:
+        niveau: fort
+        note: "page thème « Travail » (6 mesures : 500 euros par an aux salariés, heures supplémentaires exonérées, plafonnement des aides à 70 % du SMIC, allocations chômage) et livret « Le travail gagnant » (40 pages)"
+      impots:
+        niveau: fort
+        note: fiches des comptes publics (règle d’or, trajectoire de 197 Md€, fraude fiscale), livret Industrie (baisse de 60 % du handicap fiscal des entreprises), intérêts d’emprunt déductibles (livret Logement), taxe sur l’actionnariat salarié supprimée ; plus de 8 engagements fiscaux
+      europe-et-monde:
+        niveau: fort
+        note: manifeste (écarter le droit européen lorsqu’il excède ses compétences, clause de sauvegarde, Convention européenne des droits de l’homme), livret Industrie (importations et réciprocité), livret Électricité (marché européen) ; pages « Immigration » à venir
+      institutions:
+        niveau: fort
+        note: "page thème « Pour le peuple et par le peuple » (12 mesures : référendum sur toute la matière législative, dernier mot au peuple quand une loi est censurée, seuil du référendum d’initiative partagée) et manifeste du peuple souverain (20 pages)"
+  - id: erwan-rohou
+    acces: bloque
+    urls_bloquees:
+      - https://www.les-ecologistes-mei.org/notre-programme
+    sources: []
+    urls_consultees:
+      - "https://www.les-ecologistes-mei.org/notre-programme (programme du Mouvement écologiste indépendant, 39 propositions numérotées, lu en direct le 2026-11-03 ; non archivé : le pied de page publie l’adresse postale, un numéro de téléphone mobile et des adresses de messagerie de particuliers, ce que le protocole §8 étape 4 interdit de conserver ; page non datée, le plan du site indique une dernière modification le 2026-10-11)"
+      - "https://www.les-ecologistes-mei.org/ (accueil du mouvement : interview vidéo d’Erwan Rohou, candidat du mouvement en 2027, vidéo non lisible automatiquement)"
+      - https://www.les-ecologistes-mei.org/informations (HTTP 404)
+    cellules:
+      logement:
+        niveau: inaccessible
+        note: "programme du mouvement lu en direct mais non archivable (données personnelles de particuliers dans le pied de page) : capture manuelle expurgée à demander, https://www.les-ecologistes-mei.org/notre-programme"
+      ecole:
+        niveau: inaccessible
+        note: "programme du mouvement lu en direct mais non archivable (données personnelles de particuliers dans le pied de page) : capture manuelle expurgée à demander, https://www.les-ecologistes-mei.org/notre-programme"
+      retraites:
+        niveau: inaccessible
+        note: "programme du mouvement lu en direct mais non archivable (données personnelles de particuliers dans le pied de page) : capture manuelle expurgée à demander, https://www.les-ecologistes-mei.org/notre-programme"
+      sante:
+        niveau: inaccessible
+        note: "programme du mouvement lu en direct mais non archivable (données personnelles de particuliers dans le pied de page) : capture manuelle expurgée à demander, https://www.les-ecologistes-mei.org/notre-programme"
+      securite:
+        niveau: inaccessible
+        note: "programme du mouvement lu en direct mais non archivable (données personnelles de particuliers dans le pied de page) : capture manuelle expurgée à demander, https://www.les-ecologistes-mei.org/notre-programme"
+      climat:
+        niveau: inaccessible
+        note: "programme du mouvement lu en direct mais non archivable (données personnelles de particuliers dans le pied de page) : capture manuelle expurgée à demander, https://www.les-ecologistes-mei.org/notre-programme"
+      travail:
+        niveau: inaccessible
+        note: "programme du mouvement lu en direct mais non archivable (données personnelles de particuliers dans le pied de page) : capture manuelle expurgée à demander, https://www.les-ecologistes-mei.org/notre-programme"
+      impots:
+        niveau: inaccessible
+        note: "programme du mouvement lu en direct mais non archivable (données personnelles de particuliers dans le pied de page) : capture manuelle expurgée à demander, https://www.les-ecologistes-mei.org/notre-programme"
+      europe-et-monde:
+        niveau: inaccessible
+        note: "programme du mouvement lu en direct mais non archivable (données personnelles de particuliers dans le pied de page) : capture manuelle expurgée à demander, https://www.les-ecologistes-mei.org/notre-programme"
+      institutions:
+        niveau: inaccessible
+        note: "programme du mouvement lu en direct mais non archivable (données personnelles de particuliers dans le pied de page) : capture manuelle expurgée à demander, https://www.les-ecologistes-mei.org/notre-programme"
+  - id: fabien-roussel
+    acces: ok
+    urls_bloquees: []
+    sources:
+      - fabien-roussel-vivre-campagne
+      - fabien-roussel-plan-jeunesse
+      - fabien-roussel-cahier-logement
+      - fabien-roussel-cahier-securite-sociale
+      - fabien-roussel-cahier-mobilites
+      - fabien-roussel-cahier-handicap
+      - fabien-roussel-cahier-paix-defense
+    urls_consultees:
+      - https://www.fabienroussel2027.fr/ (site de campagne « VIVRE ! », archivé)
+      - https://www.fabienroussel2027.fr/materiel (affiches, tracts et plan jeunesse ; seul le plan jeunesse est archivé, les affiches et tracts n’ont pas de contenu de programme développé)
+      - https://assets.nationbuilder.com/pcf/pages/44609/attachments/original/1791282014/Plan_Jeunesse_2027-2032.pdf (plan jeunesse 2027-2032, 12 pages, archivé)
+      - "https://www.pcf.fr/ (accueil du Parti communiste français : liste des cahiers thématiques « Les Jours heureux ») et https://www.pcf.fr/le_programme (HTTP 404)"
+      - "cahiers thématiques du PCF sur assets.nationbuilder.com : logement, sécurité sociale, mobilités, handicap, paix et défense nationale (archivés) ; économie sociale et solidaire (balayé par le scanner, aucun contenu sur les thèmes, supprimé des archives)"
+      - "https://www.pcf.fr/objectif_1 (« Objectif n° 1 : une révolution du travail », page du programme du PCF non datée, peut-être d’une élection précédente, lue, non archivée ; les pages objectif_2 à objectif_10 ont répondu HTTP 429, non lues)"
+    cellules:
+      logement:
+        niveau: fort
+        note: "cahier « Logement » du PCF (plus de 40 engagements : droit au logement, TVA à 5,5 % pour les HLM, arrêt des expulsions, interdiction de la vente HLM, logements vacants)"
+      ecole:
+        niveau: fort
+        note: plan jeunesse 2027-2032 de Fabien Roussel (« Des établissements dignes », plus de moyens pour les lycées, dix propositions) ; plus de 15 formulations d’engagement
+      retraites:
+        niveau: fort
+        note: cahier « Sécurité sociale » du PCF, chapitre 5 « La retraite à 60 ans, un impératif ! » (retraite à 60 ans, droits des carrières longues) ; document du parti
+      sante:
+        niveau: fort
+        note: "cahier « Sécurité sociale » du PCF : assurance maladie, maladies professionnelles, chapitre « Autonomie : santé et autonomie » (opposition à la 5e branche) ; plan jeunesse : mesures de santé des jeunes"
+      securite:
+        niveau: fort
+        note: "cahier « Paix et défense nationale » du PCF (60 pages, 15 engagements : défense indépendante, outil de défense resserré, contrôle citoyen) ; rien sur la police ni la justice pénale dans les sources lues"
+      climat:
+        niveau: fort
+        note: cahier « Mobilités » (transports décarbonés) et cahier « Logement » (rénovation thermique, trajectoire zéro carbone) ; affiche « L’énergie est notre avenir, nationalisons-la » ; pas de cahier climat dédié
+      travail:
+        niveau: fort
+        note: "cahier « Sécurité sociale » (plus de 25 engagements, dont emploi et cotisations), site de campagne (« Travail : prenez la parole »), plan jeunesse"
+      impots:
+        niveau: fort
+        note: cahier « Logement » (TVA à 5,5 %, fiscalité dissuasive sur les logements vacants, hausse de la fiscalité des meublés touristiques) et cahier « Sécurité sociale » (cotisations et financement) ; 7 engagements
+      europe-et-monde:
+        niveau: fort
+        note: "cahier « Paix et défense nationale » (384 occurrences, plus de 20 engagements : politique de paix indépendante, sortie de l’alignement sur les États-Unis, ONU)"
+      institutions:
+        niveau: partiel
+        note: cahier « Handicap » (inscrire l’accessibilité dans la Constitution) et cahier « Logement » (inscrire le droit au logement dans la Constitution) ; 2 énoncés ; rien sur le mode de scrutin, le Parlement ni les mandats dans les sources lues
+  - id: francois-ruffin
+    acces: ok
+    urls_bloquees: []
+    sources:
+      - francois-ruffin-livret-campagne
+      - francois-ruffin-statut-travailleurs-essentiels
+      - francois-ruffin-livret-probite
+      - francois-ruffin-livret-travaillisme-ecologique
+      - francois-ruffin-livret-logement
+      - francois-ruffin-livret-industrie
+      - francois-ruffin-livret-education
+      - francois-ruffin-plan-redressement
+      - francois-ruffin-plan-urgence-climat
+    urls_consultees:
+      - "https://ruffin2027.fr/ (lien du jeu de données : redirige vers https://nouspresident.fr/, site de campagne)"
+      - "https://nouspresident.fr/notre-programme/ (index : 8 cahiers de campagne et 3 plans d’action, lu, non archivé)"
+      - https://nouspresident.fr/cahiers-de-campagne/ et https://nouspresident.fr/nos-plans-daction/ (index des cahiers et des plans, lus)
+      - https://nouspresident.fr/statut-travailleurs-essentiels/ (cahier 1, archivé)
+      - https://nouspresident.fr/wp-content/uploads/2026/04/Debout-Livret-Campagne_Web.pdf, 2026/07/Debout-Livret-Probite-Web-2_compressed.pdf, 2026/09/Livret-Campagne-5-Travaillisme-Ecologique-VDEF.pdf, 2026/09/CC_Logement.pdf, 2026/10/Debout-Livret-Campagne-7-Industrie-Vweb.pdf, 2026/10/Debout-Livret-Campagne-8-Education.pdf (cahiers de campagne, archivés)
+      - https://nouspresident.fr/wp-content/uploads/2026/10/Plan-de-redressement-2026-mise-en-page.pdf et Plan_Urgence_Climat_VF.pdf (plans d’action, archivés)
+      - "https://nouspresident.fr/wp-content/uploads/2026/07/Debout-Livret-Campagne-Loisirs-vdef-Web.pdf, 2026/10/Debout-Livret-Campagne-Agriculture-vWeb.pdf, 2026/10/PA_Data_CENTERS_V2.pdf (cahiers loisirs et agriculture, plan data centers : aucun thème de la spec, non archivés)"
+      - https://debout.fr/notre-manifeste/ (manifeste fondateur du parti Debout !, principes généraux, lu, non archivé)
+    cellules:
+      logement:
+        niveau: fort
+        note: "cahier « Logement » (64 pages, plan « faire sauter le verrou » : encadrement des loyers, production, rénovation) et plan de redressement (rénovation de 3 millions de logements)"
+      ecole:
+        niveau: fort
+        note: "cahier « Éducation » (52 pages, « une école de tous les savoirs » : savoirs pratiques au collège, voie professionnelle revalorisée, fin de Parcoursup, enseignants reconnus)"
+      retraites:
+        niveau: partiel
+        note: "cahier « statut des travailleurs essentiels » : « une retraite avancée » et trimestres supplémentaires pour les métiers pénibles (aussi dans le cahier Travaillisme écologique) ; 2 énoncés, pas de section retraites"
+      sante:
+        niveau: partiel
+        note: "plan Urgence climat : prise en charge à 100 % des séances de soutien psychologique pour les zones sinistrées ; cahier Industrie : pôle public du médicament ; cahier Éducation : infirmiers et psychologues dans les établissements ; énoncés rattachés à d’autres thèmes, pas de section santé"
+      securite:
+        niveau: partiel
+        note: "plan Urgence climat : moyens des pompiers et de la sécurité civile, 16 Canadair ; rien sur la police ni la justice pénale dans les 9 sources lues"
+      climat:
+        niveau: fort
+        note: cahier « Travaillisme écologique » (68 pages), plan Urgence climat (16 pages) et plan de redressement (dividende climatique)
+      travail:
+        niveau: fort
+        note: cahier « statut des travailleurs essentiels » et livret de campagne (salaires, carrières, horaires), cahier Travaillisme écologique (statut, pénibilité) ; plus de 20 engagements
+      impots:
+        niveau: fort
+        note: "plan de redressement (60 pages) : taxe Zucman, imposition des grandes successions, dividende climatique, retour sur les baisses de prélèvements"
+      europe-et-monde:
+        niveau: fort
+        note: "cahier Industrie : 100 produits stratégiques à relocaliser, barrières douanières, taxes aux frontières, quotas d’importation, « Buy French Act »"
+      institutions:
+        niveau: fort
+        note: "cahier « Probité » (60 pages, loi de séparation de l’argent et de l’État) : suppression de la Cour de justice de la République, fin du cumul des mandats exécutifs locaux, statut du Président de la République"
+  - id: marine-tondelier
+    acces: partiel
+    urls_bloquees:
+      - https://marinetondelier.fr/le-programme
+      - https://lesecologistes.fr/pages/6ImK65GKUnvibm33WGkjkj/projet-2027
+    sources:
+      - marine-tondelier-livret-montagne
+      - marine-tondelier-livret-sante-environnementale
+      - marine-tondelier-livret-solitude
+      - marine-tondelier-livret-sante-reproductive
+      - marine-tondelier-livret-littoraux
+      - marine-tondelier-livret-enfance
+      - marine-tondelier-carnet-international
+    urls_consultees:
+      - "https://marinetondelier.fr/ (site de campagne : menu « Le programme », « 557 mesures », livrets thématiques, carnets de doctrine, manifeste)"
+      - "https://marinetondelier.fr/le-programme (« 557 mesures » : redirige vers https://lesecologistes.fr/share/page/6ImK65GKUnvibm33WGkjkj/projet, HTTP 403, page de contrôle anti-robot « Just a moment » : source bloquée non lue)"
+      - "https://lesecologistes.fr/pages/6ImK65GKUnvibm33WGkjkj/projet-2027 (projet 2027 des Écologistes : HTTP 403, source bloquée non lue)"
+      - "https://lesecologistes.fr/posts/… (articles de présentation des livrets santé environnementale, solitude, montagne, enfance : HTTP 403, non lus ; les PDF des mêmes livrets sont lus)"
+      - "https://marinetondelier.fr/livrets-thematiques (index des livrets, lu) et PDF : Livret-montagne, Livret-sante-environnementale, Livret-solitude, Livret-sante-reproductive, Livret-littoraux, livret-enfance-vf (archivés)"
+      - https://marinetondelier.fr/carnets-de-doctrine (index des carnets, lu) ; CARNET-DE-DOCTRINE-INTERNATIONAL.pdf (archivé) ; Carnet-numerique.pdf (numérique, aucun thème de la spec, non archivé)
+      - "https://marinetondelier.fr/manifeste (« Ce que nous vous devons », manifeste de candidature à une primaire de la gauche et des écologistes : page d’annonce sans texte ni lien de téléchargement lisible, non archivée)"
+    cellules:
+      logement:
+        niveau: fort
+        note: "énoncés dispersés dans 3 livrets (littoraux : protéger le logement à l’année, limiter les locations de courte durée ; enfance : 10 000 places d’hébergement d’urgence, parcours vers le logement ; montagne : logement à l’année), pas de livret logement ; source bloquée non lue : https://marinetondelier.fr/le-programme"
+      ecole:
+        niveau: fort
+        note: "livret « Pays à hauteur d’enfants » (19 engagements sur l’école, la cantine, les programmes) et livret « Solitude » ; source bloquée non lue : https://marinetondelier.fr/le-programme"
+      retraites:
+        niveau: partiel
+        note: "livret « Santé environnementale » p. 27 : droit de départ anticipé à la retraite pour les salariés exposés à des produits dangereux ; 1 énoncé ; source bloquée non lue : https://marinetondelier.fr/le-programme"
+      sante:
+        niveau: fort
+        note: "livrets « Santé environnementale » (44 pages) et « Santé reproductive » (52 pages), plus de 50 engagements ; source bloquée non lue : https://marinetondelier.fr/le-programme"
+      securite:
+        niveau: fort
+        note: "carnet de doctrine « L’Europe comme puissance écologique » (sécurité globale, politique militaire, plus de 15 engagements) ; rien sur la police ni la justice pénale dans les 7 sources lues ; source bloquée non lue : https://marinetondelier.fr/le-programme"
+      climat:
+        niveau: fort
+        note: "livrets « Littoraux », « Montagne », « Santé environnementale » et carnet international (plus de 30 engagements) ; source bloquée non lue : https://marinetondelier.fr/le-programme"
+      travail:
+        niveau: fort
+        note: "livret « Solitude », section « Remettre le lien au cœur du travail », livret « Littoraux » (emplois et réindustrialisation), livret « Santé reproductive » (santé au travail) ; source bloquée non lue : https://marinetondelier.fr/le-programme"
+      impots:
+        niveau: fort
+        note: "TVA verte (livret Santé environnementale), hausse de la taxe sur les surfaces commerciales (livret Solitude), taxe sur les résidences secondaires (livret Montagne), défiscalisation des pensions alimentaires (livret Enfance) ; plus de 4 énoncés ; source bloquée non lue : https://marinetondelier.fr/le-programme"
+      europe-et-monde:
+        niveau: fort
+        note: "carnet de doctrine « L’Europe comme puissance écologique » (32 pages, plus de 70 engagements : diplomatie, commerce, défense européenne) ; source bloquée non lue : https://marinetondelier.fr/le-programme"
+      institutions:
+        niveau: partiel
+        note: "livret « Enfance » : Assemblée nationale des enfants, enfance « priorité institutionnelle » ; livret « Santé reproductive » : droit inscrit dans la Constitution rendu accessible ; 2 énoncés ; source bloquée non lue : https://marinetondelier.fr/le-programme"
+  - id: eric-zemmour
+    acces: ok
+    urls_bloquees: []
+    sources:
+      - eric-zemmour-tract-avenir-est-a-nous
+      - eric-zemmour-tract-pouvoir-achat
+    urls_consultees:
+      - https://www.parti-reconquete.fr/ (accueil du parti Reconquête, renvoie vers une plateforme de consultation, sans programme)
+      - "https://leprogrammepourlafrance.fr/ (plateforme participative de contributions de citoyens avec Sarah Knafo : contributions de tiers, exclue, non archivée)"
+      - "https://www.budget2027.fr/ (plan budgétaire de Sarah Knafo, « Budget 2026 », 24 mesures : document d’une autre personne que le candidat, non archivé)"
+      - "https://www.ericzemmour.fr/ et https://www.ericzemmour.fr/priorites (« Mes 5 priorités pour la France » : page de la campagne de 2022, programme d’une élection précédente, exclu, non archivé)"
+      - "https://assets.ericzemmour.fr/ressources/tracts/avenir-est-a-nous.pdf (tract « L’avenir est à nous : nos priorités pour les Français », 2 pages, archivé)"
+      - https://assets.ericzemmour.fr/ressources/tracts/verite-pouvoir-achat.pdf (tract « Dépenser moins, pour taxer moins, pour gagner plus », 2 pages, archivé)
+      - https://assets.ericzemmour.fr/ressources/tracts/mercosur.pdf (tract pétition contre l’accord Mercosur, sans engagement de programme, non archivé)
+    cellules:
+      logement:
+        niveau: partiel
+        note: "tract « L’avenir est à nous » : réserver le logement social aux Français ; 1 énoncé"
+      ecole:
+        niveau: fort
+        note: "tract « L’avenir est à nous », rubrique « Une meilleure école pour vos enfants » : autorité des professeurs, savoirs fondamentaux, exigence et mérite, sécurité aux abords des établissements ; 4 énoncés"
+      retraites:
+        niveau: silence
+        note: aucun passage sur les retraites dans les 2 tracts lus
+      sante:
+        niveau: partiel
+        note: "tract « L’avenir est à nous » : supprimer l’AME, concentrer les moyens pour l’accès aux soins partout en France ; tract « pouvoir d’achat » : supprimer les ARS ; énoncés courts, pas de section santé"
+      securite:
+        niveau: partiel
+        note: "tract « L’avenir est à nous » : expulser les délinquants étrangers, garantir la sécurité dans les classes ; 2 énoncés, rien sur la police ni la justice pénale"
+      climat:
+        niveau: partiel
+        note: "tract « pouvoir d’achat » : supprimer tous les soutiens publics aux énergies renouvelables, supprimer l’Ademe ; 2 énoncés"
+      travail:
+        niveau: partiel
+        note: "tract « L’avenir est à nous », rubrique « Travailler, gagner, transmettre » : supprimer la CSG sur les revenus du travail, rapprocher salaire net et salaire brut ; tract « pouvoir d’achat » : supprimer France Travail ; énoncés fiscaux, rien sur le contrat, la durée ou les salaires"
+      impots:
+        niveau: fort
+        note: "tract « L’avenir est à nous » : baisse de l’accise sur les carburants d’un tiers, suppression de la CSG sur le travail et des droits de succession ; tract « pouvoir d’achat » : 80 Md€ d’économies pour baisser les impôts ; plus de 5 engagements"
+      europe-et-monde:
+        niveau: fort
+        note: "tract « L’avenir est à nous » : arrêter l’immigration, retrouver la maîtrise des frontières ; tract « pouvoir d’achat » : supprimer l’aide publique au développement ; 3 énoncés"
+      institutions:
+        niveau: silence
+        note: aucun passage sur les institutions dans les 2 tracts lus
 pilote:
   provisoires:
     - institutions

@@ -1,0 +1,15 @@
+version_schema: 1
+id: marine-tondelier-livret-sante-reproductive
+type: programme
+auteur: parti_du_candidat
+candidats:
+  - marine-tondelier
+titre: "Les Écologistes, Livret de campagne : Santé reproductive"
+url: https://static1.squarespace.com/static/68b9a0c719c7a969b63b8a1a/t/6aa24d04c42f6c2763722619/1789021444206/Livret+sante+reproductive.pdf
+date_publication: 2026-09-09
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/marine-tondelier/442b5f9381e3.txt
+  sha256: 442b5f9381e3091c18e14f8153eb2af751ad58d1fbabc1edacd16110aacf9921
+  capture_le: 2026-11-03T19:13:50+01:00
+  binaire_sha256: 7a8260a072d50c9ae1d70cd1d48304bda701f9885d06a4e85165be25dae68afd

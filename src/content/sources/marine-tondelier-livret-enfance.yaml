@@ -1,0 +1,16 @@
+version_schema: 1
+id: marine-tondelier-livret-enfance
+type: programme
+auteur: parti_du_candidat
+candidats:
+  - marine-tondelier
+titre: "Les Écologistes, Livret de campagne : Pour un pays à hauteur d’enfants"
+url: https://static1.squarespace.com/static/68b9a0c719c7a969b63b8a1a/t/6aac64dd0bde6235665307c8/1789682909995/livret-enfance-vf.pdf
+date_publication: 2026-09-17
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/marine-tondelier/fd8b70b24977.txt
+  sha256: fd8b70b24977b11dfd4a34e83d1164d33f5d5f90385021e5087f7a0b12005920
+  capture_le: 2026-11-03T19:13:57+01:00
+  wayback_url: https://web.archive.org/web/20261103190011/https://static1.squarespace.com/static/68b9a0c719c7a969b63b8a1a/t/6aac64dd0bde6235665307c8/1789682909995/livret-enfance-vf.pdf
+  binaire_sha256: 96e566cc7c3f00a4bdbbac8a0d7caf42aabb5372ce1272ab9f6511bbbe81da29

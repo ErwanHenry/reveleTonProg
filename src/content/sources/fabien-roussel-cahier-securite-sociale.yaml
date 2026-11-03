@@ -1,0 +1,16 @@
+version_schema: 1
+id: fabien-roussel-cahier-securite-sociale
+type: programme
+auteur: parti_du_candidat
+candidats:
+  - fabien-roussel
+titre: "Parti communiste français, Les cahiers thématiques des Jours heureux : Sécurité sociale"
+url: https://assets.nationbuilder.com/pcf/pages/36196/attachments/original/1766073347/document_-_cahier_se%CC%81cu_v2.pdf?1766073347
+date_publication: 2025-09-24
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/fabien-roussel/8d398db6e193.txt
+  sha256: 8d398db6e1931fc299b065ca461d8a722941118ccee95b65eee41bc485077454
+  capture_le: 2026-11-03T19:10:37+01:00
+  wayback_url: https://web.archive.org/web/20261103184448/https://assets.nationbuilder.com/pcf/pages/36196/attachments/original/1766073347/document_-_cahier_se%CC%81cu_v2.pdf?1766073347
+  binaire_sha256: 6d065601b6c0e277599fc4c85ab89415a144579f62ce61bd1a19cda7aaed9a7d

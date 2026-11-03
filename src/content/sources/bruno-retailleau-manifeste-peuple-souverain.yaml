@@ -1,0 +1,15 @@
+version_schema: 1
+id: bruno-retailleau-manifeste-peuple-souverain
+type: programme
+auteur: candidat
+candidats:
+  - bruno-retailleau
+titre: Bruno Retailleau, Manifeste du peuple souverain
+url: https://www.avecretailleau.fr/api/media/file/Manifeste%20du%20peuple%20souverain%20v280826%20F.pdf
+date_publication: 2026-08-28
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/bruno-retailleau/17f17edab7e2.txt
+  sha256: 17f17edab7e2cce24221f5685d78722606965a1c54dcf6ff8a6975a9fa6f122a
+  capture_le: 2026-11-03T19:02:49+01:00
+  binaire_sha256: 6d564c4274a512720386c91ecfb95f27ce7cc08d5c99274bece6603c82e12377

@@ -1,0 +1,16 @@
+version_schema: 1
+id: fabien-roussel-cahier-mobilites
+type: programme
+auteur: parti_du_candidat
+candidats:
+  - fabien-roussel
+titre: "Parti communiste français, Les cahiers thématiques des Jours heureux : Mobilités"
+url: https://assets.nationbuilder.com/pcf/pages/36198/attachments/original/1766073432/document_-_cahier_mobilite_ppp.pdf?1766073432
+date_publication: 2025-02-07
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/fabien-roussel/f700685185f7.txt
+  sha256: f700685185f76ca4e6e02916679540b4a6ce09958ac63c854f2307cf4c722b12
+  capture_le: 2026-11-03T19:10:41+01:00
+  wayback_url: https://web.archive.org/web/20261103184355/https://assets.nationbuilder.com/pcf/pages/36198/attachments/original/1766073432/document_-_cahier_mobilite_ppp.pdf?1766073432
+  binaire_sha256: 7a30614079448ae69fbb5ef3120f3c7a485937324ee1181e911f530c267387d3

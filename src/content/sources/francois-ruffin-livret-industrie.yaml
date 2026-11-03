@@ -1,0 +1,16 @@
+version_schema: 1
+id: francois-ruffin-livret-industrie
+type: programme
+auteur: candidat
+candidats:
+  - francois-ruffin
+titre: "François Ruffin, Cahier de campagne : Industrie"
+url: https://nouspresident.fr/wp-content/uploads/2026/10/Debout-Livret-Campagne-7-Industrie-Vweb.pdf
+date_publication: 2026-10-15
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/francois-ruffin/21ea30ec89a7.txt
+  sha256: 21ea30ec89a777e47797ecf959dc8c959d23d3ee56cc8ec8f6071128c70fb48b
+  capture_le: 2026-11-03T19:07:33+01:00
+  wayback_url: https://web.archive.org/web/20261103184820/https://nouspresident.fr/wp-content/uploads/2026/10/Debout-Livret-Campagne-7-Industrie-Vweb.pdf
+  binaire_sha256: c1cef6ee7a6e4dfdb76e3ecab65de489f07f15f76d08dcbc925746a92124b735

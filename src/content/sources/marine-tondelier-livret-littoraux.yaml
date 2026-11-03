@@ -1,0 +1,16 @@
+version_schema: 1
+id: marine-tondelier-livret-littoraux
+type: programme
+auteur: parti_du_candidat
+candidats:
+  - marine-tondelier
+titre: "Les Écologistes, Livret de campagne : Littoraux"
+url: https://static1.squarespace.com/static/68b9a0c719c7a969b63b8a1a/t/6aab8029a0952e7454366f34/1789624361672/Livret+littoraux.pdf
+date_publication: 2026-09-14
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/marine-tondelier/8e6108291d47.txt
+  sha256: 8e6108291d47d7e10520b832465cdb1b9b2eb242f76e6caf38f3be5d6cec7211
+  capture_le: 2026-11-03T19:13:54+01:00
+  wayback_url: https://web.archive.org/web/20261103190037/https://static1.squarespace.com/static/68b9a0c719c7a969b63b8a1a/t/6aab8029a0952e7454366f34/1789624361672/Livret+littoraux.pdf
+  binaire_sha256: 2f479bb61070d97336b801c1f4b7697a4ab1fc1243ae92f0668b9cb92aaf0126

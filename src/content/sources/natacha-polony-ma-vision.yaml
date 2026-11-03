@@ -1,0 +1,15 @@
+version_schema: 1
+id: natacha-polony-ma-vision
+type: site_candidat
+auteur: candidat
+candidats:
+  - natacha-polony
+titre: Natacha Polony 2027, Ma vision pour la France
+url: https://natachapolony2027.fr/natacha-polony/ma-vision
+date_publication: 2026-11
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/natacha-polony/4f2f9dff844e.txt
+  sha256: 4f2f9dff844e2f34aafaaa0359b5986fdf0ca3dcb7852c93369d9bfceae1d27a
+  capture_le: 2026-11-03T18:59:50+01:00
+  binaire_sha256: d07ac79c0b1cfdb2dd9fad153f669c0c1bb778d40284064fc540739623896140

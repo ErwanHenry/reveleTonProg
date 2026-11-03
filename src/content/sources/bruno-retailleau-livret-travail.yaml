@@ -1,0 +1,16 @@
+version_schema: 1
+id: bruno-retailleau-livret-travail
+type: programme
+auteur: parti_du_candidat
+candidats:
+  - bruno-retailleau
+titre: "Les Républicains, Nos propositions pour la France : Le travail gagnant"
+url: https://www.avecretailleau.fr/api/media/file/Livret_Travail.pdf
+date_publication: 2026-01-09
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/bruno-retailleau/cd44ef25c9f9.txt
+  sha256: cd44ef25c9f9730abf2748d4b400782cc66abc65a935f66966646f5580fa03dc
+  capture_le: 2026-11-03T19:02:50+01:00
+  wayback_url: https://web.archive.org/web/20261103182602/https://www.avecretailleau.fr/api/media/file/Livret_Travail.pdf
+  binaire_sha256: 91ee32bf0982d4f4823560a8ad3fb68e0c25d49cf96df732b59ce6a54557f38a

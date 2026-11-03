@@ -1,0 +1,16 @@
+version_schema: 1
+id: francois-ruffin-livret-education
+type: programme
+auteur: candidat
+candidats:
+  - francois-ruffin
+titre: "François Ruffin, Livret de campagne 8 : Éducation"
+url: https://nouspresident.fr/wp-content/uploads/2026/10/Debout-Livret-Campagne-8-Education.pdf
+date_publication: 2026-10-28
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/francois-ruffin/8e069fdc1ca5.txt
+  sha256: 8e069fdc1ca52c9c9f24b309cdf91e95889beb87a7ff96b779c20c0f592a81a0
+  capture_le: 2026-11-03T19:07:34+01:00
+  wayback_url: https://web.archive.org/web/20261103184753/https://nouspresident.fr/wp-content/uploads/2026/10/Debout-Livret-Campagne-8-Education.pdf
+  binaire_sha256: 26af004bd8fe4e43f430d2acd7eb289b4e7c555379e1487c32b767618b4c6b3c

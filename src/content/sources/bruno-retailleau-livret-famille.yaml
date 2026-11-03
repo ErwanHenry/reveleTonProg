@@ -1,0 +1,16 @@
+version_schema: 1
+id: bruno-retailleau-livret-famille
+type: programme
+auteur: parti_du_candidat
+candidats:
+  - bruno-retailleau
+titre: "Les Républicains, Nos propositions pour la France : Pour une politique de toutes les familles de France"
+url: https://www.avecretailleau.fr/api/media/file/LR_Famille.pdf
+date_publication: 2026-09-08
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/bruno-retailleau/f60868280ab5.txt
+  sha256: f60868280ab5c5a462a418b00110c73fe4b9401e04e97908bb45bc4336eefa1e
+  capture_le: 2026-11-03T19:03:05+01:00
+  wayback_url: https://web.archive.org/web/20261103182441/https://www.avecretailleau.fr/api/media/file/LR_Famille.pdf
+  binaire_sha256: 92d669efac4d69da72ce3d29a09da3402e2c4822ab88d99e68a4f99f3d4d5945
