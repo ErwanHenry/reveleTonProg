@@ -35,6 +35,22 @@ describe('quoteIn : citations refusées', () => {
   for (const [nom, q] of ko) it(nom, () => assert.equal(quoteIn(q, hay), false, q));
 });
 
+describe('WR-06 : élisions découpées comme words()', () => {
+  const h = haystack("il combat l'extrême droite et l'école, aujourd'hui");
+  it('on peut citer le mot sans son élision', () => {
+    assert.equal(quoteIn('extrême droite', h), true);
+    assert.equal(quoteIn('école', h), true);
+  });
+  it('la citation avec l’élision passe aussi, apostrophe droite ou typographique', () => {
+    assert.equal(quoteIn("l'extrême droite", h), true);
+    assert.equal(quoteIn('l’extrême droite', h), true);
+  });
+  it('aujourd’hui reste un seul mot et un mot partiel reste refusé', () => {
+    assert.deepEqual(tokens("aujourd'hui l'école"), ["aujourd'hui", "l'", 'école']);
+    assert.equal(quoteIn('trême droite', h), false);
+  });
+});
+
 describe('tokens, fragments, haystack', () => {
   it('tokens ignore casse, ponctuation et groupes de chiffres', () => {
     assert.deepEqual(tokens('Plus de 50 000 habitants !'), ['plus', 'de', '50000', 'habitants']);

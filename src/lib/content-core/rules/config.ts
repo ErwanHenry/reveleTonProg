@@ -147,6 +147,7 @@ export const NORMALISATION_CITATIONS: readonly string[] = [
   'Les guillemets et toute ponctuation sont ignorés, ainsi que les espaces et les retours à la ligne.',
   'Les groupes de chiffres sont fusionnés : « 50 000 » et « 50000 » sont identiques.',
   'La ligature « œ » vaut « oe » et le trait d’union sépare deux mots (« peut-être » = « peut être »).',
+  'Les élisions sont séparées comme pour le décompte des mots (« l’école » = « l’ » + « école ») : une citation peut commencer ou finir de part et d’autre d’une élision.',
   'Une citation ne peut ni commencer ni finir au milieu d’un mot de la source.',
   'Les marques […], (...), … et ... découpent une citation en fragments ; chaque fragment doit figurer, contigu, dans la source (l’ordre entre fragments n’est pas imposé).',
   'Une citation vide est toujours refusée.',
