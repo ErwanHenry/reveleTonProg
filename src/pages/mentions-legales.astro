@@ -1,0 +1,77 @@
+---
+import Base from '../layouts/Base.astro';
+import { formatDate } from '../lib/corpus/index.ts';
+import { loadHebergeurConfig } from '../lib/hebergeur-config.ts';
+import { loadSiteConfig } from '../lib/site-config.ts';
+import { CLES_STOCKAGE } from '../lib/stockage-local.ts';
+
+// Date de dernière révision de cette page (à mettre à jour à chaque modification du texte).
+const REVISION = '2026-11-03';
+const heb = loadHebergeurConfig();
+const site = loadSiteConfig();
+---
+<Base
+  titre="Mentions légales : reveleTonProg"
+  description="Qui édite ce site, qui l'héberge, comment exercer un droit de réponse et ce que le site fait de vos données."
+  miseAJour={REVISION}
+>
+  <main id="contenu" class="conteneur texte-institutionnel">
+    <nav class="fil" aria-label="Fil d'Ariane">
+      <ol>
+        <li><a href="/">Accueil</a></li>
+        <li aria-current="page">Mentions légales</li>
+      </ol>
+    </nav>
+    <h1>Mentions légales</h1>
+
+    <h2>Éditeur</h2>
+    <p>
+      Ce site est édité à titre non professionnel, au sens du II de l'article 1-1 de la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l'économie numérique, dans sa rédaction issue de la loi n° 2024-449 du 21 mai 2024.
+    </p>
+    <p>Éditeur et directeur de la publication : Erwan Henry.</p>
+
+    <h2>Contact</h2>
+    <p>Pour écrire à l'éditeur : <a href={`mailto:${site.contact}`}>{site.contact}</a>.</p>
+    {site.contactProvisoire && <p>Adresse provisoire : elle sera remplacée avant la mise en ligne.</p>}
+
+    <h2>Hébergement</h2>
+    {heb.statut === 'prevu' && (
+      <p>Cette version de test n'est pas mise en ligne : elle est remise sous forme de fichiers aux personnes qui relisent le projet. L'hébergement sur le serveur d'Hetzner est prévu à la mise en ligne.</p>
+    )}
+    <p>
+      {heb.statut === 'prevu' ? 'Hébergeur prévu : ' : 'Hébergeur : '}{heb.nom}, {heb.adresse}, {heb.pays}. Téléphone : {heb.telephone}. Registre : {heb.registre}.
+    </p>
+    <p>
+      Informations relevées sur <a href={heb.source.url} rel="noopener noreferrer">{heb.source.url}</a> le <time datetime={heb.source.consulte_le}>{formatDate(heb.source.consulte_le)}</time>.
+    </p>
+
+    <h2>Droit de réponse</h2>
+    <p>
+      Toute personne nommée ou désignée sur ce site dispose d'un droit de réponse, prévu au III de l'article 1-1 de la loi du 21 juin 2004 (<a href="https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000049568614" rel="noopener noreferrer">texte sur Légifrance</a>). La demande est adressée par écrit au directeur de la publication, à l'adresse de contact ci-dessus, dans un délai de trois mois à compter de la mise à disposition du message concerné. La réponse est insérée dans un délai de trois jours à compter de sa réception.
+    </p>
+
+    <h2>Supervision</h2>
+    <p>
+      Ce site n'est pas un service de communication audiovisuelle et n'est pas soumis à la supervision de l'Arcom. L'égalité de traitement des candidats est une règle éditoriale que nous nous imposons.
+    </p>
+
+    <h2>Données personnelles</h2>
+    <ul>
+      <li>Ce site ne collecte aucune donnée personnelle, ne dépose aucun cookie, n'appelle aucun script extérieur et n'enregistre aucune statistique de visite.</li>
+      <li>
+        Deux réglages de présentation sont mémorisés dans le stockage local de votre navigateur, seulement si vous les modifiez :
+        <code>{CLES_STOCKAGE.niveau.cle}</code> (valeurs possibles : {CLES_STOCKAGE.niveau.valeurs.map((v, i) => (<>{i > 0 ? ', ' : ''}<code>{v}</code></>))})
+        et <code>{CLES_STOCKAGE.ordre.cle}</code> (valeurs possibles : {CLES_STOCKAGE.ordre.valeurs.map((v, i) => (<>{i > 0 ? ', ' : ''}<code>{v}</code></>))}).
+        Ils ne quittent jamais votre appareil et n'identifient personne.
+      </li>
+      <li>Vous pouvez les effacer à tout moment dans les réglages de votre navigateur.</li>
+      <li>Le lien « Signaler une erreur (courriel) » ouvre votre logiciel de courrier : c'est une action volontaire. Votre adresse n'est connue de l'éditeur que si vous envoyez le message.</li>
+    </ul>
+    <p>
+      Ces réglages relèvent des traceurs de personnalisation de l'interface, exemptés de consentement par la CNIL lorsqu'ils sont un élément intrinsèque et attendu du service (<a href="https://www.cnil.fr/fr/cookies-et-autres-traceurs/regles/cookies/que-dit-la-loi" rel="noopener noreferrer">règles de la CNIL</a>).
+    </p>
+
+    <h2>Relecture</h2>
+    <p>Ces mentions seront relues par un juriste avant la mise en ligne.</p>
+  </main>
+</Base>

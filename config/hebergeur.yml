@@ -1,0 +1,18 @@
+# Identité de l'hébergeur, affichée sur la page Mentions légales (LCEN, art. 1-1 I 4° et II).
+# Lue depuis la racine du projet par src/lib/hebergeur-config.ts (lecteur strict).
+#
+# statut : `prevu` = la version de test n'est pas en ligne (Lot 2) ; la page le dit honnêtement.
+#   Passer à `actif` dans le commit de déploiement du Lot 3, APRÈS avoir vérifié sur la facture
+#   quelle entité du groupe Hetzner héberge le VPS, et APRÈS avoir communiqué l'identité de
+#   l'éditeur à l'hébergeur (condition du II de l'article 1-1 pour ne publier que l'hébergeur).
+#   Tant que `statut: prevu`, un build avec RTP_DEPLOIEMENT=1 échoue.
+# source : page officielle relevée, avec la date de consultation.
+statut: prevu
+nom: Hetzner Online GmbH
+adresse: Industriestr. 25, 91710 Gunzenhausen
+pays: Allemagne
+telephone: +49 (0)9831 505-0
+registre: Amtsgericht Ansbach, HRB 6089
+source:
+  url: https://www.hetzner.com/legal/legal-notice/
+  consulte_le: 2026-11-03
