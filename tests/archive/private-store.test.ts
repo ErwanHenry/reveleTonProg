@@ -138,6 +138,10 @@ describe('syncPrivate', () => {
     git(amorce, 'push', '--quiet', '-u', 'origin', 'main');
     clone = path.join(base, 'clone');
     git(base, 'clone', '--quiet', remote, clone);
+    // syncPrivate appelle git avec l'environnement du processus : sans identité locale,
+    // `git commit` échoue sur un runner CI qui n'a pas de user.name/user.email globaux.
+    git(clone, 'config', 'user.name', 'Test Archive');
+    git(clone, 'config', 'user.email', 'test@exemple.invalid');
   });
 
   it('ajoute seulement les fichiers écrits, commit « archive: … », pousse', async () => {
