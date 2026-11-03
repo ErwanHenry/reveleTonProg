@@ -1,0 +1,25 @@
+version_schema: 1
+id: florian-philippot/sante-simplifier-gestion-hospitaliere
+candidat: florian-philippot
+theme: sante
+sous_theme: hopital-et-soignants
+titre: "Simplification de la gestion hospitalière et suppression des agences régionales de santé"
+texte_source: >-
+  Il est impératif de simplifier la
+  gestion hospitalière, de supprimer les
+  obligations inutiles, et de rétablir un climat
+  de confiance fondé sur la compétence et
+  l’autonomie médicale. Il faut supprimer
+  les ARS (Agences régionales de santé).
+source: florian-philippot-projet-pour-la-france
+source_localisation: "page 5 du PDF, rubrique SANTÉ, paragraphe Réduire la bureaucratie et rendre aux soignants la maîtrise de leur métier"
+redactions:
+  resume: >-
+    Florian Philippot propose de simplifier la gestion hospitalière, de supprimer les obligations inutiles et de supprimer les agences régionales de santé.
+  detaille: >-
+    Dans le Projet pour la France, publié par le mouvement Les Patriotes, Florian Philippot consacre un paragraphe de la rubrique santé à la bureaucratie des soignants. Le texte juge impératif de simplifier la gestion hospitalière, de supprimer les obligations inutiles et de rétablir un climat de confiance fondé sur la compétence et l'autonomie médicale. Il ajoute qu'il faut supprimer les agences régionales de santé. Le texte ne précise pas quelles obligations seraient jugées inutiles, ni qui reprendrait les missions de ces agences, ni à quelle date.
+  enfant: >-
+    Florian Philippot veut simplifier la gestion des hôpitaux. Il veut enlever les obligations inutiles. Il veut aussi supprimer les [[agences régionales de santé|agence-regionale-de-sante]]. Ce projet vient de son mouvement. Le texte ne dit pas quelles obligations. Il ne dit pas qui ferait le travail de ces agences.
+  aine: >-
+    Dans le Projet pour la France, publié par le mouvement Les Patriotes que dirige Florian Philippot, un paragraphe de la rubrique santé propose de simplifier la gestion hospitalière, de supprimer les obligations inutiles et de rétablir un climat de confiance fondé sur la compétence et l'autonomie médicale. Il propose aussi de supprimer les agences régionales de santé. Le texte ne précise pas quelles obligations seraient supprimées, ni quelle autorité reprendrait les missions de ces agences.
+statut_relecture: brouillon

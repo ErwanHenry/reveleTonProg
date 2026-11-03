@@ -1,0 +1,26 @@
+version_schema: 1
+id: florian-philippot/sante-soins-proximite-centres
+candidat: florian-philippot
+theme: sante
+sous_theme: acces-aux-soins
+titre: "Investissement dans les soins de proximité et centres de santé locaux"
+texte_source: >-
+  Investir massivement dans les soins de
+  proximité pour désengorger l’hôpital.
+  Il est urgent de renforcer le maillage
+  territorial en créant des centres de santé
+  locaux dotés d’équipements modernes,
+  capables de gérer les soins courants et les
+  urgences non vitales.
+source: florian-philippot-projet-pour-la-france
+source_localisation: "page 5 du PDF, rubrique SANTÉ, paragraphe Investir massivement dans les soins de proximité pour désengorger l'hôpital"
+redactions:
+  resume: >-
+    Florian Philippot propose d'investir dans les soins de proximité en créant des centres de santé locaux, pour désengorger l'hôpital.
+  detaille: >-
+    Dans le Projet pour la France, publié par le mouvement Les Patriotes, Florian Philippot propose d'investir massivement dans les soins de proximité pour désengorger l'hôpital. Le texte juge urgent de renforcer le maillage territorial en créant des centres de santé locaux dotés d'équipements modernes, capables de gérer les soins courants et les urgences non vitales. Le texte ne précise pas combien de centres seraient créés, où ils seraient installés, quel serait le montant investi, ni quels professionnels y travailleraient.
+  enfant: >-
+    Florian Philippot veut créer des centres de santé près des habitants. Ces centres soigneraient les maladies courantes. Ils prendraient aussi les urgences qui ne menacent pas la vie. Il y aurait ainsi moins de monde à l'hôpital. Le texte ne dit pas combien de centres seraient ouverts. Il ne dit pas combien cela coûterait.
+  aine: >-
+    Dans le Projet pour la France, publié par le mouvement Les Patriotes que dirige Florian Philippot, un paragraphe de la rubrique santé propose d'investir massivement dans les soins de proximité afin de désengorger l'hôpital. Il prévoit de créer des centres de santé locaux, dotés d'équipements modernes, capables de gérer les soins courants et les urgences non vitales. Le texte ne précise ni le nombre de centres, ni leur emplacement, ni le montant de l'investissement.
+statut_relecture: brouillon

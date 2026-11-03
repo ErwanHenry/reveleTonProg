@@ -12,4 +12,5 @@ archive:
   extrait: archives/gabriel-attal/6191539ef917.txt
   sha256: 6191539ef917fa1adce63473f9eb9596e00d976dff5524f74d9c89d1757cf94c
   capture_le: 2026-11-03T22:12:34+01:00
+  wayback_url: https://web.archive.org/web/20261103215039/https://attalpresident.fr/programme/mesures/depistage-pfas-captages
   binaire_sha256: cf18bc01c032955a37046eba4e1e2f59dbbfc6c2a9671b75e6e36f092152b3c5

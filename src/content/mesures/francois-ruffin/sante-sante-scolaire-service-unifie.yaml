@@ -1,0 +1,26 @@
+version_schema: 1
+id: francois-ruffin/sante-sante-scolaire-service-unifie
+candidat: francois-ruffin
+theme: sante
+sous_theme: acces-aux-soins
+titre: "Médecine du travail et services unifiés de santé scolaire"
+texte_source: >-
+  Installer une véritable médecine du travail et des
+  services unifiés de santé scolaire, en regroupant médecins, infirmiers,
+  assistants sociaux et psychologues au sein d’une structure unique
+  par rectorat. Ce service garantira des visites médicales annuelles
+  pour les enseignants et les élèves, mettra en place des cellules
+  d’écoute et organisera un suivi de terrain, afin qu’aucun signalement
+  d’enseignant en danger ne reste sans réponse.
+source: francois-ruffin-livret-education
+source_localisation: "cahier de campagne Éducation, proposition 3 Garantir le droit à la santé pour refonder une école inclusive et protectrice, page 46 du PDF"
+redactions:
+  resume: >-
+    François Ruffin veut des services unifiés de santé scolaire, réunissant médecins, infirmiers, assistants sociaux et psychologues dans une structure unique par rectorat.
+  detaille: >-
+    Dans son cahier de campagne Éducation, François Ruffin propose d'installer une véritable médecine du travail et des services unifiés de santé scolaire. Ils regrouperaient médecins, infirmiers, assistants sociaux et psychologues au sein d'une structure unique par rectorat. Ce service garantirait des visites médicales annuelles pour les enseignants et les élèves, mettrait en place des cellules d'écoute et organiserait un suivi de terrain, afin qu'aucun signalement d'enseignant en danger ne reste sans réponse. Le texte ne précise ni le nombre de postes, ni le coût, ni la date de mise en place.
+  enfant: >-
+    François Ruffin veut un service de santé unique pour l'école. Il réunirait médecins, infirmiers, assistants sociaux et psychologues. Il y en aurait un par [[rectorat]]. Élèves et enseignants auraient une visite médicale chaque année. Le texte parle aussi de cellules d'écoute. Il ne donne pas de date.
+  aine: >-
+    Dans son cahier de campagne Éducation, François Ruffin propose d'installer une véritable médecine du travail et des services unifiés de santé scolaire, qui regrouperaient médecins, infirmiers, assistants sociaux et psychologues au sein d'une structure unique par rectorat. Ce service garantirait des visites médicales annuelles pour les enseignants et les élèves, des cellules d'écoute et un suivi de terrain. Le texte ne précise ni le nombre de professionnels, ni le coût, ni le calendrier.
+statut_relecture: brouillon

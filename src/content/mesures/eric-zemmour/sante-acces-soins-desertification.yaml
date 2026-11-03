@@ -1,0 +1,21 @@
+version_schema: 1
+id: eric-zemmour/sante-acces-soins-desertification
+candidat: eric-zemmour
+theme: sante
+sous_theme: acces-aux-soins
+titre: "Accès aux soins partout en France face à la désertification médicale et pharmaceutique"
+texte_source: >-
+  Face à la désertification médicale et pharmaceutique, concentrer les
+  moyens pour assurer un accès au soin partout en France.
+source: eric-zemmour-tract-avenir-est-a-nous
+source_localisation: "tract L'avenir est à nous, rubrique sur l'immigration, deuxième paragraphe, dernière phrase"
+redactions:
+  resume: >-
+    Éric Zemmour propose, face à la désertification médicale et pharmaceutique, de concentrer les moyens pour assurer un accès au soin partout en France.
+  detaille: >-
+    Dans le tract de son parti Reconquête intitulé L'avenir est à nous, Éric Zemmour propose, face à la désertification médicale et pharmaceutique, de concentrer les moyens pour assurer un accès au soin partout en France. La phrase se trouve dans le même paragraphe que la suppression de l'aide médicale d'État. Le texte ne précise pas quels moyens seraient concentrés, où ils le seraient, ni quelles mesures concrètes en découleraient. Il ne donne ni chiffre ni date. Il ne dit pas non plus qui piloterait cette concentration des moyens.
+  enfant: >-
+    Éric Zemmour parle des endroits où il manque de médecins et de pharmacies. On les appelle des [[déserts médicaux|desert-medical]]. Il veut concentrer les moyens pour soigner partout en France. Le texte ne dit pas quels moyens. Il ne dit pas où ils iraient.
+  aine: >-
+    Dans le tract de son parti Reconquête intitulé L'avenir est à nous, Éric Zemmour propose, face à la désertification médicale et pharmaceutique, de concentrer les moyens pour assurer un accès au soin partout en France. Le tract ne précise pas de quels moyens il s'agit, ni où ils seraient concentrés, ni par quelles mesures concrètes l'objectif serait atteint. Il ne donne ni chiffre ni calendrier.
+statut_relecture: brouillon

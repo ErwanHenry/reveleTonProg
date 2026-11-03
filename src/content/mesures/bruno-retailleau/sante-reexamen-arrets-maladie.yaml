@@ -1,0 +1,21 @@
+version_schema: 1
+id: bruno-retailleau/sante-reexamen-arrets-maladie
+candidat: bruno-retailleau
+theme: sante
+sous_theme: assurance-maladie
+titre: "Réexamen obligatoire par le médecin-conseil des arrêts maladie"
+texte_source: >-
+  Réexamen obligatoire par le médecin-conseil à trois puis six mois, avec orientation vers la
+  reprise adaptée, le temps partiel thérapeutique, la reconversion ou l’invalidité.
+source: bruno-retailleau-fiches-comptes-publics
+source_localisation: "fiche 7 Santé : les arrêts maladie, page 9 du PDF, rubrique Ce que nous faisons, première puce"
+redactions:
+  resume: >-
+    Bruno Retailleau propose un réexamen obligatoire par le médecin-conseil à trois puis six mois, avec orientation vers une reprise adaptée.
+  detaille: >-
+    Dans la fiche Santé : les arrêts maladie de ses fiches sur les comptes publics, Bruno Retailleau propose un réexamen obligatoire par le médecin-conseil à trois puis six mois. Ce réexamen s'accompagnerait d'une orientation vers la reprise adaptée, le temps partiel thérapeutique, la reconversion ou l'invalidité. Le texte ne précise pas à partir de quand courent ces délais, ce qui se passerait si la personne ne se présente pas, ni qui déciderait de l'orientation. Il ne définit pas non plus ces voies.
+  enfant: >-
+    Bruno Retailleau parle des arrêts maladie. Un [[médecin-conseil|medecin-conseil]] devrait revoir chaque cas à trois mois, puis à six mois. Ce contrôle serait obligatoire. Il aiderait à choisir la suite pour la personne, comme une reprise adaptée. Le texte ne donne pas de date de début.
+  aine: >-
+    Dans la fiche sur les arrêts maladie de ses documents sur les comptes publics, Bruno Retailleau propose que le médecin-conseil réexamine obligatoirement la situation à trois puis six mois. La personne serait orientée vers une reprise adaptée, un temps partiel thérapeutique, une reconversion ou l'invalidité. Le texte ne précise pas à partir de quand ces délais s'appliquent, qui déciderait de l'orientation ni ce qui arriverait en cas d'absence au réexamen.
+statut_relecture: brouillon

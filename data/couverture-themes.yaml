@@ -1778,6 +1778,7 @@ pilote:
     - sante
     - travail
     - europe-et-monde
-  livres: []
+  livres:
+    - sante
   derogation: null
   relecture_ouverte: false

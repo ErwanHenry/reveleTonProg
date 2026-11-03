@@ -1,0 +1,24 @@
+version_schema: 1
+id: marine-tondelier/sante-prevention-priorites
+candidat: marine-tondelier
+theme: sante
+sous_theme: prevention
+titre: "Développement massif de la prévention autour de quelques priorités"
+texte_source: >-
+  Développer massivement la prévention autour de
+
+  quelques priorités comme la prévention des cancers, la lutte contre l’obésité
+  et la protection de la santé mentale. Adopter des plans cohérents conjuguant
+  mesures d’éducation, d’incitation économique et d’action sur l’environnement.
+source: marine-tondelier-programme-prosperite-ecologique
+source_localisation: "chapitre 29 Améliorer la prévention et le parcours de soin, proposition 1, page 111 du programme"
+redactions:
+  resume: >-
+    Dans le programme des Écologistes, Marine Tondelier propose de développer massivement la prévention : cancers, obésité et santé mentale.
+  detaille: >-
+    Dans le programme des Écologistes, Pour une prospérité écologique, soutenu par Marine Tondelier, le chapitre sur la prévention et le parcours de soin propose de développer massivement la prévention autour de quelques priorités : la prévention des cancers, la lutte contre l'obésité et la protection de la santé mentale. Il prévoit d'adopter des plans cohérents qui conjuguent mesures d'éducation, d'incitation économique et d'action sur l'environnement. Le texte cité ne dit pas quel budget y serait consacré, ni quelles mesures précises composeraient chaque plan.
+  enfant: >-
+    Marine Tondelier et son parti veulent développer beaucoup la [[prévention]]. Ils visent les cancers, l'[[obésité]] et la [[santé mentale|sante-mentale]]. Ils veulent des plans qui mêlent éducation, encouragements économiques et action sur l'environnement. Le texte ne donne ni chiffre ni date.
+  aine: >-
+    Dans le programme des Écologistes, Pour une prospérité écologique, soutenu par Marine Tondelier, le chapitre sur la prévention et le parcours de soin propose de développer massivement la prévention autour de quelques priorités : la prévention des cancers, la lutte contre l'obésité et la protection de la santé mentale. Il prévoit des plans cohérents qui combinent éducation, incitations économiques et action sur l'environnement. Le passage cité ne précise ni le budget, ni le calendrier.
+statut_relecture: brouillon

@@ -1,0 +1,15 @@
+version_schema: 1
+id: erwan-rohou-programme-mei
+type: site_parti
+auteur: parti_du_candidat
+candidats:
+  - erwan-rohou
+titre: "Mouvement des Écologistes Indépendants, Notre programme : Pour une France qui serve l'avenir"
+url: https://www.les-ecologistes-mei.org/notre-programme
+date_publication: 2026-11
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/erwan-rohou/e4e379a88baa.txt
+  sha256: e4e379a88baabbb93831f55851adcad8ce7e69205cc8f586ef3381e01a3a37fc
+  capture_le: 2026-11-03T23:00:00+01:00
+  binaire_sha256: e26a40569a7592822c893af24cbdea107d5f2533355e81eac4473284813ba097

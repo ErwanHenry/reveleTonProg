@@ -1,0 +1,20 @@
+version_schema: 1
+id: edouard-philippe/sante-sante-mentale-ecole
+candidat: edouard-philippe
+theme: sante
+sous_theme: prevention
+titre: "Renforcement de la santé à l'école"
+texte_source: >-
+  Renforcer la santé à l'école, en donnant aux élèves accès à des tiers de confiance, à des conseils et à la détection en matière de santé mentale.
+source: edouard-philippe-priorite-enfants
+source_localisation: "page Pour une France plus attentive à ses enfants"
+redactions:
+  resume: >-
+    Édouard Philippe veut renforcer la santé à l'école, avec des tiers de confiance, des conseils et la détection en matière de santé mentale.
+  detaille: >-
+    Sur la page Pour une France plus attentive à ses enfants de son site de campagne, Édouard Philippe propose de renforcer la santé à l'école. Les élèves auraient accès à des tiers de confiance, à des conseils et à la détection en matière de santé mentale. Le texte ne précise pas qui seraient ces tiers de confiance, combien de personnes seraient recrutées, ni dans quels établissements cela commencerait. Il ne donne ni chiffre ni calendrier. Il ne dit pas non plus comment les problèmes de santé mentale seraient repérés ni par qui. Il ne dit pas non plus comment les problèmes de santé mentale seraient repérés ni par qui.
+  enfant: >-
+    Édouard Philippe veut renforcer la santé à l'école. Les élèves pourraient parler à des personnes de confiance. Ils pourraient recevoir des conseils. On repérerait aussi les problèmes de [[santé mentale|sante-mentale]]. Le texte ne dit pas qui seraient ces personnes. Il ne donne pas de date.
+  aine: >-
+    Sur la page Pour une France plus attentive à ses enfants de son site de campagne, Édouard Philippe propose de renforcer la santé à l'école, en donnant aux élèves accès à des tiers de confiance, à des conseils et à la détection en matière de santé mentale. Le texte ne précise pas qui seraient ces tiers de confiance, quels moyens y seraient consacrés ni à partir de quand. Il ne dit pas comment la détection serait organisée.
+statut_relecture: brouillon

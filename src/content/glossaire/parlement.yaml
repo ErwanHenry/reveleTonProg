@@ -1,0 +1,5 @@
+version_schema: 1
+id: parlement
+type: terme
+libelle: "Parlement"
+definition: "Le Parlement est formé des députés et des sénateurs. Il discute et vote les lois, ainsi que le budget de l'État et celui de la Sécurité sociale."

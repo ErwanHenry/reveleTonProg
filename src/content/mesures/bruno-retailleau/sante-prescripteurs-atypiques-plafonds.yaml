@@ -1,0 +1,22 @@
+version_schema: 1
+id: bruno-retailleau/sante-prescripteurs-atypiques-plafonds
+candidat: bruno-retailleau
+theme: sante
+sous_theme: assurance-maladie
+titre: "Encadrement des prescripteurs atypiques et plafonds de prescription"
+texte_source: >-
+  Prescripteurs atypiques sous objectifs puis sous accord préalable, en dispositif permanent ;
+  plafonds de prescription : premier arrêt limité, renouvellement subordonné à un examen,
+  téléconsultation limitée à trois jours non renouvelables.
+source: bruno-retailleau-fiches-comptes-publics
+source_localisation: "fiche 7 Santé : les arrêts maladie, page 9 du PDF, rubrique Ce que nous faisons, deuxième puce"
+redactions:
+  resume: >-
+    Bruno Retailleau propose des objectifs puis un accord préalable pour les prescripteurs atypiques, et des plafonds de prescription.
+  detaille: >-
+    Dans la fiche Santé : les arrêts maladie de ses fiches sur les comptes publics, Bruno Retailleau propose de placer les prescripteurs atypiques sous objectifs, puis sous accord préalable, en dispositif permanent. Il prévoit aussi des plafonds de prescription : premier arrêt limité, renouvellement subordonné à un examen, téléconsultation limitée à trois jours non renouvelables. Le texte ne définit pas ce qu'est un prescripteur atypique, ne dit pas qui donnerait l'accord préalable ni quelle serait la durée maximale du premier arrêt.
+  enfant: >-
+    Bruno Retailleau veut encadrer les arrêts maladie. Les médecins dits atypiques auraient des objectifs. Ils auraient ensuite besoin d'un accord préalable. Le premier arrêt serait limité. Il faudrait un examen pour le prolonger. Par [[téléconsultation]], ce serait trois jours au plus.
+  aine: >-
+    Dans la fiche sur les arrêts maladie de ses documents sur les comptes publics, Bruno Retailleau propose de placer les prescripteurs atypiques sous objectifs, puis sous accord préalable, de façon permanente. Il prévoit des plafonds de prescription : le premier arrêt serait limité, son renouvellement serait subordonné à un examen et la téléconsultation serait limitée à trois jours non renouvelables. Le texte ne définit pas la notion de prescripteur atypique et ne dit pas qui donnerait l'accord préalable.
+statut_relecture: brouillon

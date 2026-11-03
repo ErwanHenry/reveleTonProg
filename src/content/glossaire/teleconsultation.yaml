@@ -1,0 +1,5 @@
+version_schema: 1
+id: teleconsultation
+type: terme
+libelle: "Téléconsultation"
+definition: "Une téléconsultation est un rendez-vous avec un médecin à distance, par téléphone ou par vidéo, sans se déplacer."

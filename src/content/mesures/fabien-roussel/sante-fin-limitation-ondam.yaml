@@ -1,0 +1,20 @@
+version_schema: 1
+id: fabien-roussel/sante-fin-limitation-ondam
+candidat: fabien-roussel
+theme: sante
+sous_theme: assurance-maladie
+titre: "Fin de la limitation annuelle des dépenses d'assurance maladie"
+texte_source: >-
+  La limitation a priori des financements par le mécanisme de l’ONDAM (Objectif National des Dépenses d’Assurance Maladie) voté par le parlement chaque année avec le PLFSS étrangle à la fois le service public hospitalier et les soins de premier recours et méconnaît la prévention. Ce contrôle étatique doit cesser car contraire aux principes de la Sécurité Sociale de gestion par les travailleur·euses .
+source: fabien-roussel-cahier-securite-sociale
+source_localisation: "chapitre 4 Quelles ambitions pour l'assurance-maladie ?, rubrique Un financement qui réponde aux besoins, page 16 du cahier"
+redactions:
+  resume: >-
+    Le cahier du parti de Fabien Roussel demande que cesse le contrôle de l'État sur la limitation annuelle des dépenses de l'assurance maladie.
+  detaille: >-
+    Dans le cahier Sécurité sociale du Parti communiste français, parti de Fabien Roussel, un chapitre sur l'assurance maladie critique la limitation a priori des financements par l'Objectif national des dépenses d'assurance maladie, voté chaque année par le parlement. Le texte écrit qu'elle étrangle le service public hospitalier et les soins de premier recours, et qu'elle méconnaît la prévention. Il demande que ce contrôle étatique cesse, au nom de la gestion de la Sécurité sociale par les travailleurs. Le texte cité ne dit pas par quel mécanisme cette limite serait remplacée.
+  enfant: >-
+    Chaque année, le [[Parlement|parlement]] vote une limite aux dépenses de l'[[assurance maladie]]. Le cahier du parti de Fabien Roussel critique cette limite. Il dit qu'elle met en difficulté l'hôpital public. Il dit aussi qu'elle ne tient pas compte de la [[prévention]]. Il demande que ce contrôle de l'État cesse.
+  aine: >-
+    Dans le cahier Sécurité sociale du Parti communiste français, parti de Fabien Roussel, un chapitre critique la limitation a priori des financements par l'Objectif national des dépenses d'assurance maladie, voté chaque année par le parlement avec le projet de loi de financement de la Sécurité sociale. Le texte estime qu'elle étrangle le service public hospitalier et les soins de premier recours, et qu'elle méconnaît la prévention. Il demande la fin de ce contrôle de l'État. Il ne dit pas quel dispositif remplacerait cette limite.
+statut_relecture: brouillon

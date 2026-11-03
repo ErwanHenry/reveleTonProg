@@ -1,0 +1,5 @@
+version_schema: 1
+id: medecin-conseil
+type: terme
+libelle: "Médecin-conseil"
+definition: "Un médecin-conseil est un médecin qui travaille pour l'assurance maladie. Il vérifie, par exemple, si un arrêt de travail pour maladie est justifié."

@@ -1,0 +1,20 @@
+version_schema: 1
+id: eric-zemmour/sante-supprimer-ame
+candidat: eric-zemmour
+theme: sante
+sous_theme: assurance-maladie
+titre: "Suppression de l'Aide médicale d'État"
+texte_source: >-
+  Supprimer l’AME qui soigne les clandestins avec votre argent.
+source: eric-zemmour-tract-avenir-est-a-nous
+source_localisation: "tract L'avenir est à nous, rubrique sur l'immigration, deuxième paragraphe"
+redactions:
+  resume: >-
+    Éric Zemmour propose de supprimer l'aide médicale d'État, dont le tract dit qu'elle « soigne les clandestins avec votre argent ».
+  detaille: >-
+    Dans le tract de son parti Reconquête intitulé L'avenir est à nous, Éric Zemmour propose de supprimer l'AME, l'aide médicale d'État. Le tract la décrit comme une aide « qui soigne les clandestins avec votre argent ». La phrase figure dans la rubrique du tract consacrée à l'immigration. Le texte ne précise ni à quelle date l'aide serait supprimée, ni ce qui la remplacerait, ni le sort des soins urgents. Il ne donne pas de chiffre pour cette mesure.
+  enfant: >-
+    Éric Zemmour veut supprimer l'[[aide médicale d'État|aide-medicale-d-etat]]. Son tract dit que cette aide soigne des étrangers en situation irrégulière. Il dit qu'elle est payée avec votre argent. Le texte ne dit pas ce qui la remplacerait. Il ne donne pas de date.
+  aine: >-
+    Dans le tract de son parti Reconquête intitulé L'avenir est à nous, Éric Zemmour propose de supprimer l'AME, c'est-à-dire l'aide médicale d'État, qu'il décrit comme une aide « qui soigne les clandestins avec votre argent ». Le tract ne précise pas la date de la suppression, ce qui la remplacerait éventuellement, ni la situation des soins urgents. Il ne chiffre pas cette mesure dans ce document.
+statut_relecture: brouillon

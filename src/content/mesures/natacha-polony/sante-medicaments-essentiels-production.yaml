@@ -1,0 +1,20 @@
+version_schema: 1
+id: natacha-polony/sante-medicaments-essentiels-production
+candidat: natacha-polony
+theme: sante
+sous_theme: gouvernance-sante
+titre: "Production en France des médicaments essentiels"
+texte_source: >-
+  Produire son énergie. Ses médicaments essentiels. Les machines et les technologies dont dépend notre souveraineté. Produire une alimentation de qualité.
+source: natacha-polony-ma-vision
+source_localisation: "lettre Ma vision pour la France, paragraphe sur la production, après la phrase sur la puissance industrielle"
+redactions:
+  resume: >-
+    Natacha Polony veut que la France produise ses médicaments essentiels, avec son énergie, ses machines et une alimentation de qualité.
+  detaille: >-
+    Dans la lettre Ma vision pour la France de son site de campagne, Natacha Polony écrit que la France doit produire son énergie, ses médicaments essentiels, les machines et les technologies dont dépend sa souveraineté, ainsi qu'une alimentation de qualité. Le passage vient après une phrase qui fixe pour objectif de retrouver la puissance industrielle. Le texte ne précise pas quels médicaments seraient concernés, par quels moyens ils seraient produits, ni quelle part de la consommation serait visée. Il ne donne aucun chiffre.
+  enfant: >-
+    Natacha Polony veut que la France fabrique ses médicaments essentiels. Elle veut aussi que la France produise son énergie et sa nourriture. Elle cite aussi des machines. Le texte ne dit pas quels médicaments seraient fabriqués. Il ne dit pas comment.
+  aine: >-
+    Dans la lettre Ma vision pour la France de son site de campagne, Natacha Polony écrit que la France doit produire son énergie, ses médicaments essentiels, les machines et les technologies dont dépend sa souveraineté, et produire une alimentation de qualité. Ce passage suit l'objectif de retrouver une puissance industrielle. Le texte ne précise pas quels médicaments seraient fabriqués en France, ni avec quels moyens, ni sur quel calendrier.
+statut_relecture: brouillon
