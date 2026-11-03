@@ -38,6 +38,11 @@ function httpsUrl(s: string): boolean {
   return URL.canParse(s) && new URL(s).protocol === 'https:';
 }
 
+/** Vide le cache des schémas compilés (rechargement à chaud en dev quand un schéma change). */
+export function clearSchemaCache(): void {
+  cache.clear();
+}
+
 function context(schemasDir: string): SchemaContext {
   const hit = cache.get(schemasDir);
   if (hit) return hit;

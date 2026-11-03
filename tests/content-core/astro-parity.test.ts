@@ -117,3 +117,37 @@ describe('parité du loader Astro avec content-core', () => {
     assert.equal(messages.filter((m) => /marie-fictive\.yaml:\d+:\d+ SCHEMA_REQUIRED/.test(m)).length, 1);
   });
 });
+
+describe('robustesse du loader (WR-05)', () => {
+  /** Racine de projet sans dossier schemas/ : le chargement lève une exception d'E/S. */
+  function brokenProject(): string {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rtp-noschemas-'));
+    tmpDirs.push(dir);
+    return dir;
+  }
+  const watcherStub = () => {
+    const handlers: Record<string, (p: string) => void> = {};
+    return { add: () => {}, on: (ev: string, fn: (p: string) => void) => void (handlers[ev] = fn), handlers };
+  };
+
+  it('dev : une exception de chargement est journalisée, le serveur ne tombe pas', async () => {
+    const messages: string[] = [];
+    const { ctx } = makeContext(messages);
+    const watcher = watcherStub();
+    const custom = { ...ctx, config: { root: pathToFileURL(brokenProject() + '/') }, watcher };
+    await withEnv(FIXTURE_ROOT, () => contentCoreLoader('candidats').load(custom as unknown as Ctx));
+    assert.ok(messages.some((m) => m.startsWith('content-core : ')), messages.join(' | '));
+    // Un événement du watcher qui relance le chargement ne lève pas non plus.
+    const again = watcher.handlers.change;
+    assert.ok(again);
+    const before = messages.length;
+    await withEnv(FIXTURE_ROOT, async () => again(path.join(FIXTURE_ROOT, 'src', 'content', 'candidats', 'x.yaml')));
+    assert.ok(messages.length > before, "l’événement relance le chargement sans lever");
+  });
+
+  it('build : la même exception fait échouer le chargement', async () => {
+    const { ctx } = makeContext([]);
+    const custom = { ...ctx, config: { root: pathToFileURL(brokenProject() + '/') }, watcher: undefined };
+    await assert.rejects(withEnv(FIXTURE_ROOT, () => contentCoreLoader('candidats').load(custom as unknown as Ctx)));
+  });
+});

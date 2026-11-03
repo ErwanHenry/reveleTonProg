@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Loader } from 'astro/loaders';
 import type { CollectionName } from './collections.ts';
+import { clearSchemaCache } from './ajv.ts';
 import { formatText } from './diagnostics.ts';
 import { loadAll } from './load.ts';
 import type { LoadResult } from './load.ts';
@@ -22,7 +23,12 @@ function fingerprintDir(dir: string, out: string[]): void {
   }
   for (const name of names) {
     const full = path.join(dir, name);
-    const st = lstatSync(full);
+    let st;
+    try {
+      st = lstatSync(full);
+    } catch {
+      continue; // supprimé ou renommé entre readdir et lstat (enregistrement par renommage des éditeurs)
+    }
     if (st.isDirectory() && !st.isSymbolicLink()) fingerprintDir(full, out);
     else out.push(`${full}:${st.mtimeMs}:${st.size}`);
   }
@@ -55,7 +61,7 @@ export function contentCoreLoader(name: CollectionName): Loader {
     load: async ({ config, store, generateDigest, logger, watcher }) => {
       const projectRoot = fileURLToPath(config.root);
       const contentRoot = resolveContentRoot(projectRoot);
-      const run = (): void => {
+      const runOnce = (): void => {
         const { res, first } = shared(projectRoot, contentRoot);
         const errors = res.diagnostics.filter((d) => d.severity === 'error');
         if (first) {
@@ -83,11 +89,27 @@ export function contentCoreLoader(name: CollectionName): Loader {
           });
         }
       };
+      // Dev : une erreur d'E/S, de schéma ou de lecture ne doit jamais tuer le serveur (on journalise et
+      // on garde les données précédentes). Build : on relance l'erreur, le build doit échouer.
+      const run = (): void => {
+        try {
+          runOnce();
+        } catch (e) {
+          if (!watcher) throw e;
+          logger.error(`content-core : ${e instanceof Error ? e.message : String(e)}`);
+        }
+      };
       run();
       if (watcher) {
+        const schemasDir = schemasDirOf(projectRoot);
         watcher.add(path.join(contentRoot, 'src', 'content'));
+        watcher.add(schemasDir);
+        const inside = (p: string, dir: string): boolean => (path.resolve(p) + path.sep).startsWith(path.resolve(dir) + path.sep);
         const again = (p: string): void => {
-          if (p.split(path.sep).join('/').includes('/src/content/')) run();
+          if (inside(p, schemasDir)) {
+            clearSchemaCache(); // sinon le cache Ajv sert encore les anciens schémas compilés
+            run();
+          } else if (inside(p, path.join(contentRoot, 'src', 'content'))) run();
         };
         watcher.on('change', again);
         watcher.on('add', again);
