@@ -1,11 +1,11 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: milestone
-status: executing
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-11-04T17:50:02.617Z"
-last_activity: 2026-11-04
+milestone: v1.0
+milestone_name: Lots 1 et 2
+status: Awaiting next milestone
+stopped_at: Milestone v1.0 shipped, next: /gsd:new-milestone (v1.1, Lot 3)
+last_updated: "2026-11-04T18:54:32.006Z"
+last_activity: 2026-11-04 — Milestone v1.0 completed and archived
 progress:
   total_phases: 5
   completed_phases: 5
@@ -18,20 +18,18 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-11-03)
+See: .planning/PROJECT.md (updated 2026-11-04)
 
 **Core value:** Un visiteur choisit un thème et lit, en moins de 3 minutes, la position de chaque candidat au niveau de détail qui lui convient — chaque mesure affichée étant rattachée à une source primaire datée, sans jamais prendre parti.
-**Current focus:** Phase 05 — pages institutionnelles, accessibilité et URL de test
+**Current focus:** Planning next milestone (v1.1 : Lot 3, hébergement et mise en ligne)
 **Milestone:** v1.0 — Lots 1 & 2 (squelette, données, référentiel M1)
 
 ## Current Position
 
-Phase: 05
-Plan: Not started
-Status: Executing
-Last activity: 2026-11-04
-
-Progress: [████████░░] 80%
+Phase: Milestone v1.0 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-11-04 — Milestone v1.0 completed and archived
 
 ## Performance Metrics
 
@@ -110,3 +108,19 @@ Items acknowledged and carried forward from previous milestone close:
 Last session: 2026-11-03T14:53:49.067Z
 Stopped at: Completed 02-01-PLAN.md
 Resume file: None
+
+## Deferred Items
+
+Items acknowledged and deferred at milestone close on 2026-11-04 (Erwan: « Fix, then close »):
+
+| Category | Item | Status |
+|----------|------|--------|
+| uat_gap | 03-HUMAN-UAT.md (relecture éditoriale du corpus, 3 scénarios) | partial |
+| uat_gap | 05-HUMAN-UAT.md (critère 4G, parcours d'Erwan, constats S1/S2/S3, relecture) | partial |
+| verification_gap | 03-VERIFICATION.md | human_needed |
+| verification_gap | 05-VERIFICATION.md | human_needed |
+| tech_debt | W9 : Wayback des 3 sources Batho (HTTP 520 puis 429, à relancer) | open |
+
+## Operator Next Steps
+
+- Start the next milestone with /gsd-new-milestone
