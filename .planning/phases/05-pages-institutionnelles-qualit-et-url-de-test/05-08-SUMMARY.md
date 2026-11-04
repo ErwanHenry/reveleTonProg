@@ -4,6 +4,7 @@ plan: 08
 subsystem: gate
 tags: [gate, test-url, walkthrough]
 requires: [05-07]
+requirements-completed: [QUAL-05]
 provides: [final gate on main, test URL (CI artifact and local preview), walk-through of the pilot corpus]
 affects: [src/pages/methode.astro]
 key-files:

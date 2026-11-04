@@ -4,6 +4,7 @@ plan: 07
 subsystem: audit
 tags: [qual-06, audit, personas, pieges]
 requires: [05-03, 05-06]
+requirements-completed: [QUAL-06]
 provides: [audit/journal.jsonl, completed docs/AUDIT-TEST-CROISE.md, docs.test pin of the audit]
 affects: [docs/AUDIT-TEST-CROISE.md, audit/journal.jsonl, src/pages/methode.astro, src/pages/qui-sommes-nous.astro, scripts/audit-lire.ts]
 key-files:
