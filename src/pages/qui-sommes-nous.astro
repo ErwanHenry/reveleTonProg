@@ -3,7 +3,7 @@ import Base from '../layouts/Base.astro';
 import { loadSiteConfig } from '../lib/site-config.ts';
 
 // Date de dernière révision de cette page (à mettre à jour à chaque modification du texte).
-const REVISION = '2026-11-03';
+const REVISION = '2026-11-04';
 const site = loadSiteConfig();
 const depot = `https://github.com/${site.depot}`;
 ---
@@ -30,8 +30,8 @@ const depot = `https://github.com/${site.depot}`;
     </p>
 
     <h2>Qui écrit les textes</h2>
-    <p>
-      Les quatre versions de chaque mesure sont rédigées par l'éditeur du site à partir du texte publié par le candidat, cité mot pour mot sous la mesure. Le candidat n'écrit pas ces versions. Une version qui n'a pas encore été relue n'est jamais publiée : elle n'apparaît que sur l'aperçu de travail, avec une mention qui le signale.
+    <p data-redaction-ia>
+      Les quatre versions de chaque mesure sont rédigées avec l'aide d'un outil d'intelligence artificielle (un modèle de langage), à partir du texte publié par le candidat, cité mot pour mot sous la mesure. L'éditeur relit chaque version avant sa publication et en est responsable. Le candidat n'écrit pas ces versions. Une version qui n'a pas encore été relue n'est jamais publiée : elle n'apparaît que sur l'aperçu de travail, avec une mention qui le signale.
     </p>
 
     <h2>Financement</h2>
