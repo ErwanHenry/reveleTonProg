@@ -13,7 +13,7 @@ const USAGE = `Usage : node scripts/check-dist.ts [--dist <dossier>] [--root <do
   --root <dossier>        racine du contenu, pour le nombre de cellules attendu (défaut : RTP_CONTENT_ROOT, sinon le vrai corpus « . »)
   --mode preview|production  mode du build contrôlé (défaut : RTP_MODE, sinon production)
   --format text|github    text (défaut) ou annotations GitHub Actions en plus
-  RTP_DEPLOIEMENT=1 (job de déploiement) : un contact provisoire (.invalid) devient une erreur au lieu d'un avertissement.
+  RTP_DEPLOIEMENT=1 (job de déploiement) : un contact provisoire (.invalid) et un hébergeur seulement prévu deviennent des erreurs au lieu d'avertissements.
   Code de sortie : 0 sans erreur, 1 si au moins une erreur, 2 si les arguments ou le mode sont invalides.
 `;
 

@@ -191,8 +191,9 @@ En local : `RTP_MODE=preview npm run build -- --outDir dist-preview`, puis la m�
 | `META_REFRESH` | `<meta http-equiv="refresh">` dans une page | retirer la redirection ; en faire une règle du serveur |
 | `BASE_INTERDITE` | `<base>` dans une page | le retirer : il réécrit tous les liens relatifs |
 | `CONTACT_PROVISOIRE` | lien `mailto:` en `.invalid` (contact de `config/site.yml` pas encore remplacé) | avertissement en CI ; erreur quand `RTP_DEPLOIEMENT=1` : renseigner un vrai contact |
+| `HEBERGEUR_PREVU` | page qui porte `data-hebergeur="prevu"` (Méthode, Mentions légales : « pas encore en ligne », relecture par un juriste à venir) | avertissement en CI ; erreur quand `RTP_DEPLOIEMENT=1` : passer `statut: actif` dans `config/hebergeur.yml` et reconstruire |
 
-**Garde de déploiement (contact).** Tant que le domaine n'est pas acheté, `config/site.yml` garde `contact@domaine-a-definir.invalid` et la CI passe avec un avertissement. Le job de déploiement du lot 3 doit définir `RTP_DEPLOIEMENT=1` : le build (`astro build`) échoue alors si le contact finit par `.invalid`, et `check-dist` signale `CONTACT_PROVISOIRE` en erreur.
+**Garde de déploiement (contact).** Tant que le domaine n'est pas acheté, `config/site.yml` garde `contact@domaine-a-definir.invalid` et la CI passe avec un avertissement. Le job de déploiement du lot 3 doit définir `RTP_DEPLOIEMENT=1` : le build (`astro build`) échoue alors si le contact finit par `.invalid`, et `check-dist` signale `CONTACT_PROVISOIRE` en erreur. Même logique pour l'hébergeur : tant que `config/hebergeur.yml` dit `statut: prevu`, le build échoue sous `RTP_DEPLOIEMENT=1`, et `check-dist` signale `HEBERGEUR_PREVU` en erreur sur un dist construit plus tôt (artefact `site-preview`, `dist-reel`) qui contient encore les phrases d'avant la mise en ligne.
 
 ### Importer les statuts data.gouv
 
@@ -283,10 +284,11 @@ GitHub Actions → `rsync -az --delete dist/ $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_P
 1. Communiquer l'identité de l'éditeur à l'hébergeur (condition du II de l'article 1-1 pour ne publier que l'identité de l'hébergeur) et conserver la preuve de cet envoi.
 2. Vérifier sur la facture que l'entité qui héberge le VPS est bien Hetzner Online GmbH (hypothèse A5 de la phase 5) ; sinon corriger `config/hebergeur.yml`.
 3. Passer `statut: actif` dans `config/hebergeur.yml`, dans le commit de déploiement. Tant que le statut est `prevu`, un build avec `RTP_DEPLOIEMENT=1` échoue.
-4. Faire relire par un juriste les Mentions légales et l'interprétation de la CNIL sur `localStorage` (hypothèse A2 : réglages d'affichage exemptés de consentement).
-5. Remplacer l'adresse de contact provisoire de `config/site.yml`.
-6. Rendre public le dépôt `ErwanHenry/reveleTonProg` avant le déploiement (il reste privé jusque-là, décision d'Erwan). Tant qu'il est privé, les liens du site vers le dépôt (Qui sommes-nous, « Signaler une erreur (GitHub) », « Extrait archivé ») renvoient une erreur 404 à toute personne sans accès. Contrôle : `gh repo view ErwanHenry/reveleTonProg --json visibility` doit répondre `PUBLIC`.
-7. Vérifier au premier run que `actions/upload-artifact` fonctionne avec `permissions: contents: read` (hypothèse A4).
+4. Décrire dans les Mentions légales ce que garde le journal d'accès de Caddy (champs, adresse IP entière ou tronquée, durée de conservation) une fois sa configuration arrêtée. Avec `statut: actif`, la page dit seulement que le serveur reçoit l'adresse IP pour envoyer les pages ; elle ne dit plus que le site ne collecte aucune donnée personnelle.
+5. Faire relire par un juriste les Mentions légales et l'interprétation de la CNIL sur `localStorage` (hypothèse A2 : réglages d'affichage exemptés de consentement).
+6. Remplacer l'adresse de contact provisoire de `config/site.yml`.
+7. Rendre public le dépôt `ErwanHenry/reveleTonProg` avant le déploiement (il reste privé jusque-là, décision d'Erwan). Tant qu'il est privé, les liens du site vers le dépôt (Qui sommes-nous, « Signaler une erreur (GitHub) », « Extrait archivé ») renvoient une erreur 404 à toute personne sans accès. Contrôle : `gh repo view ErwanHenry/reveleTonProg --json visibility` doit répondre `PUBLIC`.
+8. Vérifier au premier run que `actions/upload-artifact` fonctionne avec `permissions: contents: read` (hypothèse A4).
 
 ## Incidents fréquents
 

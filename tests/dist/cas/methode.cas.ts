@@ -14,6 +14,7 @@ import {
 } from '../../../src/lib/content-core/rules/config.ts';
 import { ETAT_VIDE_TEXTES, LIBELLES_STATUT } from '../../../src/lib/corpus/vue.ts';
 import { loadDatasetDatagouv } from '../../../src/lib/dataset-datagouv.ts';
+import { loadHebergeurConfig } from '../../../src/lib/hebergeur-config.ts';
 import { TOURS } from '../../../src/lib/dates-tours.ts';
 import { PROFIL_4G } from '../../../src/lib/profil-4g.ts';
 import { materialiserCorpusM1 } from '../../helpers/corpus-m1.ts';
@@ -122,6 +123,14 @@ export default function methode(ctx: ContexteSite): void {
       assert.ok(t.includes('Commission des sondages'), t);
       const main = txt(trouver(a, (n) => n.tag === 'main')[0] as Noeud);
       assert.doesNotMatch(main, /sondages[^.]*relèvent de l'Arcom/);
+    });
+
+    it("« pas encore en ligne » seulement sous l'hébergeur prévu, marqué pour check-dist (WR-03)", () => {
+      const a = page();
+      const heb = loadHebergeurConfig(ctx.repoRoot);
+      const marques = trouver(a, (n) => n.attrs['data-hebergeur'] === 'prevu').map(txt).join(' | ');
+      if (heb.statut === 'prevu') assert.ok(marques.includes("pas encore en ligne"), marques);
+      else assert.ok(!txt(a).includes('pas encore en ligne'));
     });
 
     it('dates des tours, profil 4G, états vides', () => {

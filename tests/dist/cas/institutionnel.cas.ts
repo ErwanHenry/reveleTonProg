@@ -54,6 +54,22 @@ export default function institutionnel(ctx: ContexteSite): void {
       assert.ok(t.includes(CLES_STOCKAGE.niveau.cle));
       assert.ok(t.includes(CLES_STOCKAGE.ordre.cle));
       assert.match(t, /aucun cookie/);
+      // WR-03 : phrase qui deviendrait fausse avec les journaux du serveur.
+      assert.doesNotMatch(t, /ne collecte aucune donnée personnelle/);
+    });
+
+    it("phrases d'avant la mise en ligne : seulement sous l'hébergeur prévu, marquées pour check-dist (WR-03)", () => {
+      const a = analyserHtml(html(chemin));
+      const marques = trouver(a, (n) => n.attrs['data-hebergeur'] === 'prevu').map((n) => norm(texte(n))).join(' | ');
+      const phrases = ["n'est pas mise en ligne", 'relues par un juriste', "aucun serveur de l'éditeur"];
+      const t = vu(chemin);
+      for (const p of phrases) {
+        if (heb.statut === 'prevu') assert.ok(marques.includes(p), `« ${p} » hors d'un élément data-hebergeur="prevu"`);
+        else assert.ok(!t.includes(p), `« ${p} » affiché avec un hébergeur actif`);
+      }
+      const prevus = checkDist(build('production').outDir, { mode: 'production', deploiement: true }).filter((c) => c.code === 'HEBERGEUR_PREVU');
+      if (heb.statut === 'prevu') assert.ok(prevus.some((c) => c.fichier === chemin && c.severite === 'erreur'), JSON.stringify(prevus));
+      else assert.deepEqual(prevus, []);
     });
 
     it('lien mailto vers le contact, aucun lien tel:, un seul h1', () => {

@@ -249,6 +249,16 @@ describe('checkDist : ressources tierces, scripts et styles', () => {
     assert.deepEqual(checkDist(bon, { mode: 'production', deploiement: true }), []);
   });
 
+  it('HEBERGEUR_PREVU (WR-03) : avertissement par défaut, erreur quand deploiement est vrai, une fois par page', () => {
+    const corps = '<p data-hebergeur="prevu">Pas en ligne.</p><p data-hebergeur="prevu">Relu avant la mise en ligne.</p>';
+    const dist = ecrireDist(distPropre({ 'index.html': page({ corps }) }));
+    assert.deepEqual(checkDist(dist, { mode: 'production' }).map((c) => [c.code, c.severite]), [['HEBERGEUR_PREVU', 'avertissement']]);
+    assert.deepEqual(checkDist(dist, { mode: 'production', deploiement: true }).map((c) => [c.code, c.severite]), [['HEBERGEUR_PREVU', 'erreur']]);
+    // Un hébergeur actif (aucun marqueur) ne déclenche rien, même au déploiement ; un autre statut non plus.
+    const actif = ecrireDist(distPropre({ 'index.html': page({ corps: '<p data-hebergeur="actif">Hébergeur.</p>' }) }));
+    assert.deepEqual(checkDist(actif, { mode: 'production', deploiement: true }), []);
+  });
+
   it('WR-05 : liste blanche de schémas de lien (data:, vbscript:, ftp:, file:, blob:, tel:) et contrôles C0 ignorés par le navigateur', () => {
     for (const href of ['data:text/html,x', 'vbscript:x', 'ftp://x.exemple.invalid/', 'file:///etc/passwd', 'blob:https://x', 'tel:+33123456789', '\u0001javascript:alert(1)', ' \u0000data:text/html,x']) {
       exactement('LIEN_EXTERNE_NON_PROTEGE', { 'index.html': page({ corps: `<a href="${href}">x</a>` }) });

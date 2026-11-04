@@ -46,6 +46,7 @@ export const CODES_CHECK_DIST = [
   'MARQUEUR_RESIDUEL',
   'DIST_VIDE',
   'CONTACT_PROVISOIRE',
+  'HEBERGEUR_PREVU',
   'META_REFRESH',
   'BASE_INTERDITE',
 ] as const;
@@ -63,7 +64,10 @@ export interface OptionsCheckDist {
   mode: Mode;
   /** Nombre de cellules attendu par thème visible (sans elle, CELLULES_INCOHERENTES et THEME_INATTENDU sont inactifs). */
   cellulesParTheme?: ReadonlyMap<string, number> | Readonly<Record<string, number>>;
-  /** Vrai pour un contrôle avant déploiement (RTP_DEPLOIEMENT=1) : un contact `.invalid` devient une erreur, sinon un avertissement. */
+  /**
+   * Vrai pour un contrôle avant déploiement (RTP_DEPLOIEMENT=1) : un contact `.invalid` (CONTACT_PROVISOIRE) et
+   * une page qui annonce un hébergeur seulement prévu (HEBERGEUR_PREVU) deviennent des erreurs, sinon des avertissements.
+   */
   deploiement?: boolean;
 }
 
@@ -324,6 +328,16 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
       const src = n.attrs.src;
       if (src === undefined || estAbsolue(src) || nettoyerUrl(src) === '') continue;
       if (cible(rel, src) === undefined) signaler('LIEN_INTERNE_CASSE', rel, `<${n.tag} src> introuvable dans le dist : ${nettoyerUrl(src).slice(0, 80)}`);
+    }
+
+    // hébergeur seulement prévu (WR-03) : Méthode et Mentions légales marquent leur texte d'avant la mise en ligne
+    if (tous.some((n) => n.attrs['data-hebergeur'] === 'prevu')) {
+      signaler(
+        'HEBERGEUR_PREVU',
+        rel,
+        'hébergeur « prévu » (config/hebergeur.yml) : la page dit que le site n\'est pas en ligne ; passer statut à actif avant de déployer',
+        opts.deploiement === true ? 'erreur' : 'avertissement',
+      );
     }
 
     // ids uniques

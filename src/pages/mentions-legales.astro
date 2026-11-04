@@ -36,7 +36,7 @@ const site = loadSiteConfig();
 
     <h2>Hébergement</h2>
     {heb.statut === 'prevu' && (
-      <p>Cette version de test n'est pas mise en ligne : elle est remise sous forme de fichiers aux personnes qui relisent le projet. L'hébergement sur le serveur d'Hetzner est prévu à la mise en ligne.</p>
+      <p data-hebergeur="prevu">Cette version de test n'est pas mise en ligne : elle est remise sous forme de fichiers aux personnes qui relisent le projet. L'hébergement sur le serveur d'Hetzner est prévu à la mise en ligne.</p>
     )}
     <p>
       {heb.statut === 'prevu' ? 'Hébergeur prévu : ' : 'Hébergeur : '}{heb.nom}, {heb.adresse}, {heb.pays}. Téléphone : {heb.telephone}. Registre : {heb.registre}.
@@ -60,7 +60,12 @@ const site = loadSiteConfig();
 
     <h2>Données personnelles</h2>
     <ul>
-      <li>Ce site ne collecte aucune donnée personnelle, ne dépose aucun cookie, n'appelle aucun script extérieur et n'enregistre aucune statistique de visite.</li>
+      <li>Ce site ne dépose aucun cookie, n'appelle aucun script extérieur, n'enregistre aucune statistique de visite et ne vous demande aucune donnée personnelle.</li>
+      {heb.statut === 'prevu' ? (
+        <li data-hebergeur="prevu">Cette version de test n'est pas en ligne : aucun serveur de l'éditeur ne reçoit vos visites.</li>
+      ) : (
+        <li>Comme tout serveur web, le serveur qui héberge ce site reçoit l'adresse IP de votre appareil pour lui envoyer les pages demandées.</li>
+      )}
       <li>
         Deux réglages de présentation sont mémorisés dans le stockage local de votre navigateur, seulement si vous les modifiez :
         <code>{CLES_STOCKAGE.niveau.cle}</code> (valeurs possibles : {CLES_STOCKAGE.niveau.valeurs.map((v, i) => (<>{i > 0 ? ', ' : ''}<code>{v}</code></>))})
@@ -74,7 +79,11 @@ const site = loadSiteConfig();
       Ces réglages relèvent des traceurs de personnalisation de l'interface, exemptés de consentement par la CNIL lorsqu'ils sont un élément intrinsèque et attendu du service (<a href="https://www.cnil.fr/fr/cookies-et-autres-traceurs/regles/cookies/que-dit-la-loi" rel="noopener noreferrer">règles de la CNIL</a>).
     </p>
 
-    <h2>Relecture</h2>
-    <p>Ces mentions seront relues par un juriste avant la mise en ligne.</p>
+    {heb.statut === 'prevu' && (
+      <>
+        <h2>Relecture</h2>
+        <p data-hebergeur="prevu">Ces mentions seront relues par un juriste avant la mise en ligne.</p>
+      </>
+    )}
   </main>
 </Base>
