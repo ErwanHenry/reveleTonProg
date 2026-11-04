@@ -1532,45 +1532,45 @@ candidats:
         niveau: fort
         note: "page thème « Pour le peuple et par le peuple » (12 mesures : référendum sur toute la matière législative, dernier mot au peuple quand une loi est censurée, seuil du référendum d’initiative partagée) et manifeste du peuple souverain (20 pages)"
   - id: erwan-rohou
-    acces: bloque
-    urls_bloquees:
-      - https://www.les-ecologistes-mei.org/notre-programme
-    sources: []
+    acces: ok
+    urls_bloquees: []
+    sources:
+      - erwan-rohou-programme-mei
     urls_consultees:
-      - "https://www.les-ecologistes-mei.org/notre-programme (programme du Mouvement écologiste indépendant, 39 propositions numérotées, lu en direct le 2026-11-03 ; non archivé : le pied de page publie l’adresse postale, un numéro de téléphone mobile et des adresses de messagerie de particuliers, ce que le protocole §8 étape 4 interdit de conserver ; page non datée, le plan du site indique une dernière modification le 2026-10-11)"
+      - "https://www.les-ecologistes-mei.org/notre-programme (programme du Mouvement écologiste indépendant, 39 propositions numérotées, lu en direct le 2026-11-03 ; archivé après saisie manuelle expurgée du pied de page, qui publie l’adresse postale, un numéro de téléphone mobile et des adresses de messagerie de particuliers : protocole §8 étape 4 ; la copie en ligne n’est pas soumise à Wayback pour la même raison ; page non datée, le plan du site indique une dernière modification le 2026-10-11)"
       - "https://www.les-ecologistes-mei.org/ (accueil du mouvement : interview vidéo d’Erwan Rohou, candidat du mouvement en 2027, vidéo non lisible automatiquement)"
       - https://www.les-ecologistes-mei.org/informations (HTTP 404)
     cellules:
       logement:
-        niveau: inaccessible
-        note: "programme du mouvement lu en direct mais non archivable (données personnelles de particuliers dans le pied de page) : capture manuelle expurgée à demander, https://www.les-ecologistes-mei.org/notre-programme"
+        niveau: fort
+        note: "proposition 6 (logement parmi les quatre égalités fondamentales) et section « Dans le domaine de l’habitat » : propositions 22 à 25 (performance énergétique des constructions, bâtiments publics, habitat groupé dans les bourgs, déductions fiscales pour l’isolation), plus de 3 énoncés"
       ecole:
-        niveau: inaccessible
-        note: "programme du mouvement lu en direct mais non archivable (données personnelles de particuliers dans le pied de page) : capture manuelle expurgée à demander, https://www.les-ecologistes-mei.org/notre-programme"
+        niveau: partiel
+        note: "propositions 6 (accès à l’école, principe d’égalité) et 9 (introduction précoce des grands philosophes à l’école) ; 2 énoncés"
       retraites:
-        niveau: inaccessible
-        note: "programme du mouvement lu en direct mais non archivable (données personnelles de particuliers dans le pied de page) : capture manuelle expurgée à demander, https://www.les-ecologistes-mei.org/notre-programme"
+        niveau: fort
+        note: "section dédiée « Financer les retraites sans croissance démographique et sans importation de main-d’œuvre » : refus de l’importation de main-d’œuvre et de la natalité, répartition maintenue, proposition 16 (annuités ajustées pour l’équilibre financier, départ avant le taux plein possible)"
       sante:
-        niveau: inaccessible
-        note: "programme du mouvement lu en direct mais non archivable (données personnelles de particuliers dans le pied de page) : capture manuelle expurgée à demander, https://www.les-ecologistes-mei.org/notre-programme"
+        niveau: partiel
+        note: "proposition 6 (accès aux soins parmi les quatre égalités fondamentales) ; un seul énoncé de principe, aucune mesure de santé"
       securite:
-        niveau: inaccessible
-        note: "programme du mouvement lu en direct mais non archivable (données personnelles de particuliers dans le pied de page) : capture manuelle expurgée à demander, https://www.les-ecologistes-mei.org/notre-programme"
+        niveau: partiel
+        note: "propositions 32 (défense européenne autonome) et 33 (dévulnérabiliser le territoire, vivre en autarcie en cas de conflit) ; défense seulement, aucune position sur la police ni la justice"
       climat:
-        niveau: inaccessible
-        note: "programme du mouvement lu en direct mais non archivable (données personnelles de particuliers dans le pied de page) : capture manuelle expurgée à demander, https://www.les-ecologistes-mei.org/notre-programme"
+        niveau: fort
+        note: "programme centré sur le climat : section « Se rendre indépendant des énergies fossiles » (points a à k), propositions 17 à 21 (transports), 26 à 29 (zéro artificialisation nette), plus de 3 énoncés"
       travail:
-        niveau: inaccessible
-        note: "programme du mouvement lu en direct mais non archivable (données personnelles de particuliers dans le pied de page) : capture manuelle expurgée à demander, https://www.les-ecologistes-mei.org/notre-programme"
+        niveau: fort
+        note: "section dédiée « Assurer le plein emploi sans croissance » : propositions 1 à 4 (relocalisation, aide aux TPE et PME, crédit formation d’un an, service civil de proximité)"
       impots:
-        niveau: inaccessible
-        note: "programme du mouvement lu en direct mais non archivable (données personnelles de particuliers dans le pied de page) : capture manuelle expurgée à demander, https://www.les-ecologistes-mei.org/notre-programme"
+        niveau: partiel
+        note: "propositions 22 et 25 (matériaux favorisés fiscalement, déductions fiscales pour l’isolation amplifiées) et 7 (revenus imposables consultables sur Internet) ; 2 énoncés fiscaux et un de transparence, pas de mesure sur l’impôt lui-même"
       europe-et-monde:
-        niveau: inaccessible
-        note: "programme du mouvement lu en direct mais non archivable (données personnelles de particuliers dans le pied de page) : capture manuelle expurgée à demander, https://www.les-ecologistes-mei.org/notre-programme"
+        niveau: fort
+        note: "sections « La paix par la prévention des sources de conflit » et « La nécessité d’une gouvernance mondiale et le respect du droit » : propositions 30 (siège de l’ONU à Oslo), 31 (droit international), 32 (défense européenne), 34 (relance de la construction européenne), plus de 3 énoncés"
       institutions:
-        niveau: inaccessible
-        note: "programme du mouvement lu en direct mais non archivable (données personnelles de particuliers dans le pied de page) : capture manuelle expurgée à demander, https://www.les-ecologistes-mei.org/notre-programme"
+        niveau: fort
+        note: "section dédiée « La démocratie pour construire le compromis » : propositions 35 (proportionnelle à 5 %), 36 (septennat), 37 (référendum d’initiative populaire), 38 et 39, plus de 3 énoncés"
   - id: fabien-roussel
     acces: ok
     urls_bloquees: []

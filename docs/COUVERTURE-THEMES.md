@@ -21,7 +21,7 @@ Ce document explique comment les trois thèmes pilotes du site ont été choisis
 | — | inaccessible | un document existe mais ne peut pas être lu automatiquement (refus HTTP 403, page rendue côté navigateur) |
 
 6. **Accès par candidat.** `ok` : tout ce qui a été trouvé a été lu. `partiel` : au moins un document a été lu, un autre est inaccessible ; les cases sont classées d’après ce qui a été lu et la note le dit. `bloque` : rien n’a pu être lu. `aucun_site` : aucun document de programme n’existe.
-7. **Sur 37 candidats** : 26 en accès `ok`, 3 en `partiel`, 1 en `bloque`, 7 en `aucun_site`.
+7. **Sur 37 candidats** : 27 en accès `ok`, 3 en `partiel`, 0 en `bloque`, 7 en `aucun_site`.
 
 ## Limites
 
@@ -73,7 +73,7 @@ Thèmes dans l’ordre du cahier des charges : Lo Logement, Éc École, Re Retra
 | 30 | Gilles Platret | aucun site | × | × | × | × | × | × | × | × | × | × |
 | 31 | Natacha Polony | ok | ○ | ◐ | ○ | ◐ | ○ | ◐ | ◐ | ○ | ◐ | ◐ |
 | 32 | Bruno Retailleau | ok | ● | ● | ● | ● | ● | ● | ● | ● | ● | ● |
-| 33 | Erwan Rohou | bloqué | — | — | — | — | — | — | — | — | — | — |
+| 33 | Erwan Rohou | ok | ● | ◐ | ● | ◐ | ◐ | ● | ● | ◐ | ● | ● |
 | 34 | Fabien Roussel | ok | ● | ● | ● | ● | ● | ● | ● | ● | ● | ◐ |
 | 35 | François Ruffin | ok | ● | ● | ◐ | ◐ | ◐ | ● | ● | ● | ● | ● |
 | 36 | Marine Tondelier | partiel | ● | ● | ◐ | ● | ● | ● | ● | ● | ● | ◐ |
@@ -85,18 +85,18 @@ Une **position** est une case « fort » ou « partiel » ; « silence », « au
 
 | Rang | Thème | Positions | ● | ◐ | ○ | × | — | Thème Aîné prioritaire |
 |---:|---|---:|---:|---:|---:|---:|---:|:-:|
-| 1 | Travail (`travail`) | 26 | 20 | 6 | 3 | 7 | 1 |  |
-| 2 | Europe et monde (`europe-et-monde`) | 26 | 20 | 6 | 3 | 7 | 1 |  |
-| 3 | Santé (`sante`) | 26 | 15 | 11 | 3 | 7 | 1 | oui |
-| 4 | Institutions (`institutions`) | 25 | 21 | 4 | 4 | 7 | 1 |  |
-| 5 | École (`ecole`) | 25 | 17 | 8 | 4 | 7 | 1 |  |
-| 6 | Climat (`climat`) | 24 | 17 | 7 | 5 | 7 | 1 |  |
-| 7 | Sécurité (`securite`) | 23 | 19 | 4 | 6 | 7 | 1 |  |
-| 8 | Impôts (`impots`) | 22 | 19 | 3 | 7 | 7 | 1 |  |
-| 9 | Logement (`logement`) | 21 | 12 | 9 | 8 | 7 | 1 | oui |
-| 10 | Retraites (`retraites`) | 20 | 12 | 8 | 9 | 7 | 1 | oui |
+| 1 | Travail (`travail`) | 27 | 21 | 6 | 3 | 7 | 0 |  |
+| 2 | Europe et monde (`europe-et-monde`) | 27 | 21 | 6 | 3 | 7 | 0 |  |
+| 3 | Santé (`sante`) | 27 | 15 | 12 | 3 | 7 | 0 | oui |
+| 4 | Institutions (`institutions`) | 26 | 22 | 4 | 4 | 7 | 0 |  |
+| 5 | École (`ecole`) | 26 | 17 | 9 | 4 | 7 | 0 |  |
+| 6 | Climat (`climat`) | 25 | 18 | 7 | 5 | 7 | 0 |  |
+| 7 | Sécurité (`securite`) | 24 | 19 | 5 | 6 | 7 | 0 |  |
+| 8 | Impôts (`impots`) | 23 | 19 | 4 | 7 | 7 | 0 |  |
+| 9 | Logement (`logement`) | 22 | 13 | 9 | 8 | 7 | 0 | oui |
+| 10 | Retraites (`retraites`) | 21 | 13 | 8 | 9 | 7 | 0 | oui |
 
-Les dix thèmes sont séparés par 6 position(s) seulement (de 20 à 26 sur 37 candidats) ; 8 candidats sur 37 n’ont aucun document lisible (accès « bloqué » ou « aucun site »), donc aucune position sur aucun des 10 thèmes. L’ordre fin du classement est donc dans la marge d’erreur de la mesure, d’où la règle ci-dessous.
+Les dix thèmes sont séparés par 6 position(s) seulement (de 21 à 27 sur 37 candidats) ; 7 candidats sur 37 n’ont aucun document lisible (accès « aucun site »), donc aucune position sur aucun des 10 thèmes. L’ordre fin du classement est donc dans la marge d’erreur de la mesure, d’où la règle ci-dessous.
 
 ## Règle de choix des trois thèmes
 
@@ -138,14 +138,12 @@ Adresses restant dans `urls_bloquees` pour les candidats en accès « bloqué »
   - https://generationecologie.fr/ (HTTP 403)
 - **Jean-Luc Mélenchon** (partiel) :
   - https://melenchon2027.fr/programme2025/livre/ (redirige vers l’accueil, le livre n’est pas en ligne)
-- **Erwan Rohou** (bloqué) :
-  - https://www.les-ecologistes-mei.org/notre-programme
 - **Marine Tondelier** (partiel) :
   - https://lesecologistes.fr/document/3N4JsAEmq6vsx42IITGNZa/vdef-programme-1.pdf (programme complet de 557 mesures, HTTP 403 à l’outil ; téléchargement dans un navigateur à autoriser par Erwan)
 
 **Sylvain Durif** n’est plus bloqué : la page https://durif2027.com/le-projet, affichée dans un navigateur réel le 2026-11-03, ne montre qu’un communiqué « CAMPAGNE DU MINISTÈRE DU CRINGE SUSPENDUE … jusqu’à nouvel ordre cosmique » et aucun programme ; ses dix cases sont « aucun » (accès `aucun_site`).
 
-Cas particulier : la page de programme du Mouvement écologiste indépendant (Erwan Rohou) est lisible mais n’est pas conservée dans le dépôt, car son pied de page publie l’adresse, le téléphone mobile et des adresses de messagerie de particuliers. Une capture expurgée est demandée ; en attendant, les dix cases sont « inaccessibles » et non « aucun », puisqu’un programme existe.
+Cas particulier : la page de programme du Mouvement écologiste indépendant (Erwan Rohou) est lisible, mais son pied de page publie l’adresse, le téléphone mobile et des adresses de messagerie de particuliers. Le dépôt n’en conserve qu’une capture manuelle expurgée de ce pied de page (`erwan-rohou-programme-mei`), et la page en ligne n’est pas soumise à Wayback. L’accès est donc `ok` et les dix cases sont classées d’après cette capture.
 
 ## Choix des mesures quand un thème est publié
 
