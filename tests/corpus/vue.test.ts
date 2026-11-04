@@ -15,6 +15,7 @@ import {
   formatDate,
   phraseCouverture,
   statutAffiche,
+  themesLivres,
 } from '../../src/lib/corpus/vue.ts';
 import type { Candidat } from '../../src/lib/corpus/types.ts';
 import { TRAPPE_BROUILLON, materialiserCorpusM1, nettoyerCorpusM1 } from '../helpers/corpus-m1.ts';
@@ -301,5 +302,25 @@ describe('WR-01 : périmètre et statut affiché partagent la même définition 
     const prod = construireCorpus(b, 'production').candidat('luc-retire');
     assert.equal(prod.perimetre, false);
     assert.equal(prod.statutAffiche?.code, 'renonce');
+  });
+});
+
+describe('W1 : « (livré) » sur Méthode suit les thèmes visibles du build', () => {
+  const livres = ['logement', 'ecole', 'sante'];
+
+  it('production : seuls les thèmes publiés (ecole est relu, sante absent)', () => {
+    assert.deepEqual(themesLivres(livres, construireCorpus(brut, 'production')), ['logement']);
+  });
+
+  it('preview : tous les thèmes présents dans le contenu', () => {
+    assert.deepEqual(themesLivres(livres, construireCorpus(brut, 'preview')), ['logement', 'ecole']);
+  });
+
+  it('production sans thème publié : aucun thème livré', () => {
+    const b = copie();
+    for (const t of b.themes) t.statut_relecture = 'brouillon';
+    b.mesures = [];
+    b.couverture = [];
+    assert.deepEqual(themesLivres(livres, construireCorpus(b, 'production')), []);
   });
 });

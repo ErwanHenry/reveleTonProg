@@ -224,6 +224,15 @@ export function statutAffiche(c: Candidat, mode: Mode): StatutEntree | null {
   return (statutRetenu(c.statuts, mode) as unknown as StatutEntree | undefined) ?? null;
 }
 
+/**
+ * Thèmes pilotes à marquer « livré » sur la page Méthode : ceux de `livres` qui sont visibles dans ce build.
+ * En production, un thème livré mais pas encore publié n'est pas annoncé comme livré (W1).
+ */
+export function themesLivres(livres: readonly string[], corpus: Pick<Corpus, 'themes'>): string[] {
+  const visibles = new Set(corpus.themes.map((t) => t.theme.id));
+  return livres.filter((id) => visibles.has(id));
+}
+
 function badgeDe(statut: StatutRelecture): string | null {
   return statut === 'publie' ? null : BADGES[statut];
 }

@@ -3,7 +3,7 @@ import Base from '../layouts/Base.astro';
 import couvertureBrute from '../../data/couverture-themes.yaml?raw';
 import schemaSource from '../../schemas/source.schema.json';
 import { classer, lireCouverture, MARGE_EGALITE, THEMES_SPEC } from '../../scripts/lib/couverture.ts';
-import { formatDate, ETAT_VIDE_TEXTES, LIBELLES_NIVEAUX, LIBELLES_STATUT } from '../lib/corpus/index.ts';
+import { formatDate, getCorpus, themesLivres, ETAT_VIDE_TEXTES, LIBELLES_NIVEAUX, LIBELLES_STATUT } from '../lib/corpus/index.ts';
 import {
   ARCHIVE_TAILLE_MAX, CATALOGUE, HYPOTHESES, KANDEL_MOLES, LONGUEURS, MOTS_INTERDITS, PERIMETRE_EQUITE,
   PHRASE_ENFANT_MAX, SEUIL_KANDEL_MOLES, VERBES_CONNOTES,
@@ -44,7 +44,8 @@ const LIBELLES_TYPE_SOURCE: Record<string, string> = {
 };
 const typesSource = ((schemaSource as { properties: { type: { enum: string[] } } }).properties.type.enum).map((t) => LIBELLES_TYPE_SOURCE[t] ?? t);
 const pilotes = couverture.pilote.themes;
-const livres = couverture.pilote.livres;
+// « (livré) » seulement pour un thème visible dans ce build : rien en production tant qu'aucun thème n'est publié (W1).
+const livres = themesLivres(couverture.pilote.livres, await getCorpus());
 // L'hypothèse sur le glossaire cite la syntaxe des marqueurs ; le contrôle du dist refuse « [[ » dans le
 // texte visible (marqueur non résolu). On espace les crochets à l'affichage, le texte source reste intact.
 const sansMarqueur = (t: string): string => t.replaceAll('[[', '[ [').replaceAll(']]', '] ]');
@@ -126,7 +127,7 @@ const SEV: Record<string, string> = { erreur: 'erreur', avertissement: 'avertiss
     </ul>
     <p>Mesure du <time datetime={couverture.mesure_le}>{formatDate(couverture.mesure_le)}</time>. Thèmes pilotes retenus :</p>
     <ul data-pilotes>
-      {pilotes.map((id) => <li>{nomTheme(id)}{livres.includes(id) ? ' (livré)' : ''}</li>)}
+      {pilotes.map((id) => <li data-pilote={id}>{nomTheme(id)}{livres.includes(id) ? ' (livré)' : ''}</li>)}
     </ul>
     <p>Ce relevé sert seulement à choisir les thèmes. À la rédaction, une position qui n'est qu'un énoncé de principe, sans engagement concret, est affichée « Non précisé dans les sources consultées » : le nombre de positions publiées sur une page thème peut donc être plus bas que celui du tableau.</p>
     <div class="defile" tabindex="0" role="region" aria-label="Classement des thèmes par couverture">

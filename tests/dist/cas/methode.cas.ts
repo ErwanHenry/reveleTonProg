@@ -102,6 +102,13 @@ export default function methode(ctx: ContexteSite): void {
       const pil = txt(unique(a, 'data-pilotes'));
       const attendus = lu.data.pilote.themes.length > 0 ? lu.data.pilote.themes : res.choix;
       for (const c of attendus) assert.ok(pil.includes(nom(c)), c);
+      // W1 : « (livré) » seulement pour un thème pilote visible dans ce build (fixture : aucun thème pilote publié).
+      const visibles = new Set(trouver(analyserHtml(ctx.lire(build().outDir, 'themes/index.html')), (n) => n.tag === 'li' && n.attrs['data-theme'] !== undefined).map((n) => n.attrs['data-theme']));
+      for (const li of trouver(unique(a, 'data-pilotes'), (n) => n.tag === 'li')) {
+        const id = li.attrs['data-pilote'] ?? '';
+        const attendu = lu.data.pilote.livres.includes(id) && visibles.has(id);
+        assert.equal(txt(li).endsWith('(livré)'), attendu, `${id} : « (livré) » ${attendu ? 'attendu' : 'inattendu'} (thèmes visibles : ${[...visibles].join(', ')})`);
+      }
       const marge = txt(unique(a, 'data-regle', 'marge'));
       assert.ok(marge.includes(String(MARGE_EGALITE)));
       // IN-01 : même règle que classer() : retenu d'office à P4 + marge ou plus, égalité dans la bande du meilleur restant.
