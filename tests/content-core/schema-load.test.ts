@@ -22,8 +22,8 @@ after(() => {
 });
 
 function cli(script: string, args: string[]): { status: number | null; stdout: string; stderr: string } {
-  const env = { ...process.env };
-  delete env.RTP_CONTENT_ROOT;
+  // Depuis la Phase 3 le défaut est le vrai corpus : la fixture est explicite.
+  const env = { ...process.env, RTP_CONTENT_ROOT: path.join(REPO_ROOT, 'tests', 'fixtures', 'corpus-valide') };
   const res = spawnSync(process.execPath, [script, ...args], { cwd: REPO_ROOT, encoding: 'utf8', env });
   return { status: res.status, stdout: res.stdout, stderr: res.stderr };
 }

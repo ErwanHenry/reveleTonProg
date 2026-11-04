@@ -140,8 +140,11 @@ function cli(args: string[]): { status: number | null; stdout: string; stderr: s
 const candidat = (root: string, id: string): string => path.join(root, 'src', 'content', 'candidats', `${id}.yaml`);
 
 describe('npm run ids (scripts/ids.ts)', () => {
-  it('--check réussit sur le corpus fictif par défaut et sur la racine réelle', () => {
-    const fixture = cli(['--check']);
+  it('--check réussit sur la fixture explicite, sur la racine réelle et sans option (défaut réel)', () => {
+    const sansOption = cli(['--check']);
+    assert.equal(sansOption.status, 0, sansOption.stdout + sansOption.stderr);
+    assert.match(sansOption.stdout, /ids : (\d+) candidat\(s\), \1 verrouillé\(s\), 0 problème\(s\) — racine \./);
+    const fixture = cli(['--check', '--root', FIXTURE_ROOT]);
     assert.equal(fixture.status, 0, fixture.stdout + fixture.stderr);
     assert.match(fixture.stdout, /ids : 2 candidat\(s\), 2 verrouillé\(s\), 0 problème\(s\)/);
     const reel = cli(['--check', '--root', '.']);

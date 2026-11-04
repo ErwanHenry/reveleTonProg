@@ -8,7 +8,7 @@ import { ModeInvalideError, resolveContentRoot, resolveMode, schemasDirOf } from
 
 const USAGE = `Usage : npm run validate -- [--root <dossier>] [--schemas <dossier>] [--format text|github] [--mode preview|production]
 
-  --root <dossier>        racine du contenu (défaut : RTP_CONTENT_ROOT, sinon le corpus fictif de test)
+  --root <dossier>        racine du contenu (défaut : RTP_CONTENT_ROOT, sinon le vrai corpus « . »)
   --schemas <dossier>     dossier des schémas (défaut : schemas/)
   --format text|github    text (défaut) ou annotations GitHub Actions (10 erreurs au plus annotées)
   --mode preview|production  mode de validation (défaut : RTP_MODE, sinon production ; la CI force production)

@@ -10,7 +10,7 @@ import { cellulesAttendues, checkDist } from './lib/check-dist.ts';
 const USAGE = `Usage : node scripts/check-dist.ts [--dist <dossier>] [--root <dossier>] [--mode preview|production] [--format text|github]
 
   --dist <dossier>        dossier construit par « astro build » (défaut : dist/)
-  --root <dossier>        racine du contenu, pour le nombre de cellules attendu (défaut : RTP_CONTENT_ROOT, sinon le corpus fictif de test)
+  --root <dossier>        racine du contenu, pour le nombre de cellules attendu (défaut : RTP_CONTENT_ROOT, sinon le vrai corpus « . »)
   --mode preview|production  mode du build contrôlé (défaut : RTP_MODE, sinon production)
   --format text|github    text (défaut) ou annotations GitHub Actions en plus
   RTP_DEPLOIEMENT=1 (job de déploiement) : un contact provisoire (.invalid) devient une erreur au lieu d'un avertissement.

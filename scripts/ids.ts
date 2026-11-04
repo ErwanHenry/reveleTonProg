@@ -15,7 +15,7 @@ const USAGE = `Usage : npm run ids -- (--check [--base <fichier>] | --write) [--
   --base <fichier> avec --check : ids.lock du commit de base ; tout identifiant qu'il verrouille
                    et que le ids.lock courant ne contient plus est refusé (ajout seul, REGLE-07)
   --write          ajoute au verrou les nouveaux identifiants de candidats (jamais de retrait)
-  --root <dossier> racine du contenu (défaut : RTP_CONTENT_ROOT, sinon le corpus fictif de test)
+  --root <dossier> racine du contenu (défaut : RTP_CONTENT_ROOT, sinon le vrai corpus « . »)
 `;
 
 function usageError(message: string): never {

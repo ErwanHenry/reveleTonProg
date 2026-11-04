@@ -74,9 +74,9 @@ describe('parité du loader Astro avec content-core', () => {
   it('stocke les mêmes ids et les mêmes données que loadAll, dates en chaînes', async () => {
     const messages: string[] = [];
     const { ctx, map } = makeContext(messages);
-    await withEnv(undefined, () => contentCoreLoader('candidats').load(ctx as unknown as Ctx));
+    await withEnv(FIXTURE_ROOT, () => contentCoreLoader('candidats').load(ctx as unknown as Ctx));
 
-    const res = loadAll(resolveContentRoot(REPO_ROOT, {}), { schemasDir: schemasDirOf(REPO_ROOT) });
+    const res = loadAll(resolveContentRoot(REPO_ROOT, { RTP_CONTENT_ROOT: FIXTURE_ROOT }), { schemasDir: schemasDirOf(REPO_ROOT) });
     const expected = res.entries.filter((e) => e.collection === 'candidats');
     assert.ok(expected.length >= 1, 'la fixture doit contenir au moins un candidat');
     assert.deepEqual([...map.keys()].sort(), expected.map((e) => e.id).sort());

@@ -13,7 +13,7 @@ const USAGE = `Usage : npm run migrate -- (--check | --write) [--root <dossier>]
 
   --check               signale tout fichier dont version_schema est en retard (lecture seule, code 1 si oui)
   --write               applique les migrations enregistrées, puis revalide le contenu
-  --root <dossier>      racine du contenu (défaut : RTP_CONTENT_ROOT, sinon le corpus fictif de test)
+  --root <dossier>      racine du contenu (défaut : RTP_CONTENT_ROOT, sinon le vrai corpus « . »)
   --schemas <dossier>   dossier des schémas (défaut : schemas/)
   --format text|github  text (défaut) ou annotations GitHub Actions (10 erreurs au plus annotées)
 `;

@@ -23,7 +23,15 @@ after(() => {
   nettoyerRacines();
 });
 
+// Depuis la Phase 3 la racine par défaut est le vrai corpus : la fixture fictive est désignée
+// explicitement ici. `cliReel` n'en désigne aucune (défaut réel).
 function cli(args: string[], env: NodeJS.ProcessEnv = {}): { status: number | null; stdout: string; stderr: string } {
+  return lancer(args, { RTP_CONTENT_ROOT: FIXTURE_ROOT, ...env });
+}
+function cliReel(args: string[], env: NodeJS.ProcessEnv = {}): { status: number | null; stdout: string; stderr: string } {
+  return lancer(args, env);
+}
+function lancer(args: string[], env: NodeJS.ProcessEnv): { status: number | null; stdout: string; stderr: string } {
   const base = { ...process.env };
   delete base.RTP_CONTENT_ROOT;
   const res = spawnSync(process.execPath, ['scripts/validate.ts', ...args], {
@@ -40,10 +48,19 @@ function candidatsDir(root: string): string {
 }
 
 describe('npm run validate (scripts/validate.ts)', () => {
-  it('sans option : valide le corpus fictif, code 0 et résumé', () => {
+  it('RTP_CONTENT_ROOT vers la fixture : valide le corpus fictif, code 0 et résumé', () => {
     const res = cli([]);
     assert.equal(res.status, 0, res.stdout + res.stderr);
     assert.match(res.stdout, /content-core : \d+ fichier\(s\), 0 erreur\(s\), 0 avertissement\(s\)/);
+  });
+
+  it('sans option : valide le vrai corpus (racine du projet), code 0', () => {
+    const res = cliReel(['--mode', 'preview']);
+    assert.equal(res.status, 0, res.stdout + res.stderr);
+    assert.match(res.stdout, /content-core : \d+ fichier\(s\), 0 erreur\(s\)/);
+    assert.ok(!/corpus-valide/.test(res.stdout), 'ne doit pas viser la fixture');
+    const nb = Number(/content-core : (\d+) fichier/.exec(res.stdout)?.[1]);
+    assert.ok(nb > 10, `le vrai corpus compte bien plus de fichiers que la fixture (${nb})`);
   });
 
   it('un candidat sans statuts : code 1 et fichier:ligne:col SCHEMA_REQUIRED', () => {

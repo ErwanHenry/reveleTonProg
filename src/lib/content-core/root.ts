@@ -1,9 +1,9 @@
 import path from 'node:path';
 import { MODES, MODE_DEFAUT } from './rules/config.ts';
 
-// Jusqu'à la Phase 3, build et validate tournent sur le corpus fictif de test.
-// La valeur passera à '.' quand le vrai contenu arrivera.
-export const DEFAULT_CONTENT_ROOT = 'tests/fixtures/corpus-valide';
+// Racine par défaut : le vrai corpus. La fixture fictive (tests/fixtures/corpus-valide) est
+// toujours désignée explicitement (RTP_CONTENT_ROOT ou --root).
+export const DEFAULT_CONTENT_ROOT = '.';
 
 // Une variable vide équivaut à une variable absente.
 export function resolveContentRoot(projectRoot: string, env: NodeJS.ProcessEnv = process.env): string {

@@ -28,16 +28,29 @@ function v0Copy(): { root: string; file: string } {
   return { root, file };
 }
 
+// Racine par défaut = vrai corpus : la fixture est explicite ici, `cliReel` n'en désigne aucune.
 function cli(args: string[]): { status: number | null; stdout: string; stderr: string } {
-  const env = { ...process.env };
-  delete env.RTP_CONTENT_ROOT;
+  return lancer(args, { RTP_CONTENT_ROOT: FIXTURE_ROOT });
+}
+function cliReel(args: string[]): { status: number | null; stdout: string; stderr: string } {
+  return lancer(args, {});
+}
+function lancer(args: string[], extra: NodeJS.ProcessEnv): { status: number | null; stdout: string; stderr: string } {
+  const env = { ...process.env, ...extra };
+  if (extra.RTP_CONTENT_ROOT === undefined) delete env.RTP_CONTENT_ROOT;
   const res = spawnSync(process.execPath, ['scripts/migrate.ts', ...args], { cwd: REPO_ROOT, encoding: 'utf8', env });
   return { status: res.status, stdout: res.stdout, stderr: res.stderr };
 }
 
 describe('npm run migrate (scripts/migrate.ts)', () => {
-  it('--check sur le corpus par défaut : code 0 et résumé', () => {
+  it('--check sur la fixture désignée par RTP_CONTENT_ROOT : code 0 et résumé', () => {
     const r = cli(['--check']);
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    assert.match(r.stdout, /migrate : \d+ fichier\(s\) à jour, 0 en retard/);
+  });
+
+  it('--check sans option sur le vrai corpus : code 0 et résumé', () => {
+    const r = cliReel(['--check']);
     assert.equal(r.status, 0, r.stdout + r.stderr);
     assert.match(r.stdout, /migrate : \d+ fichier\(s\) à jour, 0 en retard/);
   });
