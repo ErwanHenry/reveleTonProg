@@ -31,7 +31,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Fondations, schémas v1 et content-core** - Dépôt Node 24 + Astro 7 statique, CI durcie, hygiène, schémas JSON 2020-12 et loader/validateur unique (completed 2026-11-03)
 - [x] **Phase 2: Règles éditoriales et pièges** - La CI refuse une mesure sans source et tous les pièges §12 applicables (livrable Lot 1) (completed 2026-11-03)
-- [ ] **Phase 3: Import data.gouv et corpus pilote** - 59 fiches candidats sourcées, outil d'archivage, 3 thèmes pilotes réels en brouillon (parallélisable avec 2 et 4)
+- [x] **Phase 3: Import data.gouv et corpus pilote** - 59 fiches candidats sourcées, outil d'archivage, 3 thèmes pilotes réels en brouillon (parallélisable avec 2 et 4) (completed 2026-11-04)
 - [x] **Phase 4: Référentiel M1 et 4 niveaux de lecture** - Pages thème et candidat, bascule de niveau sans JS, ordre alphabétique/aléatoire, Aîné et Enfant, contrôle post-build (parallélisable avec 2 et 3) (completed 2026-11-03)
 - [ ] **Phase 5: Pages institutionnelles, qualité et URL de test** - Méthode, Mentions légales, Qui sommes-nous, suite a11y/4G, test croisé, preview livrée (livrable Lot 2)
 
@@ -169,7 +169,7 @@ Plans:
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
-- [ ] 03-09-PLAN.md — Bascule `DEFAULT_CONTENT_ROOT` vers `.`, CI explicite sur les deux corpus, libellé honnête du squelette, verrou de phase, documentation et ADR (wave 7)
+- [x] 03-09-PLAN.md — Bascule `DEFAULT_CONTENT_ROOT` vers `.`, CI explicite sur les deux corpus, libellé honnête du squelette, verrou de phase, documentation et ADR (wave 7)
 
 **Note d'exécution**: plans de contenu (03-04, 03-06 à 03-08) = un lot par exécution. Notes de lot dans `03-0X-LOTS.md` (committé à chaque lot), `03-0X-SUMMARY.md` écrit seulement au lot 3. The orchestrator re-dispatches the same plan (fresh executor, task n) until `## BATCH COMPLETE 3/3`; SUMMARY absent before that is expected. Reprise : première tâche dont le « Lot n » manque dans LOTS.md, après contrôle des fichiers orphelins. 03-05 : la réponse d'Erwan sur la règle des thèmes peut être pré-enregistrée dans `03-CONTEXT.md` (`regle_themes`). La Phase 3 démarre après la fusion complète de la Phase 2 (les règles bornent longueurs, citations et chiffres dès le brouillon). Protocole de collecte et de rédaction partagé : `03-REDACTION.md`.
 **Research flag**: oui. Capture de sites de campagne lourds en JS, mécanique du stockage privé des archives, API Save Page Now et reprises, choix des thèmes selon la couverture mesurée.
@@ -307,7 +307,7 @@ Phase 1 ──┬──> Phase 2 (règles) ──────────┐
 |-------|----------------|--------|-----------|
 | 1. Fondations, schémas v1 et content-core | 7/7 | Complete    | 2026-11-03 |
 | 2. Règles éditoriales et pièges | 7/7 | Complete    | 2026-11-03 |
-| 3. Import data.gouv et corpus pilote | 8/9 | In Progress|  |
+| 3. Import data.gouv et corpus pilote | 9/9 | Complete    | 2026-11-04 |
 | 4. Référentiel M1 et 4 niveaux de lecture | 9/9 | Complete    | 2026-11-03 |
 | 5. Pages institutionnelles, qualité et URL de test | 5/8 | In Progress|  |
 

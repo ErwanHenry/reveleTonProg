@@ -17,6 +17,7 @@ Un visiteur choisit un thème et lit, en moins de 3 minutes, la position de chaq
 - ✓ Dépôt Node 24 + Astro 7 statique zéro JS, CI durcie (SHA, gitleaks, Dependabot), schémas JSON 2020-12 v1 pour 8 collections, content-core partagé CLI/Astro, migrations — Validated in Phase 1: Fondations, schémas v1 et content-core (FOND-01..05, DATA-01..08)
 - ✓ Règles éditoriales §5 et pièges §12 en CI (source primaire + archive, mots interdits, longueurs, chiffres et citations vérifiés contre l'archive, lisibilité enfant, ids.lock, équité, sondages et fenêtres légales), annotations fichier/ligne/code — Validated in Phase 2: Règles éditoriales et pièges (REGLE-01..12) — livrable Lot 1
 - ✓ Référentiel M1 : pages thème et candidat statiques, 4 niveaux sans JS mémorisés, ordre alphabétique/aléatoire, Aîné et Enfant (popovers), preview vs production, check-dist en CI — Validated in Phase 4 (M1-01..12, QUAL-01) — prouvé sur corpus fictif, vérifié en navigateur
+- ✓ Corpus pilote réel : 59 fiches importées de data.gouv, outil d'archivage (extrait + sha256, binaires privés, Wayback), couverture mesurée sur 37 déclarés × 10 thèmes, 134 mesures en brouillon sur santé / travail / Europe et monde, glossaire — Validated in Phase 3 (CONT-01..06) ; relecture éditoriale d'Erwan en attente
 
 ### Active
 
@@ -95,4 +96,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-03 after Phase 4*
+*Last updated: 2026-11-03 after Phase 3 (all of 1-4 complete)*
