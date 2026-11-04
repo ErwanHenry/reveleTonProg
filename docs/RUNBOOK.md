@@ -156,7 +156,7 @@ Le livrable du lot 2 est l'artefact `site-preview` du job `verifier` : la build 
 
 1. GitHub, Actions, dernière exécution de `CI` sur `main`, télécharger `site-preview` (zip) et le décompresser.
 2. `node e2e/serveur.ts <dossier> 4173`, ouvrir http://127.0.0.1:4173/.
-3. Pour partager avec un relecteur : lui donner le lien de l'exécution (accès selon la visibilité du dépôt) ou le zip ; au-delà de 14 jours, relancer le workflow.
+3. Pour partager avec un relecteur : lui donner le lien de l'exécution (accès selon la visibilité du dépôt) ou le zip ; au-delà de 14 jours, relancer le workflow. Tant que le dépôt est privé, prévenir le relecteur que les liens vers GitHub (dépôt, signalements, extraits archivés) renvoient une erreur 404 sans accès au dépôt.
 
 En local : `RTP_MODE=preview npm run build -- --outDir dist-preview`, puis la même commande de service.
 
@@ -285,7 +285,8 @@ GitHub Actions → `rsync -az --delete dist/ $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_P
 3. Passer `statut: actif` dans `config/hebergeur.yml`, dans le commit de déploiement. Tant que le statut est `prevu`, un build avec `RTP_DEPLOIEMENT=1` échoue.
 4. Faire relire par un juriste les Mentions légales et l'interprétation de la CNIL sur `localStorage` (hypothèse A2 : réglages d'affichage exemptés de consentement).
 5. Remplacer l'adresse de contact provisoire de `config/site.yml`.
-6. Vérifier au premier run que `actions/upload-artifact` fonctionne avec `permissions: contents: read` (hypothèse A4).
+6. Rendre public le dépôt `ErwanHenry/reveleTonProg` avant le déploiement (il reste privé jusque-là, décision d'Erwan). Tant qu'il est privé, les liens du site vers le dépôt (Qui sommes-nous, « Signaler une erreur (GitHub) », « Extrait archivé ») renvoient une erreur 404 à toute personne sans accès. Contrôle : `gh repo view ErwanHenry/reveleTonProg --json visibility` doit répondre `PUBLIC`.
+7. Vérifier au premier run que `actions/upload-artifact` fonctionne avec `permissions: contents: read` (hypothèse A4).
 
 ## Incidents fréquents
 
