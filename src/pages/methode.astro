@@ -123,6 +123,7 @@ const SEV: Record<string, string> = { erreur: 'erreur', avertissement: 'avertiss
     <ul data-pilotes>
       {pilotes.map((id) => <li>{nomTheme(id)}{livres.includes(id) ? ' (livré)' : ''}</li>)}
     </ul>
+    <p>Ce relevé sert seulement à choisir les thèmes. À la rédaction, une position qui n'est qu'un énoncé de principe, sans engagement concret, est affichée « Non précisé dans les sources consultées » : le nombre de positions publiées sur une page thème peut donc être plus bas que celui du tableau.</p>
     <div class="defile" tabindex="0" role="region" aria-label="Classement des thèmes par couverture">
       <table data-classement>
         <caption>Couverture mesurée par thème, du plus au moins documenté</caption>
