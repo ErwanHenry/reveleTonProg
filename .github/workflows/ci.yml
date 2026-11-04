@@ -37,14 +37,18 @@ jobs:
         run: npm ci
       - name: Vérifier les signatures des paquets
         run: npm audit signatures
-      - name: migrate (corpus par défaut)
+      - name: migrate (corpus fictif)
         run: npm run migrate -- --check
+        env:
+          RTP_CONTENT_ROOT: tests/fixtures/corpus-valide
       - name: migrate (corpus réel)
         run: npm run migrate -- --check
         env:
           RTP_CONTENT_ROOT: "."
-      - name: validate (corpus par défaut, mode production)
+      - name: validate (corpus fictif, mode production)
         run: npm run validate -- --mode production --format github
+        env:
+          RTP_CONTENT_ROOT: tests/fixtures/corpus-valide
       - name: validate (corpus réel, mode production)
         run: npm run validate -- --mode production --format github
         env:
@@ -86,10 +90,14 @@ jobs:
         run: npm run check
       - name: Lancer les tests
         run: npm test
-      - name: Construire le site
+      - name: Construire le site (corpus fictif)
         run: npm run build
-      - name: Contrôler le site construit (poids, tiers, sources datées, cellules, brouillons)
+        env:
+          RTP_CONTENT_ROOT: tests/fixtures/corpus-valide
+      - name: Contrôler le site construit (corpus fictif, poids, tiers, sources datées, cellules, brouillons)
         run: npm run check-dist
+        env:
+          RTP_CONTENT_ROOT: tests/fixtures/corpus-valide
       - name: Construire le site du corpus réel (production)
         run: npm run build -- --outDir dist-reel
         env:

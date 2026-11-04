@@ -147,6 +147,17 @@ describe('ci.yml : job verifier', () => {
     assert.equal(steps[iBuildReel]?.env?.RTP_MODE, undefined);
   });
 
+  it('le corpus fictif est désigné explicitement (la racine par défaut est le vrai corpus)', () => {
+    const FIXTURE = 'tests/fixtures/corpus-valide';
+    const steps = ci.jobs.verifier.steps;
+    const fictif = (cmd: string) => steps.some((s) => s.run?.trim().startsWith(cmd) && s.env?.RTP_CONTENT_ROOT === FIXTURE);
+    for (const cmd of ['npm run migrate -- --check', 'npm run validate -- --mode production', 'npm run build', 'npm run check-dist']) {
+      assert.ok(fictif(cmd), `étape fictive sans RTP_CONTENT_ROOT explicite : ${cmd}`);
+    }
+    assert.ok(!ciRaw.includes('corpus par défaut'), 'plus d’étape « corpus par défaut »');
+    for (const s of steps.filter((x) => x.env?.RTP_CONTENT_ROOT === FIXTURE)) assert.match(s.name ?? '', /corpus fictif/);
+  });
+
   it('valide et migre aussi le corpus réel (RTP_CONTENT_ROOT=.)', () => {
     const real = (cmd: string) =>
       ci.jobs.verifier.steps.some((s) => s.run?.trim().startsWith(cmd) && s.env?.RTP_CONTENT_ROOT === '.');

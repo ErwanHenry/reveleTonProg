@@ -34,6 +34,8 @@ describe('scaffold Node 24', () => {
       migrate: 'node scripts/migrate.ts',
       ids: 'node scripts/ids.ts',
       'import:datagouv': 'node scripts/import-datagouv.ts',
+      archive: 'node scripts/archive-source.ts',
+      couverture: 'node scripts/couverture-scan.ts',
       check: 'astro check',
       test: 'TZ=Europe/Paris node --test "tests/**/*.test.ts"',
       build: 'astro build',
