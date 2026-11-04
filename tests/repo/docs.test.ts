@@ -223,3 +223,27 @@ describe('fichiers annexes', () => {
     assert.ok(editorconfig.includes('indent_size = 2'));
   });
 });
+
+describe('phase 3 : documentation', () => {
+  it('le README décrit la racine réelle par défaut, l’import et l’archive', () => {
+    for (const needle of ['npm run import:datagouv', 'npm run archive', 'RTP_CONTENT_ROOT', 'tests/fixtures/corpus-valide']) {
+      assert.ok(readme.includes(needle), `README doit contenir « ${needle} »`);
+    }
+    assert.ok(/par défaut[^\n]*vrai corpus/i.test(readme), 'README doit dire que le défaut est le vrai corpus');
+  });
+
+  it('le RUNBOOK documente import, couverture, archivage et ouverture de la relecture', () => {
+    for (const needle of ['Importer les statuts data.gouv', 'Mesurer la couverture', 'Archiver une source', 'Ouvrir la relecture', 'relecture_ouverte']) {
+      assert.ok(runbook.includes(needle), `RUNBOOK doit contenir « ${needle} »`);
+    }
+    assert.ok(!runbook.includes('<candidat>-<theme>-<slug>'));
+  });
+
+  it('l’ARCHITECTURE porte les ADR de la phase 3 et le défaut réel dans .env.example', () => {
+    for (const n of ['042', '043', '044', '045', '046']) assert.ok(architecture.includes(`### ADR-${n} :`), `ADR-${n} absent`);
+    assert.ok(architecture.includes('### ADR-042 : racine par défaut = corpus réel, fixture explicite'));
+    assert.ok(/^# RTP_CONTENT_ROOT=tests\/fixtures\/corpus-valide$/m.test(envExample));
+    assert.ok(envExample.includes('RTP_ARCHIVES_DIR'));
+  });
+});
+

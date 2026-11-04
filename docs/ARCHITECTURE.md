@@ -42,6 +42,11 @@ flowchart LR
   B --> CD[scripts/check-dist.ts<br/>poids, tiers, sources datées, cellules]
   V -->|échec = build refusé| B
   B -->|GitHub Actions rsync SSH, lot 3| VPS[Caddy sur VPS Hetzner]
+  IM[data/import/ + scripts/import-datagouv.ts<br/>instantané haché, correspondances] -->|fiches brouillon| C
+  AR[scripts/archive-source.ts<br/>fetch, pdftotext, --file] -->|extrait + sha256| A
+  AR -->|binaire| PR
+  AR -->|corroboration| WB[(Wayback, non bloquant)]
+  CT[data/couverture-themes.yaml<br/>scripts/couverture-scan.ts] -->|3 thèmes pilotes| C
   Cron[collecte cron VPS, lot 5] -->|pull requests brouillon| Repo
   VPS --> U((Visiteurs))
 ```
@@ -204,10 +209,10 @@ Les ADR techniques de la phase 1 (sans D-n) vont de l'ADR-017 à l'ADR-026 ; ceu
 - **Décision** : `source.candidats[]` est requis ; les entrées du journal pointent avec `collection_cible` et `id_cible` (jamais `collection`, mot réservé par Astro).
 - **Conséquence** : le lien source-candidat est vérifiable ; les noms de champs du journal ne heurtent pas le store Astro.
 
-### ADR-025 : racine de contenu par défaut = la fixture
+### ADR-025 : racine de contenu par défaut = la fixture (remplacée par l'ADR-042)
 - **Contexte** : le dépôt n'a aucun contenu réel avant la phase 3, mais `npm run validate && npm test && npm run build` doit fonctionner dès le clonage.
 - **Décision** : `RTP_CONTENT_ROOT` vaut par défaut `tests/fixtures/corpus-valide` (corpus fictif) ; `RTP_CONTENT_ROOT=.` cible le vrai corpus, que la CI valide aussi.
-- **Conséquence** : le défaut change en phase 3, lorsque le vrai corpus devient la racine.
+- **Conséquence** : le défaut change en phase 3, lorsque le vrai corpus devient la racine (voir l'ADR-042, qui garde celui-ci comme historique).
 
 ### ADR-026 : gitleaks en binaire MIT avec somme de contrôle
 - **Contexte** : `gitleaks-action` est sous licence propriétaire depuis la v2.
@@ -301,6 +306,31 @@ Les ADR techniques de la phase 1 (sans D-n) vont de l'ADR-017 à l'ADR-026 ; ceu
 - **Contexte** : la revue de la phase 4 (WR-01, WR-02) a trouvé deux notions de « statut actuel » : le périmètre d'équité retenait le plus récent de tous les statuts, brouillons compris, alors que la page affichait le plus récent des statuts relus ou publiés. Un brouillon pouvait donc changer qui figure dans la grille tout en laissant la page dire l'inverse.
 - **Décision** : en production, le statut qui fait foi est le plus récent des statuts dont `statut_relecture` vaut `relu` ou `publie` (cohérent avec ADR-036 A1 : un statut relu est montré comme un fait, sans pastille). En preview, c'est le plus récent de tous. Cette définition est la fonction `statutRetenu` de `content-core/rules/equite.ts`, utilisée par la règle d'équité REGLE-08, par le view-model (`statutAffiche` et `perimetre`) et par `cellulesAttendues` de `check-dist`. Ce n'est donc plus fail-closed sur les brouillons (ancienne hypothèse A6) : un brouillon n'oblige plus à couvrir un candidat et n'en retire aucun.
 - **Conséquence** : validateur, pages et contrôle post-build ne peuvent plus diverger ; les tests Phase 2 sur les brouillons ajoutés en dernier ont été déplacés en preview (là où le brouillon compte) et complétés par leur contrepartie en production.
+
+### ADR-042 : racine par défaut = corpus réel, fixture explicite
+- **Contexte** : la phase 3 apporte le vrai contenu (59 candidats, 3 thèmes pilotes en brouillon) ; l'ADR-025 faisait de la fixture fictive la racine par défaut tant que le dépôt était vide.
+- **Décision** : `DEFAULT_CONTENT_ROOT` vaut `.`. La fixture `tests/fixtures/corpus-valide` est toujours désignée explicitement (`RTP_CONTENT_ROOT` ou `--root`) dans les tests et dans les étapes « corpus fictif » de la CI, qui valide et construit les deux corpus. L'ADR-025 reste comme historique.
+- **Conséquence** : `npm run validate`, `migrate`, `ids` et `build` travaillent sur le vrai contenu sans option ; un test épingle le défaut et la règle « variable vide = variable absente ».
+
+### ADR-043 : import data.gouv par table de correspondance, instantané haché, historique de statuts en ajout seul
+- **Contexte** : le jeu « statuts sourcés » est une source tierce qui change (des mises à jour sont attendues en décembre) et dont les identifiants et noms ne sont pas ceux du dépôt.
+- **Décision** : une table de correspondance écrite à la main relie chaque identifiant amont à un identifiant du dépôt ; l'octet reçu est conservé dans un instantané nommé par sa date et son sha256 ; un statut qui change s'ajoute à la fin de `statuts[]`, rien d'ancien n'est modifié ; un conflit arrête tout sans écrire ; les champs `bloc`, `propositions` et `statut_detail` n'entrent jamais dans `src/content/`.
+- **Conséquence** : l'import est rejouable hors ligne et sans effet de bord ; chaque fiche importée est un brouillon sans relecteur.
+
+### ADR-044 : archivage sans Playwright, capture manuelle, binaires dans un dépôt privé, Wayback non bloquant
+- **Contexte** : chaque mesure doit remonter à une source primaire archivée (cahier des charges §5), mais le dépôt public ne doit contenir ni binaires ni données personnelles, et Playwright n'est pas une dépendance du runtime.
+- **Décision** : `npm run archive` récupère par `fetch` et extrait le texte (`pdftotext` pour les PDF) ; une page qui refuse les robots ou publie des données de particuliers passe par `--file` (saisie manuelle expurgée). L'extrait et son sha256 vivent dans `archives/`, les binaires dans le dépôt privé `reveleTonProg-archives` (`RTP_ARCHIVES_DIR`, `--sync-private`). Wayback corrobore sans jamais bloquer : un échec est un avertissement.
+- **Conséquence** : aucune dépendance de plus ; les sources sans instantané Wayback sont listées pour relecture (Batho, Rohou à ce jour).
+
+### ADR-045 : thèmes pilotes par couverture mesurée, marge de 2, départage Aîné, plafond de 2 mesures
+- **Contexte** : le choix des trois thèmes pilotes ne doit pas dépendre d'un jugement éditorial (CONT-04), et les dix thèmes ne sont séparés que par quelques positions.
+- **Décision** : la couverture est mesurée case par case dans `data/couverture-themes.yaml` ; deux thèmes à 2 candidats ou moins d'écart sont à égalité, départagés d'abord par le caractère prioritaire pour les aînés ; le « top 3 littéral » est affiché à côté. Chaque candidat a au plus 2 mesures par thème pilote, les deux premières de la source.
+- **Conséquence** : le choix est recalculable (`--check-data`) et la page Méthode peut l'expliquer ; une dérogation exige raison, décideur et date.
+
+### ADR-046 : hypothèses de phase 3 P3-A3 et P3-A4 (à ne pas confondre avec A3 et A4 de la phase 2)
+- **Contexte** : le jeu data.gouv ne donne pas de date de consultation propre, et ne rattache pas toutes les personnes à un parti ou à un site de campagne.
+- **Décision** : **P3-A3** — la `date_consultation` d'un statut importé est la date `verifie_le` du jeu amont (vérification faite par les éditeurs du jeu ; l'autre choix serait la date d'import). **P3-A4** — `parti` vaut `null` pour les 24 lignes sans lien de parti ni de campagne ; `parti_source` vient de `liens.parti`, à défaut de `liens.campagne`, sans jamais inférer un parti depuis la presse.
+- **Conséquence** : ces deux hypothèses sont à relire par Erwan avant toute valeur `relu` ; elles figurent dans la liste de relecture du résumé du plan 03-09.
 
 ## Dépendances externes critiques
 

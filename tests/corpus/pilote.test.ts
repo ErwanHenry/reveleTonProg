@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadAll } from '../../src/lib/content-core/load.ts';
 import { lireCouverture } from '../../scripts/lib/couverture.ts';
+import { PERIMETRE_EQUITE } from '../../src/lib/content-core/rules/config.ts';
 import { verifierPilote } from '../../scripts/lib/pilote.ts';
 
 // Corpus pilote réel (racine du dépôt), CONT-05 : plafond de 2 mesures, brouillon uniquement, complétude des
@@ -38,5 +39,22 @@ describe('corpus pilote réel (CONT-05)', () => {
   it('ne livre aucune mesure tant que le premier thème n’est pas rédigé (corpus vide : aucun problème)', () => {
     const mesures = charge.entries.filter((e) => e.collection === 'mesures');
     if (mesures.length === 0) assert.deepEqual(verifierPilote(charge.entries, data), []);
+  });
+
+  it('phase 3 : les 3 thèmes pilotes sont livrés (livres = themes), avec fichier thème et couverture complète', () => {
+    assert.deepEqual([...data.pilote.livres].sort(), [...data.pilote.themes].sort(), 'chaque thème pilote doit être livré avant de clore la phase');
+    const entrees = (collection: string) => charge.entries.filter((e) => e.collection === collection);
+    const perimetre = entrees('candidats').filter((c) => {
+      const statuts = Array.isArray(c.data.statuts) ? (c.data.statuts as { code?: string }[]) : [];
+      return (PERIMETRE_EQUITE as readonly string[]).includes(statuts[statuts.length - 1]?.code ?? '');
+    });
+    assert.ok(perimetre.length > 0, 'le périmètre ne doit pas être vide');
+    for (const theme of data.pilote.themes) {
+      assert.ok(entrees('themes').some((t) => t.id === theme), `fichier thème absent : ${theme}`);
+      const couverture = entrees('couverture').find((c) => c.data.theme === theme);
+      assert.ok(couverture, `fichier de couverture absent : ${theme}`);
+      const cas = new Set((Array.isArray(couverture.data.cases) ? (couverture.data.cases as { candidat?: string }[]) : []).map((x) => x.candidat));
+      for (const c of perimetre) assert.ok(cas.has(c.id), `couverture ${theme} : aucun cas pour ${c.id}`);
+    }
   });
 });

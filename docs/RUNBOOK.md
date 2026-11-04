@@ -15,7 +15,7 @@ Le projet tourne sous Node 24 LTS (`.nvmrc`). Avec fnm : `fnm use`, ou pour une 
 ## Commandes courantes
 
 ```bash
-npm run validate                  # données valides ? (racine : RTP_CONTENT_ROOT, mode production)
+npm run validate                  # données valides ? (racine : RTP_CONTENT_ROOT, sinon . = vrai corpus ; mode production)
 npm run validate -- --mode preview  # idem, équité en avertissement (local seulement)
 npm run ids -- --check            # ids.lock couvre-t-il exactement les candidats ?
 npm run ids -- --write            # ajoute les nouveaux candidats à ids.lock (ajout seul)
@@ -27,7 +27,9 @@ npm run build                     # génère dist/
 npm run preview                   # sert dist/ en local
 ```
 
-Par défaut ces commandes lisent la fixture fictive `tests/fixtures/corpus-valide`. Ajouter `RTP_CONTENT_ROOT=.` pour viser le vrai corpus.
+Par défaut ces commandes lisent le vrai corpus (`.`). Pour le corpus fictif de test : `RTP_CONTENT_ROOT=tests/fixtures/corpus-valide`.
+
+Autres commandes de la phase 3 : `npm run import:datagouv`, `npm run archive`, `npm run couverture` (sections ci-dessous).
 
 ### Ajouter ou corriger une mesure
 1. Créer/éditer `src/content/mesures/<candidat>/<slug>.yaml` (statut `brouillon`), sans commentaire dans le fichier (D-13).
@@ -173,6 +175,26 @@ Le mode `preview` ne sert qu'en local, pour rédiger un thème sans avoir encore
 
 **Garde de déploiement (contact).** Tant que le domaine n'est pas acheté, `config/site.yml` garde `contact@domaine-a-definir.invalid` et la CI passe avec un avertissement. Le job de déploiement du lot 3 doit définir `RTP_DEPLOIEMENT=1` : le build (`astro build`) échoue alors si le contact finit par `.invalid`, et `check-dist` signale `CONTACT_PROVISOIRE` en erreur.
 
+### Importer les statuts data.gouv
+
+Entrée : `data/import/` (instantanés bruts datés, `correspondances.yaml` faite à la main, attribution). Détail complet dans `data/import/README.md`.
+
+1. `npm run import:datagouv` (ou `-- --file data/import/<instantané>.json` hors ligne, `-- --dry-run` pour le rapport seul) ;
+2. lire le rapport : créé, statut ajouté, inchangé, absent en amont, conflit ;
+3. ouvrir une pull request avec le diff de `src/content/candidats/`, l'instantané et `ids.lock` ; `npm run validate -- --mode production` et `npm run ids -- --check` doivent passer.
+
+Les changements de statut attendus en décembre suivent ce chemin : un statut qui change s'ajoute à la fin de `statuts[]` (historique en ajout seul, jamais de réécriture). Un conflit (id amont inconnu, date qui recule) arrête tout sans rien écrire : ajouter la personne à la main dans `correspondances.yaml`, jamais par découpage automatique du nom. Les champs `bloc`, `propositions` et `statut_detail` du jeu amont n'entrent jamais dans `src/content/`. L'attribution de la source (data.gouv.fr, licence) reste dans `data/import/`.
+
+### Mesurer la couverture
+
+`npm run couverture -- --candidat <id> [--theme <id>]` liste, pour un candidat, les passages de ses sources archivées qui contiennent les mots-clés de chaque thème : ce sont des pistes, chaque passage est relu avant de classer la case. Les cases (fort, partiel, silence, aucun, inaccessible) et leur note vivent dans `data/couverture-themes.yaml`. `npm run couverture -- --check-data` valide le tableau et recalcule le classement des dix thèmes et les trois thèmes pilotes.
+
+Règle de classement : positions décroissantes, puis cases « fort », puis ordre de la spec. Un écart de 2 candidats au plus est une égalité (marge d'erreur de la mesure) : les thèmes à égalité se départagent d'abord par le thème prioritaire pour les aînés, ce qui peut différer du « top 3 littéral » (la sortie affiche les deux côte à côte). Une dérogation (`pilote.derogation`) exige une raison, un décideur et une date ; elle est `null` aujourd'hui. Après tout ajout de source ou changement de case, relancer `--check-data` et mettre à jour `docs/COUVERTURE-THEMES.md`.
+
+### Ouvrir la relecture
+
+`pilote.relecture_ouverte` (dans `data/couverture-themes.yaml`) vaut `false` pendant la phase 3 : toutes les mesures, les fichiers thème, les fichiers de couverture et les statuts des fiches du corpus pilote doivent rester en `brouillon`, sans relecteur, et `tests/corpus` le fait respecter (code `PILOTE_NON_BROUILLON`). Erwan passe la valeur à `true` dans le commit où il commence à marquer des fichiers `relu` ou `publie` ; ensuite seuls les schémas et les règles de la phase 2 encadrent les états de relecture. Ne jamais la remettre à `false` une fois qu'un fichier est `relu`.
+
 ### Archiver une source
 
 `scripts/archive-source.ts` capture une URL (ou un fichier que vous avez enregistré), écrit l'extrait texte `archives/<candidat>/<sha12>.txt` et la source `src/content/sources/<id>.yaml` (sha256, instant de capture, date de consultation), range le binaire (PDF ou HTML) dans le dépôt privé `ErwanHenry/reveleTonProg-archives` et peut soumettre l'URL à l'Internet Archive. L'outil ne touche jamais `src/content/mesures`. **Jamais de binaire dans le dépôt public.**
@@ -180,26 +202,26 @@ Le mode `preview` ne sert qu'en local, pour rédiger un thème sans avoir encore
 Prérequis :
 - `pdftotext` (poppler) pour les PDF : `brew install poppler` ou `sudo port install poppler` ;
 - le clone du dépôt privé, voisin du projet (`../reveleTonProg-archives`) ou désigné par `RTP_ARCHIVES_DIR` (un chemin relatif se lit depuis `--root`, jamais depuis le dossier courant). Dans un worktree, exporter `RTP_ARCHIVES_DIR=/Users/erwanhenry/claude-projects/reveleTonProg-archives` ;
-- Node 24 : `fnm exec --using=24 node scripts/archive-source.ts …`. La racine de contenu est le dossier courant (`--root` pour en choisir un autre ; `RTP_CONTENT_ROOT` est ignorée).
+- Node 24 : `fnm exec --using=24 npm run archive -- …`. La racine de contenu est le dossier courant (`--root` pour en choisir un autre ; `RTP_CONTENT_ROOT` est ignorée).
 
 Les cinq modes :
 
 ```bash
 # 1. Capturer une nouvelle source (--wayback soumet l'URL, --push envoie le binaire au dépôt privé)
-node scripts/archive-source.ts https://exemple.fr/programme --candidat prenom-nom --source-id prenom-nom-programme \
+npm run archive -- https://exemple.fr/programme --candidat prenom-nom --source-id prenom-nom-programme \
   --type programme --auteur candidat --titre "Programme de …" --date-publication 2026-10 --wayback --push
 
 # 2. Recapturer une source existante en ligne (même identifiant)
-node scripts/archive-source.ts --refresh prenom-nom-programme
+npm run archive -- --refresh prenom-nom-programme
 
 # 3. Soumettre à Wayback des sources précises (une à la fois, 20 s d'écart, reprise possible)
-node scripts/archive-source.ts --wayback-only prenom-nom-programme
+npm run archive -- --wayback-only prenom-nom-programme
 
 # 4. Soumettre toutes les sources encore sans wayback_url (--candidat pour restreindre)
-node scripts/archive-source.ts --wayback-missing --candidat prenom-nom
+npm run archive -- --wayback-missing --candidat prenom-nom
 
 # 5. Pousser tout ce qui attend dans le dépôt privé
-node scripts/archive-source.ts --sync-private
+npm run archive -- --sync-private
 ```
 
 `--dry-run` va jusqu'à la validation sans rien écrire. `--candidat` se répète si plusieurs candidats sont concernés (le premier nomme le dossier d'archive). `--date-publication` est obligatoire et jamais devinée : date visible sur la page, sinon date de création du PDF (`pdfinfo`), sinon l'en-tête `Last-Modified`, sinon le mois visible `AAAA-MM`.
@@ -223,6 +245,8 @@ Rafraîchir (`--refresh`) :
 - **texte identique** : seules les dates (`capture_le`, `date_consultation`) sont rafraîchies, l'URL Wayback est conservée. Sur un site dynamique, le binaire change souvent à chaque capture (jetons, horodatages) alors que le texte ne bouge pas : l'outil le signale (« binaire modifié ») et range le nouveau binaire, c'est normal ;
 - **texte modifié** : nouvel extrait (le sha12 change), `wayback_url` retiré (il montre l'ancien contenu), et l'avertissement « contenu modifié : relancer validate, les mesures citant cette source doivent être revérifiées ». L'ancien extrait reste dans `archives/` : le supprimer s'il n'est plus cité ;
 - une source saisie à la main (`fichier-manuel`) est ignorée avec un avertissement ; pour la mettre à jour : `--refresh <id> --file <nouveau fichier>`.
+
+Une page dont le pied de page publie des données personnelles de particuliers (cas de `erwan-rohou-programme-mei`) n'est ni archivée telle quelle ni soumise à Wayback : saisie manuelle expurgée avec `--file`, `wayback_url` laissé vide. `--wayback-missing` soumettrait pourtant cette page : utiliser `--wayback-only` avec la liste des autres sources.
 
 Wayback est une corroboration, jamais un blocage : un échec (429 = plafond quotidien par URL, délai de 150 s dépassé, redirection inattendue) est un avertissement avec la commande de reprise, et `--wayback-missing` liste ce qui manque. Un instantané plus ancien de plus de 24 h que la capture est signalé (Wayback peut renvoyer une capture existante) : le contenu a pu changer depuis.
 
