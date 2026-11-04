@@ -1,0 +1,177 @@
+---
+import Base from '../layouts/Base.astro';
+import couvertureBrute from '../../data/couverture-themes.yaml?raw';
+import schemaSource from '../../schemas/source.schema.json';
+import { classer, lireCouverture, MARGE_EGALITE, THEMES_SPEC } from '../../scripts/lib/couverture.ts';
+import { formatDate, ETAT_VIDE_TEXTES, LIBELLES_NIVEAUX, LIBELLES_STATUT } from '../lib/corpus/index.ts';
+import {
+  ARCHIVE_TAILLE_MAX, CATALOGUE, HYPOTHESES, KANDEL_MOLES, LONGUEURS, MOTS_INTERDITS, PERIMETRE_EQUITE,
+  PHRASE_ENFANT_MAX, SEUIL_KANDEL_MOLES, VERBES_CONNOTES,
+} from '../lib/content-core/rules/config.ts';
+import { loadDatasetDatagouv } from '../lib/dataset-datagouv.ts';
+import { TOURS } from '../lib/dates-tours.ts';
+import { PROFIL_4G } from '../lib/profil-4g.ts';
+
+// Date de dernière révision de cette page (à mettre à jour à chaque modification du texte).
+const REVISION = '2026-11-03';
+
+// Fail closed : une couverture illisible ne produit pas une page Méthode approximative.
+const lue = lireCouverture(couvertureBrute);
+if (lue.problemes.length > 0) throw new Error(`data/couverture-themes.yaml : ${lue.problemes.join(' ; ')}`);
+const couverture = lue.data;
+const resultat = classer(couverture);
+const dataset = loadDatasetDatagouv();
+
+const nomTheme = (id: string): string => THEMES_SPEC.find((t) => t.id === id)?.nom ?? id;
+const themesAine = THEMES_SPEC.filter((t) => t.prioritaire_aine).map((t) => t.nom);
+const fr = (n: number): string => n.toLocaleString('fr-FR');
+const motsInterdits = MOTS_INTERDITS.flatMap((m) => m.exemples).join(', ');
+const niveaux = (Object.keys(LONGUEURS) as (keyof typeof LONGUEURS)[]).map((cle) => ({ cle, libelle: LIBELLES_NIVEAUX[cle], borne: LONGUEURS[cle] as { min?: number; max: number } }));
+const tailleArchive = fr(ARCHIVE_TAILLE_MAX / (1024 * 1024));
+
+// Types de source acceptés : la liste vient du schéma, seuls les libellés lisibles sont écrits ici.
+const LIBELLES_TYPE_SOURCE: Record<string, string> = {
+  programme: 'le programme publié par la candidature',
+  site_candidat: 'le site de campagne du candidat',
+  site_parti: 'le site de son parti',
+  discours: 'un discours',
+  tribune: 'une tribune signée du candidat',
+  depot_cc: 'le dossier déposé auprès du Conseil constitutionnel',
+};
+const typesSource = ((schemaSource as { properties: { type: { enum: string[] } } }).properties.type.enum).map((t) => LIBELLES_TYPE_SOURCE[t] ?? t);
+const pilotes = couverture.pilote.themes;
+const livres = couverture.pilote.livres;
+// L'hypothèse sur le glossaire cite la syntaxe des marqueurs ; le contrôle du dist refuse « [[ » dans le
+// texte visible (marqueur non résolu). On espace les crochets à l'affichage, le texte source reste intact.
+const sansMarqueur = (t: string): string => t.replaceAll('[[', '[ [').replaceAll(']]', '] ]');
+const SEV: Record<string, string> = { erreur: 'erreur', avertissement: 'avertissement', selon_mode: 'selon le mode', selon_statut: 'selon le statut' };
+---
+<Base
+  titre="Méthode : reveleTonProg"
+  description="Comment les sources sont choisies, les règles de neutralité, les longueurs de texte, les thèmes pilotes et les limites connues de ce site."
+  miseAJour={REVISION}
+>
+  <main id="contenu" class="conteneur texte-institutionnel">
+    <nav class="fil" aria-label="Fil d'Ariane">
+      <ol>
+        <li><a href="/">Accueil</a></li>
+        <li aria-current="page">Méthode</li>
+      </ol>
+    </nav>
+    <h1>Méthode</h1>
+
+    <p>
+      Ce site explique ce que proposent les candidats à l'élection présidentielle, thème par thème, en quatre façons de lire : en bref, en détail, pour les enfants et en gros caractères. Il ne prend jamais parti. Chaque mesure renvoie à un texte du candidat, daté et archivé. Les deux tours ont lieu le dimanche <time datetime={TOURS[0].date}>{formatDate(TOURS[0].date)}</time> et le dimanche <time datetime={TOURS[1].date}>{formatDate(TOURS[1].date)}</time>.
+    </p>
+
+    <h2>D'où viennent les informations</h2>
+    <p>Une mesure n'est affichée que si elle s'appuie sur une source primaire, c'est-à-dire un texte publié par le candidat ou sa candidature, jamais un article de presse. Les sources acceptées sont : {typesSource.join(', ')}.</p>
+    <p>Chaque source porte la date à laquelle elle a été consultée. Une copie est conservée dans le dépôt du site, avec son empreinte SHA-256 pour prouver qu'elle n'a pas changé, dans la limite de {tailleArchive} Mio par fichier. Une copie existe aussi sur les archives Wayback Machine d'Internet Archive.</p>
+    <div data-dataset>
+      <p>
+        La liste des personnalités vient du jeu de données public « Candidatures à l'élection présidentielle 2027, statuts sourcés ». Sa description annonce {dataset.annonce} personnes (lue le <time datetime={dataset.descriptionConsulteeLe}>{formatDate(dataset.descriptionConsulteeLe)}</time>), alors que le fichier mis à jour le <time datetime={dataset.instantane.miseAJour}>{formatDate(dataset.instantane.miseAJour)}</time> en contient {dataset.instantane.total} : {Object.entries(dataset.instantane.parStatut).map(([statut, n], i, tout) => (
+          <>{n} « {(LIBELLES_STATUT as Record<string, string>)[statut] ?? statut} »{i < tout.length - 1 ? ', ' : ''}</>
+        ))}. Cet écart est constaté, il n'est pas expliqué.
+      </p>
+      <p>
+        Attribution : liste des personnalités de {dataset.producteur.replace(/ \(.*$/, '')}, jeu de données publié sur <a href={dataset.page} rel="noopener noreferrer">data.gouv.fr</a>, {dataset.licence}. Seuls le statut, sa source et le lien vers le site de campagne sont repris.
+      </p>
+    </div>
+
+    <h2>Qui figure sur une page thème</h2>
+    <p>Une page thème présente les candidats dont la candidature est, selon la dernière vérification relue :</p>
+    <ul data-perimetre-equite>
+      {PERIMETRE_EQUITE.map((code) => <li>{LIBELLES_STATUT[code]}</li>)}
+    </ul>
+    <p>Tous les candidats de ce périmètre reçoivent le même niveau de détail sur un thème publié. Les personnes qui ne se présentent pas sont listées à part, avec le motif et la source, sur la page des candidats.</p>
+
+    <h2>Neutralité</h2>
+    <p>Les textes du site évitent les mots qui jugent. Ils ne comportent pas, par exemple : <span data-liste-mots-interdits>{motsInterdits}</span>.</p>
+    <p>Les verbes qui insinuent une intention ou un doute sont remplacés par « propose » ou « indique » : <span data-verbes-connotes>{VERBES_CONNOTES.join(', ')}</span>.</p>
+    <p>L'étiquette politique affichée est celle que le candidat revendique. Un chiffrage n'est donné que s'il vient du candidat. Les règles de communication des sondages et du pluralisme relèvent de l'Arcom : voir les <a href="/mentions-legales/">mentions légales</a>.</p>
+
+    <h2>Longueur et lisibilité</h2>
+    <p>Chaque niveau de lecture a des bornes en nombre de mots, contrôlées à chaque modification du contenu :</p>
+    <ul>
+      {niveaux.map((n) => (
+        <li data-borne={n.cle}>{n.libelle} : {n.borne.min !== undefined ? `de ${n.borne.min} à ${n.borne.max} mots` : `au plus ${n.borne.max} mots`}</li>
+      ))}
+    </ul>
+    <p data-regle="phrase-enfant-max">Dans la version pour les enfants, une phrase ne dépasse pas {PHRASE_ENFANT_MAX} mots.</p>
+    <p data-regle="kandel-moles">
+      La facilité de lecture est mesurée par la formule de Kandel et Moles : {fr(KANDEL_MOLES.base)} moins {fr(KANDEL_MOLES.motsParPhrase)} fois le nombre moyen de mots par phrase, moins {fr(KANDEL_MOLES.syllabesParMot)} fois le nombre moyen de syllabes par mot. Sous {SEUIL_KANDEL_MOLES}, le texte pour enfants reçoit un avertissement ; il n'est pas bloqué.
+    </p>
+
+    <h2>Ordre des candidats</h2>
+    <p>Les candidats sont classés par ordre alphabétique du nom de famille, avec les règles de tri du français. Un ordre aléatoire n'est proposé que sur demande du lecteur : il est tiré de nouveau à chaque chargement et n'est jamais lié aux sondages.</p>
+
+    <h2>Cases vides</h2>
+    <p>Quand une information manque, la case reste visible et dit pourquoi :</p>
+    <ul>
+      <li>{ETAT_VIDE_TEXTES.non_precise.avant} [date de vérification]{ETAT_VIDE_TEXTES.non_precise.apres}</li>
+      <li>{ETAT_VIDE_TEXTES.programme_non_publie.avant} [date de vérification]{ETAT_VIDE_TEXTES.programme_non_publie.apres}</li>
+    </ul>
+
+    <h2>Choix des thèmes pilotes</h2>
+    <p data-regle="marge">
+      Les thèmes publiés en premier sont choisis sur le nombre de candidats dont la position est connue. Deux thèmes à {MARGE_EGALITE} positions d'écart ou moins sont considérés à égalité ; l'égalité est départagée en faveur des thèmes qui comptent le plus pour les lecteurs âgés ({themesAine.join(', ')}).
+    </p>
+    <ul>
+      {resultat.explication.map((ligne) => <li>{ligne}</li>)}
+    </ul>
+    <p>Mesure du <time datetime={couverture.mesure_le}>{formatDate(couverture.mesure_le)}</time>. Thèmes pilotes retenus :</p>
+    <ul data-pilotes>
+      {pilotes.map((id) => <li>{nomTheme(id)}{livres.includes(id) ? ' (livré)' : ''}</li>)}
+    </ul>
+    <div class="defile" tabindex="0" role="region" aria-label="Classement des thèmes par couverture">
+      <table data-classement>
+        <caption>Couverture mesurée par thème, du plus au moins documenté</caption>
+        <thead>
+          <tr><th scope="col">Thème</th><th scope="col">Positions</th><th scope="col">Forts</th><th scope="col">Partiels</th><th scope="col">Silences</th><th scope="col">Sans site</th><th scope="col">Inaccessibles</th></tr>
+        </thead>
+        <tbody>
+          {resultat.classement.map((l) => (
+            <tr><th scope="row">{nomTheme(l.theme)}</th><td>{l.positions}</td><td>{l.forts}</td><td>{l.partiels}</td><td>{l.silences}</td><td>{l.aucuns}</td><td>{l.inaccessibles}</td></tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Comment le site est testé</h2>
+    <p>
+      Les pages sont vérifiées automatiquement : fonctionnement sans JavaScript, usage au clavier seul, audit d'accessibilité WCAG 2.2 niveau AA, lecture avec un texte agrandi à 160 %, respect de la demande de réduction des animations, contraste des dix couleurs de thèmes, et chargement en moins d'une seconde sur une connexion mobile lente simulée ({PROFIL_4G.libelle}). Une lecture croisée simulée a aussi été menée : le journal est dans le dépôt du site.
+    </p>
+
+    <h2>Limites connues</h2>
+    <ul>
+      <li>Des sites de campagne bloquent les outils automatiques : leurs pages sont alors capturées à la main.</li>
+      <li>Certaines sources ne sont datées qu'au mois de leur capture.</li>
+      <li>La mesure de lisibilité est un avertissement, pas un verdict.</li>
+      <li>Safari, VoiceOver et NVDA n'ont pas été testés.</li>
+      <li>La lecture croisée a été simulée par des agents, pas par de vrais lecteurs.</li>
+      <li>Cette version de test n'est pas encore en ligne.</li>
+    </ul>
+
+    <details>
+      <summary>Détails techniques</summary>
+      <h3>Contrôles automatiques</h3>
+      <div class="defile" tabindex="0" role="region" aria-label="Catalogue des contrôles">
+        <table data-catalogue>
+          <caption>Chaque contrôle porte un code stable</caption>
+          <thead>
+            <tr><th scope="col">Code</th><th scope="col">Règle</th><th scope="col">Gravité</th><th scope="col">Ce qui est vérifié</th></tr>
+          </thead>
+          <tbody>
+            {CATALOGUE.map((e) => (
+              <tr><td><code>{e.code}</code></td><td>{e.regle}</td><td>{SEV[e.severite] ?? e.severite}</td><td>{e.libelle}{e.piege !== null ? ` (${e.piege})` : ''}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <h3>Choix de conception</h3>
+      <ul data-hypotheses>
+        {HYPOTHESES.map((h) => <li><strong>{h.id}</strong> ({h.regle}) : {sansMarqueur(h.choix)}</li>)}
+      </ul>
+    </details>
+  </main>
+</Base>

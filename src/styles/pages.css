@@ -213,3 +213,72 @@
     border-color: CanvasText;
   }
 }
+
+.pied-liens ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pied-liens a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+}
+
+.texte-institutionnel {
+  max-inline-size: 70ch;
+}
+
+.texte-institutionnel h2 {
+  margin-block: 2rem 0.5rem;
+}
+
+.texte-institutionnel ul {
+  padding-inline-start: 1.5rem;
+}
+
+/* Méthode : tableaux défilables au clavier (reflow à 320 px), détails repliables, codes longs */
+.texte-institutionnel .defile {
+  overflow-x: auto;
+  margin-block: 1rem;
+}
+
+.texte-institutionnel table {
+  border-collapse: collapse;
+  inline-size: 100%;
+  font-size: var(--t-label);
+}
+
+.texte-institutionnel caption {
+  text-align: start;
+  padding-block: 0.5rem;
+  color: var(--encre-douce);
+}
+
+.texte-institutionnel th,
+.texte-institutionnel td {
+  padding: 0.5rem;
+  border-bottom: 1px solid currentcolor;
+  text-align: start;
+  vertical-align: top;
+}
+
+.texte-institutionnel details {
+  margin-block: 1.5rem;
+}
+
+.texte-institutionnel summary {
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.texte-institutionnel code {
+  overflow-wrap: anywhere;
+}

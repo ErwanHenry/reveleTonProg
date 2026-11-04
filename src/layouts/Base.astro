@@ -3,6 +3,7 @@ import '../styles/base.css';
 import '../styles/pages.css';
 import ordreUrl from '../scripts/ordre.js?url';
 import { formatDate, getCorpus } from '../lib/corpus/index.ts';
+import { SOURCE_DATES, TOURS } from '../lib/dates-tours.ts';
 
 interface Props {
   titre: string;
@@ -17,6 +18,7 @@ const { titre, description, miseAJour, avecSignalement = false } = Astro.props;
 const corpus = await getCorpus();
 // Rubrique courante, déduite du chemin (trailingSlash: 'always') : aucun paramètre de page nécessaire.
 const chemin = Astro.url.pathname;
+const institutionnelle = /^\/(methode|mentions-legales|qui-sommes-nous)\/?$/.exec(chemin)?.[1];
 const courante = /^\/themes(\/|$)/.test(chemin) ? 'themes' : /^\/candidats(\/|$)/.test(chemin) ? 'candidats' : undefined;
 ---
 <!doctype html>
@@ -60,6 +62,15 @@ const courante = /^\/themes(\/|$)/.test(chemin) ? 'themes' : /^\/candidats(\/|$)
         )}
         <p><span>Ce site</span>
 n'utilise aucun cookie et n'appelle aucun service extérieur.</p>
+        <p>Élection présidentielle : premier tour le dimanche <time datetime={TOURS[0].date}>{formatDate(TOURS[0].date)}</time>, second tour le dimanche <time datetime={TOURS[1].date}>{formatDate(TOURS[1].date)}</time>.{SOURCE_DATES !== null && (<>
+{' '}(<a href={SOURCE_DATES.url} rel="noopener noreferrer">source officielle</a>)</>)}</p>
+        <nav aria-label="Informations sur le site" class="pied-liens">
+          <ul>
+            <li><a href="/methode/" aria-current={institutionnelle === 'methode' ? 'page' : undefined}>Méthode</a></li>
+            <li><a href="/mentions-legales/" aria-current={institutionnelle === 'mentions-legales' ? 'page' : undefined}>Mentions légales</a></li>
+            <li><a href="/qui-sommes-nous/" aria-current={institutionnelle === 'qui-sommes-nous' ? 'page' : undefined}>Qui sommes-nous</a></li>
+          </ul>
+        </nav>
       </div>
     </footer>
   </body>

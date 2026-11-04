@@ -99,6 +99,8 @@ ol {
 }
 
 a {
+  /* Longues adresses (mentions légales, qui sommes-nous) : jamais de défilement horizontal à 320 px */
+  overflow-wrap: anywhere;
   color: var(--encre);
   text-decoration: underline;
   text-decoration-thickness: 1px;
@@ -275,15 +277,20 @@ main[data-theme] {
   gap: 1rem;
 }
 
+.cellule-tete > :not(.picto) {
+  min-inline-size: 0;
+}
+
 .cellule-nom {
   margin: 0;
+  overflow-wrap: break-word;
 }
 
 .cellule-parti {
   margin: 0;
   color: var(--encre-douce);
   font-size: var(--t-label);
-  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
 }
 
 .cellule-pied {

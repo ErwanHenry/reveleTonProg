@@ -1,0 +1,46 @@
+---
+import Base from '../layouts/Base.astro';
+import { loadSiteConfig } from '../lib/site-config.ts';
+
+// Date de dernière révision de cette page (à mettre à jour à chaque modification du texte).
+const REVISION = '2026-11-03';
+const site = loadSiteConfig();
+const depot = `https://github.com/${site.depot}`;
+---
+<Base
+  titre="Qui sommes-nous : reveleTonProg"
+  description="Qui publie ce site, comment il est fabriqué, et pourquoi il ne reçoit aucun financement."
+  miseAJour={REVISION}
+>
+  <main id="contenu" class="conteneur texte-institutionnel">
+    <nav class="fil" aria-label="Fil d'Ariane">
+      <ol>
+        <li><a href="/">Accueil</a></li>
+        <li aria-current="page">Qui sommes-nous</li>
+      </ol>
+    </nav>
+    <h1>Qui sommes-nous</h1>
+
+    <h2>Éditeur</h2>
+    <p>Ce site est publié par Erwan Henry, à titre personnel et sans but professionnel.</p>
+
+    <h2>La démarche</h2>
+    <p>
+      reveleTonProg aide à comprendre les programmes des candidats à l'élection présidentielle, sans prendre parti. Chaque mesure affichée est rattachée à une source primaire datée, dont une copie est archivée. Chaque thème publié présente le même niveau de détail pour tous les candidats concernés. Chaque mesure existe en quatre niveaux de lecture : résumé, détaillé, enfant et aîné. Aucun classement n'est lié à un sondage, et la formulation n'exprime aucune opinion.
+    </p>
+
+    <h2>Financement</h2>
+    <p>Ce site ne reçoit aucun financement.</p>
+    <p>Il n'affiche aucune publicité, n'a aucun partenaire commercial et ne demande aucun argent aux visiteurs, sous quelque forme que ce soit.</p>
+
+    <h2>Code et données ouverts</h2>
+    <p>
+      Le code est publié sous licence MIT et les contenus éditoriaux sous Licence Ouverte 2.0. Le dépôt est consultable sur <a href={depot} rel="noopener noreferrer">{depot}</a>.
+    </p>
+
+    <h2>Vous avez repéré une erreur ?</h2>
+    <p>
+      Écrivez à <a href={`mailto:${site.contact}`}>{site.contact}</a> ou ouvrez un signalement sur <a href={`${depot}/issues`} rel="noopener noreferrer">le suivi des signalements du dépôt</a>.
+    </p>
+  </main>
+</Base>
