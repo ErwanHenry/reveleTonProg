@@ -271,10 +271,12 @@
   margin-block: 1.5rem;
 }
 
+/* display: list-item garde le triangle natif (::marker) qui montre que le bloc s'ouvre et s'il est ouvert ;
+   display: flex le supprimerait (WR-05). La cible de 44 px vient de min-height et du padding. */
 .texte-institutionnel summary {
+  display: list-item;
   min-height: 2.75rem;
-  display: flex;
-  align-items: center;
+  padding-block: 0.5rem;
   font-weight: 600;
   cursor: pointer;
 }

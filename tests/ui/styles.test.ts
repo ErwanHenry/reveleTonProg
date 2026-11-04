@@ -371,3 +371,18 @@ describe('styles : glossaire enfant', () => {
     assert.match(ENFANT_CSS, /@media \(forced-colors: active\)/);
   });
 });
+
+describe('styles : pages institutionnelles', () => {
+  it('« Détails techniques » : summary qui garde son marqueur natif, cible de 44 px (WR-05)', () => {
+    const r = regles.find((x) => x.fichier === 'pages.css' && x.selecteur === '.texte-institutionnel summary');
+    assert.ok(r, 'règle .texte-institutionnel summary absente');
+    const d = (prop: string): string | undefined => r.declarations.find((x) => x.prop === prop)?.valeur;
+    assert.equal(d('display'), 'list-item', 'display autre que list-item : plus de ::marker');
+    assert.equal(d('min-height'), '2.75rem');
+    for (const x of regles.filter((y) => /summary/.test(y.selecteur) && /texte-institutionnel/.test(y.selecteur))) {
+      for (const decl of x.declarations) {
+        assert.ok(!(decl.prop === 'list-style' || decl.prop === 'list-style-type') || !/none/.test(decl.valeur), `${x.selecteur} masque le marqueur`);
+      }
+    }
+  });
+});
