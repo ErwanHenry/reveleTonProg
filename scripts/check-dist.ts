@@ -56,7 +56,9 @@ const constats = checkDist(dist, { mode, cellulesParTheme: attendues, deploiemen
 
 for (const c of constats) console.log(`${c.code} ${safe(c.fichier)} : ${safe(c.message)}`);
 if (format === 'github') {
-  for (const c of constats.slice(0, 10)) {
+  // 10 annotations au plus : les erreurs d'abord (IN-03), sinon des avertissements masqueraient ce qui fait échouer le job.
+  const parGravite = [...constats].sort((a, b) => Number(b.severite === 'erreur') - Number(a.severite === 'erreur'));
+  for (const c of parGravite.slice(0, 10)) {
     const kind = c.severite === 'erreur' ? 'error' : 'warning';
     const fichier = path.relative(projectRoot, path.join(dist, c.fichier)).split(path.sep).join('/');
     console.log(`::${kind} file=${escapeProperty(fichier)},title=${escapeProperty(c.code)}::${escapeData(c.message)}`);

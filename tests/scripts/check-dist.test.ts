@@ -458,6 +458,17 @@ describe('CLI scripts/check-dist.ts', () => {
     assert.match(r.out, /^::error file=.*index\.html.*title=MOT_INTERDIT::/m);
   });
 
+  it('--format github (IN-03) : les erreurs passent avant les avertissements dans les 10 annotations', () => {
+    const pages: Record<string, string> = {};
+    for (let i = 1; i <= 11; i++) pages[`a${String(i).padStart(2, '0')}.html`] = page({ corps: '<a href="mailto:contact@domaine-a-definir.invalid">m</a>' });
+    pages['z.html'] = page({ corps: '<p>extrême</p>' });
+    const r = lancer(['--dist', ecrireDist(distPropre(pages)), '--root', CORPUS, '--mode', 'production', '--format', 'github']);
+    assert.equal(r.status, 1, r.out + r.err);
+    const annotations = r.out.split('\n').filter((l) => l.startsWith('::'));
+    assert.equal(annotations.length, 10, r.out);
+    assert.match(annotations[0] ?? '', /^::error file=.*z\.html.*title=MOT_INTERDIT::/);
+  });
+
   it('--mode invalide : code 2 et message de ModeInvalideError', () => {
     const dist = ecrireDist(distPropre());
     const r = lancer(['--dist', dist, '--root', CORPUS, '--mode', 'bidon']);
