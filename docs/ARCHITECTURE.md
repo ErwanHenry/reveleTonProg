@@ -230,7 +230,7 @@ Les ADR techniques de la phase 1 (sans D-n) vont de l'ADR-017 à l'ADR-026 ; ceu
 
 ### ADR-028 : mode de validation fail-closed, seule l'équité en dépend
 - **Contexte** : rédiger un thème candidat par candidat laisse des trous d'équité transitoires, qui ne doivent pas bloquer le travail local mais jamais la publication.
-- **Décision** : `--mode preview|production`, puis `RTP_MODE`, puis `production` par défaut ; une valeur inconnue est une erreur d'usage (code 2). Seules `EQUITE_CANDIDAT_MANQUANT` et `EQUITE_COUVERTURE_INCOHERENTE` passent (puis `EQUITE_PERIMETRE_VIDE`, ajoutée au v1.0 pour un thème publié au périmètre vide) en avertissement en preview. La CI passe `--mode production` à chaque étape `validate`, vérifié par `tests/repo/ci.test.ts`.
+- **Décision** : `--mode preview|production`, puis `RTP_MODE`, puis `production` par défaut ; une valeur inconnue est une erreur d'usage (code 2). Seuls les codes de sévérité « selon le mode » passent en avertissement en preview : `EQUITE_CANDIDAT_MANQUANT`, `EQUITE_COUVERTURE_INCOHERENTE`, `EQUITE_PERIMETRE_VIDE` (ajouté au v1.0 pour un thème publié au périmètre vide) et `TEXTE_SOURCE_TROP_LONG`. La CI passe `--mode production` à chaque étape `validate`, vérifié par `tests/repo/ci.test.ts`.
 - **Conséquence** : un oubli de réglage ne peut qu'aggraver la sévérité ; le build Astro et le CLI résolvent le mode par la même fonction.
 
 ### ADR-029 : pièges de données en surcouche, comparaison exacte
