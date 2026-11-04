@@ -69,19 +69,19 @@
 
 ### Pages institutionnelles (INST)
 
-- [ ] **INST-01**: La page Méthode explique choix des sources, règles de neutralité, mots interdits, longueurs, périmètre d'équité, ordre, états vides, écart 59/51 du dataset — listes et chiffres générés depuis la config du validateur
-- [ ] **INST-02**: La page Mentions légales cite LCEN art. 1-1 (éditeur non professionnel Erwan Henry, hébergeur depuis `config/hebergeur.yml`, directeur de la publication, contact, droit de réponse) et une section données personnelles (clés localStorage, aucun cookie)
-- [ ] **INST-03**: La page Qui sommes-nous présente l'éditeur et la démarche sans branding tiers (ni Alignd ni SpikeeLabs) ni lien de don
-- [ ] **INST-04**: Le site rappelle les dates des deux tours (18 avril et 2 mai 2027)
+- [x] **INST-01**: La page Méthode explique choix des sources, règles de neutralité, mots interdits, longueurs, périmètre d'équité, ordre, états vides, écart 59/51 du dataset — listes et chiffres générés depuis la config du validateur
+- [x] **INST-02**: La page Mentions légales cite LCEN art. 1-1 (éditeur non professionnel Erwan Henry, hébergeur depuis `config/hebergeur.yml`, directeur de la publication, contact, droit de réponse) et une section données personnelles (clés localStorage, aucun cookie)
+- [x] **INST-03**: La page Qui sommes-nous présente l'éditeur et la démarche sans branding tiers (ni Alignd ni SpikeeLabs) ni lien de don
+- [x] **INST-04**: Le site rappelle les dates des deux tours (18 avril et 2 mai 2027)
 
 ### Qualité et livraison (QUAL)
 
 - [x] **QUAL-01**: Un contrôle post-build échoue si une page dépasse 500 Ko bruts ou 100 Ko gzip, charge une ressource tierce, contient un mot interdit hors liste Méthode, affiche une mesure sans source datée, colle des mots (espaces inline perdues), ou a un nombre de cellules ≠ nombre de candidats du thème
-- [ ] **QUAL-02**: Un test Playwright vérifie le fonctionnement sans JS (lecture et bascule de niveau), le parcours clavier complet et zéro violation axe WCAG 2.2 AA sérieuse ou critique
-- [ ] **QUAL-03**: Un test Playwright en 4G lente simulée (150 ms RTT, 1,6 Mbps) sur la page la plus lourde servie compressée mesure un chargement < 1 s
-- [ ] **QUAL-04**: Le mode « très gros texte » (160 %) et `prefers-reduced-motion` sont respectés, contraste AA sur tous les thèmes
-- [ ] **QUAL-05**: Le corpus pilote est navigable sur une URL de test (build preview publiée en artefact CI ou preview locale, `noindex` si hébergée)
-- [ ] **QUAL-06**: Un test croisé simulé (enfant 10 ans, retraité 72 ans, journaliste) avec données piégées produit un journal d'audit avant livraison du milestone
+- [x] **QUAL-02**: Un test Playwright vérifie le fonctionnement sans JS (lecture et bascule de niveau), le parcours clavier complet et zéro violation axe WCAG 2.2 AA sérieuse ou critique
+- [x] **QUAL-03**: Un test Playwright en 4G lente simulée (150 ms RTT, 1,6 Mbps) sur la page la plus lourde servie compressée mesure un chargement < 1 s
+- [x] **QUAL-04**: Le mode « très gros texte » (160 %) et `prefers-reduced-motion` sont respectés, contraste AA sur tous les thèmes
+- [x] **QUAL-05**: Le corpus pilote est navigable sur une URL de test (build preview publiée en artefact CI ou preview locale, `noindex` si hébergée)
+- [x] **QUAL-06**: Un test croisé simulé (enfant 10 ans, retraité 72 ans, journaliste) avec données piégées produit un journal d'audit avant livraison du milestone
 
 ## v2 Requirements
 
@@ -177,18 +177,19 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M1-10 | Phase 4 | Complete |
 | M1-11 | Phase 4 | Complete |
 | M1-12 | Phase 4 | Complete |
-| INST-01 | Phase 5 | Pending |
-| INST-02 | Phase 5 | Pending |
-| INST-03 | Phase 5 | Pending |
-| INST-04 | Phase 5 | Pending |
+| INST-01 | Phase 5 | Complete |
+| INST-02 | Phase 5 | Complete |
+| INST-03 | Phase 5 | Complete |
+| INST-04 | Phase 5 | Complete |
 | QUAL-01 | Phase 4 | Complete |
-| QUAL-02 | Phase 5 | Pending |
-| QUAL-03 | Phase 5 | Pending |
-| QUAL-04 | Phase 5 | Pending |
-| QUAL-05 | Phase 5 | Pending |
-| QUAL-06 | Phase 5 | Pending |
+| QUAL-02 | Phase 5 | Complete |
+| QUAL-03 | Phase 5 | Complete |
+| QUAL-04 | Phase 5 | Complete |
+| QUAL-05 | Phase 5 | Complete |
+| QUAL-06 | Phase 5 | Complete |
 
 **Coverage:**
+
 - v1 requirements: 53 total
 - Mapped to phases: 53
 - Unmapped: 0 ✓
