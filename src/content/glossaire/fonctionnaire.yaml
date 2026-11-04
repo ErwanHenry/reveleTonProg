@@ -1,0 +1,5 @@
+version_schema: 1
+id: fonctionnaire
+type: terme
+libelle: "Fonctionnaire"
+definition: "Un fonctionnaire est une personne qui travaille pour l'État, pour une commune ou pour un hôpital public."

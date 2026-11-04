@@ -1,0 +1,5 @@
+version_schema: 1
+id: salaire-median
+type: terme
+libelle: "Salaire médian"
+definition: "Le salaire médian partage les salariés en deux groupes égaux : la moitié gagne moins que lui, l'autre moitié gagne plus."

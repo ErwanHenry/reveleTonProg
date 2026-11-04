@@ -1,0 +1,20 @@
+version_schema: 1
+id: eric-zemmour/travail-csg-revenus-du-travail
+candidat: eric-zemmour
+theme: travail
+sous_theme: fiscalite-et-financement
+titre: "Suppression de la CSG sur les revenus du travail"
+texte_source: >-
+  supprimer la CSG sur les revenus du travail
+source: eric-zemmour-tract-avenir-est-a-nous
+source_localisation: "tract L'avenir est à nous, rubrique Travailler, gagner, transmettre"
+redactions:
+  resume: >-
+    Éric Zemmour propose de supprimer la contribution sociale généralisée sur les revenus du travail.
+  detaille: >-
+    Dans le tract L'avenir est à nous, publié sur le site de la campagne d'Éric Zemmour, la rubrique Travailler, gagner, transmettre propose de supprimer la CSG sur les revenus du travail. La même phrase du tract cite aussi une baisse de l'accise sur les carburants et la suppression des droits de succession, qui ne sont pas détaillées ici. Le texte ne dit pas comment serait compensée la ressource de la CSG, ni quel serait le gain pour les salariés, ni à quelle date la suppression aurait lieu.
+  enfant: >-
+    Éric Zemmour veut supprimer la [[contribution sociale généralisée|csg]] sur les revenus du travail. C'est une somme prise sur les revenus. Elle aide à payer la protection sociale. Le tract veut rendre aux Français le fruit de leur travail. Il ne dit pas quand.
+  aine: >-
+    Dans le tract L'avenir est à nous, publié sur le site de la campagne d'Éric Zemmour, la rubrique Travailler, gagner, transmettre propose de supprimer la contribution sociale généralisée (CSG) sur les revenus du travail. La même phrase évoque aussi la baisse de l'accise sur les carburants et la suppression des droits de succession. Le texte ne précise pas comment serait compensée la ressource de la CSG, ni le gain pour les salariés, ni la date.
+statut_relecture: brouillon

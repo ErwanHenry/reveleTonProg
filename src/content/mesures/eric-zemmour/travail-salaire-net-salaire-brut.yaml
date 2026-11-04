@@ -1,0 +1,20 @@
+version_schema: 1
+id: eric-zemmour/travail-salaire-net-salaire-brut
+candidat: eric-zemmour
+theme: travail
+sous_theme: fiscalite-et-financement
+titre: "Rapprochement du salaire net et du salaire brut"
+texte_source: >-
+  Baisser les impôts et alléger les charges des entreprises pour rapprocher le salaire net du salaire brut.
+source: eric-zemmour-tract-avenir-est-a-nous
+source_localisation: "tract L'avenir est à nous, rubrique Dépenser moins pour taxer moins"
+redactions:
+  resume: >-
+    Éric Zemmour propose de baisser les impôts et d'alléger les charges des entreprises pour rapprocher le salaire net du salaire brut.
+  detaille: >-
+    Dans le tract L'avenir est à nous, publié sur le site de la campagne d'Éric Zemmour, la rubrique Dépenser moins pour taxer moins propose de baisser les impôts et d'alléger les charges des entreprises pour rapprocher le salaire net du salaire brut. Le salaire brut est celui d'avant le retrait des cotisations, le salaire net celui que le salarié reçoit. Le texte ne dit pas quels impôts ni quelles charges baisseraient, ni de combien, ni à quelle date. Il ne dit pas non plus quel serait l'écart visé entre salaire net et salaire brut.
+  enfant: >-
+    Éric Zemmour veut baisser les impôts. Il veut aussi alléger les charges des entreprises. Ce sont les sommes qu'elles doivent payer. Le but est de rapprocher le [[salaire net|salaire-net]] du [[salaire brut|salaire-brut]]. Le texte ne dit pas quels impôts baisseraient. Il ne dit pas de combien.
+  aine: >-
+    Dans le tract L'avenir est à nous, publié sur le site de la campagne d'Éric Zemmour, la rubrique Dépenser moins pour taxer moins propose de baisser les impôts et d'alléger les charges des entreprises, afin de rapprocher le salaire net du salaire brut. Le salaire brut est le salaire avant le retrait des cotisations ; le salaire net est celui que reçoit le salarié. Le texte ne précise ni les impôts ou charges concernés, ni les montants, ni la date.
+statut_relecture: brouillon

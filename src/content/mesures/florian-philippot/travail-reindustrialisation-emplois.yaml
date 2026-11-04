@@ -1,0 +1,20 @@
+version_schema: 1
+id: florian-philippot/travail-reindustrialisation-emplois
+candidat: florian-philippot
+theme: travail
+sous_theme: chomage-et-emploi
+titre: "Réindustrialisation de l'économie française"
+texte_source: >-
+  Réindustrialiser l’économie française. Face à nos concurrents directs, la France doit recomposer son tissu industriel, car c’est lui qui génère le plus d’emplois induits dans les autres secteurs et qui crée la valeur ajoutée.
+source: florian-philippot-projet-pour-la-france
+source_localisation: "page 3 du PDF, rubrique INDUSTRIE, COMMERCE ET EMPLOI, premier paragraphe"
+redactions:
+  resume: >-
+    Florian Philippot propose de réindustrialiser l'économie française, car l'industrie génère le plus d'emplois dans les autres secteurs.
+  detaille: >-
+    Dans le Projet pour la France, publié par le mouvement Les Patriotes que dirige Florian Philippot, la rubrique consacrée à l'industrie, au commerce et à l'emploi s'ouvre sur la réindustrialisation de l'économie française. Le texte écrit que, face à nos concurrents directs, la France doit recomposer son tissu industriel, car c'est lui qui génère le plus d'emplois induits dans les autres secteurs et qui crée la valeur ajoutée. Le texte ne précise ni les secteurs concernés, ni le nombre d'emplois visé, ni le coût, ni la date.
+  enfant: >-
+    Florian Philippot veut refaire de l'industrie en France. Il appelle cela réindustrialiser le pays. Selon le texte, l'industrie crée le plus d'emplois dans les autres secteurs. Elle crée aussi la valeur ajoutée, c'est-à-dire de la richesse en plus. Le texte ne dit pas combien d'emplois seraient créés.
+  aine: >-
+    Dans le Projet pour la France, publié par le mouvement Les Patriotes que dirige Florian Philippot, la rubrique consacrée à l'industrie, au commerce et à l'emploi propose de réindustrialiser l'économie française. Selon le texte, la France doit recomposer son tissu industriel face à ses concurrents directs, car c'est lui qui génère le plus d'emplois induits, c'est-à-dire des emplois dans les autres secteurs, et qui crée la valeur ajoutée. Le texte ne précise ni les secteurs, ni le nombre d'emplois visé, ni le coût.
+statut_relecture: brouillon

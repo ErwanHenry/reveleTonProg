@@ -1,0 +1,5 @@
+version_schema: 1
+id: salaire-brut
+type: terme
+libelle: "Salaire brut"
+definition: "Le salaire brut est le salaire avant le retrait des cotisations. Une fois les cotisations retirées, on obtient le salaire net."

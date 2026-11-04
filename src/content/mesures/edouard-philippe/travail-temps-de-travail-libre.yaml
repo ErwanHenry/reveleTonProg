@@ -1,0 +1,20 @@
+version_schema: 1
+id: edouard-philippe/travail-temps-de-travail-libre
+candidat: edouard-philippe
+theme: travail
+sous_theme: temps-de-travail
+titre: "Temps de travail fixé librement par les entreprises"
+texte_source: >-
+  Permettre aux entreprises de fixer librement le temps de travail pour sortir des 35h, de la manière la plus adaptée à leur activité, avec zéro cotisation patronale au-delà de la 37ème heure.
+source: edouard-philippe-priorite-prosperite
+source_localisation: "page Pour une France plus prospère, rubrique Libérer nos entreprises du poids des impôts et de la bureaucratie, deuxième mesure"
+redactions:
+  resume: >-
+    Édouard Philippe propose que les entreprises fixent librement le temps de travail, pour sortir des 35h.
+  detaille: >-
+    Sur la page de son projet intitulée Pour une France plus prospère, Édouard Philippe propose de permettre aux entreprises de fixer librement le temps de travail pour sortir des 35h, de la manière la plus adaptée à leur activité. Le texte ajoute qu'il y aurait zéro cotisation patronale au-delà de la 37ème heure. Le programme ne précise pas quelle durée de travail chaque entreprise pourrait choisir, ni si les salariés auraient leur mot à dire. Il ne chiffre pas le coût de cette absence de cotisation, et il ne donne pas de date de mise en œuvre.
+  enfant: >-
+    Édouard Philippe veut que chaque entreprise choisisse le temps de travail. Elle le ferait selon son activité. L'idée est de sortir des 35h. Au-delà de la 37ème heure, l'entreprise ne paierait plus de [[cotisations|cotisation]] patronales. Le texte ne dit pas à partir de quand. Il ne dit pas non plus combien de temps on travaillerait.
+  aine: >-
+    Sur la page de son projet intitulée Pour une France plus prospère, Édouard Philippe propose de permettre aux entreprises de fixer librement le temps de travail, afin de sortir des 35h, de la manière la plus adaptée à leur activité. Il ajoute qu'il n'y aurait aucune cotisation patronale, c'est-à-dire aucune cotisation versée par l'employeur, au-delà de la 37ème heure. Le programme ne précise pas la durée que chaque entreprise pourrait retenir, ni le coût de la mesure, ni sa date d'entrée en vigueur.
+statut_relecture: brouillon

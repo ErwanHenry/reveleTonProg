@@ -11,5 +11,6 @@ date_consultation: 2026-11-03
 archive:
   extrait: archives/natacha-polony/0cc384b5b826.txt
   sha256: 0cc384b5b826b01a0d477359160a3379d62c60eee5aa4ee9cc0019b3ea72e2a0
-  capture_le: 2026-11-03T22:37:59+01:00
-  binaire_sha256: 16d56a81040d32ad7f4a712e43504cae4e74cb58ecd8e88dbbcfd57369445f23
+  capture_le: 2026-11-03T23:27:50+01:00
+  wayback_url: https://web.archive.org/web/20261103224648/https://natachapolony2027.fr/natacha-polony/mes-principes
+  binaire_sha256: d8f786aa416f7a58a43ff4640fa3519163c1e2c966442a8a9300d1109b2b84bd

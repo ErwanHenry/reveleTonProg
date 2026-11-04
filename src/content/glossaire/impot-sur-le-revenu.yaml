@@ -1,0 +1,5 @@
+version_schema: 1
+id: impot-sur-le-revenu
+type: terme
+libelle: "Impôt sur le revenu"
+definition: "L'impôt sur le revenu est un impôt que paient les personnes en fonction de ce qu'elles gagnent dans l'année."

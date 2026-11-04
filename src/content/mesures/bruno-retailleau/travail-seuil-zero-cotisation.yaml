@@ -1,0 +1,20 @@
+version_schema: 1
+id: bruno-retailleau/travail-seuil-zero-cotisation
+candidat: bruno-retailleau
+theme: travail
+sous_theme: salaires
+titre: "Seuil zéro cotisation sur les heures travaillées"
+texte_source: >-
+  Pour lever ce frein, nous proposons d’instaurer un seuil « zéro cotisation ». Fixé à 1 623 heures par an, soit l’équivalent de deux jours de travail supplémentaires rémunérés, ce seuil pose une règle simple et lisible. Au-delà, les heures travaillées sont exonérées de cotisations sociales, salariales comme patronales.
+source: bruno-retailleau-livret-travail
+source_localisation: "livret Le travail gagnant, section Récompenser ceux qui en font vraiment plus grâce au seuil « zéro cotisation »"
+redactions:
+  resume: >-
+    Bruno Retailleau propose un seuil « zéro cotisation » fixé à 1 623 heures par an : au-delà, les heures seraient exonérées de cotisations sociales.
+  detaille: >-
+    Dans le livret Le travail gagnant, publié sur le site de Bruno Retailleau, le texte propose d'instaurer un seuil « zéro cotisation ». Il serait fixé à 1 623 heures par an, soit l'équivalent de deux jours de travail supplémentaires rémunérés, et le texte le présente comme une règle simple et lisible. Au-delà de ce seuil, les heures travaillées seraient exonérées de cotisations sociales, salariales comme patronales. Le texte cité ne précise pas le coût de la mesure pour les finances publiques ni sa date de mise en œuvre.
+  enfant: >-
+    Bruno Retailleau propose un seuil de 1 623 heures de travail par an. Ce seuil se nomme « zéro cotisation ». Après ce seuil, les heures n'auraient plus de [[cotisations|cotisation]] sociales. Cela vaudrait pour le salarié et pour l'employeur. Le texte ne dit pas quand.
+  aine: >-
+    Dans le livret Le travail gagnant, publié sur le site de Bruno Retailleau, le texte propose un seuil « zéro cotisation » fixé à 1 623 heures par an, soit l'équivalent de deux jours de travail supplémentaires rémunérés. Il le présente comme une règle simple et lisible. Au-delà, les heures travaillées seraient exonérées de cotisations sociales, aussi bien celles du salarié que celles de l'employeur. Le texte cité ne précise ni le coût de la mesure, ni sa date de mise en œuvre.
+statut_relecture: brouillon

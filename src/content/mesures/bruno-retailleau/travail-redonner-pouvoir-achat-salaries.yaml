@@ -1,0 +1,24 @@
+version_schema: 1
+id: bruno-retailleau/travail-redonner-pouvoir-achat-salaries
+candidat: bruno-retailleau
+theme: travail
+sous_theme: salaires
+titre: "Pouvoir d'achat supplémentaire pour les salariés"
+texte_source: >-
+  Concrètement, les 30 milliards d’euros seront redonnés pour moitié aux salariés, sous forme de pouvoir d’achat supplémentaire (environ 500 euros par an au niveau du salaire médian), et pour moitié aux entreprises, par une baisse du coût du travail dès la première heure.
+source: bruno-retailleau-livret-travail
+source_localisation: "livret Le travail gagnant, section Impact sur les finances publiques et prochaines étapes"
+chiffrage:
+  texte: >-
+    L’ensemble des mesures proposées permettra de dégager au moins 30 milliards d’euros de gains, intégralement restitués aux salariés et aux entreprises.
+  source_localisation: "livret Le travail gagnant, section Impact sur les finances publiques et prochaines étapes, premier paragraphe"
+redactions:
+  resume: >-
+    Bruno Retailleau propose de redonner 30 milliards d'euros, pour moitié aux salariés, environ 500 euros par an au niveau du salaire médian.
+  detaille: >-
+    Dans le livret Le travail gagnant, publié sur le site de Bruno Retailleau, les mesures proposées doivent dégager au moins 30 milliards d'euros de gains, intégralement restitués aux salariés et aux entreprises. Le texte précise que ces 30 milliards d'euros seront redonnés pour moitié aux salariés, sous forme de pouvoir d'achat supplémentaire, soit environ 500 euros par an au niveau du salaire médian. L'autre moitié irait aux entreprises, par une baisse du coût du travail dès la première heure. Le texte cité ne précise pas la date de mise en œuvre, et il ne détaille pas ici la forme de ce pouvoir d'achat supplémentaire.
+  enfant: >-
+    Bruno Retailleau veut rendre 30 milliards d'euros. La moitié irait aux salariés. Ils auraient plus de [[pouvoir d'achat|pouvoir-d-achat]]. Cela fait environ 500 euros par an au niveau du [[salaire médian|salaire-median]]. L'autre moitié irait aux entreprises. Le texte ne dit pas quand.
+  aine: >-
+    Dans le livret Le travail gagnant, publié sur le site de Bruno Retailleau, les mesures proposées doivent dégager au moins 30 milliards d'euros de gains, intégralement restitués aux salariés et aux entreprises. Le texte indique que cette somme serait redonnée pour moitié aux salariés, sous forme de pouvoir d'achat supplémentaire, environ 500 euros par an au niveau du salaire médian, et pour moitié aux entreprises, par une baisse du coût du travail dès la première heure. Le texte cité ne précise pas la date.
+statut_relecture: brouillon

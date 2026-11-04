@@ -1,0 +1,20 @@
+version_schema: 1
+id: edouard-philippe/travail-travail-supplementaire-exonere
+candidat: edouard-philippe
+theme: travail
+sous_theme: salaires
+titre: "Exonération des heures de travail supplémentaires"
+texte_source: >-
+  Faire que le travail supplémentaire paie : lorsqu'une entreprise décide, après discussion interne, de travailler plus longtemps, exonérer ces heures de cotisations sociales et d'impôt sur le revenu, soit environ 1 000 € de plus par an au SMIC pour deux heures de plus par semaine.
+source: edouard-philippe-priorite-prosperite
+source_localisation: "page Pour une France plus prospère, rubrique Alléger la charge sur les actifs et assurer l'avenir des générations futures, deuxième mesure"
+redactions:
+  resume: >-
+    Édouard Philippe propose d'exonérer de cotisations sociales et d'impôt sur le revenu les heures supplémentaires décidées par l'entreprise.
+  detaille: >-
+    Sur la page de son projet intitulée Pour une France plus prospère, Édouard Philippe propose que le travail supplémentaire paie. Lorsqu'une entreprise décide, après discussion interne, de travailler plus longtemps, ces heures seraient exonérées de cotisations sociales et d'impôt sur le revenu. Le texte donne un ordre de grandeur : environ 1 000 € de plus par an au SMIC pour deux heures de plus par semaine. Le programme ne précise pas ce que serait la discussion interne. Il ne chiffre pas le coût de la mesure pour les finances publiques et il ne donne pas de date.
+  enfant: >-
+    Édouard Philippe veut que le travail en plus rapporte plus. Cela vaudrait si l'entreprise décide de travailler plus longtemps. Ces [[heures en plus|heure-supplementaire]] seraient sans [[cotisations|cotisation]] ni [[impôt sur le revenu|impot-sur-le-revenu]]. Il évoque environ 1 000 € de plus par an au [[salaire minimum|smic]]. Ce serait pour deux heures de plus par semaine.
+  aine: >-
+    Sur la page de son projet intitulée Pour une France plus prospère, Édouard Philippe propose que le travail supplémentaire paie. Lorsqu'une entreprise décide, après discussion interne, de faire travailler plus longtemps, ces heures seraient exonérées de cotisations sociales et d'impôt sur le revenu. Le texte l'illustre ainsi : environ 1 000 € de plus par an au SMIC pour deux heures de plus par semaine. Le programme ne précise pas le coût de la mesure, ni la forme de la discussion interne, ni la date de mise en œuvre.
+statut_relecture: brouillon

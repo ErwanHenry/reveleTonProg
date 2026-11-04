@@ -1,0 +1,20 @@
+version_schema: 1
+id: florian-philippot/travail-indemnites-chomage-hors-ue
+candidat: florian-philippot
+theme: travail
+sous_theme: chomage-et-emploi
+titre: "Suppression des réformes récentes des indemnités chômage"
+texte_source: >-
+  Santé, travail : protéger les plus fragiles. Hors de l’UE, la France sera libre de rétablir et de préserver les grandes politiques de son « État-providence », qui ont toujours fait la spécificité du modèle français. Les réformes récentes, exigées par la Commission européenne, visant à raboter les indemnités chômage, à fermer des lits à l’hôpital ou à arrêter le remboursement des médicaments pourront être supprimées.
+source: florian-philippot-projet-pour-la-france
+source_localisation: "page 4 du PDF, rubrique INDUSTRIE, COMMERCE ET EMPLOI, paragraphe Santé, travail : protéger les plus fragiles"
+redactions:
+  resume: >-
+    Florian Philippot indique que, hors de l'UE, la France pourrait supprimer les réformes récentes qui rabotent les indemnités chômage.
+  detaille: >-
+    Dans le Projet pour la France, publié par le mouvement Les Patriotes que dirige Florian Philippot, un paragraphe intitulé Santé, travail : protéger les plus fragiles écrit que, hors de l'UE, la France sera libre de rétablir et de préserver les grandes politiques de son « État-providence ». Selon le texte, les réformes récentes, exigées par la Commission européenne, visant à raboter les indemnités chômage, à fermer des lits à l'hôpital ou à arrêter le remboursement des médicaments pourront être supprimées. Le texte ne précise ni le montant des indemnités chômage, ni leur durée, ni la date.
+  enfant: >-
+    Florian Philippot dit que la France serait plus libre hors de l'[[Union européenne|union-europeenne]]. Elle pourrait garder les grandes aides de l'[[État providence|etat-providence]]. Des réformes récentes baissent les [[allocations chômage|assurance-chomage]]. Il dit que la [[Commission européenne|commission-europeenne]] les a demandées. Elles pourraient être supprimées. Le texte ne dit pas quand.
+  aine: >-
+    Dans le Projet pour la France, publié par le mouvement Les Patriotes que dirige Florian Philippot, un paragraphe intitulé Santé, travail : protéger les plus fragiles indique que, hors de l'Union européenne, la France sera libre de rétablir et de préserver les grandes politiques de son « État-providence ». Il ajoute que les réformes récentes, exigées par la Commission européenne, visant à raboter les indemnités chômage, à fermer des lits à l'hôpital ou à arrêter le remboursement des médicaments pourront être supprimées. Le texte ne précise ni le montant des indemnités, ni la date.
+statut_relecture: brouillon

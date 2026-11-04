@@ -1,0 +1,16 @@
+version_schema: 1
+id: bruno-retailleau-travail-page-theme
+type: site_candidat
+auteur: candidat
+candidats:
+  - bruno-retailleau
+titre: "Avec Retailleau, Projet : thème Travail"
+url: https://www.avecretailleau.fr/projet/theme/travail
+date_publication: 2026-11
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/bruno-retailleau/9b45475afba5.txt
+  sha256: 9b45475afba5bdb2c511df4f67963ae81a9440d60bb5e5506aa271f285fb79bf
+  capture_le: 2026-11-03T23:29:48+01:00
+  wayback_url: https://web.archive.org/web/20261103224622/https://www.avecretailleau.fr/projet/theme/travail
+  binaire_sha256: 9d26a34791b7460643119fcef3c54bcff926acafde56d53e69a64efc312f9def

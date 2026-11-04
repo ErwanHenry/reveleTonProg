@@ -1,0 +1,5 @@
+version_schema: 1
+id: smic
+type: terme
+libelle: "SMIC"
+definition: "Le SMIC est le salaire minimum : le plus petit salaire qu'un employeur a le droit de verser en France pour une heure de travail."

@@ -1,0 +1,20 @@
+version_schema: 1
+id: francois-ruffin/travail-salaires-indexes-inflation
+candidat: francois-ruffin
+theme: travail
+sous_theme: salaires
+titre: "Indexation des salaires sur l'inflation"
+texte_source: >-
+  Pour en finir avec cette érosion du pouvoir d’achat, nous indexerons les salaires sur l’inflation, comme cela a existé jusqu’en 1982.
+source: francois-ruffin-statut-travailleurs-essentiels
+source_localisation: "cahier Pour un statut des travailleuses et travailleurs essentiels, rubrique Salaires : Désmicardisation et revalorisation, proposition 1"
+redactions:
+  resume: >-
+    François Ruffin propose d'indexer les salaires sur l'inflation, comme cela a existé jusqu'en 1982.
+  detaille: >-
+    Dans le cahier de campagne Pour un statut des travailleuses et travailleurs essentiels, François Ruffin propose, pour en finir avec l'érosion du pouvoir d'achat, d'indexer les salaires sur l'inflation, comme cela a existé jusqu'en 1982. Cette proposition figure dans la rubrique du cahier consacrée aux salaires. Le texte cité ne dit pas si l'indexation s'appliquerait à tous les salaires ou seulement à ceux des métiers visés par le cahier, ni quel serait son coût, ni à quelle date elle commencerait.
+  enfant: >-
+    François Ruffin veut que les salaires suivent l'[[inflation]]. Quand les prix montent, les salaires monteraient aussi. Il veut ainsi arrêter la baisse du [[pouvoir d'achat|pouvoir-d-achat]]. Cela a existé jusqu'en 1982. Le texte ne dit pas pour quels salaires. Il ne dit pas non plus quand.
+  aine: >-
+    Dans le cahier de campagne Pour un statut des travailleuses et travailleurs essentiels, François Ruffin propose, pour en finir avec l'érosion du pouvoir d'achat, d'indexer les salaires sur l'inflation, comme cela a existé jusqu'en 1982. Autrement dit, les salaires évolueraient avec la hausse des prix. Le texte cité ne précise pas si tous les salaires seraient concernés ou seulement ceux des métiers visés par le cahier, ni le coût de la mesure, ni sa date.
+statut_relecture: brouillon

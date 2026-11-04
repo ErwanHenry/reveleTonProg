@@ -113,3 +113,60 @@ cases:
     etat: mesures
     verifie_le: 2026-11-03
     verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: antoine-mikolajczak
+    etat: non_precise
+    sources_consultees:
+      - antoine-mikolajczak-tract-campagne
+      - antoine-mikolajczak-manifeste-equinoxe
+    verifie_le: 2026-11-03
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: manolo-mlekuz
+    etat: non_precise
+    sources_consultees:
+      - manolo-mlekuz-programme
+      - manolo-mlekuz-programme-detaille
+    verifie_le: 2026-11-03
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: edouard-philippe
+    etat: mesures
+    verifie_le: 2026-11-03
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: florian-philippot
+    etat: mesures
+    verifie_le: 2026-11-03
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: gilles-platret
+    etat: programme_non_publie
+    verifie_le: 2026-11-03
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: natacha-polony
+    etat: non_precise
+    sources_consultees:
+      - natacha-polony-ma-vision
+      - natacha-polony-mes-principes
+    verifie_le: 2026-11-03
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: bruno-retailleau
+    etat: mesures
+    verifie_le: 2026-11-03
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: erwan-rohou
+    etat: mesures
+    verifie_le: 2026-11-03
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: fabien-roussel
+    etat: mesures
+    verifie_le: 2026-11-03
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: francois-ruffin
+    etat: mesures
+    verifie_le: 2026-11-03
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: marine-tondelier
+    etat: mesures
+    verifie_le: 2026-11-03
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: eric-zemmour
+    etat: mesures
+    verifie_le: 2026-11-03
+    verifie_par: Claude (agent), à relire par Erwan Henry
