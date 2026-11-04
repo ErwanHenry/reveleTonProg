@@ -73,6 +73,20 @@ export default function methode(ctx: ContexteSite): void {
       for (const verbe of VERBES_CONNOTES) assert.ok(v.includes(verbe), verbe);
     });
 
+    it('INFO : les non-candidats sont décrits là où ils apparaissent (page thème : motif et date ; page de la personne : motif et source)', () => {
+      const a = page();
+      const t = txt(unique(a, 'data-regle', 'non-candidats'));
+      assert.ok(t.includes('Sur chaque page thème') && t.includes('avec le motif et la date'), t);
+      assert.ok(t.includes('donne le motif et la source'), t);
+      assert.doesNotMatch(txt(a), /sur la page des candidats/);
+      // Ce que la phrase annonce existe : la page thème de la fixture liste Luc avec son motif et une date.
+      const theme = analyserHtml(ctx.lire(build().outDir, 'themes/logement/index.html'));
+      const renonce = trouver(theme, (n) => n.tag === 'details' && n.attrs.class === 'renonce')[0] as Noeud;
+      assert.ok(renonce, 'liste « Ne se présentent pas » absente');
+      assert.ok(txt(renonce).includes('retrait de la candidature'), txt(renonce));
+      assert.ok(trouver(renonce, (n) => n.tag === 'time').length > 0, 'date absente');
+    });
+
     it('catalogue et hypothèses dans un <details>', () => {
       const a = page();
       const cat = unique(a, 'data-catalogue');

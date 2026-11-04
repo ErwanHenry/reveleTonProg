@@ -88,7 +88,8 @@ const SEV: Record<string, string> = { erreur: 'erreur', avertissement: 'avertiss
     <ul data-perimetre-equite>
       {PERIMETRE_EQUITE.map((code) => <li>{LIBELLES_STATUT[code]}</li>)}
     </ul>
-    <p>Tous les candidats de ce périmètre reçoivent le même niveau de détail sur un thème publié. Les personnes qui ne se présentent pas sont listées à part, avec le motif et la source, sur la page des candidats.</p>
+    <p>Tous les candidats de ce périmètre reçoivent le même niveau de détail sur un thème publié.</p>
+    <p data-regle="non-candidats">Sur chaque page thème, les personnes qui ne se présentent pas sont listées à part, avec le motif et la date ; la page de chacune d'elles donne le motif et la source.</p>
 
     <h2>Neutralité</h2>
     <p>Les textes du site évitent les mots qui jugent. Ils ne comportent pas, par exemple : <span data-liste-mots-interdits>{motsInterdits}</span>.</p>
