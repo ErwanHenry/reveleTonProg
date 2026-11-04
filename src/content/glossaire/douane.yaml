@@ -1,0 +1,5 @@
+version_schema: 1
+id: douane
+type: terme
+libelle: "douane"
+definition: "La douane est le service qui contrôle ce qui entre dans un pays et ce qui en sort. Elle fait aussi payer des taxes sur certains produits venus de l'étranger."

@@ -1,0 +1,20 @@
+version_schema: 1
+id: edouard-philippe/europe-et-monde-immigration-diviser-par-deux
+candidat: edouard-philippe
+theme: europe-et-monde
+sous_theme: immigration-et-asile
+titre: "Objectif de réduction de l'immigration"
+texte_source: >-
+  Un objectif clair : diviser par deux l’immigration dans notre pays.
+source: edouard-philippe-priorite-securite
+source_localisation: "page Pour une France plus sûre, section Reprendre le contrôle de nos frontières, premier point"
+redactions:
+  resume: >-
+    Édouard Philippe se donne pour objectif de diviser par deux l'immigration en France.
+  detaille: >-
+    Sur la page Pour une France plus sûre de son site de campagne, dans la section Reprendre le contrôle de nos frontières, Édouard Philippe écrit : « Un objectif clair : diviser par deux l’immigration dans notre pays ». Le passage cité fixe donc un objectif de réduction de l'immigration en France, exprimé par une division par deux. Il ne précise ni l'année de référence à partir de laquelle la baisse serait mesurée, ni la date à laquelle l'objectif serait atteint, ni les catégories d'immigration concernées. Il ne décrit pas non plus les moyens d'y parvenir. Il ne donne aucun coût.
+  enfant: >-
+    Édouard Philippe veut réduire l'[[immigration]] en France. Il se donne un objectif clair : la diviser par deux. Le texte ne dit pas par rapport à quelle année. Il ne dit pas non plus en combien de temps. Il ne dit pas comment faire.
+  aine: >-
+    Dans la section de son site de campagne consacrée aux frontières, Édouard Philippe indique un objectif clair : diviser par deux l'immigration dans le pays. Il s'agit d'un objectif de réduction, formulé sans détail dans ce passage. Le texte cité ne dit pas par rapport à quelle année la baisse serait mesurée, ni en combien de temps elle serait atteinte, ni par quels moyens. Il ne donne aucun coût.
+statut_relecture: brouillon

@@ -1,0 +1,20 @@
+version_schema: 1
+id: eric-zemmour/europe-et-monde-suppression-aide-developpement
+candidat: eric-zemmour
+theme: europe-et-monde
+sous_theme: cooperation-et-developpement
+titre: "Suppression de l'aide publique au développement"
+texte_source: >-
+  Supprimer l’aide publique au développement 15 milliards €
+source: eric-zemmour-tract-pouvoir-achat
+source_localisation: "tract Dépenser moins pour taxer moins, liste des mesures d'économies urgentes, deuxième ligne"
+redactions:
+  resume: >-
+    Dans un tract de Reconquête, Éric Zemmour propose de supprimer l'aide publique au développement, associée au chiffre de 15 milliards €.
+  detaille: >-
+    Dans un tract de Reconquête, le parti d'Éric Zemmour, la liste intitulée Nos mesures d'économies urgentes contient la ligne « Supprimer l’aide publique au développement 15 milliards € ». Le tract associe donc la suppression de cette aide au chiffre de 15 milliards d'euros, sans préciser s'il s'agit d'un montant annuel ni comment il est calculé. Il ne dit pas quels pays ou quels programmes seraient concernés, ni à quelle date la suppression aurait lieu, ni ce que deviendraient les actions déjà engagées. Il ne donne pas d'autre précision que cette ligne.
+  enfant: >-
+    Éric Zemmour veut supprimer l'[[aide publique au développement|aide-publique-au-developpement]]. Le tract met à côté le chiffre de 15 milliards €. Il ne dit pas si ce chiffre est pour un an. Il ne dit pas comment il est calculé. Il ne dit pas quels pays seraient concernés. Il ne dit pas quand.
+  aine: >-
+    Dans un tract de Reconquête, le parti d'Éric Zemmour, la liste des mesures d'économies urgentes comprend la suppression de l'aide publique au développement, associée au chiffre de 15 milliards €. Le tract ne précise pas s'il s'agit d'un montant annuel, ni comment ce chiffre est établi, ni quels pays ou quels programmes seraient concernés. Il ne donne pas de date.
+statut_relecture: brouillon

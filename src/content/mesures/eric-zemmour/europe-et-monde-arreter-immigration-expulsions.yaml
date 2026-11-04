@@ -1,0 +1,20 @@
+version_schema: 1
+id: eric-zemmour/europe-et-monde-arreter-immigration-expulsions
+candidat: eric-zemmour
+theme: europe-et-monde
+sous_theme: immigration-et-asile
+titre: "Arrêt de l'immigration et expulsions"
+texte_source: >-
+  Expulser les étrangers en situation irrégulière, les délinquants étrangers et les étrangers chômeurs de longue durée. Arrêter l’immigration pour que la France retrouve la maîtrise de ses frontières, sa sécurité et sa souveraineté.
+source: eric-zemmour-tract-avenir-est-a-nous
+source_localisation: "tract L'avenir est à nous, rubrique L'immigration négative, maintenant, premier paragraphe"
+redactions:
+  resume: >-
+    Dans un tract de Reconquête, Éric Zemmour propose d'expulser des étrangers et d'arrêter l'immigration.
+  detaille: >-
+    Dans le tract L'avenir est à nous de Reconquête, le parti d'Éric Zemmour, la rubrique sur l'immigration propose d'« Expulser les étrangers en situation irrégulière, les délinquants étrangers et les étrangers chômeurs de longue durée ». Elle propose aussi d'« Arrêter l’immigration pour que la France retrouve la maîtrise de ses frontières, sa sécurité et sa souveraineté ». Le texte ne précise pas comment les expulsions seraient menées, ni selon quelle procédure, ni à quelle date l'immigration serait arrêtée. Il ne donne aucun chiffre ni aucun coût.
+  enfant: >-
+    Éric Zemmour veut renvoyer hors de France des groupes d'étrangers. Il cite ceux en situation irrégulière, les délinquants et les chômeurs de longue durée. Il veut aussi arrêter l'[[immigration]]. Il dit que la France retrouverait la maîtrise de ses frontières. Le texte ne dit pas comment.
+  aine: >-
+    Dans le tract L'avenir est à nous de Reconquête, le parti d'Éric Zemmour, la rubrique sur l'immigration propose d'expulser des catégories d'étrangers : ceux en situation irrégulière, les délinquants étrangers et les étrangers chômeurs de longue durée. Elle propose aussi d'arrêter l'immigration, pour que la France retrouve la maîtrise de ses frontières, sa sécurité et sa souveraineté. Le texte ne précise ni la procédure ni la date.
+statut_relecture: brouillon
