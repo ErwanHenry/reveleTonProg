@@ -11,6 +11,7 @@ import {
   lireCorrespondances,
   mapRow,
   ajouterStatutYaml,
+  dateAvant,
   mergeFiche,
   renderYaml,
   snapshotName,
@@ -269,5 +270,32 @@ describe('WR-07 : ajouterStatutYaml conserve commentaires et mise en forme', () 
 
   it('refuse un texte sans séquence statuts', () => {
     assert.throws(() => ajouterStatutYaml('id: x\n', { code: 'declare' }), /statuts/);
+  });
+});
+
+describe('WR-09 : statut courant et régression de date', () => {
+  const base = mapRow(rows.find((r) => r.id === 'brun') as UpstreamRow, corr);
+  const st = (code: string, date: string): Record<string, unknown> => ({ ...clone((base.statuts as Record<string, unknown>[])[0] as Record<string, unknown>), code, date });
+
+  it('statuts[] dans le désordre : le plus récent par date sert de référence, pas le dernier de la liste', () => {
+    const amont = { ...clone(base), statuts: [st('declare', '2026-09-10')] };
+    delete (amont.statuts[0] as Record<string, unknown>).motif;
+    // le dernier de la liste est le plus ancien (renonce du 2026-01-05) ; le courant est declare du 2026-09-10
+    const existant = { ...clone(base), statuts: [st('declare', '2026-09-10'), st('renonce', '2026-01-05')] };
+    delete (existant.statuts[0] as Record<string, unknown>).motif;
+    delete (existant.statuts[1] as Record<string, unknown>).motif;
+    const r = mergeFiche(existant, amont);
+    assert.ok('action' in r && r.action === 'inchange', JSON.stringify(r));
+  });
+
+  it('une date partielle amont ne crée pas de régression dans le même mois', () => {
+    assert.equal(dateAvant('2026-03', '2026-03-15'), false);
+    assert.equal(dateAvant('2026-02', '2026-03-15'), true);
+    assert.equal(dateAvant('2026-03-14', '2026-03-15'), true);
+    const existant = { ...clone(base), statuts: [st('declare', '2026-03-15')] };
+    delete (existant.statuts[0] as Record<string, unknown>).motif;
+    const amont = { ...clone(base), statuts: [st('renonce', '2026-03')] };
+    const r = mergeFiche(existant, amont);
+    assert.ok('action' in r && r.action === 'statut_ajoute', JSON.stringify(r));
   });
 });
