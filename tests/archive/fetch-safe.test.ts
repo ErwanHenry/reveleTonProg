@@ -191,3 +191,20 @@ describe('fetchSafe', () => {
     );
   });
 });
+
+describe('WR-04 : erreurs de lecture du corps', () => {
+  const corpsEnErreur = (erreur: Error): Response =>
+    new Response(new ReadableStream({ pull() { throw erreur; } }), { status: 200 });
+
+  it('une coupure de connexion pendant le corps devient RESEAU', async () => {
+    const { fetch: f } = sequence(corpsEnErreur(new TypeError('terminated')));
+    const e = await refus(fetchSafe('https://exemple.test/x', { fetch: f, lookup: lookupPublic }), 'RESEAU');
+    assert.match(e.message, /terminated/);
+  });
+
+  it('un délai pendant le corps devient DELAI', async () => {
+    const err = new DOMException('The operation was aborted due to timeout', 'TimeoutError');
+    const { fetch: f } = sequence(corpsEnErreur(err));
+    await refus(fetchSafe('https://exemple.test/x', { fetch: f, lookup: lookupPublic }), 'DELAI');
+  });
+});

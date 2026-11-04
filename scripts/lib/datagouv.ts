@@ -5,7 +5,7 @@
 // Le jeu amont est une entrée non fiable : sa forme est vérifiée explicitement avant tout mapping, et
 // `bloc`, `propositions`, `statut_detail` ne sont jamais lus par `mapRow` (ils ne survivent que dans
 // l'instantané brut sous data/import/).
-import { stringify } from 'yaml';
+import { isSeq, parseDocument, stringify } from 'yaml';
 
 export interface UpstreamRow {
   id: string;
@@ -209,6 +209,21 @@ export function dateComparable(d: string): string {
 
 type Obj = Record<string, unknown>;
 
+/** Statut le plus récent par date (à date égale, le dernier de la liste) : même règle que la règle d'équité (A6). */
+export function statutLePlusRecent(statuts: unknown[]): Obj {
+  let meilleur = statuts[0] as Obj;
+  for (const st of statuts) {
+    if (dateComparable(String((st as Obj).date)) >= dateComparable(String(meilleur.date))) meilleur = st as Obj;
+  }
+  return meilleur;
+}
+
+/** Vrai si `a` est strictement antérieure à `b`, au niveau de précision commun (une date AAAA-MM ne se compare qu'au mois). */
+export function dateAvant(a: string, b: string): boolean {
+  const n = Math.min(a.length, b.length) >= 10 ? 10 : 7;
+  return a.slice(0, n) < b.slice(0, n);
+}
+
 /**
  * Fusion append-only : une fiche absente est créée ; une fiche présente garde son identité, son
  * historique et ses relectures. Un changement de (code, motif) AJOUTE une entrée à `statuts[]`
@@ -224,7 +239,7 @@ export function mergeFiche(
   if (!Array.isArray(anciens) || anciens.length === 0 || !Array.isArray(nouveaux) || nouveaux.length === 0) {
     return { conflit: 'fichier existant sans statuts[] lisible : corriger à la main' };
   }
-  const dernier = anciens[anciens.length - 1] as Obj;
+  const dernier = statutLePlusRecent(anciens);
   const amont = nouveaux[0] as Obj;
   const notes: string[] = [];
   if (existing.id !== mapped.id) return { conflit: `identifiant « ${String(existing.id)} » différent de la table (« ${String(mapped.id)} »)` };
@@ -241,7 +256,7 @@ export function mergeFiche(
     if (srcA.url !== srcN.url || dernier.date !== amont.date) notes.unshift('source amont modifiée (non appliquée : même statut)');
     return { fiche: existing, action: 'inchange', notes };
   }
-  if (dateComparable(String(amont.date)) < dateComparable(String(dernier.date))) {
+  if (dateAvant(String(amont.date), String(dernier.date))) {
     return { conflit: `régression de date : amont ${String(amont.code)} du ${String(amont.date)} antérieur au dernier statut ${String(dernier.code)} du ${String(dernier.date)}` };
   }
   return { fiche: { ...existing, statuts: [...anciens, amont] }, action: 'statut_ajoute', notes };
@@ -250,6 +265,20 @@ export function mergeFiche(
 /** Rendu YAML déterministe, sans commentaire : dates non guillemetées, aller-retour sans perte. */
 export function renderYaml(o: unknown): string {
   return stringify(o, { schema: 'core', indent: 2, indentSeq: true, lineWidth: 0 });
+}
+
+/**
+ * Ajoute un statut en fin de `statuts[]` en éditant le document en place (API Document de `yaml`) :
+ * commentaires, ordre des clés et mise en forme du fichier existant sont conservés. Lève une Error
+ * si le texte n'a pas de séquence `statuts`.
+ */
+export function ajouterStatutYaml(texte: string, statut: unknown): string {
+  const doc = parseDocument(texte, { schema: 'core', uniqueKeys: true });
+  if (doc.errors.length > 0) throw new Error(`YAML illisible : ${doc.errors[0]?.message ?? ''}`);
+  const seq = doc.get('statuts', true);
+  if (!isSeq(seq)) throw new Error('séquence statuts absente');
+  seq.add(doc.createNode(statut));
+  return doc.toString({ indent: 2, indentSeq: true, lineWidth: 0 });
 }
 
 export function snapshotName(miseAJour: string, sha256: string): string {

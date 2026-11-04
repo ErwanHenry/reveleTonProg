@@ -338,3 +338,27 @@ describe('archive-source : chaîne complète archiver puis valider (hors réseau
     assert.equal(Number(git(remote, 'rev-list', '--count', 'main').trim()), avantCommits + 1);
   });
 });
+
+describe('WR-06 : le binaire privé est écrit avant le dépôt public', () => {
+  it('un échec du dépôt privé ne laisse ni source ni extrait dans le dépôt public', () => {
+    const { base, racine, remote } = nouveauMonde();
+    execFileSync('git', ['init', '--bare', '--quiet', '-b', 'main', remote], { env: { ...process.env, ...ENV_GIT }, stdio: ['ignore', 'pipe', 'pipe'] });
+    const amorce = path.join(base, 'amorce');
+    git(base, 'clone', '--quiet', remote, amorce);
+    git(amorce, 'checkout', '--quiet', '-B', 'main');
+    writeFileSync(path.join(amorce, 'README.md'), 'privé\n');
+    git(amorce, 'add', 'README.md');
+    git(amorce, 'commit', '--quiet', '-m', 'init');
+    git(amorce, 'push', '--quiet', '-u', 'origin', 'main');
+    const clone = path.join(base, 'reveleTonProg-archives');
+    cloneVide(remote, clone);
+    // Collision simulée : un fichier de même nom mais d'autre contenu occupe déjà l'emplacement du binaire.
+    const octets = readFileSync(path.join(FIXTURES, 'page-utf8.html'));
+    mkdirSync(path.join(clone, 'marie-fictive'), { recursive: true });
+    writeFileSync(path.join(clone, 'marie-fictive', `${sha(octets).slice(0, 12)}.html`), 'autre contenu');
+    const avant = listeFichiers(racine);
+    const r = lancer(ARGS_PAGE(racine), { RTP_ARCHIVES_DIR: clone });
+    assert.notEqual(r.status, 0, sortie(r));
+    assert.deepEqual(listeFichiers(racine), avant, 'aucun fichier créé dans le dépôt public');
+  });
+});

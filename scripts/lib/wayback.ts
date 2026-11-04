@@ -32,6 +32,25 @@ export function parseSnapshotLocation(location: string, base = 'https://web.arch
   return coherent ? { url, instant } : null;
 }
 
+/** Forme comparable d'une adresse : schéma http/https confondu, hôte en minuscules, sans fragment ni barre finale. */
+function normaliser(texte: string): string | null {
+  const brut = texte.replace(/^(https?):\/+/i, '$1://');
+  if (!URL.canParse(brut)) return null;
+  const u = new URL(brut);
+  u.hash = '';
+  const chemin = u.pathname.replace(/\/+$/, '');
+  return `${u.host.toLowerCase()}${chemin}${u.search}`;
+}
+
+/** Vrai si l'instantané `snapshotUrl` (web.archive.org/web/<ts>/<cible>) porte bien sur `demandee`. */
+export function instantaneDe(snapshotUrl: string, demandee: string): boolean {
+  const m = snapshotUrl.match(SNAPSHOT);
+  if (m === null) return false;
+  const cible = normaliser(snapshotUrl.slice(m[0].length));
+  const attendue = normaliser(demandee);
+  return cible !== null && cible === attendue;
+}
+
 export type ResultatWayback =
   | { ok: true; waybackUrl: string; instant: Date; ageHours: number }
   | { ok: false; reason: string };
@@ -57,6 +76,7 @@ export async function submitWayback(url: string, opts: OptionsWayback): Promise<
       if (loc === null) return { ok: false, reason: `HTTP ${res.status} sans en-tête Location` };
       const snap = parseSnapshotLocation(loc);
       if (snap === null) return { ok: false, reason: `redirection inattendue (${res.status}) vers un autre emplacement que web.archive.org/web/<horodatage>/` };
+      if (!instantaneDe(snap.url, url)) return { ok: false, reason: `l'instantané renvoyé (${snap.url.slice(0, 200)}) ne porte pas sur l'adresse soumise : non enregistré` };
       return { ok: true, waybackUrl: snap.url, instant: snap.instant, ageHours: (opts.now().getTime() - snap.instant.getTime()) / 3_600_000 };
     }
     return { ok: false, reason: `HTTP ${res.status}${res.status === 429 ? ' (plafond quotidien par URL)' : ''}` };

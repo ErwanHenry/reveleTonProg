@@ -1,9 +1,9 @@
 // Dépôt privé des binaires d'archives (PDF, HTML) : `ErwanHenry/reveleTonProg-archives`, cloné à côté
 // du projet. Aucun binaire n'entre jamais dans le dépôt public. `git` est lancé par `execFile`
 // (tableau d'arguments, jamais de shell), avec délai et tampon bornés.
-import { execFile } from 'node:child_process';
+import { execFile, execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, rmdirSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, realpathSync, rmdirSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { promisify } from 'node:util';
 
@@ -24,6 +24,43 @@ export class DepotPriveError extends Error {
   }
 }
 
+/** Sortie d'une commande git synchrone, ou undefined si elle échoue (hors dépôt, pas de remote). */
+function gitSync(cwd: string, args: string[]): string | undefined {
+  try {
+    return execFileSync('git', args, { cwd, encoding: 'utf8', timeout: 10_000, stdio: ['ignore', 'pipe', 'ignore'], env: { ...process.env, GIT_TERMINAL_PROMPT: '0' } }).trim();
+  } catch {
+    return undefined;
+  }
+}
+
+const reel = (p: string): string => {
+  try {
+    return realpathSync(p);
+  } catch {
+    return path.resolve(p);
+  }
+};
+
+/**
+ * Garde-fou : le dépôt privé ne doit jamais être le dépôt public (sinon les PDF et HTML y seraient
+ * écrits puis poussés). Refuse un dossier égal à la racine de contenu, parent ou enfant de celle-ci,
+ * ou qui a le même sommet git, ou le même remote `origin`, que la racine de contenu.
+ */
+function refuserDepotPublic(dossier: string, racine: string): void {
+  const d = reel(dossier);
+  const r = reel(racine);
+  const dedans = (a: string, b: string): boolean => a === b || a.startsWith(b + path.sep);
+  const msg = (raison: string): DepotPriveError =>
+    new DepotPriveError(`${dossier} ne peut pas servir de dépôt privé : ${raison}. Les binaires ne doivent jamais entrer dans le dépôt public ; cloner ErwanHenry/${NOM_DEPOT_PRIVE} à côté du projet.`);
+  if (dedans(d, r) || dedans(r, d)) throw msg('il contient ou se trouve dans la racine de contenu publique');
+  const hautD = gitSync(d, ['rev-parse', '--show-toplevel']);
+  const hautR = gitSync(r, ['rev-parse', '--show-toplevel']);
+  if (hautD !== undefined && hautR !== undefined && reel(hautD) === reel(hautR)) throw msg('il partage le même dépôt git que la racine de contenu');
+  const urlD = gitSync(d, ['remote', 'get-url', 'origin']);
+  const urlR = gitSync(r, ['remote', 'get-url', 'origin']);
+  if (urlD !== undefined && urlD !== '' && urlD === urlR) throw msg("son remote origin est celui du dépôt public");
+}
+
 /**
  * Dossier du clone privé : `RTP_ARCHIVES_DIR` (une valeur relative se lit depuis la racine de contenu),
  * sinon le dossier voisin de la racine de contenu. Jamais relatif au dossier courant du processus.
@@ -38,6 +75,7 @@ export function resolveArchivesDir(env: NodeJS.ProcessEnv, contentRoot: string):
         `Cloner ErwanHenry/${NOM_DEPOT_PRIVE} à côté du projet ou définir RTP_ARCHIVES_DIR.`,
     );
   }
+  refuserDepotPublic(dossier, racine);
   return dossier;
 }
 
@@ -187,13 +225,15 @@ export async function syncPrivate(o: OptionsSync): Promise<ResultatSync> {
   const verrou = path.join(gitDir, 'rtp-archive.lock');
   await prendreVerrou(verrou, o);
   try {
-    const cibles = o.chemins === undefined ? [] : ['--', ...o.chemins];
+    const cibles = o.chemins !== undefined && o.chemins.length > 0 ? ['--', ...o.chemins] : [];
     if (o.chemins === undefined) await git(o.dossier, ['add', '-A']);
     else if (o.chemins.length > 0) await git(o.dossier, ['add', ...cibles]);
-    const enAttente = (await git(o.dossier, ['status', '--porcelain', ...(o.chemins !== undefined && o.chemins.length > 0 ? cibles : [])])).trim();
+    // Chemins fournis mais vides (relance idempotente) : rien n'a été écrit, donc rien à commiter ;
+    // on ne regarde pas l'état global du clone (fichiers étrangers ou déjà indexés).
+    const enAttente = o.chemins !== undefined && o.chemins.length === 0 ? '' : (await git(o.dossier, ['status', '--porcelain', ...cibles])).trim();
     let commit = false;
     if (enAttente !== '') {
-      await git(o.dossier, ['commit', '--quiet', '-m', o.message, ...(o.chemins !== undefined && o.chemins.length > 0 ? cibles : [])]);
+      await git(o.dossier, ['commit', '--quiet', '-m', o.message, ...cibles]);
       commit = true;
     }
     const branche = (await git(o.dossier, ['rev-parse', '--abbrev-ref', 'HEAD'])).trim();

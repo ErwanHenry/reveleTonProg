@@ -102,6 +102,7 @@ export interface Reponse {
   contentType: string | undefined;
   bytes: Uint8Array;
   lastModified: string | undefined;
+  etag: string | undefined;
 }
 
 export interface Adresse {
@@ -157,7 +158,15 @@ async function lireCorps(res: Response, max: number, signal: AbortSignal): Promi
       void lecteur.cancel().catch(() => undefined);
       throw new FetchSafeError('DELAI', 'délai dépassé pendant la lecture');
     }
-    const { done, value } = await lecteur.read();
+    let lu: ReadableStreamReadResult<Uint8Array>;
+    try {
+      lu = await lecteur.read();
+    } catch (e) {
+      const nom = e instanceof Error ? e.name : '';
+      if (nom === 'TimeoutError' || nom === 'AbortError') throw new FetchSafeError('DELAI', 'délai dépassé pendant la lecture');
+      throw new FetchSafeError('RESEAU', `lecture interrompue (${e instanceof Error ? e.message : String(e)})`);
+    }
+    const { done, value } = lu;
     if (done) break;
     total += value.byteLength;
     if (total > max) {
@@ -222,6 +231,7 @@ export async function fetchSafe(url: string, opts: OptionsFetch = {}): Promise<R
       contentType: res.headers.get('content-type') ?? undefined,
       bytes,
       lastModified: res.headers.get('last-modified') ?? undefined,
+      etag: res.headers.get('etag') ?? undefined,
     };
   }
 }

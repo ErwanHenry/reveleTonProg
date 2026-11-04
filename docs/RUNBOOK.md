@@ -198,8 +198,8 @@ En local : `RTP_MODE=preview npm run build -- --outDir dist-preview`, puis la m�
 
 Entrée : `data/import/` (instantanés bruts datés, `correspondances.yaml` faite à la main, attribution). Détail complet dans `data/import/README.md`.
 
-1. `npm run import:datagouv` (ou `-- --file data/import/<instantané>.json` hors ligne, `-- --dry-run` pour le rapport seul) ;
-2. lire le rapport : créé, statut ajouté, inchangé, absent en amont, conflit ;
+1. `npm run import:datagouv` (ou `-- --file data/import/<instantané>.json` hors ligne, `-- --dry-run` pour le rapport seul ; `-- --url` n'accepte que des hôtes https publics, redirections revérifiées, sinon `ADRESSE_PRIVEE`) ;
+2. lire le rapport : créé, statut ajouté (en place : les commentaires du fichier candidat sont conservés), inchangé, absent en amont, conflit (un fichier candidat YAML illisible est signalé `conflit` / `illisible`, sans plantage) ;
 3. ouvrir une pull request avec le diff de `src/content/candidats/`, l'instantané et `ids.lock` ; `npm run validate -- --mode production` et `npm run ids -- --check` doivent passer.
 
 Les changements de statut attendus en décembre suivent ce chemin : un statut qui change s'ajoute à la fin de `statuts[]` (historique en ajout seul, jamais de réécriture). Un conflit (id amont inconnu, date qui recule) arrête tout sans rien écrire : ajouter la personne à la main dans `correspondances.yaml`, jamais par découpage automatique du nom. Les champs `bloc`, `propositions` et `statut_detail` du jeu amont n'entrent jamais dans `src/content/`. L'attribution de la source (data.gouv.fr, licence) reste dans `data/import/`.
@@ -256,6 +256,7 @@ Refus et que faire :
 | `la source … existe déjà` | l'identifiant est pris | `--refresh <id>` |
 | `https`, adresse non publique, plus de 5 redirections | URL refusée par la protection SSRF | corriger l'URL |
 | « reveleTonProg-archives introuvable » | pas de clone du dépôt privé | `gh repo clone ErwanHenry/reveleTonProg-archives ../reveleTonProg-archives` ou `RTP_ARCHIVES_DIR` |
+| « RTP_ARCHIVES_DIR désigne le dépôt public » | `RTP_ARCHIVES_DIR` est le dépôt public, le contient, est dedans, ou partage son `origin` | cloner le dépôt privé nommé dans le message et pointer `RTP_ARCHIVES_DIR` dessus |
 | « verrou ancien » | un archivage interrompu a laissé `.git/rtp-archive.lock` dans le clone privé | vérifier qu'aucun autre archivage ne tourne, puis supprimer ce dossier à la main (l'outil ne le retire jamais seul) |
 
 Les avertissements ne bloquent pas : entités HTML non décodées (`&xxx;` brut dans l'extrait : une citation avec ce texte brut échouerait), traits d'union conditionnels, caractères de largeur nulle, lignes se terminant par `-` (rien n'est recollé automatiquement). Les PDF à deux colonnes mélangent les colonnes : choisir une citation dans un seul paragraphe et laisser `npm run validate` trancher.
@@ -267,9 +268,9 @@ Rafraîchir (`--refresh`) :
 
 Une page dont le pied de page publie des données personnelles de particuliers (cas de `erwan-rohou-programme-mei`) n'est ni archivée telle quelle ni soumise à Wayback : saisie manuelle expurgée avec `--file`, `wayback_url` laissé vide. `--wayback-missing` soumettrait pourtant cette page : utiliser `--wayback-only` avec la liste des autres sources.
 
-Wayback est une corroboration, jamais un blocage : un échec (429 = plafond quotidien par URL, délai de 150 s dépassé, redirection inattendue) est un avertissement avec la commande de reprise, et `--wayback-missing` liste ce qui manque. Un instantané plus ancien de plus de 24 h que la capture est signalé (Wayback peut renvoyer une capture existante) : le contenu a pu changer depuis.
+Wayback est une corroboration, jamais un blocage : un échec (429 = plafond quotidien par URL, délai de 150 s dépassé, redirection inattendue) est un avertissement avec la commande de reprise, et `--wayback-missing` liste ce qui manque. Si Save Page Now renvoie l'instantané d'une autre adresse que celle soumise, l'outil prévient et n'enregistre rien : relancer plus tard avec `--wayback-only <id>`. Un instantané plus ancien de plus de 24 h que la capture est signalé (Wayback peut renvoyer une capture existante) : le contenu a pu changer depuis.
 
-**Règle d'or** : `--sync-private` à la fin de chaque session. Les binaires ne sont que dans le dépôt privé ; sans push, ils disparaissent avec la machine.
+**Règle d'or** : `--sync-private` à la fin de chaque session. Les binaires ne sont que dans le dépôt privé ; sans push, ils disparaissent avec la machine. Le binaire est rangé dans le dépôt privé avant l'écriture des fichiers publics, et `.gitignore` exclut `archives/**/*.{pdf,html,htm,mhtml}` : seuls les extraits `.txt` vivent dans le dépôt public.
 
 Faux positif de gitleaks sur un extrait (longue chaîne hexadécimale ou URL dans un programme) : ne jamais désactiver une règle. Créer `.gitleaks.toml` à la racine avec `[extend]` `useDefault = true` et une section `[allowlist]` dont `paths` ne liste que les fichiers exacts concernés (`archives/<candidat>/<sha12>.txt`, jamais tout `archives/`), faire relire, expliquer dans la pull request. Un vrai secret : ne pas committer l'extrait, écarter le document. Contrôle d'un lot : `gitleaks dir --no-banner --redact -v archives/` (gitleaks 8.30.1, binaire vérifié par somme de contrôle, hors du dépôt).
 

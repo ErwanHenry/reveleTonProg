@@ -121,7 +121,8 @@ function ecrireAtomique(racine: string, rel: string, contenu: string | Uint8Arra
   verifierEcriture(racine, abs);
   mkdirSync(path.dirname(abs), { recursive: true });
   const tmp = `${abs}.tmp-${process.pid}`;
-  writeFileSync(tmp, contenu);
+  rmSync(tmp, { force: true }); // reste d'une exécution interrompue (ou lien posé à l'avance) : retiré sans le suivre
+  writeFileSync(tmp, contenu, { flag: 'wx' });
   renameSync(tmp, abs);
 }
 
@@ -355,14 +356,10 @@ function metaDe(sourceId: string, prise: Prise, binSha: string, extraitSha: stri
 /** Écrit l'extrait (sans effet s'il est identique), le binaire privé, et pousse si demandé. */
 async function enregistrer(ctx: Contexte, p: ParamsSource, analyse: Analyse, prise: Prise, ecrireExtrait: boolean): Promise<void> {
   const candidat = p.candidats[0] ?? '';
-  if (ecrireExtrait) {
-    const abs = path.join(ctx.racine, p.archive.extrait);
-    if (!(existsSync(abs) && readFileSync(abs, 'utf8') === analyse.texte)) ecrireAtomique(ctx.racine, p.archive.extrait, analyse.texte);
-  }
-  ecrireSource(ctx, p);
   const dossier = ctx.archivesDir;
   if (dossier === undefined) throw new Sortie(2, 'dépôt privé reveleTonProg-archives non résolu');
   const binSha = sha256Hex(prise.octets);
+  // Binaire privé d'abord (idempotent) : s'il échoue, le dépôt public ne référence pas un binaire absent.
   const { ecrits } = storeBinary({
     dossier,
     candidat,
@@ -371,6 +368,11 @@ async function enregistrer(ctx: Contexte, p: ParamsSource, analyse: Analyse, pri
     extension: analyse.extension,
     meta: metaDe(p.id, prise, binSha, analyse.sha256),
   });
+  if (ecrireExtrait) {
+    const abs = path.join(ctx.racine, p.archive.extrait);
+    if (!(existsSync(abs) && readFileSync(abs, 'utf8') === analyse.texte)) ecrireAtomique(ctx.racine, p.archive.extrait, analyse.texte);
+  }
+  ecrireSource(ctx, p);
   console.log(`Binaire privé : ${ecrits.length === 0 ? 'déjà présent' : ecrits.join(', ')} (dépôt ${dossier})`);
   if (ctx.push) {
     const r = await syncPrivate({ dossier, chemins: ecrits, message: `archive: ${p.id}` });

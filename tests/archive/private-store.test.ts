@@ -73,6 +73,56 @@ const metaPour = (binaire: Uint8Array, sourceId: string, capture = '2026-11-03T1
   outil: 'fetch',
 });
 
+describe('WR-02 : le dépôt privé n’est jamais le dépôt public', () => {
+  it('refuse un dossier égal, parent ou enfant de la racine de contenu', () => {
+    const base = tmp();
+    const racine = path.join(base, 'projet');
+    mkdirSync(path.join(racine, '.git'), { recursive: true });
+    mkdirSync(path.join(racine, 'sous', '.git'), { recursive: true });
+    mkdirSync(path.join(base, '.git'));
+    assert.throws(() => resolveArchivesDir({ RTP_ARCHIVES_DIR: '.' }, racine), DepotPriveError);
+    assert.throws(() => resolveArchivesDir({ RTP_ARCHIVES_DIR: 'sous' }, racine), DepotPriveError);
+    assert.throws(() => resolveArchivesDir({ RTP_ARCHIVES_DIR: '..' }, racine), DepotPriveError);
+  });
+
+  it('refuse un clone qui a le même remote origin que la racine de contenu', () => {
+    const base = tmp();
+    const racine = path.join(base, 'projet');
+    const autre = path.join(base, 'autre');
+    mkdirSync(racine);
+    mkdirSync(autre);
+    for (const d of [racine, autre]) {
+      git(d, 'init', '--quiet');
+      git(d, 'remote', 'add', 'origin', 'https://exemple.invalid/public.git');
+    }
+    assert.throws(() => resolveArchivesDir({ RTP_ARCHIVES_DIR: autre }, racine), (e: unknown) => e instanceof DepotPriveError && /remote origin/.test(e.message));
+  });
+
+  it('accepte un clone distinct, à côté du projet', () => {
+    const base = tmp();
+    const racine = path.join(base, 'projet');
+    const prive = path.join(base, 'reveleTonProg-archives');
+    mkdirSync(racine);
+    mkdirSync(prive);
+    git(racine, 'init', '--quiet');
+    git(prive, 'init', '--quiet');
+    assert.equal(resolveArchivesDir({}, racine), prive);
+  });
+
+  it('.gitignore public exclut les binaires sous archives/', () => {
+    const base = tmp();
+    git(base, 'init', '--quiet');
+    writeFileSync(path.join(base, '.gitignore'), readFileSync(path.join(import.meta.dirname, '..', '..', '.gitignore'), 'utf8'));
+    mkdirSync(path.join(base, 'archives', 'c'), { recursive: true });
+    for (const f of ['x.pdf', 'x.html', 'x.mhtml']) {
+      writeFileSync(path.join(base, 'archives', 'c', f), 'b');
+      assert.match(git(base, 'check-ignore', '-v', `archives/c/${f}`), /archives/, f);
+    }
+    writeFileSync(path.join(base, 'archives', 'c', 'x.txt'), 't');
+    assert.throws(() => git(base, 'check-ignore', 'archives/c/x.txt'));
+  });
+});
+
 describe('storeBinary', () => {
   it('écrit <candidat>/<sha12>.<ext> et la fiche <sha12>--<source-id>.json, puis ne réécrit rien', () => {
     const dossier = tmp();
@@ -180,6 +230,16 @@ describe('syncPrivate', () => {
     assert.equal(r.commit, true);
     const fichiers = git(remote, 'ls-tree', '-r', '--name-only', 'main').trim().split('\n');
     assert.ok(fichiers.includes('venu-d-ailleurs.txt') && fichiers.includes('local.txt'));
+  });
+
+  it('WR-01 : relance idempotente (chemins vides) ne commite ni ne casse, même avec un fichier étranger en attente', async () => {
+    const avant = commitsDistants();
+    writeFileSync(path.join(clone, 'etranger-indexe.txt'), 'z\n');
+    const r = await syncPrivate({ dossier: clone, chemins: [], message: 'archive: deja-la' });
+    assert.deepEqual(r, { commit: false, pousse: true });
+    assert.equal(commitsDistants(), avant);
+    assert.match(git(clone, 'status', '--porcelain'), /\?\? etranger-indexe\.txt/, 'le fichier étranger reste en attente, non commité');
+    rmSync(path.join(clone, 'etranger-indexe.txt'));
   });
 
   it('un verrou ancien est signalé et jamais retiré en silence', async () => {

@@ -11,8 +11,9 @@ import type { IdsLock } from '../src/lib/content-core/ids-lock.ts';
 import { formatText } from '../src/lib/content-core/diagnostics.ts';
 import type { Diagnostic } from '../src/lib/content-core/diagnostics.ts';
 import { checkContained, readContained, validateYamlText } from '../src/lib/content-core/load.ts';
-import { UnknownUpstreamIdsError, UpstreamShapeError, checkUpstream, lireCorrespondances, mapRow, mergeFiche, renderYaml, snapshotName } from './lib/datagouv.ts';
+import { ajouterStatutYaml, UnknownUpstreamIdsError, UpstreamShapeError, checkUpstream, lireCorrespondances, mapRow, mergeFiche, renderYaml, snapshotName } from './lib/datagouv.ts';
 import type { UpstreamRow } from './lib/datagouv.ts';
+import { FetchSafeError, fetchSafe } from './lib/fetch-safe.ts';
 
 const URL_PAR_DEFAUT = 'https://www.data.gouv.fr/api/1/datasets/r/06237c53-76bd-4224-9805-418e125f0493';
 const PLAFOND_OCTETS = 5 * 1024 * 1024;
@@ -74,25 +75,14 @@ interface Brut {
 }
 
 async function lireReseau(): Promise<Brut> {
-  let res: Response;
+  // fetchSafe : https seulement, adresses publiques seulement (redirections comprises), plafond et délai.
   try {
-    res = await fetch(url, { redirect: 'follow', signal: AbortSignal.timeout(DELAI_MS) });
+    const r = await fetchSafe(url, { maxOctets: PLAFOND_OCTETS, timeoutMs: DELAI_MS });
+    return { buffer: Buffer.from(r.bytes), urlInitiale: url, urlFinale: r.finalUrl, etag: r.etag ?? null };
   } catch (e) {
-    return fail(`téléchargement impossible (${e instanceof Error ? e.message : String(e)})`);
+    if (e instanceof FetchSafeError) return fail(`téléchargement refusé ou impossible (${e.code}) : ${e.message}`);
+    throw e;
   }
-  if (!res.ok || res.body === null) return fail(`téléchargement refusé : HTTP ${res.status}`);
-  const morceaux: Buffer[] = [];
-  let total = 0;
-  try {
-    for await (const m of res.body as unknown as AsyncIterable<Uint8Array>) {
-      total += m.byteLength;
-      if (total > PLAFOND_OCTETS) return fail(`réponse trop volumineuse (plus de ${PLAFOND_OCTETS} octets)`);
-      morceaux.push(Buffer.from(m));
-    }
-  } catch (e) {
-    return fail(`lecture interrompue (${e instanceof Error ? e.message : String(e)})`);
-  }
-  return { buffer: Buffer.concat(morceaux), urlInitiale: url, urlFinale: res.url || url, etag: res.headers.get('etag') };
 }
 
 function lireFichier(file: string): Brut {
@@ -162,6 +152,7 @@ for (const row of amont.rows) {
   const id = String(mapped.id);
   const file = path.join(candidatsDir, `${id}.yaml`);
   let existant: Record<string, unknown> | undefined;
+  let texteExistant: string | undefined;
   if (lstatSync(file, { throwIfNoEntry: false }) !== undefined) {
     const lu = readContained(root, file);
     if ('diagnostic' in lu) {
@@ -169,19 +160,38 @@ for (const row of amont.rows) {
       invalide = true;
       continue;
     }
-    const doc: unknown = parse(lu.text, { schema: 'core', uniqueKeys: true });
+    let doc: unknown;
+    try {
+      doc = parse(lu.text, { schema: 'core', uniqueKeys: true });
+    } catch (e) {
+      conflits.push(`${id} — fichier existant illisible (${e instanceof Error ? e.message.split('\n')[0] : String(e)})`);
+      continue;
+    }
     if (doc === null || typeof doc !== 'object' || Array.isArray(doc)) {
       conflits.push(`${id} — fichier existant illisible (objet YAML attendu)`);
       continue;
     }
     existant = doc as Record<string, unknown>;
+    texteExistant = lu.text;
   }
   const fusion = mergeFiche(existant, mapped);
   if ('conflit' in fusion) {
     conflits.push(`${id} — ${fusion.conflit}`);
     continue;
   }
-  const texte = renderYaml(fusion.fiche);
+  let texte: string;
+  if (fusion.action === 'statut_ajoute' && texteExistant !== undefined) {
+    // Édition en place : commentaires et mise en forme du fichier existant conservés.
+    const statuts = fusion.fiche.statuts as unknown[];
+    try {
+      texte = ajouterStatutYaml(texteExistant, statuts[statuts.length - 1]);
+    } catch (e) {
+      conflits.push(`${id} — ajout du statut impossible (${e instanceof Error ? e.message : String(e)})`);
+      continue;
+    }
+  } else {
+    texte = renderYaml(fusion.fiche);
+  }
   if (fusion.action !== 'inchange') {
     const res = validateYamlText('candidat', texte, file, { schemasDir, mode: 'preview' });
     if (res.diagnostics.length > 0) {
@@ -275,15 +285,23 @@ for (const p of plans) {
 }
 const amontIds = new Set(amont.rows.map((r) => r.id));
 const absents: string[] = [];
+const illisibles: string[] = [];
 for (const id of presents) {
   const f = path.join(candidatsDir, `${id}.yaml`);
   const lu = readContained(root, f);
   if ('diagnostic' in lu) continue;
-  const doc = parse(lu.text, { schema: 'core' }) as { ids_externes?: Record<string, string> } | null;
+  let doc: { ids_externes?: Record<string, string> } | null;
+  try {
+    doc = parse(lu.text, { schema: 'core' }) as { ids_externes?: Record<string, string> } | null;
+  } catch {
+    illisibles.push(id);
+    continue;
+  }
   const externe = doc?.ids_externes?.['2027etmoi'];
   if (externe !== undefined && !amontIds.has(externe)) absents.push(id);
 }
 if (absents.length > 0) console.log(`absent en amont : ${absents.join(', ')}`);
+if (illisibles.length > 0) console.log(`illisible (YAML invalide, ignoré pour le rapport « absent en amont ») : ${illisibles.join(', ')}`);
 console.log(
   `import : ${amont.rows.length} ligne(s), ${nb.cree} créé(s), ${nb.statut_ajoute} statut(s) ajouté(s), ${nb.inchange} inchangé(s), ${absents.length} absent(s) en amont, 0 conflit(s) — instantané ${sha12} du ${amont.miseAJour}, racine ${rel}`,
 );
