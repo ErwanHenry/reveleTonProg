@@ -255,14 +255,14 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 05-01-PLAN.md — Socle e2e : Playwright + axe (Chromium seul, provenance vérifiée), serveur gzip maison, `scripts/e2e.ts` (fixture puis corpus réel, séquentiel), specs sans JS, clavier et axe WCAG 2.2 AA (wave 1)
-- [ ] 05-02-PLAN.md — Mentions légales (LCEN art. 1-1, `config/hebergeur.yml` statut prevu + garde RTP_DEPLOIEMENT), Qui sommes-nous sans branding ni don, dates des tours dans le pied de chaque page, constantes partagées (wave 1)
-- [ ] 05-03-PLAN.md — Banc du test croisé : lecteur journalisé `scripts/audit-lire.ts`, fiches des 3 personas, protocole et scénario écrits avant les résultats (wave 1)
+- [x] 05-01-PLAN.md — Socle e2e : Playwright + axe (Chromium seul, provenance vérifiée), serveur gzip maison, `scripts/e2e.ts` (fixture puis corpus réel, séquentiel), specs sans JS, clavier et axe WCAG 2.2 AA (wave 1)
+- [x] 05-02-PLAN.md — Mentions légales (LCEN art. 1-1, `config/hebergeur.yml` statut prevu + garde RTP_DEPLOIEMENT), Qui sommes-nous sans branding ni don, dates des tours dans le pied de chaque page, constantes partagées (wave 1)
+- [x] 05-03-PLAN.md — Banc du test croisé : lecteur journalisé `scripts/audit-lire.ts`, fiches des 3 personas, protocole et scénario écrits avant les résultats (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 05-04-PLAN.md — Page Méthode générée depuis `config.ts`, la couverture mesurée et `data/dataset-datagouv.yaml` (écart 59/51 calculé depuis l'instantané) (wave 2)
-- [ ] 05-05-PLAN.md — Specs 160 % et reflow 320 px (correction CSS du sélecteur), reduced-motion, contraste des 10 thèmes, vie privée, 4G lente < 1 s (wave 2)
+- [x] 05-04-PLAN.md — Page Méthode générée depuis `config.ts`, la couverture mesurée et `data/dataset-datagouv.yaml` (écart 59/51 calculé depuis l'instantané) (wave 2)
+- [x] 05-05-PLAN.md — Specs 160 % et reflow 320 px (correction CSS du sélecteur), reduced-motion, contraste des 10 thèmes, vie privée, 4G lente < 1 s (wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion AND on Phase 3 plan 03-09 merged)*
 
@@ -309,7 +309,7 @@ Phase 1 ──┬──> Phase 2 (règles) ──────────┐
 | 2. Règles éditoriales et pièges | 7/7 | Complete    | 2026-11-03 |
 | 3. Import data.gouv et corpus pilote | 7/9 | In Progress|  |
 | 4. Référentiel M1 et 4 niveaux de lecture | 9/9 | Complete    | 2026-11-03 |
-| 5. Pages institutionnelles, qualité et URL de test | 0/8 | Planned | - |
+| 5. Pages institutionnelles, qualité et URL de test | 5/8 | In Progress|  |
 
 ---
 *Roadmap created: 2026-11-03*
