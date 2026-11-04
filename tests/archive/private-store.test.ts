@@ -182,6 +182,16 @@ describe('syncPrivate', () => {
     assert.ok(fichiers.includes('venu-d-ailleurs.txt') && fichiers.includes('local.txt'));
   });
 
+  it('WR-01 : relance idempotente (chemins vides) ne commite ni ne casse, même avec un fichier étranger en attente', async () => {
+    const avant = commitsDistants();
+    writeFileSync(path.join(clone, 'etranger-indexe.txt'), 'z\n');
+    const r = await syncPrivate({ dossier: clone, chemins: [], message: 'archive: deja-la' });
+    assert.deepEqual(r, { commit: false, pousse: true });
+    assert.equal(commitsDistants(), avant);
+    assert.match(git(clone, 'status', '--porcelain'), /\?\? etranger-indexe\.txt/, 'le fichier étranger reste en attente, non commité');
+    rmSync(path.join(clone, 'etranger-indexe.txt'));
+  });
+
   it('un verrou ancien est signalé et jamais retiré en silence', async () => {
     const verrou = path.join(clone, '.git', 'rtp-archive.lock');
     mkdirSync(verrou);

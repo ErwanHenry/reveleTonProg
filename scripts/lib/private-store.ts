@@ -187,13 +187,15 @@ export async function syncPrivate(o: OptionsSync): Promise<ResultatSync> {
   const verrou = path.join(gitDir, 'rtp-archive.lock');
   await prendreVerrou(verrou, o);
   try {
-    const cibles = o.chemins === undefined ? [] : ['--', ...o.chemins];
+    const cibles = o.chemins !== undefined && o.chemins.length > 0 ? ['--', ...o.chemins] : [];
     if (o.chemins === undefined) await git(o.dossier, ['add', '-A']);
     else if (o.chemins.length > 0) await git(o.dossier, ['add', ...cibles]);
-    const enAttente = (await git(o.dossier, ['status', '--porcelain', ...(o.chemins !== undefined && o.chemins.length > 0 ? cibles : [])])).trim();
+    // Chemins fournis mais vides (relance idempotente) : rien n'a été écrit, donc rien à commiter ;
+    // on ne regarde pas l'état global du clone (fichiers étrangers ou déjà indexés).
+    const enAttente = o.chemins !== undefined && o.chemins.length === 0 ? '' : (await git(o.dossier, ['status', '--porcelain', ...cibles])).trim();
     let commit = false;
     if (enAttente !== '') {
-      await git(o.dossier, ['commit', '--quiet', '-m', o.message, ...(o.chemins !== undefined && o.chemins.length > 0 ? cibles : [])]);
+      await git(o.dossier, ['commit', '--quiet', '-m', o.message, ...cibles]);
       commit = true;
     }
     const branche = (await git(o.dossier, ['rev-parse', '--abbrev-ref', 'HEAD'])).trim();
