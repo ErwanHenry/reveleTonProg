@@ -102,7 +102,11 @@ export default function methode(ctx: ContexteSite): void {
       const pil = txt(unique(a, 'data-pilotes'));
       const attendus = lu.data.pilote.themes.length > 0 ? lu.data.pilote.themes : res.choix;
       for (const c of attendus) assert.ok(pil.includes(nom(c)), c);
-      assert.ok(txt(unique(a, 'data-regle', 'marge')).includes(String(MARGE_EGALITE)));
+      const marge = txt(unique(a, 'data-regle', 'marge'));
+      assert.ok(marge.includes(String(MARGE_EGALITE)));
+      // IN-01 : même règle que classer() : retenu d'office à P4 + marge ou plus, égalité dans la bande du meilleur restant.
+      assert.ok(marge.includes(`quatrième du classement de ${MARGE_EGALITE} positions ou plus est retenu d'office`), marge);
+      assert.doesNotMatch(marge, /Deux thèmes à \d+ positions d'écart ou moins/);
     });
 
     it('dataset : 51 annoncés, 59 lignes, statuts, licence, attribution', () => {

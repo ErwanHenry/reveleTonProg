@@ -119,7 +119,7 @@ const SEV: Record<string, string> = { erreur: 'erreur', avertissement: 'avertiss
 
     <h2>Choix des thèmes pilotes</h2>
     <p data-regle="marge">
-      Les thèmes publiés en premier sont choisis sur le nombre de candidats dont la position est connue. Deux thèmes à {MARGE_EGALITE} positions d'écart ou moins sont considérés à égalité ; l'égalité est départagée en faveur des thèmes qui comptent le plus pour les lecteurs âgés ({themesAine.join(', ')}).
+      Les thèmes publiés en premier sont choisis sur le nombre de candidats dont la position est connue. Un thème qui devance le quatrième du classement de {MARGE_EGALITE} positions ou plus est retenu d'office. Les places restantes vont aux thèmes à {MARGE_EGALITE} positions ou moins du meilleur thème restant, considérés à égalité ; l'égalité est départagée en faveur des thèmes qui comptent le plus pour les lecteurs âgés ({themesAine.join(', ')}).
     </p>
     <ul>
       {resultat.explication.map((ligne) => <li>{ligne}</li>)}
