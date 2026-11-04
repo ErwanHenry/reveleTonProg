@@ -6,7 +6,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'yaml';
 import { THEMES_SPEC, classer, lireCouverture } from '../../scripts/lib/couverture.ts';
-import { HOTES_INTERDITS } from '../../scripts/lib/pilote.ts';
+import { HOTES_INTERDITS, MODE_PILOTE } from '../../scripts/lib/pilote.ts';
+import { dansPerimetre } from '../../src/lib/content-core/rules/equite.ts';
 
 // Test sur les données réelles (racine du dépôt) : tableau de couverture mesurée (CONT-04), plan 03-04.
 // Rien n'est saisi à la main : le périmètre vient des fiches candidats, le classement de `classer`.
@@ -16,15 +17,15 @@ const lire = (...p: string[]): string => readFileSync(path.join(REPO_ROOT, ...p)
 
 const { data, problemes } = lireCouverture(lire('data', 'couverture-themes.yaml'));
 
-/** Périmètre : fiches dont le dernier statut est « declare » ou « primaire », dans l'ordre `nom_tri` (collation française). */
+/** Périmètre : fiches dans le périmètre d'équité (dansPerimetre, mode du pilote, W5), dans l'ordre `nom_tri` (collation française). */
 function perimetre(): string[] {
   const dir = path.join(REPO_ROOT, 'src', 'content', 'candidats');
   const fiches = readdirSync(dir)
     .filter((f) => f.endsWith('.yaml'))
-    .map((f) => parse(readFileSync(path.join(dir, f), 'utf8'), { schema: 'core' }) as { id: string; nom_tri: string; statuts: { code: string }[] });
+    .map((f) => parse(readFileSync(path.join(dir, f), 'utf8'), { schema: 'core' }) as { id: string; nom_tri: string; statuts: unknown });
   const col = new Intl.Collator('fr');
   return fiches
-    .filter((f) => ['declare', 'primaire'].includes(f.statuts[f.statuts.length - 1]?.code ?? ''))
+    .filter((f) => dansPerimetre(f.statuts, MODE_PILOTE))
     .sort((a, b) => col.compare(a.nom_tri, b.nom_tri))
     .map((f) => f.id);
 }

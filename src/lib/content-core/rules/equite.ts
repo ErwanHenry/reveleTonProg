@@ -37,6 +37,14 @@ export function statutRetenu(statuts: unknown, mode: Mode): Record<string, unkno
   return statutLePlusRecent(mode === 'production' ? liste.filter((s) => RELUS.includes(String(objet(s).statut_relecture))) : liste);
 }
 
+/**
+ * Vrai si le statut retenu dans `mode` (statutRetenu) est dans PERIMETRE_EQUITE. Seule définition du
+ * périmètre d'équité : validateur, view-model des pages, contrôle du pilote et tests passent par ici (W5).
+ */
+export function dansPerimetre(statuts: unknown, mode: Mode): boolean {
+  return (PERIMETRE_EQUITE as readonly unknown[]).includes(statutRetenu(statuts, mode)?.code);
+}
+
 export const regleEquite: CorpusRule = {
   id: 'equite',
   run(ctx) {
@@ -49,10 +57,7 @@ export const regleEquite: CorpusRule = {
 
     const perimetre = ctx.corpus
       .de('candidats')
-      .filter((c) => {
-        const dernier = statutRetenu(c.data.statuts, ctx.mode)?.code;
-        return (PERIMETRE_EQUITE as readonly unknown[]).includes(dernier);
-      })
+      .filter((c) => dansPerimetre(c.data.statuts, ctx.mode))
       .map((c) => c.id)
       .sort();
 

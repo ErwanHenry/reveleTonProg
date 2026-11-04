@@ -1,6 +1,10 @@
 import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { readdirSync, readFileSync } from 'node:fs';
+import path from 'node:path';
+import { dansPerimetre } from '../../src/lib/content-core/rules/equite.ts';
 import { executerPiege, nettoyerRacines } from '../helpers/overlay.ts';
+import { REPO_ROOT } from '../helpers/validate-yaml.ts';
 import type { Mode } from '../../src/lib/content-core/rules/types.ts';
 import type { PiegeSpec, Remplacement } from '../helpers/overlay.ts';
 
@@ -145,5 +149,36 @@ describe('REGLE-08 : équité des thèmes publiés', () => {
 
   it('un fichier invalide au schéma : la règle se tait (pas de cascade)', () => {
     assert.deepEqual(equite([SANS_CAS_JEAN, { fichier: JEAN, de: 'prenom: Jean\n', par: '' }]), []);
+  });
+});
+
+describe('W5 : une seule définition du périmètre (dansPerimetre)', () => {
+  const st = (code: string, date: string, statut_relecture: string) => ({ code, date, statut_relecture });
+
+  it('statut le plus récent par date, brouillons exclus en production seulement', () => {
+    const statuts = [st('declare', '2026-10-01', 'relu'), st('renonce', '2026-11-01', 'brouillon')];
+    assert.equal(dansPerimetre(statuts, 'production'), true);
+    assert.equal(dansPerimetre(statuts, 'preview'), false);
+    // Ordre de la liste indifférent : le plus récent par date l'emporte, pas le dernier.
+    assert.equal(dansPerimetre([...statuts].reverse(), 'preview'), false);
+    assert.equal(dansPerimetre([st('primaire', '2026-10-01', 'brouillon')], 'production'), false);
+    assert.equal(dansPerimetre([st('primaire', '2026-10-01', 'brouillon')], 'preview'), true);
+    assert.equal(dansPerimetre(undefined, 'preview'), false);
+  });
+
+  it('aucune liste de statuts du périmètre écrite en dur hors de config.ts', () => {
+    const fichiers = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+        const p = path.join(dir, e.name);
+        if (e.isDirectory()) return e.name === 'content' || e.name === 'fixtures' || e.name === 'node_modules' ? [] : fichiers(p);
+        return /\.(ts|astro)$/.test(e.name) ? [p] : [];
+      });
+    const enDur = /\[\s*['"]declare['"]\s*,\s*['"]primaire['"]\s*\]/;
+    const fautifs = ['src', 'scripts', 'tests']
+      .flatMap((d) => fichiers(path.join(REPO_ROOT, d)))
+      .filter((f) => !f.endsWith(path.join('rules', 'config.ts')) && !f.endsWith(path.join('rules', 'equite.test.ts')))
+      .filter((f) => enDur.test(readFileSync(f, 'utf8')))
+      .map((f) => path.relative(REPO_ROOT, f));
+    assert.deepEqual(fautifs, [], 'utiliser PERIMETRE_EQUITE et dansPerimetre');
   });
 });

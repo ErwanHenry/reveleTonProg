@@ -2,8 +2,7 @@
 // Module PUR : ni `astro:content` ni `node:` (testable seul, importable par toute page ou composant).
 // Le mode est un paramètre : seul `index.ts` lit l'environnement. Aucune horloge : toutes les dates
 // viennent des données.
-import { PERIMETRE_EQUITE } from '../content-core/rules/config.ts';
-import { statutLePlusRecent, statutRetenu } from '../content-core/rules/equite.ts';
+import { dansPerimetre, statutLePlusRecent, statutRetenu } from '../content-core/rules/equite.ts';
 import type {
   Candidat,
   CaseCouverture,
@@ -263,7 +262,7 @@ export function construireCorpus(brut: Brut, mode: Mode): Corpus {
         parti: c.parti,
         rang,
         // Même définition que le statut affiché et que le validateur (ADR-041).
-        perimetre: (PERIMETRE_EQUITE as readonly string[]).includes(statutAffiche(c, mode)?.code ?? ''),
+        perimetre: dansPerimetre(c.statuts, mode),
         statutRecent,
         statutAffiche: statutAffiche(c, mode),
         donnees: c,

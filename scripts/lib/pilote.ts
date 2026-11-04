@@ -1,5 +1,6 @@
 import type { Entry } from '../../src/lib/content-core/load.ts';
 import { MARQUEUR_GLOSSAIRE, PERIMETRE_EQUITE } from '../../src/lib/content-core/rules/config.ts';
+import { dansPerimetre } from '../../src/lib/content-core/rules/equite.ts';
 import { slugGlossaire } from '../../src/lib/content-core/rules/references.ts';
 import { foldKey } from '../../src/lib/content-core/rules/text/normalize.ts';
 import type { CouvertureThemes } from './couverture.ts';
@@ -69,15 +70,11 @@ function hoteInterdit(url: string): string | undefined {
   return HOTES_INTERDITS.find((h) => hote === h || hote.endsWith(`.${h}`));
 }
 
-/** Code du statut le plus récent par date (à date égale, le dernier de la liste), comme la règle d'équité (A6). */
-function dernierCode(candidat: Donnees): string {
-  let meilleur: Donnees | undefined;
-  for (const s of liste(candidat.statuts)) {
-    const st = objet(s);
-    if (meilleur === undefined || texte(st.date) >= texte(meilleur.date)) meilleur = st;
-  }
-  return texte(meilleur?.code);
-}
+/**
+ * Le pilote se rédige sur le corpus de travail : tous les statuts comptent, brouillons compris, comme en
+ * preview. Même définition que le validateur et les pages (dansPerimetre, ADR-041), jamais une copie (W5).
+ */
+export const MODE_PILOTE = 'preview';
 
 export function verifierPilote(entries: Entry[], couverture: CouvertureThemes): Probleme[] {
   const problemes: Probleme[] = [];
@@ -93,7 +90,7 @@ export function verifierPilote(entries: Entry[], couverture: CouvertureThemes): 
   const par = (collection: string): Entry[] => entries.filter((e) => e.collection === collection);
   const candidats = par('candidats');
   const sources = new Map(par('sources').map((e) => [e.id, e]));
-  const perimetre = new Set(candidats.filter((c) => (PERIMETRE_EQUITE as readonly string[]).includes(dernierCode(c.data))).map((c) => c.id));
+  const perimetre = new Set(candidats.filter((c) => dansPerimetre(c.data.statuts, MODE_PILOTE)).map((c) => c.id));
   const mesures = par('mesures').filter((m) => themesPilotes.has(texte(m.data.theme)));
   const fichiersCouverture = par('couverture').filter((c) => themesPilotes.has(texte(c.data.theme)));
 

@@ -5,8 +5,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadAll } from '../../src/lib/content-core/load.ts';
 import { lireCouverture } from '../../scripts/lib/couverture.ts';
-import { PERIMETRE_EQUITE } from '../../src/lib/content-core/rules/config.ts';
-import { verifierPilote } from '../../scripts/lib/pilote.ts';
+import { dansPerimetre } from '../../src/lib/content-core/rules/equite.ts';
+import { MODE_PILOTE, verifierPilote } from '../../scripts/lib/pilote.ts';
 
 // Corpus pilote réel (racine du dépôt), CONT-05 : plafond de 2 mesures, brouillon uniquement, complétude des
 // thèmes livrés, cohérence des cases, sources consultées, hôtes. Les deux codes de glossaire (CONT-06) sont
@@ -44,10 +44,8 @@ describe('corpus pilote réel (CONT-05)', () => {
   it('phase 3 : les 3 thèmes pilotes sont livrés (livres = themes), avec fichier thème et couverture complète', () => {
     assert.deepEqual([...data.pilote.livres].sort(), [...data.pilote.themes].sort(), 'chaque thème pilote doit être livré avant de clore la phase');
     const entrees = (collection: string) => charge.entries.filter((e) => e.collection === collection);
-    const perimetre = entrees('candidats').filter((c) => {
-      const statuts = Array.isArray(c.data.statuts) ? (c.data.statuts as { code?: string }[]) : [];
-      return (PERIMETRE_EQUITE as readonly string[]).includes(statuts[statuts.length - 1]?.code ?? '');
-    });
+    // Même périmètre que verifierPilote (W5) : statut le plus récent par date, brouillons compris.
+    const perimetre = entrees('candidats').filter((c) => dansPerimetre(c.data.statuts, MODE_PILOTE));
     assert.ok(perimetre.length > 0, 'le périmètre ne doit pas être vide');
     for (const theme of data.pilote.themes) {
       assert.ok(entrees('themes').some((t) => t.id === theme), `fichier thème absent : ${theme}`);

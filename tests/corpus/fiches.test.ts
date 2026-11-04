@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { parse } from 'yaml';
+import { statutLePlusRecent } from '../../src/lib/content-core/rules/equite.ts';
 import { REPO_ROOT } from '../helpers/validate-yaml.ts';
 
 const IMPORT_DIR = path.join(REPO_ROOT, 'data', 'import');
@@ -67,9 +68,10 @@ describe('corpus réel : fiches candidats importées', () => {
     assert.deepEqual([...vus].sort(), [...amont].sort());
   });
 
-  it('chaque dernier statut renonce porte un motif', () => {
+  it('chaque statut le plus récent « renonce » porte un motif', () => {
     for (const f of fiches) {
-      const dernier = f.statuts[f.statuts.length - 1];
+      // Statut le plus récent par date (W5), comme le périmètre d'équité, pas le dernier de la liste.
+      const dernier = statutLePlusRecent(f.statuts);
       assert.ok(dernier, `${f.id} sans statut`);
       if (dernier.code === 'renonce') assert.ok(dernier.motif, `${f.id} : renonce sans motif`);
     }
