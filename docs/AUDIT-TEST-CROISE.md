@@ -2,6 +2,18 @@
 
 Protocole de l'audit où des agents jouent trois lecteurs (un enfant de 10 ans, un retraité de 72 ans, un journaliste) sur une build locale du site. Ce document est écrit et committé avant toute passe : le scénario, les résultats attendus et les critères de notation sont fixés ici, puis les résultats sont ajoutés dans les sections prévues à cet effet.
 
+## Passe du 4 novembre 2026
+
+| Élément | Valeur |
+|---|---|
+| Date | 2026-11-04 |
+| Commit | `b9b872bb9667c4102526d73325b7539a15d91bc7` |
+| Build `dist-e2e/reel` | mode preview (vrai corpus, brouillons visibles, bandeau d'aperçu), empreinte `34504b3e9aa9224468b277ac064db1363e71a132dab8950d3b9c22977ddbd37c` |
+| Build `dist-e2e/m1` | mode production (fixture M1), empreinte `09ec3e3a7c52bb49f581c4def4e5cb37057c4153c0b789218494d51d407c9e2d` |
+| Suite navigateur avant la passe | `npm run e2e` vert : 222 tests sur la fixture, 1032 sur le vrai corpus |
+
+Les empreintes se recalculent avec `node scripts/audit-lire.ts --dist <dossier> --empreinte`.
+
 ## Objet et limites
 
 - Les lecteurs sont des agents simulés qui lisent une build locale en texte brut. Ce ne sont pas de vrais utilisateurs : l'audit ne remplace ni un test avec des personnes réelles ni la relecture éditoriale d'Erwan.
@@ -84,13 +96,24 @@ Les sept pièges sont déjà rejoués de façon déterministe par `tests/pieges/
 
 | Piège | Code de rejet | Commande de rejeu | Résultat |
 |---|---|---|---|
-| Mesure sans source | `SOURCE_ABSENTE` | `fnm exec --using=24 node --test --test-name-pattern "SOURCE_ABSENTE" tests/pieges/pieges.test.ts` | à remplir (05-07) |
-| Mot interdit dans une rédaction | `MOT_INTERDIT` | `fnm exec --using=24 node --test --test-name-pattern "MOT_INTERDIT" tests/pieges/pieges.test.ts` | à remplir (05-07) |
-| Sondage sans notice | `SONDAGE_NOTICE_ABSENTE` | `fnm exec --using=24 node --test --test-name-pattern "SONDAGE_NOTICE_ABSENTE" tests/pieges/pieges.test.ts` | à remplir (05-07) |
-| Somme des intentions hors bornes | `SONDAGE_SOMME_HORS_BORNES` | `fnm exec --using=24 node --test --test-name-pattern "SONDAGE_SOMME_HORS_BORNES" tests/pieges/pieges.test.ts` | à remplir (05-07) |
-| Intentions de second tour présentées au premier | `SONDAGE_TOUR2_EN_TOUR1` | `fnm exec --using=24 node --test --test-name-pattern "SONDAGE_TOUR2_EN_TOUR1" tests/pieges/pieges.test.ts` | à remplir (05-07) |
-| Chiffre absent de la source | `CHIFFRE_HORS_SOURCE` | `fnm exec --using=24 node --test --test-name-pattern "CHIFFRE_HORS_SOURCE" tests/pieges/pieges.test.ts` | à remplir (05-07) |
-| Sondage publié dans la fenêtre de blocage | `SONDAGE_FENETRE_BLOCAGE` | `fnm exec --using=24 node --test --test-name-pattern "SONDAGE_FENETRE_BLOCAGE" tests/pieges/pieges.test.ts` | à remplir (05-07) |
+| Mesure sans source | `SOURCE_ABSENTE` | `fnm exec --using=24 node --test --test-name-pattern "SOURCE_ABSENTE" tests/pieges/pieges.test.ts` | rejeté : code `SOURCE_ABSENTE` émis, « le piège est rejoué et les diagnostics correspondent exactement » OK, sortie 0 (4 tests, 0 échec) |
+| Mot interdit dans une rédaction | `MOT_INTERDIT` | `fnm exec --using=24 node --test --test-name-pattern "MOT_INTERDIT" tests/pieges/pieges.test.ts` | rejeté : code `MOT_INTERDIT` émis, diagnostics conformes, sortie 0 (8 tests, 0 échec ; la variante `MOT_INTERDIT--dans-citation-ok` confirme l'exemption de la citation verbatim) |
+| Sondage sans notice | `SONDAGE_NOTICE_ABSENTE` | `fnm exec --using=24 node --test --test-name-pattern "SONDAGE_NOTICE_ABSENTE" tests/pieges/pieges.test.ts` | rejeté : code `SONDAGE_NOTICE_ABSENTE` émis, diagnostics conformes, sortie 0 (4 tests, 0 échec) |
+| Somme des intentions hors bornes | `SONDAGE_SOMME_HORS_BORNES` | `fnm exec --using=24 node --test --test-name-pattern "SONDAGE_SOMME_HORS_BORNES" tests/pieges/pieges.test.ts` | rejeté : code `SONDAGE_SOMME_HORS_BORNES` émis (scores à 112 %), diagnostics conformes, sortie 0 (4 tests, 0 échec) |
+| Intentions de second tour présentées au premier | `SONDAGE_TOUR2_EN_TOUR1` | `fnm exec --using=24 node --test --test-name-pattern "SONDAGE_TOUR2_EN_TOUR1" tests/pieges/pieges.test.ts` | rejeté : code `SONDAGE_TOUR2_EN_TOUR1` émis, diagnostics conformes, sortie 0 (4 tests, 0 échec) |
+| Chiffre absent de la source | `CHIFFRE_HORS_SOURCE` | `fnm exec --using=24 node --test --test-name-pattern "CHIFFRE_HORS_SOURCE" tests/pieges/pieges.test.ts` | rejeté : code `CHIFFRE_HORS_SOURCE` émis, diagnostics conformes, sortie 0 (4 tests, 0 échec) |
+| Sondage publié dans la fenêtre de blocage | `SONDAGE_FENETRE_BLOCAGE` | `fnm exec --using=24 node --test --test-name-pattern "SONDAGE_FENETRE_BLOCAGE" tests/pieges/pieges.test.ts` | rejeté : code `SONDAGE_FENETRE_BLOCAGE` émis, diagnostics conformes, sortie 0 (4 tests, 0 échec) |
+
+Rejeu complet : `fnm exec --using=24 node --test tests/pieges/pieges.test.ts` donne 47 tests, 47 réussis, 0 échec. Bilan : 7 pièges sur 7 rejetés.
+
+Pièges de lecture, rejoués avec le lecteur sous l'identifiant `controle` sur `dist-e2e/m1` (production) :
+
+| Contrôle | Résultat | Lignes du journal |
+|---|---|---|
+| La mesure brouillon « Guichet unique départemental » (`TRAPPE_BROUILLON`) n'apparaît sur aucune page | absente : 0 occurrence dans la sortie du lecteur sur les 14 pages listées, 0 fichier par `grep -rl` sur `dist-e2e/m1` | 6 à 20 |
+| La candidate pressentie est présentée comme telle | `/candidats/nina-pressentie/` affiche « Statut en cours de vérification » (son statut pressenti, sourcé par la presse, est encore en brouillon) et « Aucune mesure n'est présentée pour cette personnalité » : jamais présentée comme candidate déclarée | 2 |
+| Le candidat qui a renoncé est présenté comme tel | `/candidats/luc-retire/` affiche « Ne se présente pas (retrait de la candidature), depuis le 25 octobre 2026 » avec sa source, et aucune mesure | 3 |
+| Une case vide est typée et datée | `/themes/logement/` : « Non précisé dans les sources consultées le 24 octobre 2026 » (Élise Érard) et « Programme non publié à ce jour. Vérifié le 21 octobre 2026 » (Jean Imaginaire) | 4 |
 
 ## Résultats
 
