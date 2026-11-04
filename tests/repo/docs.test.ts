@@ -282,3 +282,35 @@ describe('documentation (phase 5)', () => {
     assert.doesNotMatch(architecture, /alignd|spikeelabs/i);
   });
 });
+
+describe('docs/AUDIT-TEST-CROISE.md (QUAL-06)', () => {
+  const audit = read('docs/AUDIT-TEST-CROISE.md');
+
+  it('nomme les trois personas', () => {
+    for (const p of ['enfant-10-ans', 'retraite-72-ans', 'journaliste']) assert.ok(audit.includes(`\`${p}\``), `persona ${p} absente`);
+  });
+
+  it('tableau des pièges : 7 lignes, une par code §12, sans « à remplir »', () => {
+    const table = audit.split('## Données piégées')[1]?.split('\n## ')[0] ?? '';
+    const lignes = table.split('\n').filter((l) => /^\| [^|-]/.test(l) && l.includes('--test-name-pattern'));
+    assert.equal(lignes.length, 7);
+    const codes = ['SOURCE_ABSENTE', 'MOT_INTERDIT', 'SONDAGE_NOTICE_ABSENTE', 'SONDAGE_SOMME_HORS_BORNES', 'SONDAGE_TOUR2_EN_TOUR1', 'CHIFFRE_HORS_SOURCE', 'SONDAGE_FENETRE_BLOCAGE'];
+    for (const c of codes) assert.ok(lignes.some((l) => l.includes(`\`${c}\``)), `piège ${c} absent`);
+    assert.ok(!table.includes('à remplir'), 'résultat de piège non rempli');
+  });
+
+  it('contient un verdict, ni tiret long ni demi-cadratin, aucune mention externe', () => {
+    assert.match(audit, /^## Verdict\n\n.*\b(prêt|pas prêt)\b/m);
+    assert.doesNotMatch(audit, /[–—]/);
+    assert.doesNotMatch(audit, /alignd|spikeelabs/i);
+  });
+
+  it('audit/journal.jsonl : non vide, chaque ligne a exactement les 6 clés autorisées', () => {
+    const lignes = read('audit/journal.jsonl').trim().split('\n');
+    assert.ok(lignes.length > 0 && lignes[0] !== '');
+    for (const [i, l] of lignes.entries()) {
+      const o = JSON.parse(l) as Record<string, unknown>;
+      assert.equal(Object.keys(o).sort().join(), 'chemin,horodatage,niveau,octets,persona,sha256', `ligne ${i + 1}`);
+    }
+  });
+});
