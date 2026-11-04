@@ -45,7 +45,12 @@ const mesuresAffichees = sections.flatMap((s) => s.cellule.mesures);
           </>
         ) : (
           <>
-            <p>Aucune mesure n'est présentée pour cette personnalité : les thèmes couvrent les candidatures déclarées et les candidatures à une primaire.</p>
+            {page.statut === null ? (
+              // W2 : statut non relu, rien n'est dit de la candidature elle-même.
+              <p>Aucune mesure n'est présentée pour cette personnalité tant que son statut est en cours de vérification.</p>
+            ) : (
+              <p>Aucune mesure n'est présentée pour cette personnalité : les thèmes couvrent les candidatures déclarées et les candidatures à une primaire.</p>
+            )}
             <p><a href="/themes/">Voir les thèmes</a></p>
           </>
         )

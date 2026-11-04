@@ -14,6 +14,7 @@ const txt = (n: Noeud): string => norm(texte(n));
 
 const IDS = ['elise-erard', 'marie-fictive', 'jean-imaginaire', 'nina-pressentie', 'luc-retire', 'paul-de-villefranche'];
 const SANS_MESURE = "Aucune mesure n'est présentée pour cette personnalité : les thèmes couvrent les candidatures déclarées et les candidatures à une primaire.";
+const STATUT_A_VERIFIER = "Aucune mesure n'est présentée pour cette personnalité tant que son statut est en cours de vérification.";
 const INTRO_CANDIDATS =
   "Toutes les personnalités du jeu de données, dans l'ordre choisi ci-dessus. Le statut est celui de la dernière source consultée.";
 const NIVEAUX_HALL = [
@@ -105,9 +106,19 @@ export default function candidat(ctx: ContexteSite): void {
       assert.equal(trouver(statut, (n) => n.tag === 'time').length, 0);
     });
 
-    it('Nina : phrase sans mesure et lien « Voir les thèmes »', () => {
+    it("Paul (W2) : statut non relu, la phrase sans mesure ne dit rien de la candidature", () => {
+      const { arbre } = page(production().outDir, 'candidats/paul-de-villefranche/index.html');
+      const t = txt(arbre);
+      assert.ok(t.includes(STATUT_A_VERIFIER), t);
+      assert.ok(!t.includes(SANS_MESURE), 'phrase du périmètre affichée pour un statut non relu');
+      assert.doesNotMatch(t, /candidatures déclarées/);
+      assert.equal(lien(arbre, 'Voir les thèmes').attrs.href, '/themes/');
+    });
+
+    it('Nina (W2) : statut « pressenti » non relu, phrase du statut à vérifier et lien « Voir les thèmes »', () => {
       const { arbre } = page(production().outDir, 'candidats/nina-pressentie/index.html');
-      assert.ok(txt(arbre).includes(SANS_MESURE));
+      assert.ok(txt(arbre).includes(STATUT_A_VERIFIER));
+      assert.ok(!txt(arbre).includes(SANS_MESURE));
       assert.equal(lien(arbre, 'Voir les thèmes').attrs.href, '/themes/');
       assert.equal(trouver(arbre, (n) => n.tag === 'section' && n.attrs['data-theme'] !== undefined).length, 0);
     });
@@ -116,6 +127,9 @@ export default function candidat(ctx: ContexteSite): void {
       const { arbre } = page(production().outDir, 'candidats/luc-retire/index.html');
       const statut = trouver(arbre, (n) => n.tag === 'p' && aClasse(n, 'statut'))[0] as Noeud;
       assert.ok(txt(statut).startsWith('Ne se présente pas (retrait de la candidature), depuis le 25 octobre 2026. Source : '));
+      // Statut relu hors périmètre : la phrase du périmètre est exacte.
+      assert.ok(txt(arbre).includes(SANS_MESURE));
+      assert.ok(!txt(arbre).includes(STATUT_A_VERIFIER));
     });
 
     it('chaque page candidat a sa navigation, sa date de mise à jour et un seul h1', () => {
@@ -268,6 +282,12 @@ export default function candidat(ctx: ContexteSite): void {
       const statut = trouver(arbre, (n) => n.tag === 'p' && aClasse(n, 'statut'))[0] as Noeud;
       assert.match(txt(statut), /^Candidature déclarée, depuis le 19 octobre 2026\. Source : Article fictif\./);
       assert.ok(trouver(statut, (n) => n.attrs['data-badge'] !== undefined && txt(n) === 'brouillon, non relu').length === 1);
+    });
+
+    it('Nina : statut « pressenti » affiché, phrase du périmètre', () => {
+      const { arbre } = page(preview().outDir, 'candidats/nina-pressentie/index.html');
+      assert.ok(txt(arbre).includes(SANS_MESURE));
+      assert.ok(!txt(arbre).includes(STATUT_A_VERIFIER));
     });
 
     it('checkDist (liens et ancres compris) ne signale aucune erreur', () => {
