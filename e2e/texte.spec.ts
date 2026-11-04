@@ -41,6 +41,9 @@ for (const c of CONFIGS) {
         await page.setViewportSize({ width: c.largeur, height: c.largeur === 1280 ? 900 : 800 });
         await page.goto(p.url);
         if (c.texte160) await page.addStyleTag({ content: 'html { font-size: 160% !important }' });
+        // Police large imposée à 320 px : les polices système Linux (CI) sont plus larges que celles de macOS ;
+        // sans cela un débordement passe en local et casse en CI (« Ordre alphabétique » à 347 px, 2026-11-04).
+        if (c.largeur === 320) await page.addStyleTag({ content: '* { font-family: Verdana, "DejaVu Sans", sans-serif !important }' });
         if (niveau) await page.locator(`#niv-${niveau}`).check();
         await verifier(page, c.largeur);
       });

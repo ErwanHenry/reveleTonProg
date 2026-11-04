@@ -56,6 +56,7 @@ html[data-ordre-js] .ordre-aide-sansjs {
 .ordre-option {
   position: relative;
   display: flex;
+  min-inline-size: 0;
 }
 
 /* Le radio natif est superposé, transparent mais jamais display: none : il reste focalisable et cliquable */
@@ -84,7 +85,11 @@ html[data-ordre-js] .ordre-aide-sansjs {
   font-size: var(--t-label);
   font-weight: 600;
   line-height: 1.2;
-  overflow-wrap: break-word;
+  /* Texte à 160 % sur 320 px avec une police large (polices Linux en CI) : l'étiquette passe à la ligne
+     au lieu de dépasser (« Ordre alphabétique » atteignait 347 px). Même règle que .niveau label. */
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+  hyphens: auto;
 }
 
 /* Pastille : creuse (non choisi), pleine (choisi) : l'état ne repose pas sur la seule couleur */

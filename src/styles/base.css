@@ -263,6 +263,9 @@ main[data-theme] {
   border: 1px solid var(--bord-carte);
   border-top: 4px solid var(--theme);
   border-radius: 4px;
+  /* Mots longs (« NPA-Révolutionnaires, ») à 320 px + texte 160 % : passage à la ligne plutôt que défilement horizontal */
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
 }
 
 @media (min-width: 37.5em) {
