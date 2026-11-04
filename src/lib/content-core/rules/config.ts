@@ -252,6 +252,7 @@ export const CATALOGUE: readonly EntreeCatalogue[] = [
   { code: 'IDS_LOCK_INVALIDE', regle: 'REGLE-07', severite: 'erreur', piege: null, libelle: 'Une ligne de ids.lock est invalide, en double ou mal triée.' },
   // REGLE-08 : équité
   { code: 'EQUITE_CANDIDAT_MANQUANT', regle: 'REGLE-08', severite: 'selon_mode', piege: null, libelle: 'Un candidat déclaré ou primaire n’a ni mesure publiée ni case de couverture sur un thème publié.' },
+  { code: 'EQUITE_PERIMETRE_VIDE', regle: 'REGLE-08', severite: 'selon_mode', piege: null, libelle: 'Un thème est publié alors qu’aucun candidat n’est dans le périmètre d’équité (en production : aucun statut déclaré ou primaire relu) : l’équité n’y est pas vérifiée.' },
   { code: 'EQUITE_COUVERTURE_INCOHERENTE', regle: 'REGLE-08', severite: 'selon_mode', piege: null, libelle: 'La couverture d’un thème ne correspond pas aux mesures publiées.' },
   // REGLE-09 : sondages
   { code: 'SONDAGE_NOTICE_ABSENTE', regle: 'REGLE-09', severite: 'erreur', piege: '§12 : un sondage sans notice', libelle: 'Le sondage n’indique pas l’URL de sa notice officielle.' },

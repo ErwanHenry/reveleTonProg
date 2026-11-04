@@ -113,6 +113,36 @@ describe('REGLE-08 : équité des thèmes publiés', () => {
     assert.deepEqual(equite([SANS_CAS_JEAN, partiel], 'preview'), []);
   });
 
+  describe('W2 : thème publié dont le périmètre est vide', () => {
+    const MARIE = 'src/content/candidats/marie-fictive.yaml';
+    // Les deux statuts « declare » relus repassent en brouillon : plus personne n'est dans le périmètre en production.
+    const statutsNonRelus: Remplacement[] = [
+      { fichier: JEAN, de: 'statut_relecture: relu', par: 'statut_relecture: brouillon' },
+      { fichier: MARIE, de: 'statut_relecture: relu', par: 'statut_relecture: brouillon' },
+    ];
+
+    it('production : EQUITE_PERIMETRE_VIDE en erreur sur le thème (la règle ne passe plus à vide)', () => {
+      assert.deepEqual(equite(statutsNonRelus, 'production'), [['EQUITE_PERIMETRE_VIDE', 'error', THEME, '/statut_relecture']]);
+    });
+
+    it('preview : les brouillons comptent, le périmètre n’est pas vide, rien à signaler', () => {
+      assert.deepEqual(equite(statutsNonRelus, 'preview'), []);
+    });
+
+    it('preview : tous les candidats hors périmètre, avertissement', () => {
+      const horsPerimetre: Remplacement[] = [
+        SANS_CAS_JEAN,
+        { fichier: JEAN, de: 'code: declare', par: 'code: renonce\n    motif: retrait' },
+        { fichier: MARIE, de: '  - code: declare', par: '  - code: renonce\n    motif: retrait' },
+      ];
+      assert.deepEqual(equite(horsPerimetre, 'preview'), [['EQUITE_PERIMETRE_VIDE', 'warning', THEME, '/statut_relecture']]);
+    });
+
+    it('thème en brouillon : rien à signaler', () => {
+      assert.deepEqual(equite([...statutsNonRelus, { fichier: THEME, de: 'statut_relecture: publie', par: 'statut_relecture: brouillon' }], 'production'), []);
+    });
+  });
+
   it('un fichier invalide au schéma : la règle se tait (pas de cascade)', () => {
     assert.deepEqual(equite([SANS_CAS_JEAN, { fichier: JEAN, de: 'prenom: Jean\n', par: '' }]), []);
   });

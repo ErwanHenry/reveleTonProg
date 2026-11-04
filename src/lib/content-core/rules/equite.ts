@@ -4,7 +4,8 @@ import type { CorpusRule, Finding, Mode } from './types.ts';
 // REGLE-08 : équité. Sur un thème publié, tout candidat déclaré ou primaire (statut le plus récent de
 // statuts[] par date, parmi les statuts relus ou publiés en production, tous en preview : ADR-041) a soit une mesure
 // publiée, soit une case de couverture. Erreur en production, avertissement en
-// preview (comme TEXTE_SOURCE_TROP_LONG).
+// preview (comme TEXTE_SOURCE_TROP_LONG). Un thème publié dont ce périmètre est vide (W2 : statuts pas
+// encore relus) ne passe pas la règle sans rien vérifier : EQUITE_PERIMETRE_VIDE, même gravité.
 
 const tableau = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
 const objet = (v: unknown): Record<string, unknown> => (v !== null && typeof v === 'object' ? (v as Record<string, unknown>) : {});
@@ -63,6 +64,15 @@ export const regleEquite: CorpusRule = {
 
     for (const theme of ctx.corpus.de('themes')) {
       if (theme.data.statut_relecture !== 'publie') continue;
+      if (perimetre.length === 0) {
+        out.push({
+          code: 'EQUITE_PERIMETRE_VIDE',
+          severity,
+          pointer: '/statut_relecture',
+          file: theme.file,
+          message: `le thème publié « ${theme.id} » n'a aucun candidat dans le périmètre d'équité (aucun statut ${PERIMETRE_EQUITE.join(' ou ')}${ctx.mode === 'production' ? ' relu ou publié' : ''}) : relire les statuts des candidats ou repasser le thème en brouillon`,
+        });
+      }
       const couvertures = ctx.corpus.de('couverture').filter((c) => c.data.theme === theme.id);
       const casDeCouverture = new Set<string>();
       for (const couv of couvertures) {
