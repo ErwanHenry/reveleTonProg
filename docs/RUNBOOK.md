@@ -156,7 +156,7 @@ Le livrable du lot 2 est l'artefact `site-preview` du job `verifier` : la build 
 
 1. GitHub, Actions, dernière exécution de `CI` sur `main`, télécharger `site-preview` (zip) et le décompresser.
 2. `node e2e/serveur.ts <dossier> 4173`, ouvrir http://127.0.0.1:4173/.
-3. Pour partager avec un relecteur : lui donner le lien de l'exécution (accès selon la visibilité du dépôt) ou le zip ; au-delà de 14 jours, relancer le workflow. Tant que le dépôt est privé, prévenir le relecteur que les liens vers GitHub (dépôt, signalements, extraits archivés) renvoient une erreur 404 sans accès au dépôt.
+3. Pour partager avec un relecteur : lui donner le lien de l'exécution (accès selon la visibilité du dépôt) ou le zip ; au-delà de 14 jours, relancer le workflow.
 
 En local : `RTP_MODE=preview npm run build -- --outDir dist-preview`, puis la même commande de service.
 
@@ -287,7 +287,7 @@ GitHub Actions → `rsync -az --delete dist/ $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_P
 4. Décrire dans les Mentions légales ce que garde le journal d'accès de Caddy (champs, adresse IP entière ou tronquée, durée de conservation) une fois sa configuration arrêtée. Avec `statut: actif`, la page dit seulement que le serveur reçoit l'adresse IP pour envoyer les pages ; elle ne dit plus que le site ne collecte aucune donnée personnelle.
 5. Faire relire par un juriste les Mentions légales et l'interprétation de la CNIL sur `localStorage` (hypothèse A2 : réglages d'affichage exemptés de consentement).
 6. Remplacer l'adresse de contact provisoire de `config/site.yml`.
-7. Rendre public le dépôt `ErwanHenry/reveleTonProg` avant le déploiement (il reste privé jusque-là, décision d'Erwan). Tant qu'il est privé, les liens du site vers le dépôt (Qui sommes-nous, « Signaler une erreur (GitHub) », « Extrait archivé ») renvoient une erreur 404 à toute personne sans accès. Contrôle : `gh repo view ErwanHenry/reveleTonProg --json visibility` doit répondre `PUBLIC`.
+7. Vérifier que le dépôt `ErwanHenry/reveleTonProg` est toujours public (il l'est depuis le 2026-11-04) et le garder public : les liens du site vers le dépôt (Qui sommes-nous, « Signaler une erreur (GitHub) », « Extrait archivé ») en dépendent et renverraient une erreur 404 s'il redevenait privé. Contrôle : `gh repo view ErwanHenry/reveleTonProg --json visibility` doit répondre `PUBLIC`.
 8. Vérifier au premier run que `actions/upload-artifact` fonctionne avec `permissions: contents: read` (hypothèse A4).
 
 ## Incidents fréquents
