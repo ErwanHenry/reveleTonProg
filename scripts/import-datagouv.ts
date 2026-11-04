@@ -160,7 +160,13 @@ for (const row of amont.rows) {
       invalide = true;
       continue;
     }
-    const doc: unknown = parse(lu.text, { schema: 'core', uniqueKeys: true });
+    let doc: unknown;
+    try {
+      doc = parse(lu.text, { schema: 'core', uniqueKeys: true });
+    } catch (e) {
+      conflits.push(`${id} — fichier existant illisible (${e instanceof Error ? e.message.split('\n')[0] : String(e)})`);
+      continue;
+    }
     if (doc === null || typeof doc !== 'object' || Array.isArray(doc)) {
       conflits.push(`${id} — fichier existant illisible (objet YAML attendu)`);
       continue;
@@ -279,15 +285,23 @@ for (const p of plans) {
 }
 const amontIds = new Set(amont.rows.map((r) => r.id));
 const absents: string[] = [];
+const illisibles: string[] = [];
 for (const id of presents) {
   const f = path.join(candidatsDir, `${id}.yaml`);
   const lu = readContained(root, f);
   if ('diagnostic' in lu) continue;
-  const doc = parse(lu.text, { schema: 'core' }) as { ids_externes?: Record<string, string> } | null;
+  let doc: { ids_externes?: Record<string, string> } | null;
+  try {
+    doc = parse(lu.text, { schema: 'core' }) as { ids_externes?: Record<string, string> } | null;
+  } catch {
+    illisibles.push(id);
+    continue;
+  }
   const externe = doc?.ids_externes?.['2027etmoi'];
   if (externe !== undefined && !amontIds.has(externe)) absents.push(id);
 }
 if (absents.length > 0) console.log(`absent en amont : ${absents.join(', ')}`);
+if (illisibles.length > 0) console.log(`illisible (YAML invalide, ignoré pour le rapport « absent en amont ») : ${illisibles.join(', ')}`);
 console.log(
   `import : ${amont.rows.length} ligne(s), ${nb.cree} créé(s), ${nb.statut_ajoute} statut(s) ajouté(s), ${nb.inchange} inchangé(s), ${absents.length} absent(s) en amont, 0 conflit(s) — instantané ${sha12} du ${amont.miseAJour}, racine ${rel}`,
 );

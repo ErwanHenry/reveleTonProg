@@ -79,6 +79,33 @@ describe('npm run import:datagouv (scripts/import-datagouv.ts)', () => {
     }
   });
 
+  it('WR-08 : un fichier candidat au YAML invalide est un conflit nommé, sans rien écrire', () => {
+    const snap = newestSnapshot();
+    const id = snapshotRows(snap)[0]?.id;
+    assert.ok(id);
+    const root = tmpRoot();
+    const file = path.join(root, 'data', 'import', path.basename(snap));
+    // Créer d'abord toutes les fiches, puis casser celle d'un candidat connu.
+    assert.equal(importer(['--file', file, '--root', root]).status, 0);
+    const cible = path.join(root, 'src', 'content', 'candidats', readdirSync(path.join(root, 'src', 'content', 'candidats'))[0] as string);
+    writeFileSync(cible, 'a: 1\na: 2\n  : [\n');
+    const res = importer(['--file', file, '--root', root, '--dry-run']);
+    assert.equal(res.status, 1, res.stdout + res.stderr);
+    assert.doesNotMatch(res.stderr + res.stdout, /at .*\.ts:\d+/, 'pas de pile d’appels');
+    assert.match(res.stdout, /conflit : .* — fichier existant illisible/);
+  });
+
+  it('WR-08 : un fichier hors amont au YAML invalide ne fait pas échouer le rapport', () => {
+    const snap = newestSnapshot();
+    const root = tmpRoot();
+    const file = path.join(root, 'data', 'import', path.basename(snap));
+    mkdirSync(path.join(root, 'src', 'content', 'candidats'), { recursive: true });
+    writeFileSync(path.join(root, 'src', 'content', 'candidats', 'hors-amont.yaml'), 'a: 1\na: 2\n  : [\n');
+    const res = importer(['--file', file, '--root', root]);
+    assert.equal(res.status, 0, res.stdout + res.stderr);
+    assert.match(res.stdout, /illisible .*hors-amont/);
+  });
+
   it('crée une fiche valide par ligne de l’instantané et verrouille les identifiants', () => {
     const snap = newestSnapshot();
     const rows = snapshotRows(snap);
