@@ -270,7 +270,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 05-07-PLAN.md — Test croisé exécuté (enfant 10 ans, retraité 72 ans, journaliste) + pièges §12 rejoués, journal d'audit et verdict (wave 4)
+- [x] 05-07-PLAN.md — Test croisé exécuté (enfant 10 ans, retraité 72 ans, journaliste) + pièges §12 rejoués, journal d'audit et verdict (wave 4)
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -309,7 +309,7 @@ Phase 1 ──┬──> Phase 2 (règles) ──────────┐
 | 2. Règles éditoriales et pièges | 7/7 | Complete    | 2026-11-03 |
 | 3. Import data.gouv et corpus pilote | 9/9 | Complete    | 2026-11-04 |
 | 4. Référentiel M1 et 4 niveaux de lecture | 9/9 | Complete    | 2026-11-03 |
-| 5. Pages institutionnelles, qualité et URL de test | 6/8 | In Progress|  |
+| 5. Pages institutionnelles, qualité et URL de test | 7/8 | In Progress|  |
 
 ---
 *Roadmap created: 2026-11-03*
