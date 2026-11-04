@@ -92,3 +92,18 @@ describe('submitWayback', () => {
     assert.equal(appels, 0);
   });
 });
+
+describe('WR-05 : l’instantané doit porter sur l’adresse soumise', () => {
+  it('refuse un instantané d’une autre adresse (redirection de la cible)', async () => {
+    const r = await submitWayback('https://x.example/p', { fetch: reponse(302, 'https://web.archive.org/web/20261103014534/https://x.example/erreur'), now: () => NOW });
+    assert.equal(r.ok, false);
+    assert.match(r.ok ? '' : r.reason, /ne porte pas sur l'adresse soumise/);
+  });
+
+  it('accepte les variantes équivalentes : barre finale, fragment, http/https, hôte en majuscules', async () => {
+    for (const cible of ['https://x.example/p/', 'http://x.example/p', 'https://X.example/p#haut', 'https:/x.example/p']) {
+      const r = await submitWayback('https://x.example/p', { fetch: reponse(302, `https://web.archive.org/web/20261103014534/${cible}`), now: () => NOW });
+      assert.equal(r.ok, true, cible);
+    }
+  });
+});
