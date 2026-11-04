@@ -5,7 +5,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { TOURS } from '../../src/lib/dates-tours.ts';
-import { PROFIL_4G } from '../../src/lib/profil-4g.ts';
+import { PROFILS_4G } from '../../src/lib/profil-4g.ts';
 import { CLES_STOCKAGE } from '../../src/lib/stockage-local.ts';
 
 const SCRIPTS = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'src', 'scripts');
@@ -19,13 +19,30 @@ describe('constantes publiques', () => {
     }
   });
 
-  it('PROFIL_4G', () => {
-    assert.deepEqual(PROFIL_4G, {
-      latenceMs: 150,
-      debitDescendantOctetsParSeconde: (1.6 * 1024 * 1024) / 8,
-      debitMontantOctetsParSeconde: (750 * 1024) / 8,
-      libelle: '150 ms, 1,6 Mbit/s',
-    });
+  it('PROFILS_4G (WR-04) : profil historique nommé pour ce qu\'il simule, et équivalent DevTools du Slow 4G de Lighthouse', () => {
+    assert.deepEqual(PROFILS_4G, [
+      {
+        id: 'latence-150',
+        libelle: 'une latence de 150 ms par requête et un débit de 1,6 Mbit/s',
+        latenceRequeteMs: 150,
+        debitDescendantOctetsParSeconde: (1.6 * 1024 * 1024) / 8,
+        debitMontantOctetsParSeconde: (750 * 1024) / 8,
+        budgetMs: 1000,
+      },
+      {
+        id: 'slow-4g-lighthouse',
+        libelle: 'le profil « Slow 4G » de Lighthouse (562,5 ms de latence par requête, 1,44 Mbit/s)',
+        latenceRequeteMs: 562.5,
+        debitDescendantOctetsParSeconde: (1.6 * 1024 * 1024 * 0.9) / 8,
+        debitMontantOctetsParSeconde: (750 * 1024 * 0.9) / 8,
+        budgetMs: 1500,
+      },
+    ]);
+    // Les libellés publiés disent les valeurs réellement appliquées.
+    const [a, b] = PROFILS_4G;
+    assert.ok(a!.libelle.includes(`${a!.latenceRequeteMs} ms`));
+    assert.ok(b!.libelle.includes(`${b!.latenceRequeteMs.toLocaleString('fr-FR')} ms`));
+    assert.ok(b!.libelle.includes(`${((b!.debitDescendantOctetsParSeconde * 8) / (1024 * 1024)).toLocaleString('fr-FR')} Mbit/s`));
   });
 
   it('CLES_STOCKAGE : cohérent avec src/scripts/*.js', () => {

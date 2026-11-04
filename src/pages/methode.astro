@@ -11,7 +11,7 @@ import {
 import { loadDatasetDatagouv } from '../lib/dataset-datagouv.ts';
 import { loadHebergeurConfig } from '../lib/hebergeur-config.ts';
 import { TOURS } from '../lib/dates-tours.ts';
-import { PROFIL_4G } from '../lib/profil-4g.ts';
+import { PROFILS_4G } from '../lib/profil-4g.ts';
 
 // Date de dernière révision de cette page (à mettre à jour à chaque modification du texte).
 const REVISION = '2026-11-04';
@@ -144,7 +144,7 @@ const SEV: Record<string, string> = { erreur: 'erreur', avertissement: 'avertiss
 
     <h2>Comment le site est testé</h2>
     <p>
-      Les pages sont vérifiées automatiquement : fonctionnement sans JavaScript, usage au clavier seul, audit d'accessibilité WCAG 2.2 niveau AA, lecture avec un texte agrandi à 160 %, respect de la demande de réduction des animations, contraste des dix couleurs de thèmes, et chargement en moins d'une seconde sur une connexion mobile lente simulée ({PROFIL_4G.libelle}). Une lecture croisée simulée a aussi été menée : le journal est dans le dépôt du site.
+      Les pages sont vérifiées automatiquement : fonctionnement sans JavaScript, usage au clavier seul, audit d'accessibilité WCAG 2.2 niveau AA, lecture avec un texte agrandi à 160 %, respect de la demande de réduction des animations, contraste des dix couleurs de thèmes. Le temps de chargement de la page la plus lourde du site est mesuré à froid, sur un serveur local qui compresse les pages, avec ces connexions mobiles lentes simulées : {PROFILS_4G.map((p, i) => (<>{i > 0 ? ' ; ' : ''}<span data-profil-4g={p.id}>moins de {fr(p.budgetMs / 1000)} s avec {p.libelle}</span></>))}. Une lecture croisée simulée a aussi été menée : le journal est dans le dépôt du site.
     </p>
 
     <h2>Limites connues</h2>

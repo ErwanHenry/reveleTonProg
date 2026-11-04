@@ -134,8 +134,9 @@ Les ADR techniques de la phase 1 (sans D-n) vont de l'ADR-017 à l'ADR-026 ; ceu
 
 ### ADR-009 (D-6) : poids de page mesuré de deux façons
 - **Contexte** : « moins de 500 Ko par page » ne dit pas si c'est compressé ou non.
-- **Décision** : double garde en CI : HTML brut + ressources de même origine ≤ 500 Ko (audio exclu) **et** gzip ≤ 100 Ko, plus un test Slow-4G (150 ms de RTT, 1,6 Mb/s) avec `load` sous 1 s sur les pages les plus lourdes.
+- **Décision** : double garde en CI : HTML brut + ressources de même origine ≤ 500 Ko (audio exclu) **et** gzip ≤ 100 Ko, plus un test de chargement à froid de la page la plus lourde (`e2e/4g.spec.ts`, profils de `src/lib/profil-4g.ts`).
 - **Conséquence** : si le brut approche du plafond, on découpe par sous-thème plutôt que de charger en JS ; la vérification arrive en phase 5.
+- **Révision (revue de la phase 5, WR-04)** : la latence CDP s'applique par requête, pas par aller-retour de paquet ; « 150 ms, 1,6 Mbit/s » était donc plus doux que le Slow 4G de Lighthouse. Deux profils sont mesurés, chacun dans un contexte de navigateur neuf : `latence-150` (150 ms par requête, 1,6 Mbit/s), budget 1 s, mesuré vers 0,35 à 0,45 s ; `slow-4g-lighthouse` (équivalent DevTools du Slow 4G : 562,5 ms par requête, 1,44 Mbit/s), budget 1,5 s, mesuré vers 1,17 à 1,27 s le 2026-11-04. Avec un HTML et une feuille de style chargés l'un après l'autre, la latence seule fait 1 125 ms sur ce second profil : moins d'une seconde n'y est pas atteignable sans mettre le CSS dans la page. Le cahier des charges (« < 1 s sur 4G ») ne fixe pas le profil : le choix entre les deux lectures reste à arbitrer. La page Méthode publie les deux profils et leurs budgets.
 
 ### ADR-010 (D-7) : collections en plus des cinq de la spec
 - **Contexte** : une source de programme appuie une trentaine de mesures ; l'équité et les définitions enfant doivent être vérifiables.

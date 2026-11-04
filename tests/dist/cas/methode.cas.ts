@@ -16,7 +16,7 @@ import { ETAT_VIDE_TEXTES, LIBELLES_STATUT } from '../../../src/lib/corpus/vue.t
 import { loadDatasetDatagouv } from '../../../src/lib/dataset-datagouv.ts';
 import { loadHebergeurConfig } from '../../../src/lib/hebergeur-config.ts';
 import { TOURS } from '../../../src/lib/dates-tours.ts';
-import { PROFIL_4G } from '../../../src/lib/profil-4g.ts';
+import { PROFILS_4G } from '../../../src/lib/profil-4g.ts';
 import { materialiserCorpusM1 } from '../../helpers/corpus-m1.ts';
 import type { ContexteSite } from '../contexte.ts';
 
@@ -138,7 +138,12 @@ export default function methode(ctx: ContexteSite): void {
       const main = trouver(a, (n) => n.tag === 'main')[0] as Noeud;
       for (const tour of TOURS) assert.ok(trouver(main, (n) => n.tag === 'time' && n.attrs.datetime === tour.date).length > 0, tour.date);
       const t = txt(main);
-      assert.ok(t.includes(PROFIL_4G.libelle));
+      for (const p of PROFILS_4G) {
+        const el = txt(unique(a, 'data-profil-4g', p.id));
+        assert.ok(el.includes(p.libelle), el);
+        assert.ok(el.includes(`moins de ${(p.budgetMs / 1000).toLocaleString('fr-FR')} s`), el);
+      }
+      assert.doesNotMatch(t, /moins d'une seconde sur une connexion mobile lente/);
       for (const e of Object.values(ETAT_VIDE_TEXTES)) assert.ok(t.includes(norm(e.avant)), e.avant);
     });
 
