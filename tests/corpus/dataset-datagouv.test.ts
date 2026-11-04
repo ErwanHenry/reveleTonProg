@@ -7,7 +7,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadDatasetDatagouv } from '../../src/lib/dataset-datagouv.ts';
+import { ecartAnnonce, loadDatasetDatagouv } from '../../src/lib/dataset-datagouv.ts';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const SNAP = '2027etmoi-candidats-2026-10-28-9f2fbc7930c0';
@@ -64,6 +64,13 @@ describe('loadDatasetDatagouv', () => {
     assert.equal(d.licence, 'Licence Ouverte 2.0');
     assert.match(d.producteur, /2027 et moi/);
     assert.match(d.page, /^https:\/\/www\.data\.gouv\.fr\//);
+  });
+
+  it("ecartAnnonce (WR-07) : un écart seulement si l'annonce diffère du total de l'instantané", () => {
+    assert.equal(ecartAnnonce(loadDatasetDatagouv(REPO)), true);
+    const instantane = { chemin: 'x', miseAJour: '2026-10-28', total: 59, parStatut: {} };
+    assert.equal(ecartAnnonce({ annonce: 59, instantane }), false);
+    assert.equal(ecartAnnonce({ annonce: 60, instantane }), true);
   });
 
   it('un projet cohérent se charge', () => {

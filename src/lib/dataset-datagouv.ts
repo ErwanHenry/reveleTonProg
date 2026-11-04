@@ -113,3 +113,11 @@ export function loadDatasetDatagouv(projectRoot: string = process.cwd()): Datase
   memo.set(racine, resultat);
   return resultat;
 }
+
+/**
+ * Vrai si la description du jeu annonce un autre nombre de personnes que l'instantané (WR-07) : la page
+ * Méthode ne parle d'écart que dans ce cas.
+ */
+export function ecartAnnonce(d: Pick<DatasetDatagouv, 'annonce' | 'instantane'>): boolean {
+  return d.annonce !== d.instantane.total;
+}

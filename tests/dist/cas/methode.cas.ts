@@ -110,6 +110,9 @@ export default function methode(ctx: ContexteSite): void {
       const bloc = unique(page(), 'data-dataset');
       const t = txt(bloc);
       assert.ok(t.includes(String(d.annonce)) && t.includes(String(d.instantane.total)));
+      // WR-07 : la phrase d'écart suit les nombres calculés.
+      if (d.annonce !== d.instantane.total) assert.match(t, /alors que le fichier .* Cet écart est constaté/);
+      else assert.ok(!t.includes('écart') && t.includes('le même nombre'), t);
       for (const n of Object.values(d.instantane.parStatut)) assert.ok(t.includes(String(n)));
       assert.ok(t.includes('Licence Ouverte 2.0') && t.includes('2027 et moi'));
       const hrefs = trouver(bloc, (n) => n.tag === 'a').map((n) => n.attrs.href);
