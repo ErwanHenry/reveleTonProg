@@ -11,7 +11,7 @@ import type { IdsLock } from '../src/lib/content-core/ids-lock.ts';
 import { formatText } from '../src/lib/content-core/diagnostics.ts';
 import type { Diagnostic } from '../src/lib/content-core/diagnostics.ts';
 import { checkContained, readContained, validateYamlText } from '../src/lib/content-core/load.ts';
-import { UnknownUpstreamIdsError, UpstreamShapeError, checkUpstream, lireCorrespondances, mapRow, mergeFiche, renderYaml, snapshotName } from './lib/datagouv.ts';
+import { ajouterStatutYaml, UnknownUpstreamIdsError, UpstreamShapeError, checkUpstream, lireCorrespondances, mapRow, mergeFiche, renderYaml, snapshotName } from './lib/datagouv.ts';
 import type { UpstreamRow } from './lib/datagouv.ts';
 import { FetchSafeError, fetchSafe } from './lib/fetch-safe.ts';
 
@@ -152,6 +152,7 @@ for (const row of amont.rows) {
   const id = String(mapped.id);
   const file = path.join(candidatsDir, `${id}.yaml`);
   let existant: Record<string, unknown> | undefined;
+  let texteExistant: string | undefined;
   if (lstatSync(file, { throwIfNoEntry: false }) !== undefined) {
     const lu = readContained(root, file);
     if ('diagnostic' in lu) {
@@ -165,13 +166,26 @@ for (const row of amont.rows) {
       continue;
     }
     existant = doc as Record<string, unknown>;
+    texteExistant = lu.text;
   }
   const fusion = mergeFiche(existant, mapped);
   if ('conflit' in fusion) {
     conflits.push(`${id} — ${fusion.conflit}`);
     continue;
   }
-  const texte = renderYaml(fusion.fiche);
+  let texte: string;
+  if (fusion.action === 'statut_ajoute' && texteExistant !== undefined) {
+    // Édition en place : commentaires et mise en forme du fichier existant conservés.
+    const statuts = fusion.fiche.statuts as unknown[];
+    try {
+      texte = ajouterStatutYaml(texteExistant, statuts[statuts.length - 1]);
+    } catch (e) {
+      conflits.push(`${id} — ajout du statut impossible (${e instanceof Error ? e.message : String(e)})`);
+      continue;
+    }
+  } else {
+    texte = renderYaml(fusion.fiche);
+  }
   if (fusion.action !== 'inchange') {
     const res = validateYamlText('candidat', texte, file, { schemasDir, mode: 'preview' });
     if (res.diagnostics.length > 0) {

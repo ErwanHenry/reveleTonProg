@@ -10,6 +10,7 @@ import {
   dateComparable,
   lireCorrespondances,
   mapRow,
+  ajouterStatutYaml,
   mergeFiche,
   renderYaml,
   snapshotName,
@@ -239,5 +240,34 @@ describe('snapshotName et lireCorrespondances', () => {
       () => lireCorrespondances({ version: 1, correspondances: { x: { ...entree, id: 'a-b' }, y: { ...entree, id: 'a-b' } } }),
       /double/,
     );
+  });
+});
+
+describe('WR-07 : ajouterStatutYaml conserve commentaires et mise en forme', () => {
+  const texte = [
+    '# Fiche relue à la main — ne pas réordonner',
+    'version_schema: 1',
+    'id: brun   # identifiant stable',
+    'statuts:',
+    '  # historique, du plus ancien au plus récent',
+    '  - code: declare   # déclaré',
+    '    date: 2026-03-15',
+    '    statut_relecture: relu',
+    'parti: null',
+    '',
+  ].join('\n');
+
+  it('ajoute le statut en dernier sans perdre un seul commentaire', () => {
+    const sortie = ajouterStatutYaml(texte, { code: 'renonce', date: '2026-10-01', statut_relecture: 'brouillon' });
+    for (const c of ['# Fiche relue à la main — ne pas réordonner', '# identifiant stable', '# historique, du plus ancien au plus récent', '# déclaré']) {
+      assert.ok(sortie.includes(c), c);
+    }
+    assert.ok(sortie.indexOf('version_schema') < sortie.indexOf('statuts:') && sortie.indexOf('statuts:') < sortie.indexOf('parti: null'));
+    assert.match(sortie, /- code: renonce\n\s+date: 2026-10-01\n/);
+    assert.match(sortie, /date: 2026-03-15\n/, 'date existante non guillemetée');
+  });
+
+  it('refuse un texte sans séquence statuts', () => {
+    assert.throws(() => ajouterStatutYaml('id: x\n', { code: 'declare' }), /statuts/);
   });
 });

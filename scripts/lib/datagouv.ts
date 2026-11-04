@@ -5,7 +5,7 @@
 // Le jeu amont est une entrée non fiable : sa forme est vérifiée explicitement avant tout mapping, et
 // `bloc`, `propositions`, `statut_detail` ne sont jamais lus par `mapRow` (ils ne survivent que dans
 // l'instantané brut sous data/import/).
-import { stringify } from 'yaml';
+import { isSeq, parseDocument, stringify } from 'yaml';
 
 export interface UpstreamRow {
   id: string;
@@ -250,6 +250,20 @@ export function mergeFiche(
 /** Rendu YAML déterministe, sans commentaire : dates non guillemetées, aller-retour sans perte. */
 export function renderYaml(o: unknown): string {
   return stringify(o, { schema: 'core', indent: 2, indentSeq: true, lineWidth: 0 });
+}
+
+/**
+ * Ajoute un statut en fin de `statuts[]` en éditant le document en place (API Document de `yaml`) :
+ * commentaires, ordre des clés et mise en forme du fichier existant sont conservés. Lève une Error
+ * si le texte n'a pas de séquence `statuts`.
+ */
+export function ajouterStatutYaml(texte: string, statut: unknown): string {
+  const doc = parseDocument(texte, { schema: 'core', uniqueKeys: true });
+  if (doc.errors.length > 0) throw new Error(`YAML illisible : ${doc.errors[0]?.message ?? ''}`);
+  const seq = doc.get('statuts', true);
+  if (!isSeq(seq)) throw new Error('séquence statuts absente');
+  seq.add(doc.createNode(statut));
+  return doc.toString({ indent: 2, indentSeq: true, lineWidth: 0 });
 }
 
 export function snapshotName(miseAJour: string, sha256: string): string {
