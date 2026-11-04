@@ -170,6 +170,22 @@ export const ARCHIVE_TAILLE_MAX = 5 * 1024 * 1024;
 /** Somme des scores (+ autres), en pourcentage : hors de ces bornes, le sondage est refusé. */
 export const SOMME_SONDAGE = { min: 95, max: 105 } as const;
 
+/**
+ * Mots d'un nom d'hypothèse qui évoquent le second tour : libellé lisible (hypothèse A7, page Méthode)
+ * et motif reconnu. `DUEL.motif` est l'union de ces motifs : un mot ajouté ici est à la fois détecté et
+ * annoncé (W11).
+ */
+const MOTS_DUEL: readonly { libelle: string; motif: RegExp }[] = [
+  { libelle: 'second tour', motif: /second tour/ },
+  { libelle: '2e tour', motif: /\b2(?:e|nd|ème) tour/ },
+  { libelle: 'deuxième tour', motif: /deuxi[èe]me tour/ },
+  { libelle: 'ballottage', motif: /ballottage/ },
+  { libelle: 'finale', motif: /finale/ },
+  { libelle: 'T2', motif: /\bT2\b/ },
+  { libelle: 'duel', motif: /duel/ },
+  { libelle: 'face-à-face', motif: /face[- ]à[- ]face/ },
+];
+
 /** Détection d'une hypothèse de second tour (duel) rangée au premier tour (hypothèse A7). */
 export const DUEL = {
   scores: 2,
@@ -177,7 +193,9 @@ export const DUEL = {
   sommeMin: 99,
   /** « Autres » strictement sous ce seuil (en %) : deux scores forment un duel même si la somme est plus basse (blanc/nul). */
   autresMax: 5,
-  motif: /second tour|\b2(?:e|nd|ème) tour|deuxi[èe]me tour|ballottage|finale|\bT2\b|duel|face[- ]à[- ]face/i,
+  /** Libellés des mots reconnus par `motif`, dans le même ordre. */
+  mots: MOTS_DUEL.map((m) => m.libelle),
+  motif: new RegExp(MOTS_DUEL.map((m) => m.motif.source).join('|'), 'i'),
 } as const;
 
 /**
@@ -277,6 +295,9 @@ export interface Hypothese {
   choix: string;
 }
 
+/** Nombre écrit à la française (virgule décimale) dans le texte d'une hypothèse : les valeurs viennent des constantes ci-dessus (W11). */
+const nombre = (n: number): string => n.toLocaleString('fr-FR');
+
 export const HYPOTHESES: readonly Hypothese[] = [
   { id: 'A1', regle: 'REGLE-06', choix: 'Environ 170 couples mot/syllabes issus de Lexique 3.83 (CC BY-SA 4.0) sont figés dans un fichier de test pour calibrer le décompte des syllabes, avec crédit à Lexique (New et al.).' },
   { id: 'A2', regle: 'REGLE-07', choix: 'Un renvoi au glossaire s’écrit [[affiché]] ou [[affiché|id]], l’id par défaut étant le slug du texte affiché, et le marqueur est remplacé par son texte avant tout décompte.' },
@@ -284,10 +305,17 @@ export const HYPOTHESES: readonly Hypothese[] = [
   { id: 'A4', regle: 'REGLE-03', choix: 'LONGUEUR_HORS_BORNES est une erreur quel que soit le statut de relecture.' },
   { id: 'A5', regle: 'REGLE-07', choix: 'Un candidat absent de ids.lock est une erreur (pas seulement un identifiant renommé ou supprimé) : il faut lancer « npm run ids -- --write » dans la même PR.' },
   { id: 'A6', regle: 'REGLE-08', choix: 'Le périmètre d’équité se lit sur le statut le plus récent par date de la liste statuts[] (à date égale, le dernier de la liste), parmi les statuts relus ou publiés en production, tous en preview (ADR-041).' },
-  { id: 'A7', regle: 'REGLE-09', choix: 'Une hypothèse de duel au premier tour compte exactement deux scores dont la somme atteint au moins 99 ou dont « autres » est sous 5 %, ou un nom qui évoque le second tour (deuxième tour, ballottage, finale, T2) ; deux scores avec 5 % ou plus d’« autres » restent admis (le corpus fictif n’a que deux candidats). Les seuils et le motif sont dans la configuration.' },
+  {
+    id: 'A7',
+    regle: 'REGLE-09',
+    choix:
+      `Une hypothèse de duel au premier tour compte exactement ${DUEL.scores} scores dont la somme atteint au moins ${nombre(DUEL.sommeMin)} % ou dont « autres » est sous ${nombre(DUEL.autresMax)} %, ` +
+      `ou un nom qui évoque le second tour (${DUEL.mots.join(', ')}) ; ${DUEL.scores} scores avec ${nombre(DUEL.autresMax)} % ou plus d’« autres » restent admis (le corpus fictif n’a que deux candidats). ` +
+      'Les seuils et la liste des mots sont dans la configuration.',
+  },
   { id: 'A8', regle: 'REGLE-09', choix: 'Une fenêtre de blocage inclut son instant de début et exclut son instant de fin (20h00 pile est autorisé).' },
   { id: 'A9', regle: 'REGLE-11', choix: 'GitHub affiche au plus 10 erreurs et 10 avertissements en annotations par étape ; les lignes de texte du journal restent toutes imprimées.' },
   { id: 'A10', regle: 'REGLE-09', choix: 'Les bornes 00h00 et 20h00 des fenêtres de blocage viennent de la spécification du projet (§6), pas du texte de l’article 11 de la loi 77-808 ; le vote du samedi outre-mer n’est pas couvert. La règle juge la date de publication, pas l’instant de build ou d’affichage (dette différée à l’affichage des sondages, lot 4).' },
   { id: 'A11', regle: 'REGLE-05', choix: 'Mot pour mot après normalisation signifie : casse et ponctuation ignorées, accents significatifs.' },
-  { id: 'A12', regle: 'REGLE-06', choix: 'Le seuil Kandel-Moles reste à 80 et ne produit qu’un avertissement, même si la fixture saine demande une retouche pour l’atteindre.' },
+  { id: 'A12', regle: 'REGLE-06', choix: `Le seuil Kandel-Moles reste à ${nombre(SEUIL_KANDEL_MOLES)} et ne produit qu’un avertissement, même si la fixture saine demande une retouche pour l’atteindre.` },
 ];

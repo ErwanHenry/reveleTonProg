@@ -8,7 +8,7 @@ import type { LoadOptions } from '../../src/lib/content-core/load.ts';
 import { FAMILLES } from '../../src/lib/content-core/rules/index.ts';
 import { citer } from '../../src/lib/content-core/rules/types.ts';
 import type { CorpusRule, EntryRule, FileRule, Famille, Finding, Mode } from '../../src/lib/content-core/rules/types.ts';
-import { CATALOGUE, CITER_MAX, HYPOTHESES } from '../../src/lib/content-core/rules/config.ts';
+import { CATALOGUE, CITER_MAX, DUEL, HYPOTHESES, SEUIL_KANDEL_MOLES } from '../../src/lib/content-core/rules/config.ts';
 import { BASE_CORPUS } from '../helpers/overlay.ts';
 import { REPO_ROOT, SCHEMAS_DIR } from '../helpers/validate-yaml.ts';
 
@@ -295,6 +295,29 @@ describe('configuration exportable', () => {
       HYPOTHESES.map((h) => h.id),
       Array.from({ length: 12 }, (_, i) => `A${i + 1}`),
     );
+  });
+  it('W11 : A7 et A12 citent les seuils et les mots de la configuration, jamais une copie', () => {
+    const choix = (id: string): string => HYPOTHESES.find((h) => h.id === id)?.choix ?? '';
+    const a7 = choix('A7');
+    for (const v of [`exactement ${DUEL.scores} scores`, `au moins ${DUEL.sommeMin.toLocaleString('fr-FR')} %`, `sous ${DUEL.autresMax.toLocaleString('fr-FR')} %`]) {
+      assert.ok(a7.includes(v), `A7 : « ${v} » absent de « ${a7} »`);
+    }
+    assert.ok(a7.includes(`(${DUEL.mots.join(', ')})`), a7);
+    for (const mot of ['duel', 'face-à-face', 'ballottage', 'T2']) assert.ok(DUEL.mots.includes(mot), mot);
+    assert.ok(choix('A12').includes(`reste à ${SEUIL_KANDEL_MOLES.toLocaleString('fr-FR')} `), choix('A12'));
+    // Chaque libellé annoncé est reconnu par le motif (les deux viennent de la même liste dans config.ts).
+    for (const mot of DUEL.mots) assert.ok(DUEL.motif.test(`Hypothèse ${mot} fictive`), `« ${mot} » non reconnu par DUEL.motif`);
+    assert.equal(
+      DUEL.motif.source,
+      String.raw`second tour|\b2(?:e|nd|ème) tour|deuxi[èe]me tour|ballottage|finale|\bT2\b|duel|face[- ]à[- ]face`,
+      'motif inchangé par la mise en liste',
+    );
+    assert.ok(DUEL.motif.flags.includes('i'));
+    // Le texte des deux hypothèses n'écrit plus les seuils en clair dans config.ts.
+    const src = readFileSync(path.join(REPO_ROOT, 'src', 'lib', 'content-core', 'rules', 'config.ts'), 'utf8');
+    const bloc = (id: string): string => src.slice(src.indexOf(`id: '${id}'`), src.indexOf('}', src.indexOf(`id: '${id}'`)));
+    assert.doesNotMatch(bloc('A7'), /\b(99|5 %)/);
+    assert.doesNotMatch(bloc('A12'), /\b80\b/);
   });
   it('le module de configuration n’importe rien de node: ni de runtime', () => {
     const src = readFileSync(path.join(REPO_ROOT, 'src', 'lib', 'content-core', 'rules', 'config.ts'), 'utf8');
