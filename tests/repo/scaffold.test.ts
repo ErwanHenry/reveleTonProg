@@ -42,6 +42,8 @@ describe('scaffold Node 24', () => {
       'check-dist': 'node scripts/check-dist.ts',
       dev: 'astro dev',
       preview: 'astro preview',
+      e2e: 'node scripts/e2e.ts',
+      'audit:lire': 'node scripts/audit-lire.ts',
     });
   });
 

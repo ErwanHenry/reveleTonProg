@@ -141,6 +141,25 @@ Le mode `preview` ne sert qu'en local, pour rédiger un thème sans avoir encore
 
 `RTP_MODE=preview npm run build` (ou `npm run dev`) affiche les mesures en brouillon et relues avec leur pastille, ajoute un bandeau de prévisualisation, met chaque page en `noindex` et écrit un `robots.txt` qui interdit tout. Sans `RTP_MODE`, c'est la production. **Ne jamais fixer `RTP_MODE` dans la CI** : `tests/repo/ci.test.ts` le vérifie.
 
+### Tests navigateur (e2e)
+
+`npm run e2e` construit la fixture (`corpus-m1`) puis le vrai corpus en mode preview, sert chaque dossier avec `e2e/serveur.ts` (compression gzip comme Caddy) et lance Playwright. Les fichiers de `e2e/` prouvent : fonctionnement sans JS et changement de niveau (`sans-js`), parcours au clavier (`clavier`), WCAG 2.2 AA par axe (`axe`), contraste (`contraste`), texte agrandi à 160 % (`texte`), `prefers-reduced-motion` (`mouvement`), aucun tiers, cookie ni clé `localStorage` hors réglages (`vie-privee`), et le temps de chargement en 4G lente simulée par CDP (`4g`, Chromium uniquement).
+
+- Première exécution : `npx playwright install chromium` (téléchargement du navigateur).
+- Ne jamais le lancer en même temps que `npm test` (cache `.astro` partagé). Un seul jeu : `npm run e2e -- --jeu m1` ; un seul fichier : `npm run e2e -- --jeu m1 -- e2e/axe.spec.ts`.
+- Le rapport HTML est écrit dans `playwright-report/` (ignoré par Git). En CI, le job `e2e` le téléverse seulement en cas d'échec (7 jours).
+- Si le Mac se met en veille pendant l'exécution, des tests peuvent expirer : relancer ; la CI fait foi.
+
+### URL de test
+
+Le livrable du lot 2 est l'artefact `site-preview` du job `verifier` : la build preview du vrai corpus (`dist-preview`, déjà contrôlée `noindex` et `robots.txt`), conservée 14 jours.
+
+1. GitHub, Actions, dernière exécution de `CI` sur `main`, télécharger `site-preview` (zip) et le décompresser.
+2. `node e2e/serveur.ts <dossier> 4173`, ouvrir http://127.0.0.1:4173/.
+3. Pour partager avec un relecteur : lui donner le lien de l'exécution (accès selon la visibilité du dépôt) ou le zip ; au-delà de 14 jours, relancer le workflow.
+
+En local : `RTP_MODE=preview npm run build -- --outDir dist-preview`, puis la même commande de service.
+
 ### Contrôle post-build (check-dist)
 
 `npm run check-dist` lit `dist/` (options : `--dist`, `--root`, `--mode`, `--format text|github`) et sort en erreur au premier constat bloquant. La CI le lance juste après `npm run build`. Limites : 500 000 octets bruts et 100 000 octets gzip par page (HTML plus CSS et JS liés), 2048 octets par script ; 1 Ko = 1000 octets.
@@ -258,19 +277,36 @@ Faux positif de gitleaks sur un extrait (longue chaîne hexadécimale ou URL dan
 
 GitHub Actions → `rsync -az --delete dist/ $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH`. Rollback : re-lancer le workflow sur le commit précédent.
 
+Étapes juridiques à faire avant la mise en ligne publique :
+
+1. Communiquer l'identité de l'éditeur à l'hébergeur (condition du II de l'article 1-1 pour ne publier que l'identité de l'hébergeur) et conserver la preuve de cet envoi.
+2. Vérifier sur la facture que l'entité qui héberge le VPS est bien Hetzner Online GmbH (hypothèse A5 de la phase 5) ; sinon corriger `config/hebergeur.yml`.
+3. Passer `statut: actif` dans `config/hebergeur.yml`, dans le commit de déploiement. Tant que le statut est `prevu`, un build avec `RTP_DEPLOIEMENT=1` échoue.
+4. Faire relire par un juriste les Mentions légales et l'interprétation de la CNIL sur `localStorage` (hypothèse A2 : réglages d'affichage exemptés de consentement).
+5. Remplacer l'adresse de contact provisoire de `config/site.yml`.
+6. Vérifier au premier run que `actions/upload-artifact` fonctionne avec `permissions: contents: read` (hypothèse A4).
+
 ## Incidents fréquents
 
 ### Une mesure publiée sans source
 Retirer dans l'heure (passer en `brouillon`), tracer au journal, redéployer.
 
 ### Build CI en échec
-Ouvrir l'exécution du workflow `CI`. Deux jobs tournent en parallèle :
+Ouvrir l'exécution du workflow `CI`. Trois jobs tournent en parallèle :
 - `verifier` : lire l'étape en rouge (`migrate`, `validate`, `ids.lock`, `check`, `test` ou `build`). Les étapes s'arrêtent à la première erreur ; la sortie de `npm run validate` nomme le fichier et la règle violée. Reproduire en local avec la même commande.
+- `e2e` : tests navigateur ; télécharger l'artefact `playwright-report`, ou reproduire avec `npm run e2e` (voir « Tests navigateur (e2e) »).
 - `secrets` : gitleaks a trouvé un secret dans l'historique. Ne rien pousser de plus, **révoquer le secret** chez son émetteur, puis traiter l'historique. Faux positif confirmé : ajouter une exception ciblée (motif exact, jamais un dossier entier) dans `.gitleaks.toml`.
 
 ### Droit de réponse
 
-À compléter au lot 3 (décision D-4) : adresse de contact dédiée (alias, sans adresse personnelle), délai de réponse et procédure d'un droit de réponse ou d'une demande de retrait. Rien n'est publié tant que ce paragraphe est vide.
+Cadre : article 1-1 de la loi pour la confiance dans l'économie numérique (LCEN) et son décret d'application. Procédure :
+
+1. La demande est écrite et adressée au directeur de la publication à l'adresse de contact de `config/site.yml` (alias dédié, jamais une adresse personnelle). Elle est recevable dans un délai de trois mois à compter de la mise en ligne du contenu visé.
+2. Accuser réception le jour même. La réponse est insérée au plus tard trois jours après réception de la demande, présentée comme une réponse du demandeur, et reste accessible aussi longtemps que le contenu d'origine.
+3. Suivi : ouvrir une issue GitHub qui trace la date de réception, la date d'insertion et la décision, sans donnée personnelle du demandeur.
+4. Une demande de rectification d'erreur factuelle suit la procédure de correction habituelle (sources, relecture), pas celle du droit de réponse.
+
+Tant que l'adresse de contact est la valeur provisoire en `.invalid`, aucune demande ne peut être reçue : la remplacer fait partie du lot 3.
 
 ## Restauration
 

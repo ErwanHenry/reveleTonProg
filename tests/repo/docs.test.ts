@@ -56,8 +56,8 @@ describe('README', () => {
     assert.ok(readme.includes('RTP_CONTENT_ROOT'));
   });
 
-  it('justifie chacune des six dépendances sur une ligne', () => {
-    for (const dep of ['astro', 'ajv', 'yaml', '@astrojs/check', 'typescript', '@types/node']) {
+  it('justifie chacune des huit dépendances sur une ligne', () => {
+    for (const dep of ['astro', 'ajv', 'yaml', '@astrojs/check', 'typescript', '@types/node', '@playwright/test', '@axe-core/playwright']) {
       const line = readme.split('\n').find((l) => l.startsWith(`| \`${dep}\` |`));
       assert.ok(line, `ligne de justification absente pour ${dep}`);
       assert.ok(line.length > 40, `justification trop courte pour ${dep}`);
@@ -247,3 +247,38 @@ describe('phase 3 : documentation', () => {
   });
 });
 
+describe('documentation (phase 5)', () => {
+  it('README : tests navigateur et URL de test', () => {
+    for (const needle of ['npm run e2e', 'npx playwright install chromium', 'site-preview', 'node e2e/serveur.ts']) {
+      assert.ok(readme.includes(needle), `README doit contenir « ${needle} »`);
+    }
+    assert.doesNotMatch(readme, /alignd|spikeelabs/i);
+  });
+
+  it('RUNBOOK : e2e, URL de test, droit de réponse complété, étapes juridiques du lot 3', () => {
+    for (const needle of ['### Tests navigateur (e2e)', '### URL de test', 'trois jours', 'trois mois', 'article 1-1', 'statut: actif', 'juriste', 'Hetzner Online GmbH']) {
+      assert.ok(runbook.includes(needle), `RUNBOOK doit contenir « ${needle} »`);
+    }
+    const droit = runbook.split('### Droit de réponse')[1]?.split('\n## ')[0] ?? '';
+    assert.ok(droit.length > 200 && !droit.includes('À compléter'), 'Droit de réponse non complété');
+    assert.doesNotMatch(runbook, /alignd|spikeelabs/i);
+  });
+
+  it('ARCHITECTURE : ADR de la phase 5 sans (D- et schéma e2e', () => {
+    const titres = [
+      'tests navigateur hors de npm test, Chromium seul, serveur gzip maison',
+      'pages institutionnelles générées depuis la configuration du validateur',
+      'hébergeur prévu ou actif, garde de déploiement',
+      'écart du jeu de données : annonce dans un fichier de données, comptes calculés depuis l’instantané haché',
+      'URL de test = artefact CI de la build preview, aucun hébergement avant le Lot 3',
+      'test croisé simulé : banc journalisé, scénario écrit avant les résultats',
+    ];
+    for (const t of titres) {
+      const re = new RegExp(`^### ADR-\\d{3} : ${t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'm');
+      assert.match(architecture, re, `ADR « ${t} » manquant`);
+    }
+    assert.ok(architecture.includes('e2e'));
+    assert.ok(architecture.includes('site-preview'));
+    assert.doesNotMatch(architecture, /alignd|spikeelabs/i);
+  });
+});

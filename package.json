@@ -19,7 +19,9 @@
     "build": "astro build",
     "check-dist": "node scripts/check-dist.ts",
     "dev": "astro dev",
-    "preview": "astro preview"
+    "preview": "astro preview",
+    "e2e": "node scripts/e2e.ts",
+    "audit:lire": "node scripts/audit-lire.ts"
   },
   "dependencies": {
     "ajv": "^8.20.0",

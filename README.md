@@ -5,7 +5,7 @@
 ## Pour qui
 
 - Public : tout citoyen, des enfants de 8-12 ans aux retraités.
-- Éditeur et owner technique : Erwan Henry (projet personnel, non rattaché à Alignd ni SpikeeLabs).
+- Éditeur et owner technique : Erwan Henry (projet personnel).
 - Cahier des charges : [docs/spec/CAHIER-DES-CHARGES.md](./docs/spec/CAHIER-DES-CHARGES.md).
 
 ## Stack
@@ -26,6 +26,8 @@ Chaque dépendance est justifiée par écrit (cahier des charges §11) :
 | `ajv` | Validation JSON Schema 2020-12 exigée par §7 ; standard de fait, supporte if/then pour la règle brouillon vers publié. |
 | `yaml` | Déjà présent en transitif via Astro (même version) ; déclaré pour que la CI parse le YAML exactement comme le build et donne les numéros de ligne. |
 | `@astrojs/check` | Vérification de types des composants `.astro` ; outil officiel Astro. |
+| `@playwright/test` | Un seul outil couvre 4 exigences testées du §10/§12 : fonctionnement sans JS, clavier, poids de page, 4G simulée. |
+| `@axe-core/playwright` | Audit AA automatisé (§10, §12 « 0 erreur bloquante ») qui réutilise le Chromium de Playwright, sans second navigateur. |
 | `typescript` | Pair obligatoire d'`@astrojs/check` (peer `^5 \|\| ^6`). |
 | `@types/node` | Types Node 24 pour les scripts de validation exécutés en TypeScript natif. |
 
@@ -56,6 +58,26 @@ Voir les brouillons (pastillés, noindex, bandeau de prévisualisation) : `RTP_M
 node tests/helpers/corpus-m1.ts /tmp/rtp-m1
 RTP_CONTENT_ROOT=/tmp/rtp-m1 RTP_MODE=preview npm run dev
 ```
+
+### Tests navigateur
+
+```bash
+npx playwright install chromium   # une seule fois (télécharge le navigateur)
+npm run e2e                       # construit la fixture et le vrai corpus, puis lance Playwright, axe et la 4G simulée
+npm run e2e -- --jeu m1 -- e2e/axe.spec.ts   # un seul jeu de données, un seul fichier de test
+```
+
+Les tests navigateur (sans JS, clavier, WCAG 2.2 AA avec axe, 160 %, sans animation, 4G lente, vie privée) ne font **pas** partie de `npm test`. Ne jamais lancer `npm test` et `npm run e2e` en même temps dans le même dossier : les deux exécutent `astro build` et partagent le cache `.astro`. La CI les exécute dans un job séparé (`e2e`).
+
+### URL de test (livrable du lot 2)
+
+Rien n'est hébergé avant le lot 3. La build de test est l'artefact de la CI :
+
+1. Sur GitHub, onglet Actions, ouvrir la dernière exécution du workflow `CI` sur `main`.
+2. Télécharger l'artefact `site-preview` (un zip, conservé 14 jours) et le décompresser dans un dossier.
+3. Le servir avec compression comme en production : `node e2e/serveur.ts <dossier> 4173`, puis ouvrir http://127.0.0.1:4173/.
+
+Sans passer par GitHub : `RTP_MODE=preview npm run build -- --outDir dist-preview`, puis le même serveur sur `dist-preview`. La build preview est `noindex` et affiche les brouillons pastillés.
 
 ### Règles éditoriales, mode de validation et identifiants
 
@@ -103,4 +125,4 @@ Une seule fois, par Erwan, dans le dépôt GitHub : **Settings > Code security**
 
 ## État
 
-🟢 Actif — lots 1 et 2 en cours. Dernière revue hygiène : 2026-11-03.
+🟢 Actif — livrable du lot 2 : pages Méthode, Mentions légales et Qui sommes-nous, tests navigateur en CI, build de test en artefact `site-preview`. Dernière revue hygiène : 2026-11-03.

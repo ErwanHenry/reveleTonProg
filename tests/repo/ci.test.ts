@@ -21,7 +21,7 @@ type Workflow = {
   on: Record<string, unknown>;
   permissions: Record<string, string>;
   env: Record<string, string>;
-  jobs: { verifier: Job; secrets: Job } & Record<string, Job>;
+  jobs: { verifier: Job; secrets: Job; e2e: Job } & Record<string, Job>;
 };
 type Update = {
   'package-ecosystem': string;
@@ -92,7 +92,7 @@ describe('ci.yml : actions épinglées', () => {
 
   it('checkout : persist-credentials false partout', () => {
     const checkouts = allSteps().filter((s) => s.uses?.startsWith('actions/checkout@'));
-    assert.equal(checkouts.length, 2);
+    assert.equal(checkouts.length, 3);
     for (const s of checkouts) {
       assert.equal(s.with?.['persist-credentials'], false);
     }
@@ -106,9 +106,11 @@ describe('ci.yml : actions épinglées', () => {
 
   it('setup-node lit .nvmrc et met npm en cache', () => {
     const node = allSteps().filter((s) => s.uses?.startsWith('actions/setup-node@'));
-    assert.equal(node.length, 1);
-    assert.equal(node[0]?.with?.['node-version-file'], '.nvmrc');
-    assert.equal(node[0]?.with?.cache, 'npm');
+    assert.equal(node.length, 2);
+    for (const n of node) {
+      assert.equal(n.with?.['node-version-file'], '.nvmrc');
+      assert.equal(n.with?.cache, 'npm');
+    }
   });
 });
 
@@ -212,6 +214,48 @@ describe('ci.yml : job verifier', () => {
     const iAudit = runs.indexOf('npm audit signatures');
     const iMigrate = runs.indexOf('npm run migrate -- --check');
     assert.ok(iCi < iAudit && iAudit < iMigrate);
+  });
+});
+
+describe('ci.yml : artefact site-preview (URL de test, QUAL-05)', () => {
+  const steps = ci.jobs.verifier.steps;
+  const iCheck = steps.findIndex((s) => s.run?.trim() === 'npm run check-dist -- --dist dist-preview --mode preview');
+  const up = steps[iCheck + 1] as Step;
+
+  it('l’upload suit immédiatement le contrôle de la build preview', () => {
+    assert.ok(iCheck >= 0);
+    assert.match(up?.uses ?? '', /^actions\/upload-artifact@[0-9a-f]{40}$/);
+    assert.equal(up.with?.name, 'site-preview');
+    assert.equal(up.with?.path, 'dist-preview');
+    assert.equal(up.with?.['retention-days'], 14);
+    assert.equal(up.with?.['if-no-files-found'], 'error');
+  });
+});
+
+describe('ci.yml : job e2e (Playwright)', () => {
+  const job = ci.jobs.e2e;
+
+  it('installe, puis Chromium avec ses dépendances système, puis lance npm run e2e', () => {
+    const runs = runsOf(job);
+    const iCi = runs.indexOf('npm ci');
+    const iPw = runs.indexOf('npx playwright install --with-deps chromium');
+    const iE2e = runs.indexOf('npm run e2e');
+    assert.ok(iCi >= 0 && iCi < iPw && iPw < iE2e, 'ordre npm ci, playwright install, npm run e2e');
+    assert.ok(runs.includes('npm audit signatures'));
+  });
+
+  it('timeout ≤ 30 min, aucun secret, pas de pull_request_target', () => {
+    assert.ok((job['timeout-minutes'] ?? 99) <= 30);
+    const raw = JSON.stringify(job);
+    assert.ok(!raw.includes('secrets.'), 'aucun secret dans le job e2e');
+  });
+
+  it('rapport Playwright téléversé seulement en cas d’échec', () => {
+    const up = job.steps.find((s) => s.uses?.startsWith('actions/upload-artifact@')) as (Step & { if?: string }) | undefined;
+    assert.ok(up, 'upload du rapport absent');
+    assert.equal(up.if, 'failure()');
+    assert.equal(up.with?.path, 'playwright-report');
+    assert.equal(up.with?.['retention-days'], 7);
   });
 });
 

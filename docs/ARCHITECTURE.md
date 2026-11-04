@@ -47,6 +47,9 @@ flowchart LR
   AR -->|binaire| PR
   AR -->|corroboration| WB[(Wayback, non bloquant)]
   CT[data/couverture-themes.yaml<br/>scripts/couverture-scan.ts] -->|3 thèmes pilotes| C
+  E2E[npm run e2e : scripts/e2e.ts<br/>build fixture et corpus réel] --> SRV[e2e/serveur.ts, gzip comme Caddy]
+  SRV --> PW[Playwright, axe, 4G par CDP]
+  B -->|dist-preview, job verifier| ART[(artefact site-preview<br/>URL de test, 14 jours)]
   Cron[collecte cron VPS, lot 5] -->|pull requests brouillon| Repo
   VPS --> U((Visiteurs))
 ```
@@ -331,6 +334,36 @@ Les ADR techniques de la phase 1 (sans D-n) vont de l'ADR-017 à l'ADR-026 ; ceu
 - **Contexte** : le jeu data.gouv ne donne pas de date de consultation propre, et ne rattache pas toutes les personnes à un parti ou à un site de campagne.
 - **Décision** : **P3-A3** — la `date_consultation` d'un statut importé est la date `verifie_le` du jeu amont (vérification faite par les éditeurs du jeu ; l'autre choix serait la date d'import). **P3-A4** — `parti` vaut `null` pour les 24 lignes sans lien de parti ni de campagne ; `parti_source` vient de `liens.parti`, à défaut de `liens.campagne`, sans jamais inférer un parti depuis la presse.
 - **Conséquence** : ces deux hypothèses sont à relire par Erwan avant toute valeur `relu` ; elles figurent dans la liste de relecture du résumé du plan 03-09.
+
+### ADR-047 : tests navigateur hors de npm test, Chromium seul, serveur gzip maison
+- **Contexte** : sans JS, clavier, axe, 160 %, sans animation et 4G lente ne se prouvent que dans un navigateur ; `npm test` doit rester rapide et sans navigateur.
+- **Décision** : les specs vivent dans `e2e/` (hors du glob `tests/**/*.test.ts`), lancées par `npm run e2e` qui construit ses propres dist l'une après l'autre. Chromium seul (la limitation CDP de la 4G est propre à Chromium). Un serveur statique minimal (`e2e/serveur.ts`) compresse en gzip comme Caddy, car `astro preview` ne compresse pas. Job CI `e2e` séparé du job `verifier`.
+- **Conséquence** : deux outils en devDependencies (`@playwright/test`, `@axe-core/playwright`), jamais lancés en même temps que `npm test` en local (cache `.astro` partagé).
+
+### ADR-048 : pages institutionnelles générées depuis la configuration du validateur
+- **Contexte** : la page Méthode doit décrire ce que le validateur applique réellement (mots interdits, seuils, profil 4G), sans recopier ces valeurs à la main.
+- **Décision** : les pages lisent la configuration du validateur et `scripts/lib/couverture.ts` directement (import d'un module de script depuis une page, assumé : une seule source de vérité plutôt qu'une copie qui dérive).
+- **Conséquence** : modifier un seuil modifie la page au prochain build ; un test échoue si la page et la configuration divergent.
+
+### ADR-049 : hébergeur prévu ou actif, garde de déploiement
+- **Contexte** : la page Mentions légales ne doit pas affirmer qu'un hébergeur héberge un site qui n'est pas encore en ligne.
+- **Décision** : `config/hebergeur.yml` porte un `statut` (`prevu` ou `actif`). `prevu` produit une formulation honnête ; un build avec `RTP_DEPLOIEMENT=1` échoue tant que le statut n'est pas `actif`.
+- **Conséquence** : le passage à `actif` est un geste explicite du commit de déploiement, après communication de l'identité de l'éditeur à l'hébergeur (RUNBOOK, lot 3).
+
+### ADR-050 : écart du jeu de données : annonce dans un fichier de données, comptes calculés depuis l’instantané haché
+- **Contexte** : le jeu data.gouv annonce un nombre de personnalités différent de celui effectivement importé ; l'écart doit être visible sans être minimisé.
+- **Décision** : l'écart annoncé est consigné dans un fichier de données versionné, et tous les comptes affichés sont calculés depuis l'instantané haché de l'import, jamais saisis à la main.
+- **Conséquence** : le site ne peut pas afficher un compte que l'instantané ne produit pas ; changer d'instantané change les comptes et le hash.
+
+### ADR-051 : URL de test = artefact CI de la build preview, aucun hébergement avant le Lot 3
+- **Contexte** : le Lot 2 exige une URL de test, mais aucun nom de domaine ni hébergement n'est prévu avant le Lot 3.
+- **Décision** : le job `verifier` téléverse `dist-preview` (déjà contrôlé `noindex` et `robots.txt`) comme artefact `site-preview`, conservé 14 jours, servi en local avec `e2e/serveur.ts`. Action `upload-artifact` épinglée par SHA, droits `contents: read`.
+- **Conséquence** : rien n'est exposé publiquement ; l'accès suit la visibilité du dépôt ; l'artefact expire et doit être régénéré.
+
+### ADR-052 : test croisé simulé : banc journalisé, scénario écrit avant les résultats
+- **Contexte** : les relectures par des lecteurs d'âges différents ne peuvent pas être menées avant le Lot 3, mais la lisibilité doit être éprouvée.
+- **Décision** : un lecteur simulé (`npm run audit:lire`) lit le site construit en texte brut sous un identifiant de persona et journalise chaque lecture (horodatage, chemin, niveau, empreinte) ; le scénario et les critères sont écrits avant d'observer les résultats. Il ne remplace pas un test avec de vraies personnes.
+- **Conséquence** : le résultat est présenté comme une simulation, jamais comme une validation d'usage.
 
 ## Dépendances externes critiques
 
