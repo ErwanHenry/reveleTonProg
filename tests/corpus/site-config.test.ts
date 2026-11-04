@@ -36,6 +36,14 @@ describe('loadSiteConfig', () => {
     assert.equal(loadSiteConfig(projet('contact: bonjour@exemple.fr\ndepot: ErwanHenry/reveleTonProg\n'), { RTP_DEPLOIEMENT: '1' }).contactProvisoire, false);
   });
 
+  it('IN-06 : une valeur de RTP_DEPLOIEMENT autre que 1, 0 ou vide est refusée, même avec un contact réel', () => {
+    const reel = projet('contact: bonjour@exemple.fr\ndepot: ErwanHenry/reveleTonProg\n');
+    assert.throws(() => loadSiteConfig(reel, { RTP_DEPLOIEMENT: 'true' }), /RTP_DEPLOIEMENT doit valoir 1/);
+    const provisoire = projet('contact: contact@domaine-a-definir.invalid\ndepot: ErwanHenry/reveleTonProg\n');
+    assert.throws(() => loadSiteConfig(provisoire, { RTP_DEPLOIEMENT: 'yes' }), /RTP_DEPLOIEMENT doit valoir 1/);
+    assert.equal(loadSiteConfig(provisoire, { RTP_DEPLOIEMENT: '0' }).contactProvisoire, true);
+  });
+
   it('un domaine réel n’est pas provisoire', () => {
     const cfg = loadSiteConfig(projet('contact: bonjour@exemple.fr\ndepot: ErwanHenry/reveleTonProg\n'));
     assert.equal(cfg.contactProvisoire, false);

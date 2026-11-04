@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { isAlias, isMap, isScalar, parseDocument, visit } from 'yaml';
+import { estDeploiement } from './deploiement.ts';
 
 // Identité de l'hébergeur (config/hebergeur.yml, racine du PROJET). Même discipline de parsing que
 // site-config : schéma core, clés uniques, aucun alias, clés inconnues refusées.
@@ -47,6 +48,8 @@ function dateReelle(s: string): boolean {
 /** Lit et valide `config/hebergeur.yml` ; lève une Error qui nomme le fichier si quoi que ce soit cloche. */
 export function loadHebergeurConfig(projectRoot: string = process.cwd(), env: NodeJS.ProcessEnv = process.env): HebergeurConfig {
   const racine = path.resolve(projectRoot);
+  // Lue d'abord : une valeur invalide de RTP_DEPLOIEMENT échoue même quand la garde ne mord pas (IN-06).
+  const deploiement = estDeploiement(env);
   const fichier = path.join(racine, 'config', 'hebergeur.yml');
   if (!existsSync(fichier)) throw erreur(`fichier introuvable (${fichier}) ; il porte l'identité de l'hébergeur`);
 
@@ -92,7 +95,7 @@ export function loadHebergeurConfig(projectRoot: string = process.cwd(), env: No
   }
   // Garde de déploiement : le job du lot 3 positionne RTP_DEPLOIEMENT=1 ; un hébergeur « prévu »
   // ne doit alors jamais partir en ligne. Évaluée à chaque appel (mémo seulement du contenu).
-  if (cfg.statut === 'prevu' && env.RTP_DEPLOIEMENT === '1') {
+  if (cfg.statut === 'prevu' && deploiement) {
     throw erreur("hébergeur prévu refusé quand RTP_DEPLOIEMENT=1 : passer statut à actif après la formalité d'identification auprès de l'hébergeur");
   }
   memo.set(racine, cfg);

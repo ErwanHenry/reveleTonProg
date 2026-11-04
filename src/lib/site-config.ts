@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { isAlias, isMap, isScalar, parseDocument, visit } from 'yaml';
+import { estDeploiement } from './deploiement.ts';
 
 // Configuration publique du site (config/site.yml, racine du PROJET : le contenu peut vivre ailleurs).
 // Même discipline de parsing que content-core : schéma core, clés uniques, aucun alias.
@@ -29,6 +30,8 @@ function erreur(detail: string): Error {
 /** Lit et valide `config/site.yml` ; lève une Error qui nomme le fichier si quoi que ce soit cloche. */
 export function loadSiteConfig(projectRoot: string = process.cwd(), env: NodeJS.ProcessEnv = process.env): SiteConfig {
   const racine = path.resolve(projectRoot);
+  // Lue d'abord : une valeur invalide de RTP_DEPLOIEMENT échoue même quand la garde ne mord pas (IN-06).
+  const deploiement = estDeploiement(env);
   const connue = memo.get(racine);
   if (connue !== undefined) return connue;
 
@@ -60,7 +63,7 @@ export function loadSiteConfig(projectRoot: string = process.cwd(), env: NodeJS.
   const cfg: SiteConfig = { contact, depot, contactProvisoire: contact.toLowerCase().endsWith('.invalid') };
   // Garde de déploiement (WR-03) : le job de déploiement du lot 3 positionne RTP_DEPLOIEMENT=1 ; un
   // contact provisoire ne doit alors jamais partir en ligne (canal de correction mort).
-  if (cfg.contactProvisoire && env.RTP_DEPLOIEMENT === '1') {
+  if (cfg.contactProvisoire && deploiement) {
     throw erreur('contact provisoire (.invalid) refusé quand RTP_DEPLOIEMENT=1 : renseigner une vraie adresse avant de déployer');
   }
   if (cfg.contactProvisoire && !avertie) {

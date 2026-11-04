@@ -5,6 +5,7 @@ import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { escapeData, escapeProperty, safe } from '../src/lib/content-core/diagnostics.ts';
 import { ModeInvalideError, resolveContentRoot, resolveMode } from '../src/lib/content-core/root.ts';
+import { DeploiementInvalideError, estDeploiement } from '../src/lib/deploiement.ts';
 import { cellulesAttendues, checkDist } from './lib/check-dist.ts';
 
 const USAGE = `Usage : node scripts/check-dist.ts [--dist <dossier>] [--root <dossier>] [--mode preview|production] [--format text|github]
@@ -14,6 +15,7 @@ const USAGE = `Usage : node scripts/check-dist.ts [--dist <dossier>] [--root <do
   --mode preview|production  mode du build contrôlé (défaut : RTP_MODE, sinon production)
   --format text|github    text (défaut) ou annotations GitHub Actions en plus
   RTP_DEPLOIEMENT=1 (job de déploiement) : un contact provisoire (.invalid) et un hébergeur seulement prévu deviennent des erreurs au lieu d'avertissements.
+  RTP_DEPLOIEMENT n'accepte que 1, 0 ou vide ; toute autre valeur est refusée (code 2).
   Code de sortie : 0 sans erreur, 1 si au moins une erreur, 2 si les arguments ou le mode sont invalides.
 `;
 
@@ -51,7 +53,13 @@ if (!fs.existsSync(dist) || !fs.statSync(dist).isDirectory()) usageError(`Dossie
 const contentRoot = values.root !== undefined ? path.resolve(projectRoot, values.root) : resolveContentRoot(projectRoot, process.env);
 
 const attendues = cellulesAttendues(contentRoot, projectRoot, mode);
-const deploiement = process.env.RTP_DEPLOIEMENT === '1';
+let deploiement = false;
+try {
+  deploiement = estDeploiement(process.env);
+} catch (e) {
+  if (e instanceof DeploiementInvalideError) usageError(e.message);
+  throw e;
+}
 const constats = checkDist(dist, { mode, cellulesParTheme: attendues, deploiement });
 
 for (const c of constats) console.log(`${c.code} ${safe(c.fichier)} : ${safe(c.message)}`);

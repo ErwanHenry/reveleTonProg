@@ -58,6 +58,12 @@ describe('loadHebergeurConfig', () => {
     );
   });
 
+  it('IN-06 : RTP_DEPLOIEMENT=true ou yes est refusé au lieu de passer la garde', () => {
+    for (const v of ['true', 'yes']) assert.throws(() => loadHebergeurConfig(REPO, { RTP_DEPLOIEMENT: v }), /RTP_DEPLOIEMENT doit valoir 1/, v);
+    assert.throws(() => loadHebergeurConfig(projet(yml({ statut: 'actif' })), { RTP_DEPLOIEMENT: 'oui' }), /RTP_DEPLOIEMENT doit valoir 1/);
+    assert.equal(loadHebergeurConfig(REPO, { RTP_DEPLOIEMENT: '' }).statut, 'prevu');
+  });
+
   it('statut actif accepté avec RTP_DEPLOIEMENT=1', () => {
     const cfg = loadHebergeurConfig(projet(yml({ statut: 'actif' })), { RTP_DEPLOIEMENT: '1' });
     assert.equal(cfg.statut, 'actif');

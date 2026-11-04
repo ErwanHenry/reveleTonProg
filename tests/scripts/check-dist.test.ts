@@ -431,6 +431,7 @@ describe('CLI scripts/check-dist.ts', () => {
     const propre: NodeJS.ProcessEnv = { ...process.env };
     delete propre.RTP_MODE;
     delete propre.RTP_CONTENT_ROOT;
+    delete propre.RTP_DEPLOIEMENT;
     const r = spawnSync(process.execPath, [CLI, ...args], { cwd: REPO_ROOT, env: { ...propre, ...env }, encoding: 'utf8' });
     return { status: r.status, out: r.stdout ?? '', err: r.stderr ?? '' };
   };
@@ -481,6 +482,15 @@ describe('CLI scripts/check-dist.ts', () => {
     const r = lancer(['--dist', dist, '--root', CORPUS], { RTP_MODE: 'preview' });
     assert.equal(r.status, 1, 'un dist de production sans noindex est indexable en preview');
     assert.match(r.out, /PREVIEW_INDEXABLE/);
+  });
+
+  it('RTP_DEPLOIEMENT invalide (IN-06) : code 2 ; RTP_DEPLOIEMENT=1 rend CONTACT_PROVISOIRE bloquant', () => {
+    const dist = ecrireDist(distPropre({ 'index.html': page({ corps: '<a href="mailto:contact@domaine-a-definir.invalid">m</a>' }) }));
+    const invalide = lancer(['--dist', dist, '--root', CORPUS, '--mode', 'production'], { RTP_DEPLOIEMENT: 'true' });
+    assert.equal(invalide.status, 2, invalide.out + invalide.err);
+    assert.match(invalide.err, /RTP_DEPLOIEMENT doit valoir 1/);
+    assert.equal(lancer(['--dist', dist, '--root', CORPUS, '--mode', 'production'], { RTP_DEPLOIEMENT: '0' }).status, 0);
+    assert.equal(lancer(['--dist', dist, '--root', CORPUS, '--mode', 'production'], { RTP_DEPLOIEMENT: '1' }).status, 1);
   });
 
   it('dist introuvable : code 2', () => {
