@@ -145,7 +145,7 @@ const SEV: Record<string, string> = { erreur: 'erreur', avertissement: 'avertiss
 
     <h2>Comment le site est testé</h2>
     <p>
-      Les pages sont vérifiées automatiquement : fonctionnement sans JavaScript, usage au clavier seul, audit d'accessibilité WCAG 2.2 niveau AA, lecture avec un texte agrandi à 160 %, respect de la demande de réduction des animations, contraste des dix couleurs de thèmes. Le temps de chargement de la page la plus lourde du site est mesuré à froid, sur un serveur local qui compresse les pages, avec ces connexions mobiles lentes simulées : {PROFILS_4G.map((p, i) => (<>{i > 0 ? ' ; ' : ''}<span data-profil-4g={p.id}>moins de {fr(p.budgetMs / 1000)} s avec {p.libelle}</span></>))}. Une lecture croisée simulée a aussi été menée : le journal est dans le dépôt du site.
+      Les pages sont vérifiées automatiquement : fonctionnement sans JavaScript, usage au clavier seul, audit d'accessibilité WCAG 2.2 niveau AA par l'outil axe (le test bloque sur les défauts que l'outil classe graves ou critiques ; les défauts mineurs ou modérés ne le bloquent pas), lecture avec un texte agrandi à 160 %, respect de la demande de réduction des animations, contraste des dix couleurs de thèmes. Le temps de chargement de la page la plus lourde du site est mesuré à froid, sur un serveur local qui compresse les pages, avec ces connexions mobiles lentes simulées : {PROFILS_4G.map((p, i) => (<>{i > 0 ? ' ; ' : ''}<span data-profil-4g={p.id}>moins de {fr(p.budgetMs / 1000)} s avec {p.libelle}</span></>))}. Une lecture croisée simulée a aussi été menée : le journal est dans le dépôt du site.
     </p>
 
     <h2>Limites connues</h2>

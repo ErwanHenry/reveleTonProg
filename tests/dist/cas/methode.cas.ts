@@ -151,6 +151,8 @@ export default function methode(ctx: ContexteSite): void {
         assert.ok(el.includes(`moins de ${(p.budgetMs / 1000).toLocaleString('fr-FR')} s`), el);
       }
       assert.doesNotMatch(t, /moins d'une seconde sur une connexion mobile lente/);
+      // IN-04 : le seuil d'axe publié est celui de e2e/axe.spec.ts (serious, critical).
+      assert.ok(t.includes("le test bloque sur les défauts que l'outil classe graves ou critiques"), 'seuil axe absent');
       for (const e of Object.values(ETAT_VIDE_TEXTES)) assert.ok(t.includes(norm(e.avant)), e.avant);
     });
 

@@ -67,7 +67,7 @@ npm run e2e                       # construit la fixture et le vrai corpus, puis
 npm run e2e -- --jeu m1 -- e2e/axe.spec.ts   # un seul jeu de données, un seul fichier de test
 ```
 
-Les tests navigateur (sans JS, clavier, WCAG 2.2 AA avec axe, 160 %, sans animation, chargement à froid sur deux connexions lentes simulées, vie privée ; profils et budgets dans `src/lib/profil-4g.ts` : moins de 1 s à 150 ms de latence par requête, moins de 1,5 s avec l'équivalent du « Slow 4G » de Lighthouse) ne font **pas** partie de `npm test`. Ne jamais lancer `npm test` et `npm run e2e` en même temps dans le même dossier : les deux exécutent `astro build` et partagent le cache `.astro`. La CI les exécute dans un job séparé (`e2e`).
+Les tests navigateur (sans JS, clavier, WCAG 2.2 AA avec axe, bloquant sur les violations `serious` et `critical`, 160 %, sans animation, chargement à froid sur deux connexions lentes simulées, vie privée ; profils et budgets dans `src/lib/profil-4g.ts` : moins de 1 s à 150 ms de latence par requête, moins de 1,5 s avec l'équivalent du « Slow 4G » de Lighthouse) ne font **pas** partie de `npm test`. Ne jamais lancer `npm test` et `npm run e2e` en même temps dans le même dossier : les deux exécutent `astro build` et partagent le cache `.astro`. La CI les exécute dans un job séparé (`e2e`).
 
 ### URL de test (livrable du lot 2)
 
