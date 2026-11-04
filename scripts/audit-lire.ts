@@ -16,7 +16,8 @@ const USAGE = `Usage :
 `;
 
 const NIVEAUX = ['resume', 'detaille', 'enfant', 'aine'] as const;
-const LIBELLES: Record<string, string> = { resume: 'Résumé', detaille: 'Détaillé', enfant: 'Enfant', aine: 'Aîné' };
+// Mêmes libellés que le sélecteur du site (LIBELLES_NIVEAUX, src/lib/corpus/vue.ts) : le lecteur ne doit pas en inventer d'autres.
+const LIBELLES: Record<string, string> = { resume: 'En bref', detaille: 'En détail', enfant: 'Pour les enfants', aine: 'Gros caractères' };
 const BLOCS = new Set(['p', 'div', 'section', 'article', 'header', 'footer', 'main', 'nav', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'table', 'tr', 'details', 'summary', 'blockquote', 'figure', 'dl', 'dt', 'dd', 'br']);
 const OMIS = new Set(['script', 'style', 'template']);
 
@@ -96,7 +97,7 @@ function rendu(n: Noeud, niveau: string | null): string {
     .map((l) => l.trim())
     .filter((l) => l !== '')
     .join('\n')
-    .replace(/^(\[(?:Résumé|Détaillé|Enfant|Aîné)\]|\(replié\)|\(définition\))\n/gm, '$1 ');
+    .replace(/^(\[(?:En bref|En détail|Pour les enfants|Gros caractères)\]|\(replié\)|\(définition\))\n/gm, '$1 ');
 }
 
 function estDans(n: Noeud, ancetre: Noeud): boolean {

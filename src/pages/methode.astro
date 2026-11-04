@@ -66,7 +66,7 @@ const SEV: Record<string, string> = { erreur: 'erreur', avertissement: 'avertiss
 
     <h2>D'où viennent les informations</h2>
     <p>Une mesure n'est affichée que si elle s'appuie sur une source primaire, c'est-à-dire un texte publié par le candidat ou sa candidature, jamais un article de presse. Les sources acceptées sont : {typesSource.join(', ')}.</p>
-    <p>Chaque source porte la date à laquelle elle a été consultée. Une copie est conservée dans le dépôt du site, avec son empreinte SHA-256 pour prouver qu'elle n'a pas changé, dans la limite de {tailleArchive} Mio par fichier. Une copie existe aussi sur les archives Wayback Machine d'Internet Archive.</p>
+    <p>Chaque source porte la date à laquelle elle a été consultée. Une copie est conservée dans le dépôt du site, avec son empreinte SHA-256 pour prouver qu'elle n'a pas changé, dans la limite de {tailleArchive} Mio par fichier. Quand la capture a réussi, une copie existe aussi sur les archives Wayback Machine d'Internet Archive : le lien « Copie archivée (Wayback Machine) » n'apparaît que dans ce cas. Une page qui publie des données personnelles de particuliers n'y est jamais envoyée. Le lien « Extrait archivé » mène au texte conservé dans le dépôt ; il affiche les 12 premiers caractères de l'empreinte, l'empreinte complète figure dans la fiche de la source du dépôt.</p>
     <div data-dataset>
       <p>
         La liste des personnalités vient du jeu de données public « Candidatures à l'élection présidentielle 2027, statuts sourcés ». Sa description annonce {dataset.annonce} personnes (lue le <time datetime={dataset.descriptionConsulteeLe}>{formatDate(dataset.descriptionConsulteeLe)}</time>), alors que le fichier mis à jour le <time datetime={dataset.instantane.miseAJour}>{formatDate(dataset.instantane.miseAJour)}</time> en contient {dataset.instantane.total} : {Object.entries(dataset.instantane.parStatut).map(([statut, n], i, tout) => (
@@ -74,7 +74,7 @@ const SEV: Record<string, string> = { erreur: 'erreur', avertissement: 'avertiss
         ))}. Cet écart est constaté, il n'est pas expliqué.
       </p>
       <p>
-        Attribution : liste des personnalités de {dataset.producteur.replace(/ \(.*$/, '')}, jeu de données publié sur <a href={dataset.page} rel="noopener noreferrer">data.gouv.fr</a>, {dataset.licence}. Seuls le statut, sa source et le lien vers le site de campagne sont repris.
+        Attribution : liste des personnalités de {dataset.producteur.replace(/ \(.*$/, '')}, jeu de données publié sur <a href={dataset.page} rel="noopener noreferrer">data.gouv.fr</a>, {dataset.licence}. Seuls le statut, sa source et le lien vers le site de campagne sont repris. La source d'un statut de candidature peut être un article de presse : l'exigence de source primaire porte sur les mesures, pas sur les statuts. Une candidature est « pressentie » quand la personne est citée comme candidate possible sans l'avoir déclarée elle-même ; elle n'a alors aucune mesure présentée.
       </p>
     </div>
 

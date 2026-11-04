@@ -66,8 +66,8 @@ test('lecture au niveau enfant : autres niveaux omis, replié et définition ét
 
 test('sans --niveau : tous les niveaux, étiquetés', () => {
   const r = lancer('--persona', 'p1', '/');
-  assert.match(r.stdout, /\[Résumé\] Texte resume/);
-  assert.match(r.stdout, /\[Aîné\] Texte aine/);
+  assert.match(r.stdout, /\[En bref\] Texte resume/);
+  assert.match(r.stdout, /\[Gros caractères\] Texte aine/);
 });
 
 test('refus (code 2, aucune ligne de journal)', () => {

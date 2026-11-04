@@ -117,21 +117,80 @@ Pièges de lecture, rejoués avec le lecteur sous l'identifiant `controle` sur `
 
 ## Résultats
 
-à remplir (05-07)
+Modèle des trois lecteurs : Sonnet 5.5 (`claude-sonnet-5-5`, alias `sonnet` de l'outil d'agents), un agent par persona pour la première passe, puis un agent neuf par message rejoué. Chaque agent a reçu son brief, ses messages sans « Attendu » ni « Bloquant », le dossier à lire et la seule commande du lecteur. Les transcriptions complètes restent hors du dépôt ; les citations ci-dessous sont du texte public des pages.
+
+Lignes du journal : première passe 21 à 115 (enfant 8 lectures, retraité 6, journaliste 80), rejeu 116 à 129 (4 lectures du journaliste, 5 du retraité, 5 de l'enfant). Les lectures `controle` sont les contrôles déterministes de l'orchestrateur.
+
+| Persona | Message | Note | Bloquant | Lignes du journal | Appui (citation du rapport de l'agent ou contrôle) |
+|---|---|---|---|---|---|
+| `enfant-10-ans` | 1. Proposition santé reformulée | OK | oui | 21, 26 | Lit la rédaction enfant d'Olivier Becht sur `/themes/sante/` et la reformule sans chiffre : « on apprenne aux enfants à rester en bonne santé avant de tomber malade ». |
+| `enfant-10-ans` | 2. Mots difficiles expliqués | Partiel | oui | 30, 31, 35, 110 | L'agent cite des définitions (« Ehpad(définition) … », « addiction(définition) … ») mais signale « collectivités locales », « sous-dotées », « aidants familiaux » comme non expliqués. Contrôle (ligne 110) : ces termes ont une définition dans la rédaction enfant ; ils apparaissent sans définition dans les titres de mesure, que R6 ne couvre pas. |
+| `enfant-10-ans` | 3. Phrases faciles | OK | oui | 35, 36, 39 | « Les phrases du texte principal sont courtes et simples. » Contrôle : `npm run validate -- --mode production` n'émet aucun `PHRASE_ENFANT_LONGUE` (aucune phrase enfant de plus de 15 mots). |
+| `enfant-10-ans` | 4. Qui a écrit ça | Partiel, puis OK au rejeu | non | 37, 39 ; rejeu 118 à 128 | Première passe : trouve l'éditeur et les sources, mais « Je ne sais pas qui a écrit la version enfant ». Rejeu après correction : « Le candidat n'écrit pas ces versions. » |
+| `retraite-72-ans` | 1. Santé en premier par « Ce qui me concerne » | OK | oui | 22, 24, 29 | Santé est le premier thème de l'accueil ; sur `/themes/sante/` au niveau aîné, le bloc « Ce qui me concerne » vient avant les candidats. |
+| `retraite-72-ans` | 2. Source et date | OK | oui | 29, 32 | « Source primaire : Nathalie Arthaud, présidentielle 2027 : brochure de campagne », « Consultée le 4 novembre 2026 ». |
+| `retraite-72-ans` | 3. À qui écrire | OK | oui | 33, 34 | Mentions légales : « Pour écrire à l'éditeur : contact@domaine-a-definir.invalid. » et « Adresse provisoire : elle sera remplacée avant la mise en ligne. » L'adresse provisoire est un point connu du Lot 3 (garde `RTP_DEPLOIEMENT=1`). |
+| `retraite-72-ans` | 4. Lisible sans options | Partiel, puis OK au rejeu | non | 24, 29, 32 ; rejeu 117 à 124 | Contenu lisible en texte simple, mais libellés incohérents (« [Aîné] » du lecteur contre « Gros caractères » du site, « résumé, détaillé, enfant et aîné » sur Qui sommes-nous). Rejeu : « Les noms sont les mêmes que sur l'accueil », reste « Aîné » sur Méthode (constat I3). |
+| `journaliste` | 1. Citation contre archive | Partiel | oui | 27, 38 ; rejeu 116, 120, 125, 129 | Trouve la citation, « Extrait archivé, empreinte sha256 df65b7989e57 » et son lien. Ne peut pas ouvrir l'extrait (le lecteur ne lit que le dist) et l'empreinte affichée est tronquée. Rejeu : la Méthode explique désormais l'absence de lien Wayback et la troncature. |
+| `journaliste` | 2. Case vide expliquée | OK | oui | 27, 38, 46 | « Programme non publié à ce jour. Vérifié le 3 novembre 2026. » et « Non précisé dans les sources consultées le 3 novembre 2026. Sources consultées : … ». |
+| `journaliste` | 3. Thèmes pilotes et écart 59 sur 51 | OK | oui | 27, 40 | Règle de la marge et départage trouvés sur Méthode ; écart : « Sa description annonce 51 personnes … en contient 59 ». L'agent recompte 37 + 17 + 5 = 59 sur `/candidats/`. Cohérent avec `data/dataset-datagouv.yaml`. |
+| `journaliste` | 4. « Guichet unique départemental » absent en production | OK | oui | 52 à 109 | « Aucune page de `dist-e2e/m1` ne contient « guichet » ni « départemental ». » Cohérent avec le contrôle déterministe (lignes 6 à 20). |
+| `journaliste` | 5. Pressentis et renoncements | OK | oui | 40 à 43, 77 à 80, 114, 115 | « Candidature pressentie, depuis le 28 août 2026. Source : France 24 / AFP. » puis « Aucune mesure n'est présentée pour cette personnalité ». Jamais présentés comme candidats déclarés. |
+
+Bilan : 13 messages, 11 OK (dont 2 après correction et rejeu), 2 Partiel sur des tests bloquants, 0 KO.
 
 ## Constats classés
 
 Classement : spécification, outil, instructions du projet, contenu à relire par Erwan.
 
-à remplir (05-07)
+### Spécification
+
+- **S1. Titres de mesure non adaptés au niveau enfant.** R6 ne couvre que les rédactions ; le titre, affiché à tous les niveaux, garde les mots difficiles (« collectivités locales », « aidants familiaux »). Cause du Partiel enfant 2. Proposition : ajouter un titre enfant facultatif, ou appliquer le glossaire au titre quand le niveau enfant est choisi (composant `Mesure.astro`, hors périmètre de ce plan).
+- **S2. Le libellé « Gros caractères » recouvre deux choses** (taille du texte et thèmes qui touchent les retraités en premier) ; le retraité ne comprend qu'il s'agit de « son » niveau qu'après la description. Décision de libellé pour Erwan.
+- **S3. Vérification d'une citation par un lecteur extérieur.** Le scénario attend l'extrait et l'empreinte « depuis la page » ; la page n'affiche que 12 caractères et l'extrait est sur le dépôt. Cause du Partiel journaliste 1. Proposition : afficher l'empreinte complète dans le lien (attribut `title` ou texte réservé aux lecteurs d'écran) dans le composant de source.
+
+### Outil (lecteur)
+
+- **O1. Libellés de niveau du lecteur différents du site** (« [Aîné] », « [Résumé] »). Corrigé : le lecteur reprend `LIBELLES_NIVEAUX`.
+- **O2. Le lecteur ne lit pas les extraits archivés** (`archives/**/*.txt`) : le journaliste ne peut pas comparer la citation à l'archive. Proposition : un mode `--extrait <candidat>/<sha12>` en lecture seule sur `archives/`, journalisé.
+- **O3. Pages longues** (`/themes/sante/` fait environ 77 Ko de texte) : les agents coupent la sortie avec `head` et ne lisent pas la fin ; une coupure provoque une erreur EPIPE. Proposition : ignorer EPIPE et ajouter une option `--candidat <id>` qui restreint la sortie.
+- **O4. Étiquette de niveau répétée** (« [Gros caractères] Gros caractères ») : le lecteur ajoute son repère devant l'étiquette déjà présente pour les lecteurs d'écran. Sans effet sur le site ; à simplifier dans le lecteur.
+
+### Instructions du projet (pages de la Phase 5)
+
+- **I1. Méthode affirmait qu'une copie Wayback existe toujours**, alors que 4 sources n'en ont pas (3 de Delphine Batho, capture échouée ; Erwan Rohou, données personnelles). Corrigé.
+- **I2. Méthode ne disait pas que les statuts de candidature peuvent être sourcés par la presse**, ni ce qu'est une candidature « pressentie ». Corrigé.
+- **I3. Méthode emploie « Aîné » et des identifiants sans accent** (« thème prioritaire Aîné (logement, retraites, sante) », « départage Aîné »). Le texte vient de `scripts/lib/couverture.ts`, hors du périmètre de ce plan. Proposition : y remplacer « Aîné » par « Gros caractères » et les identifiants par les noms des thèmes.
+- **I4. Qui sommes-nous ne disait pas qui écrit les quatre versions** et employait d'autres noms de niveaux que le sélecteur. Corrigé.
+- **I5. Méthode est difficile pour l'enfant et le retraité** (codes de règles, « Kandel et Moles », « Mio »). La page vise d'abord les lecteurs qui vérifient ; proposition : un court paragraphe « En bref » en tête de page.
+
+### Contenu à relire par Erwan (aucun fichier de `src/content/` modifié par l'audit)
+
+- **C1. 17 rédactions enfant sous le seuil Kandel-Moles de 80** (avertissement `LISIBILITE_ENFANT_FAIBLE`, niveau enfant) : `bruno-retailleau/sante-prescripteurs-atypiques-plafonds`, `delphine-batho/sante-defenseur-constitution`, `erwan-rohou/europe-et-monde-droit-international-nuremberg`, `erwan-rohou/sante-usagers-conseil-administration`, `florian-philippot/sante-simplifier-gestion-hospitaliere`, `francois-ruffin/sante-pole-public-medicament`, `francois-ruffin/sante-sante-scolaire-service-unifie`, `gabriel-attal/sante-droit-climatisation`, `jean-luc-melenchon/sante-plan-canicule-hopitaux-ehpad`, `juan-branco/europe-et-monde-union-pays-francophones`, `juan-branco/sante-politique-unique-deserts-medicaux`, `marine-tondelier/sante-activite-physique-adaptee`, `marine-tondelier/sante-prevention-priorites`, `olivier-becht/europe-et-monde-confederation-europeenne`, `olivier-becht/sante-prevention`, `olivier-becht/sante-secretariat-etat-sante-publique`, `raphael-glucksmann/sante-projet-territorial-sante` (tous sous `src/content/mesures/`).
+- **C2. Rédactions enfant à définitions multiples** : l'enfant perd le fil quand deux ou trois mots définis se suivent (exemple cité : la mesure de Fabien Roussel sur la limite des dépenses de l'assurance maladie). À vérifier au navigateur, où les définitions sont des fenêtres et non du texte en ligne.
+- **C3. Sources sans copie Wayback** : `delphine-batho-priorite-1`, `-2`, `-4` (relancer `--wayback-only`), `erwan-rohou-programme-mei` (volontaire, données personnelles).
+- **C4. Liens « Extrait archivé » vers un dépôt privé** : tant que `ErwanHenry/reveleTonProg` est privé, ces liens ne s'ouvrent pas pour le public. Décider de la visibilité du dépôt avant le Lot 3.
+- **C5. Adresse de contact provisoire** (`contact@domaine-a-definir.invalid`) : signalée par les trois lecteurs ; déjà bloquée au déploiement par `RTP_DEPLOIEMENT=1` (Lot 3).
+- **C6. Tournure à revoir** : « Il veut mieux les prendre en charge quand elles sont en situation de dépendance » (`bernard-cazeneuve/sante-grand-age-dependance`, niveau enfant).
 
 ## Corrections appliquées et rejouées
 
-à remplir (05-07)
+| Constat | Fichier | Avant | Après | Rejeu |
+|---|---|---|---|---|
+| O1 | `scripts/audit-lire.ts` (et son test) | « [Aîné] », « [Résumé] » | « [Gros caractères] », « [En bref] », comme le sélecteur | retraité, message 4 : « Les noms sont les mêmes que sur l'accueil » (lignes 117 à 124) |
+| I1 | `src/pages/methode.astro` | « Une copie existe aussi sur les archives Wayback Machine » | la copie Wayback n'existe que si la capture a réussi, jamais pour une page avec des données personnelles ; l'empreinte affichée est tronquée à 12 caractères | journaliste, message 1 : cite la nouvelle phrase (lignes 116, 120) ; reste Partiel (S3, O2) |
+| I2 | `src/pages/methode.astro` | statuts sans règle de source, « pressentie » non défini | la source d'un statut peut être un article de presse ; définition de « pressentie » | relu par l'orchestrateur sur `dist-e2e/reel` après correction (`controle`, ligne 130) |
+| I4 | `src/pages/qui-sommes-nous.astro` | pas d'auteur des versions, niveaux « résumé, détaillé, enfant et aîné » | section « Qui écrit les textes », noms du sélecteur | enfant, message 4 : « Le candidat n'écrit pas ces versions. » (lignes 118 à 128) ; retraité, message 4 |
+
+Après correction : `npm test` vert, `npm run e2e -- --jeu reel` vert (1032 tests), nouvelle empreinte de `dist-e2e/reel` : `0da3185f153b729506622a0dd8fad7566776536e1f954b50f410cd7a7e2d92a8`. Aucun fichier de `src/content/`, `archives/` ni `data/couverture-themes.yaml` n'a été modifié.
 
 ## Verdict
 
-à remplir (05-07)
+Verdict : prêt pour la relecture du Lot 2, pas prêt pour une publication. 0 KO sur un test bloquant et 7 pièges §12 sur 7 rejetés : la règle du plan (« prêt » avec 0 KO bloquant et 7 sur 7) est remplie. Le critère de succès complet de ce protocole (100 % des tests bloquants OK) ne l'est pas : deux tests bloquants restent Partiel (enfant 2, constat S1 ; journaliste 1, constats S3 et O2).
+
+Ce qui bloque une publication, hors de cet audit : la relecture éditoriale d'Erwan (tout le corpus est en brouillon, liste C1 à C6), l'adresse de contact réelle, la visibilité du dépôt (C4) et les étapes juridiques du Lot 3.
+
+Limites rappelées : les lecteurs sont des agents (Sonnet 5.5, `claude-sonnet-5-5`), pas de vrais lecteurs ; l'auteur du protocole a aussi noté les résultats ; le journal brut `audit/journal.jsonl` est livré pour le contre-contrôle ; un lecteur texte ne voit ni la mise en page, ni les fenêtres de définition, ni la taille des caractères, couvertes par les tests navigateur.
 
 ## Journal brut
 
