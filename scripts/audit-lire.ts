@@ -1,6 +1,6 @@
 // Lecteur simulé (QUAL-06) : lit un dist construit en texte brut, sans navigateur ni réseau,
-// et journalise chaque lecture. Lecture seule sur le dist ; le journal est la seule écriture.
-// Liens symboliques : une page n'est lue que si son chemin réel (realpath) reste
+// et journalise chaque lecture. Lecture seule sur le dist ; le journal est la seule écriture, et il est
+// refusé dans le dist. Liens symboliques : une page n'est lue que si son chemin réel (realpath) reste
 // sous le chemin réel du dist ; --empreinte ne suit aucun lien mais l'inclut (chemin et cible), si bien
 // qu'un lien ajouté, retiré ou redirigé change l'empreinte.
 import crypto from 'node:crypto';
@@ -14,8 +14,8 @@ const USAGE = `Usage :
   node scripts/audit-lire.ts --dist <dossier> --persona <id> [--niveau resume|detaille|enfant|aine] [--journal <fichier>] <chemin>
   node scripts/audit-lire.ts --dist <dossier> --empreinte
 
-  Lecture seule du dist ; chaque lecture ajoute une ligne à audit/journal.jsonl (ou --journal).
-  Code de sortie : 0, ou 2 pour un refus (chemin hors dist, lien vers l'extérieur, page absente, persona ou niveau invalide).
+  Lecture seule du dist ; chaque lecture ajoute une ligne à audit/journal.jsonl (ou --journal), jamais dans le dist.
+  Code de sortie : 0, ou 2 pour un refus (chemin hors dist, lien vers l'extérieur, page absente, journal dans le dist, persona ou niveau invalide).
 `;
 
 const NIVEAUX = ['resume', 'detaille', 'enfant', 'aine'] as const;
@@ -31,6 +31,24 @@ function refuser(message: string): never {
 
 function sha256(donnees: Buffer | string): string {
   return crypto.createHash('sha256').update(donnees).digest('hex');
+}
+
+/** Vrai si `p` est `dossier` ou se trouve dessous. */
+function dans(p: string, dossier: string): boolean {
+  return p === dossier || p.startsWith(dossier + path.sep);
+}
+
+/** Chemin réel de `p`, même s'il n'existe pas encore : chemin réel du plus proche parent existant, plus le reste. */
+function reelOuParent(p: string): string {
+  let parent = p;
+  const reste: string[] = [];
+  while (!fs.existsSync(parent)) {
+    const haut = path.dirname(parent);
+    if (haut === parent) break;
+    reste.unshift(path.basename(parent));
+    parent = haut;
+  }
+  return path.join(fs.realpathSync(parent), ...reste);
 }
 
 /** Résout un chemin d'URL vers un .html sous le dist ; null si hors dist (y compris par un lien symbolique) ou absent. */
@@ -184,6 +202,9 @@ if (!/^[a-z0-9-]{1,40}$/.test(persona)) refuser('Persona invalide : un identifia
 const niveau = values.niveau ?? null;
 if (niveau !== null && !(NIVEAUX as readonly string[]).includes(niveau)) refuser(`Niveau invalide : « ${niveau} » (attendu : ${NIVEAUX.join(', ')})`);
 const journal = path.resolve(values.journal ?? 'audit/journal.jsonl');
+if (dans(journal, dist) || dans(reelOuParent(journal), distReel)) {
+  refuser(`Journal refusé : ${journal} est dans le dist (lecture seule) ; passer --journal hors du dist`);
+}
 
 function journaliser(chemin: string, sha: string, octets: number): void {
   fs.mkdirSync(path.dirname(journal), { recursive: true });

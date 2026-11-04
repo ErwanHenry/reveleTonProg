@@ -136,3 +136,21 @@ test('--empreinte (WR-01) : un lien est compté sans être suivi', () => {
   fs.symlinkSync(path.join(d, 'index.html'), path.join(d, 'sym.html'));
   assert.notEqual(empreinte(), avec, 'un lien redirigé change l\'empreinte');
 });
+
+test('journal dans le dist refusé (WR-02) : chemin direct, par un lien, ou par défaut depuis le dist', () => {
+  const { racine, dist: d } = distAvecLiens();
+  const script = path.resolve('scripts/audit-lire.ts');
+  fs.symlinkSync(d, path.join(racine, 'lien-dist'));
+  for (const j of [path.join(d, 'journal.jsonl'), path.join(d, 'audit', 'j.jsonl'), path.join(racine, 'lien-dist', 'j.jsonl')]) {
+    const r = lancerSur(d, j, '--liste');
+    assert.equal(r.status, 2, j);
+    assert.match(r.stderr, /Journal refusé/, j);
+    assert.equal(r.stdout, '', j);
+  }
+  const defaut = spawnSync(process.execPath, [script, '--dist', '.', '--liste'], { cwd: d, encoding: 'utf8' });
+  assert.equal(defaut.status, 2, defaut.stderr);
+  assert.match(defaut.stderr, /Journal refusé/);
+  assert.deepEqual(fs.readdirSync(d).sort(), ['index.html'], 'rien n\'est écrit dans le dist');
+  const hors = lancerSur(d, path.join(racine, 'j.jsonl'), '--liste');
+  assert.equal(hors.status, 0, hors.stderr);
+});
