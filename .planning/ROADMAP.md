@@ -33,7 +33,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Règles éditoriales et pièges** - La CI refuse une mesure sans source et tous les pièges §12 applicables (livrable Lot 1) (completed 2026-11-03)
 - [x] **Phase 3: Import data.gouv et corpus pilote** - 59 fiches candidats sourcées, outil d'archivage, 3 thèmes pilotes réels en brouillon (parallélisable avec 2 et 4) (completed 2026-11-04)
 - [x] **Phase 4: Référentiel M1 et 4 niveaux de lecture** - Pages thème et candidat, bascule de niveau sans JS, ordre alphabétique/aléatoire, Aîné et Enfant, contrôle post-build (parallélisable avec 2 et 3) (completed 2026-11-03)
-- [ ] **Phase 5: Pages institutionnelles, qualité et URL de test** - Méthode, Mentions légales, Qui sommes-nous, suite a11y/4G, test croisé, preview livrée (livrable Lot 2)
+- [x] **Phase 5: Pages institutionnelles, qualité et URL de test** - Méthode, Mentions légales, Qui sommes-nous, suite a11y/4G, test croisé, preview livrée (livrable Lot 2) (completed 2026-11-04)
 
 ## Phase Details
 
@@ -274,7 +274,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 05-08-PLAN.md — Barrière complète sur main, URL de test (artefact CI ou preview locale), parcours d'Erwan (checkpoint, réalisable par l'orchestrateur pour lui) (wave 5)
+- [x] 05-08-PLAN.md — Barrière complète sur main, URL de test (artefact CI ou preview locale), parcours d'Erwan (checkpoint, réalisable par l'orchestrateur pour lui) (wave 5)
 
 **Note d'exécution** : les plans de la Phase 5 tournent en worktrees pendant que les plans de contenu 03-07, 03-08 puis 03-09 tournent sur main. La Phase 5 ne modifie jamais `src/content/**`, `archives/**`, `data/couverture-themes.yaml`, `docs/COUVERTURE-THEMES.md`, `src/pages/index.astro` ni `tests/dist/cas/squelette.cas.ts` (les dates des tours atteignent l'accueil par le pied de page de `Base.astro`). Fichiers partagés avec 03-09 (`.github/workflows/ci.yml`, `tests/repo/ci.test.ts`, `README.md`, `docs/RUNBOOK.md`, `docs/ARCHITECTURE.md`, `tests/repo/docs.test.ts`, bloc `scripts` de `package.json`, contrat des scripts de `tests/repo/scaffold.test.ts`) : uniquement dans 05-06, exécuté APRÈS la fusion de 03-09 (05-06 s'arrête si `03-09-SUMMARY.md` est absent). Seule exception, en sections séparables : 05-01 modifie le bloc `devDependencies` de `package.json`, `package-lock.json` et les cas « dépendances » et « lockfile » de `scaffold.test.ts` (03-09 ne touche ni au lockfile ni à ces cas) ; en cas de conflit de fusion, garder les deux côtés. 05-07 (test croisé) porte sur le corpus réel final, donc après la clôture de la Phase 3.
 **UI hint**: yes
@@ -309,7 +309,7 @@ Phase 1 ──┬──> Phase 2 (règles) ──────────┐
 | 2. Règles éditoriales et pièges | 7/7 | Complete    | 2026-11-03 |
 | 3. Import data.gouv et corpus pilote | 9/9 | Complete    | 2026-11-04 |
 | 4. Référentiel M1 et 4 niveaux de lecture | 9/9 | Complete    | 2026-11-03 |
-| 5. Pages institutionnelles, qualité et URL de test | 7/8 | In Progress|  |
+| 5. Pages institutionnelles, qualité et URL de test | 8/8 | Complete   | 2026-11-04 |
 
 ---
 *Roadmap created: 2026-11-03*

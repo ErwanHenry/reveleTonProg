@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
 status: executing
-stopped_at: Phase 5 — 05-07 complete, 05-08 next
+stopped_at: Phase 5 — all 8 plans complete, review and verification next
 last_updated: 2026-11-04T12:56:19.227Z
 last_activity: 2026-11-04
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 40
-  completed_plans: 39
+  completed_plans: 40
   percent: 80
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-11-03)
 ## Current Position
 
 Phase: 05
-Plan: 05-08 (barrière et URL de test)
+Plan: 8/8 complete
 Status: Executing
 Last activity: 2026-11-04
 
