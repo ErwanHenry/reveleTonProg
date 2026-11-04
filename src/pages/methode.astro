@@ -13,7 +13,7 @@ import { TOURS } from '../lib/dates-tours.ts';
 import { PROFIL_4G } from '../lib/profil-4g.ts';
 
 // Date de dernière révision de cette page (à mettre à jour à chaque modification du texte).
-const REVISION = '2026-11-03';
+const REVISION = '2026-11-04';
 
 // Fail closed : une couverture illisible ne produit pas une page Méthode approximative.
 const lue = lireCouverture(couvertureBrute);
@@ -88,7 +88,8 @@ const SEV: Record<string, string> = { erreur: 'erreur', avertissement: 'avertiss
     <h2>Neutralité</h2>
     <p>Les textes du site évitent les mots qui jugent. Ils ne comportent pas, par exemple : <span data-liste-mots-interdits>{motsInterdits}</span>.</p>
     <p>Les verbes qui insinuent une intention ou un doute sont remplacés par « propose » ou « indique » : <span data-verbes-connotes>{VERBES_CONNOTES.join(', ')}</span>.</p>
-    <p>L'étiquette politique affichée est celle que le candidat revendique. Un chiffrage n'est donné que s'il vient du candidat. Les règles de communication des sondages et du pluralisme relèvent de l'Arcom : voir les <a href="/mentions-legales/">mentions légales</a>.</p>
+    <p>L'étiquette politique affichée est celle que le candidat revendique. Un chiffrage n'est donné que s'il vient du candidat.</p>
+    <p data-regle="sondages">La publication des sondages d'opinion relève de la loi n° 77-808 du 19 juillet 1977 relative à la publication et à la diffusion de certains sondages d'opinion, sous le contrôle de la Commission des sondages. Le pluralisme dans les médias audiovisuels relève de l'Arcom, qui ne supervise pas ce site : voir les <a href="/mentions-legales/">mentions légales</a>.</p>
 
     <h2>Longueur et lisibilité</h2>
     <p>Chaque niveau de lecture a des bornes en nombre de mots, contrôlées à chaque modification du contenu :</p>

@@ -115,6 +115,15 @@ export default function methode(ctx: ContexteSite): void {
       assert.ok(hrefs.includes(d.page), hrefs.join(' | '));
     });
 
+    it("sondages : loi n° 77-808 et Commission des sondages, jamais « sondages … relèvent de l'Arcom » (CR-01)", () => {
+      const a = page();
+      const t = txt(unique(a, 'data-regle', 'sondages'));
+      assert.ok(t.includes('loi n° 77-808 du 19 juillet 1977'), t);
+      assert.ok(t.includes('Commission des sondages'), t);
+      const main = txt(trouver(a, (n) => n.tag === 'main')[0] as Noeud);
+      assert.doesNotMatch(main, /sondages[^.]*relèvent de l'Arcom/);
+    });
+
     it('dates des tours, profil 4G, états vides', () => {
       const a = page();
       const main = trouver(a, (n) => n.tag === 'main')[0] as Noeud;

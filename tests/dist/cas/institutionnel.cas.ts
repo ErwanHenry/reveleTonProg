@@ -42,6 +42,13 @@ export default function institutionnel(ctx: ContexteSite): void {
       assert.doesNotMatch(t, /article 6\b|6 IV|IV de l'article 6/);
     });
 
+    it('sondages : loi n° 77-808 et Commission des sondages, cohérent avec la page Méthode (CR-01)', () => {
+      const t = vu(chemin);
+      assert.ok(t.includes('loi n° 77-808 du 19 juillet 1977'), t);
+      assert.ok(t.includes('Commission des sondages'), t);
+      assert.doesNotMatch(t, /sondages[^.]*relèvent de l'Arcom/);
+    });
+
     it('données personnelles : les deux clés, aucun cookie', () => {
       const t = vu(chemin);
       assert.ok(t.includes(CLES_STOCKAGE.niveau.cle));
