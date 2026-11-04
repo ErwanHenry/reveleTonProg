@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { request, type IncomingHttpHeaders } from 'node:http';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import type { AddressInfo } from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
@@ -43,6 +43,10 @@ describe('e2e/serveur.ts', () => {
     writeFileSync(path.join(dist, 'a', 'index.html'), HTML);
     writeFileSync(path.join(dist, '_astro', 'x.css'), 'body{color:red}');
     writeFileSync(path.join(tmp, 'secret.txt'), 'SECRET');
+    // WR-01 : liens symboliques vers l'extérieur du dist (fichier et dossier) et vers l'intérieur.
+    symlinkSync(path.join(tmp, 'secret.txt'), path.join(dist, 'lien.txt'));
+    symlinkSync(tmp, path.join(dist, 'dehors'));
+    symlinkSync(path.join(dist, 'index.html'), path.join(dist, 'alias.html'));
     serveur = creerServeur(dist);
     await new Promise<void>((ok) => serveur.listen(0, '127.0.0.1', ok));
     port = (serveur.address() as AddressInfo).port;
@@ -84,6 +88,20 @@ describe('e2e/serveur.ts', () => {
       assert.ok(!r.corps.toString('utf8').includes('SECRET'));
     });
   }
+
+  for (const chemin of ['/lien.txt', '/dehors/secret.txt']) {
+    it(`refuse le lien symbolique vers l'extérieur ${chemin} (WR-01)`, async () => {
+      const r = await get(chemin);
+      assert.equal(r.status, 404);
+      assert.ok(!r.corps.toString('utf8').includes('SECRET'));
+    });
+  }
+
+  it('sert un lien symbolique vers un fichier du dist (WR-01)', async () => {
+    const r = await get('/alias.html', { 'accept-encoding': 'identity' });
+    assert.equal(r.status, 200);
+    assert.equal(r.corps.toString('utf8'), HTML);
+  });
 
   it('404 pour un dossier sans index.html et un fichier absent', async () => {
     assert.equal((await get('/vide/')).status, 404);

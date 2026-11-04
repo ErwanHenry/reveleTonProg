@@ -1,5 +1,8 @@
 // Lecteur simulé (QUAL-06) : lit un dist construit en texte brut, sans navigateur ni réseau,
 // et journalise chaque lecture. Lecture seule sur le dist ; le journal est la seule écriture.
+// Liens symboliques : une page n'est lue que si son chemin réel (realpath) reste
+// sous le chemin réel du dist ; --empreinte ne suit aucun lien mais l'inclut (chemin et cible), si bien
+// qu'un lien ajouté, retiré ou redirigé change l'empreinte.
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -12,7 +15,7 @@ const USAGE = `Usage :
   node scripts/audit-lire.ts --dist <dossier> --empreinte
 
   Lecture seule du dist ; chaque lecture ajoute une ligne à audit/journal.jsonl (ou --journal).
-  Code de sortie : 0, ou 2 pour un refus (chemin hors dist, page absente, persona ou niveau invalide).
+  Code de sortie : 0, ou 2 pour un refus (chemin hors dist, lien vers l'extérieur, page absente, persona ou niveau invalide).
 `;
 
 const NIVEAUX = ['resume', 'detaille', 'enfant', 'aine'] as const;
@@ -30,8 +33,8 @@ function sha256(donnees: Buffer | string): string {
   return crypto.createHash('sha256').update(donnees).digest('hex');
 }
 
-/** Résout un chemin d'URL vers un .html sous le dist ; null si hors dist ou absent. */
-function resoudre(dist: string, chemin: string): string | null {
+/** Résout un chemin d'URL vers un .html sous le dist ; null si hors dist (y compris par un lien symbolique) ou absent. */
+function resoudre(dist: string, distReel: string, chemin: string): string | null {
   let decode: string;
   try {
     decode = decodeURIComponent(chemin.split(/[?#]/)[0] ?? '');
@@ -45,7 +48,34 @@ function resoudre(dist: string, chemin: string): string | null {
   const cible = path.resolve(dist, rel);
   if (!cible.startsWith(dist + path.sep)) return null;
   if (path.extname(cible) !== '.html') return null;
-  return fs.existsSync(cible) && fs.statSync(cible).isFile() ? cible : null;
+  let reel: string;
+  try {
+    reel = fs.realpathSync(cible);
+  } catch {
+    return null;
+  }
+  if (!reel.startsWith(distReel + path.sep) || path.extname(reel) !== '.html') return null;
+  return fs.statSync(reel).isFile() ? reel : null;
+}
+
+/**
+ * Lignes de l'empreinte, triées par chemin comme avant les liens : `chemin:sha256` par fichier,
+ * `chemin -> lien:cible` par lien symbolique (jamais suivi). Un dist sans lien garde la même empreinte.
+ */
+function lignesEmpreinte(dist: string): string[] {
+  const out: { cle: string; ligne: string }[] = [];
+  const rel = (p: string): string => path.relative(dist, p).split(path.sep).join('/');
+  const visiter = (dossier: string): void => {
+    for (const e of fs.readdirSync(dossier, { withFileTypes: true })) {
+      const p = path.join(dossier, e.name);
+      if (e.isSymbolicLink()) out.push({ cle: p, ligne: `${rel(p)} -> lien:${fs.readlinkSync(p)}` });
+      else if (e.isDirectory()) visiter(p);
+      else if (e.isFile()) out.push({ cle: p, ligne: `${rel(p)}:${sha256(fs.readFileSync(p))}` });
+      else out.push({ cle: p, ligne: `${rel(p)} -> special` });
+    }
+  };
+  visiter(dist);
+  return out.sort((a, b) => (a.cle < b.cle ? -1 : a.cle > b.cle ? 1 : 0)).map((x) => x.ligne);
 }
 
 function listerFichiers(dossier: string, filtre: (nom: string) => boolean): string[] {
@@ -142,10 +172,10 @@ try {
 if (values.dist === undefined) refuser(`--dist est obligatoire\n\n${USAGE}`);
 const dist = path.resolve(values.dist);
 if (!fs.existsSync(dist) || !fs.statSync(dist).isDirectory()) refuser(`Dossier introuvable : ${dist}`);
+const distReel = fs.realpathSync(dist);
 
 if (values.empreinte === true) {
-  const lignes = listerFichiers(dist, () => true).map((f) => `${path.relative(dist, f).split(path.sep).join('/')}:${sha256(fs.readFileSync(f))}`);
-  console.log(sha256(lignes.join('\n')));
+  console.log(sha256(lignesEmpreinte(distReel).join('\n')));
   process.exit(0);
 }
 
@@ -171,7 +201,7 @@ if (values.liste === true) {
 
 const demande = positionnels[0];
 if (demande === undefined || positionnels.length !== 1) refuser(`Un chemin est attendu\n\n${USAGE}`);
-const fichier = resoudre(dist, demande);
+const fichier = resoudre(dist, distReel, demande);
 if (fichier === null) refuser(`Chemin refusé ou page absente : ${demande}`);
 const brut = fs.readFileSync(fichier);
 process.stdout.write(lirePage(brut.toString('utf8'), niveau));

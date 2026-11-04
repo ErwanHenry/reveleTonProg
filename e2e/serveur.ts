@@ -1,8 +1,10 @@
 // Serveur statique de test (zéro dépendance) : sert un dossier `dist` en gzip, sur 127.0.0.1 uniquement.
 // Usage : node e2e/serveur.ts <dist> <port>
 // `cache-control: no-store` : chaque chargement (mesure 4G) part à froid, à la différence de Caddy.
+// Liens symboliques : le chemin réel (realpath) de la cible doit rester sous le chemin réel du dist,
+// sinon 404 ; un lien qui pointe vers un autre fichier du dist est servi.
 import { createServer, type Server } from 'node:http';
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { readFileSync, realpathSync, statSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -14,6 +16,22 @@ const TYPES: Record<string, string> = {
   '.txt': 'text/plain; charset=utf-8',
   '.xml': 'application/xml; charset=utf-8',
 };
+
+/**
+ * Chemin réel d'un fichier régulier sous `racine`, ou null : hors du dist (contrôle lexical, puis
+ * contrôle des chemins réels, ce qui refuse un lien symbolique vers l'extérieur), absent ou dossier.
+ */
+function cheminReel(racine: string, abs: string): string | null {
+  if (!abs.startsWith(racine + path.sep)) return null;
+  try {
+    const racineReelle = realpathSync(racine);
+    const reel = realpathSync(abs);
+    if (!reel.startsWith(racineReelle + path.sep) || !statSync(reel).isFile()) return null;
+    return reel;
+  } catch {
+    return null;
+  }
+}
 
 export function creerServeur(racineArg: string): Server {
   const racine = path.resolve(racineArg);
@@ -28,16 +46,17 @@ export function creerServeur(racineArg: string): Server {
     }
     if (rel.endsWith('/')) rel += 'index.html';
     const abs = path.resolve(racine, `.${rel}`);
-    if (!abs.startsWith(racine + path.sep) || !existsSync(abs) || !statSync(abs).isFile()) {
+    const reel = cheminReel(racine, abs);
+    if (reel === null) {
       res.writeHead(404).end('404');
       return;
     }
     const ext = path.extname(abs);
-    const brut = readFileSync(abs);
+    const brut = readFileSync(reel);
     const h = { 'content-type': TYPES[ext] ?? 'application/octet-stream', 'cache-control': 'no-store' };
     if (ext in TYPES && /\bgzip\b/.test(String(req.headers['accept-encoding'] ?? ''))) {
-      let gz = memo.get(abs);
-      if (!gz) memo.set(abs, (gz = gzipSync(brut, { level: 6 })));
+      let gz = memo.get(reel);
+      if (!gz) memo.set(reel, (gz = gzipSync(brut, { level: 6 })));
       res
         .writeHead(200, { ...h, 'content-encoding': 'gzip', vary: 'Accept-Encoding', 'content-length': String(gz.length) })
         .end(gz);

@@ -93,3 +93,46 @@ test('--empreinte : stable, change quand un fichier change', () => {
   fs.appendFileSync(path.join(dist, 'themes', 'x', 'index.html'), ' ');
   assert.notEqual(lancer('--empreinte').stdout, a);
 });
+
+// WR-01 : jeu de fichiers séparé, pour ne pas changer le dist des tests ci-dessus.
+function distAvecLiens(): { racine: string; dist: string; journal: string } {
+  const racine = fs.mkdtempSync(path.join(os.tmpdir(), 'audit-lire-liens-'));
+  const d = path.join(racine, 'dist');
+  fs.mkdirSync(d);
+  fs.writeFileSync(path.join(d, 'index.html'), '<html><head><title>Dedans</title></head><body><main><p>Page interne</p></main></body></html>');
+  fs.writeFileSync(path.join(racine, 'secret.html'), '<html><head><title>SECRET</title></head><body><main><p>SECRET</p></main></body></html>');
+  return { racine, dist: d, journal: path.join(racine, 'j.jsonl') };
+}
+const lancerSur = (d: string, j: string, ...args: string[]) =>
+  spawnSync(process.execPath, ['scripts/audit-lire.ts', '--dist', d, '--journal', j, ...args], { encoding: 'utf8' });
+
+test('liens symboliques (WR-01) : cible hors du dist refusée, lien interne lu', () => {
+  const { racine, dist: d, journal: j } = distAvecLiens();
+  fs.symlinkSync(path.join(racine, 'secret.html'), path.join(d, 'sym.html'));
+  fs.symlinkSync(racine, path.join(d, 'dehors'));
+  fs.symlinkSync(path.join(d, 'index.html'), path.join(d, 'alias.html'));
+  for (const chemin of ['/sym.html', '/dehors/secret.html']) {
+    const r = lancerSur(d, j, '--persona', 'p1', chemin);
+    assert.equal(r.status, 2, chemin);
+    assert.doesNotMatch(r.stdout, /SECRET/, chemin);
+  }
+  assert.equal(fs.existsSync(j), false, 'aucune ligne de journal pour un refus');
+  const ok = lancerSur(d, j, '--persona', 'p1', '/alias.html');
+  assert.equal(ok.status, 0, ok.stderr);
+  assert.match(ok.stdout, /Page interne/);
+});
+
+test('--empreinte (WR-01) : un lien est compté sans être suivi', () => {
+  const { racine, dist: d, journal: j } = distAvecLiens();
+  const empreinte = (): string => lancerSur(d, j, '--empreinte').stdout;
+  const sans = empreinte();
+  fs.symlinkSync(path.join(racine, 'secret.html'), path.join(d, 'sym.html'));
+  const avec = empreinte();
+  assert.match(avec, /^[0-9a-f]{64}\n$/);
+  assert.notEqual(avec, sans, 'un lien ajouté change l\'empreinte');
+  fs.appendFileSync(path.join(racine, 'secret.html'), ' ');
+  assert.equal(empreinte(), avec, 'la cible hors dist n\'est pas lue');
+  fs.unlinkSync(path.join(d, 'sym.html'));
+  fs.symlinkSync(path.join(d, 'index.html'), path.join(d, 'sym.html'));
+  assert.notEqual(empreinte(), avec, 'un lien redirigé change l\'empreinte');
+});
