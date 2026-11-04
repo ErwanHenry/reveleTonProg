@@ -13,6 +13,7 @@ import type { Diagnostic } from '../src/lib/content-core/diagnostics.ts';
 import { checkContained, readContained, validateYamlText } from '../src/lib/content-core/load.ts';
 import { UnknownUpstreamIdsError, UpstreamShapeError, checkUpstream, lireCorrespondances, mapRow, mergeFiche, renderYaml, snapshotName } from './lib/datagouv.ts';
 import type { UpstreamRow } from './lib/datagouv.ts';
+import { FetchSafeError, fetchSafe } from './lib/fetch-safe.ts';
 
 const URL_PAR_DEFAUT = 'https://www.data.gouv.fr/api/1/datasets/r/06237c53-76bd-4224-9805-418e125f0493';
 const PLAFOND_OCTETS = 5 * 1024 * 1024;
@@ -74,25 +75,14 @@ interface Brut {
 }
 
 async function lireReseau(): Promise<Brut> {
-  let res: Response;
+  // fetchSafe : https seulement, adresses publiques seulement (redirections comprises), plafond et délai.
   try {
-    res = await fetch(url, { redirect: 'follow', signal: AbortSignal.timeout(DELAI_MS) });
+    const r = await fetchSafe(url, { maxOctets: PLAFOND_OCTETS, timeoutMs: DELAI_MS });
+    return { buffer: Buffer.from(r.bytes), urlInitiale: url, urlFinale: r.finalUrl, etag: r.etag ?? null };
   } catch (e) {
-    return fail(`téléchargement impossible (${e instanceof Error ? e.message : String(e)})`);
+    if (e instanceof FetchSafeError) return fail(`téléchargement refusé ou impossible (${e.code}) : ${e.message}`);
+    throw e;
   }
-  if (!res.ok || res.body === null) return fail(`téléchargement refusé : HTTP ${res.status}`);
-  const morceaux: Buffer[] = [];
-  let total = 0;
-  try {
-    for await (const m of res.body as unknown as AsyncIterable<Uint8Array>) {
-      total += m.byteLength;
-      if (total > PLAFOND_OCTETS) return fail(`réponse trop volumineuse (plus de ${PLAFOND_OCTETS} octets)`);
-      morceaux.push(Buffer.from(m));
-    }
-  } catch (e) {
-    return fail(`lecture interrompue (${e instanceof Error ? e.message : String(e)})`);
-  }
-  return { buffer: Buffer.concat(morceaux), urlInitiale: url, urlFinale: res.url || url, etag: res.headers.get('etag') };
 }
 
 function lireFichier(file: string): Brut {

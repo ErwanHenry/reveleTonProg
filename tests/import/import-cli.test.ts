@@ -71,6 +71,14 @@ function ajouterMotif(root: string, amont: string, motif: string): void {
 }
 
 describe('npm run import:datagouv (scripts/import-datagouv.ts)', () => {
+  it('WR-03 : --url vers une adresse non publique est refusé avant tout réseau (SSRF)', () => {
+    for (const cible of ['https://127.0.0.1/x.json', 'https://169.254.169.254/latest/meta-data', 'https://[::1]/x.json']) {
+      const res = importer(['--url', cible, '--dry-run']);
+      assert.equal(res.status, 1, cible);
+      assert.match(res.stderr, /ADRESSE_PRIVEE/, cible);
+    }
+  });
+
   it('crée une fiche valide par ligne de l’instantané et verrouille les identifiants', () => {
     const snap = newestSnapshot();
     const rows = snapshotRows(snap);

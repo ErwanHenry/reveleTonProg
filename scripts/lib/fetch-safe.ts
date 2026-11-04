@@ -102,6 +102,7 @@ export interface Reponse {
   contentType: string | undefined;
   bytes: Uint8Array;
   lastModified: string | undefined;
+  etag: string | undefined;
 }
 
 export interface Adresse {
@@ -230,6 +231,7 @@ export async function fetchSafe(url: string, opts: OptionsFetch = {}): Promise<R
       contentType: res.headers.get('content-type') ?? undefined,
       bytes,
       lastModified: res.headers.get('last-modified') ?? undefined,
+      etag: res.headers.get('etag') ?? undefined,
     };
   }
 }
