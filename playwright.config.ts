@@ -18,7 +18,8 @@ export default defineConfig({
     timezoneId: 'Europe/Paris',
   },
   webServer: {
-    command: `node e2e/serveur.ts ${dist} ${port}`,
+    // Chemin entre guillemets : un clone dont le chemin contient une espace reste un seul argument (IN-02).
+    command: `node e2e/serveur.ts ${JSON.stringify(dist)} ${port}`,
     url: `http://127.0.0.1:${port}/`,
     reuseExistingServer: false,
     timeout: 15_000,
