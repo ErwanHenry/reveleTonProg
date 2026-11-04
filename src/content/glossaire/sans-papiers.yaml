@@ -1,0 +1,5 @@
+version_schema: 1
+id: sans-papiers
+type: terme
+libelle: "sans-papiers"
+definition: "Un sans-papiers est une personne étrangère qui vit dans un pays sans avoir de papiers qui l'autorisent à y séjourner."

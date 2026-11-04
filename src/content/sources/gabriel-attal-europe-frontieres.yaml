@@ -1,0 +1,15 @@
+version_schema: 1
+id: gabriel-attal-europe-frontieres
+type: site_candidat
+auteur: candidat
+candidats:
+  - gabriel-attal
+titre: "Gabriel Attal, programme : chantier capital Frontières"
+url: https://attalpresident.fr/programme/frontieres
+date_publication: 2026-11
+date_consultation: 2026-11-04
+archive:
+  extrait: archives/gabriel-attal/823b1ce750a6.txt
+  sha256: 823b1ce750a666be927fa7a4cba4c8658588ee8254724306861119a751b9f68a
+  capture_le: 2026-11-04T09:45:11+01:00
+  binaire_sha256: b585dbf510d0d525efeb87674f6ee875f7f18275226d698aa6afc199f08c189f

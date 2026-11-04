@@ -1,0 +1,5 @@
+version_schema: 1
+id: traite
+type: terme
+libelle: "traité"
+definition: "Un traité est un accord écrit signé entre plusieurs pays, qui s'engagent à en respecter les règles."

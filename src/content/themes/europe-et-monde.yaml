@@ -1,0 +1,34 @@
+version_schema: 1
+id: europe-et-monde
+nom: Europe et monde
+ordre: 9
+mots_cles:
+  - europe
+  - européen
+  - union européenne
+  - otan
+  - diplomat
+  - international
+  - politique étrangère
+  - traité
+  - migrat
+  - frontière
+  - commerce
+  - onu
+prioritaire_aine: false
+sous_themes:
+  - id: construction-europeenne
+    nom: Construction européenne et institutions de l'Union
+  - id: souverainete-et-traites
+    nom: Souveraineté, traités et rapport à l'Union européenne
+  - id: commerce-et-protectionnisme
+    nom: Commerce, douanes et protectionnisme
+  - id: immigration-et-asile
+    nom: Immigration, asile et frontières
+  - id: diplomatie-et-multilateralisme
+    nom: Diplomatie, multilatéralisme et coopération internationale
+  - id: defense-et-alliances
+    nom: Défense, alliances et sécurité extérieure
+  - id: cooperation-et-developpement
+    nom: Aide au développement et coopération avec les pays tiers
+statut_relecture: brouillon

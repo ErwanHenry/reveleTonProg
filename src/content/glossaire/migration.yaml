@@ -1,0 +1,5 @@
+version_schema: 1
+id: migration
+type: terme
+libelle: "migration"
+definition: "Une migration est le déplacement de personnes qui quittent leur pays ou leur région pour aller vivre ailleurs."

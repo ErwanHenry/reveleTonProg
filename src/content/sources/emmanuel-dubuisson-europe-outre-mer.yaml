@@ -1,0 +1,15 @@
+version_schema: 1
+id: emmanuel-dubuisson-europe-outre-mer
+type: programme
+auteur: candidat
+candidats:
+  - emmanuel-dubuisson
+titre: "Emmanuel Dubuisson, projet : dossier 7, la vision des Outre-mer"
+url: https://www.dubuisson2027.fr/dossiers/7-outre-mer
+date_publication: 2026-11
+date_consultation: 2026-11-04
+archive:
+  extrait: archives/emmanuel-dubuisson/215fedc1d095.txt
+  sha256: 215fedc1d0953e7e568ed8605c94ece1b2173bb002df664a84092ac1095b6f90
+  capture_le: 2026-11-04T09:47:28+01:00
+  binaire_sha256: 4788529355ce28608097a8c10af87d4c6b725c6cb3dbbf2ddb009a4b818cfed4

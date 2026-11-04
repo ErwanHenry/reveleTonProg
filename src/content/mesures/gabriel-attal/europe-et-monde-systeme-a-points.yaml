@@ -1,0 +1,36 @@
+version_schema: 1
+id: gabriel-attal/europe-et-monde-systeme-a-points
+candidat: gabriel-attal
+theme: europe-et-monde
+sous_theme: immigration-et-asile
+titre: "Système à points pour l’immigration"
+texte_source: >-
+  Ce que nous voulons, c’est la préférence travail, où l’on accueille les compétences, les talents
+  dont nous avons besoin sur la base d’un système à points comme au Canada, fondé sur des critères
+  simples, une offre d’emploi stable, un logement, parler français, connaître nos valeurs et les
+  respecter.
+source: gabriel-attal-europe-frontieres
+source_localisation: "chantier capital Frontières, section Maîtriser l’immigration"
+redactions:
+  resume: >-
+    Gabriel Attal veut une « préférence travail » : accueillir les compétences et les talents grâce
+    à un système à points, comme au Canada.
+  detaille: >-
+    Dans le chantier capital Frontières de son programme, Gabriel Attal écrit : « la préférence
+    travail, où l’on accueille les compétences, les talents dont nous avons besoin sur la base d’un
+    système à points comme au Canada ». Ce système serait « fondé sur des critères simples » : une
+    offre d’emploi stable, un logement, parler français, connaître nos valeurs et les respecter. Le
+    texte cité ne précise pas combien de points vaudrait chaque critère, ni quel total serait
+    nécessaire, ni qui évaluerait les candidats. Il ne donne ni chiffre ni date.
+  enfant: >-
+    Gabriel Attal veut accueillir les compétences et les talents dont la France a besoin. Il propose
+    un [[système à points|systeme-a-points]], comme au Canada. Les critères sont simples : une offre
+    d’emploi stable, un logement, parler français. Il faut aussi connaître nos valeurs et les
+    respecter.
+  aine: >-
+    Gabriel Attal indique vouloir la préférence travail : accueillir les compétences et les talents
+    dont le pays a besoin. Il propose pour cela un système à points, comme au Canada. Les critères
+    cités sont simples : une offre d’emploi stable, un logement, parler français, et connaître nos
+    valeurs et les respecter. Le texte ne dit pas combien de points vaudrait chaque critère, ni quel
+    total serait nécessaire. Il ne donne ni chiffre ni date.
+statut_relecture: brouillon

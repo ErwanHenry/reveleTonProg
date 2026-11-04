@@ -1,0 +1,5 @@
+version_schema: 1
+id: systeme-a-points
+type: terme
+libelle: "système à points"
+definition: "Dans un système à points, chaque critère rempli rapporte des points. Selon le total obtenu, une demande est acceptée ou refusée."

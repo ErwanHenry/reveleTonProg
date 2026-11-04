@@ -1,0 +1,5 @@
+version_schema: 1
+id: immigration
+type: terme
+libelle: "immigration"
+definition: "L'immigration, c'est le fait de venir s'installer dans un pays qui n'est pas celui où l'on est né."
