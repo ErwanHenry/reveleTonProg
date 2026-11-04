@@ -1,0 +1,5 @@
+version_schema: 1
+id: drone
+type: terme
+libelle: "drone"
+definition: "Un drone est un petit appareil volant sans personne à bord. On le dirige à distance."

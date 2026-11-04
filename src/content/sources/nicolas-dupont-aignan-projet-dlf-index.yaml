@@ -7,10 +7,10 @@ candidats:
 titre: "Debout la France, Le Projet de Debout La France : index des thèmes"
 url: https://www.debout-la-france.fr/notre-projet/
 date_publication: 2026-11
-date_consultation: 2026-11-03
+date_consultation: 2026-11-04
 archive:
   extrait: archives/nicolas-dupont-aignan/92359b0ee2ee.txt
   sha256: 92359b0ee2eeedc75517c5d33861c5a64658a7c89df2dad91914b4316944dc53
-  capture_le: 2026-11-03T23:14:09+01:00
+  capture_le: 2026-11-04T09:58:31+01:00
   wayback_url: https://web.archive.org/web/20261103224509/https://www.debout-la-france.fr/notre-projet/
-  binaire_sha256: d12c49c9e68f86dda3d7e6d3fb15a9c913443e722e1c919415271bbc1a156caf
+  binaire_sha256: 74b66de7361eb2dc02e8eb2c4f87d331fe3c194cbaaa945b65cc2a84d8a81c5f

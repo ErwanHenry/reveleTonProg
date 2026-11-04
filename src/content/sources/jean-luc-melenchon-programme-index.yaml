@@ -7,9 +7,9 @@ candidats:
 titre: "Mélenchon 2027, Programme : découvrir (livre-programme, plans thématiques, plans d'investissement)"
 url: https://melenchon2027.fr/programme/decouvrir/
 date_publication: 2026-11
-date_consultation: 2026-11-03
+date_consultation: 2026-11-04
 archive:
   extrait: archives/jean-luc-melenchon/e00e2f6bed05.txt
   sha256: e00e2f6bed05fd521c021bea2587d5e3cc008ffc97cafd83e204cd33d2355238
-  capture_le: 2026-11-03T23:14:20+01:00
-  binaire_sha256: 763a94376665ab377705f0a755c0315d48e1ebba6d5fabcef9f54de269535007
+  capture_le: 2026-11-04T10:01:06+01:00
+  binaire_sha256: f7a4800dbfe00a13163387664a9fbaa54085fec2e27ff0fd57cc1eade0da9414

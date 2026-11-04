@@ -7,10 +7,10 @@ candidats:
 titre: "Solution Démocratique, Clara Egger : candidate et programme limité"
 url: https://solutiondemocratique.fr/clara-egger/
 date_publication: 2026-11
-date_consultation: 2026-11-03
+date_consultation: 2026-11-04
 archive:
   extrait: archives/clara-egger/aea21c66fb43.txt
   sha256: aea21c66fb438d16c08338b54c86c53b029da68bf554d748e4883a8fe672f4fa
-  capture_le: 2026-11-03T23:14:25+01:00
+  capture_le: 2026-11-04T09:58:35+01:00
   wayback_url: https://web.archive.org/web/20261103183253/https://solutiondemocratique.fr/clara-egger/
-  binaire_sha256: 3a61f7f4198360230e72fdbeff3d4a9a386a22b475dba744952014988186ba9e
+  binaire_sha256: d92ab97a3a27b77b1740686444d1b77ddb9b457cec1a9ac0664770e3a445fc15

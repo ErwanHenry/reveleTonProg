@@ -7,10 +7,10 @@ candidats:
 titre: "Solution Démocratique, Notre solution : droit d'initiative et de vote constitutionnels"
 url: https://solutiondemocratique.fr/notre-solution/
 date_publication: 2026-11
-date_consultation: 2026-11-03
+date_consultation: 2026-11-04
 archive:
   extrait: archives/clara-egger/df2c88bc0265.txt
   sha256: df2c88bc0265775c1caa7669f17df2dae03ad773e4a32d3943cc9826e13d455c
-  capture_le: 2026-11-03T23:14:27+01:00
+  capture_le: 2026-11-04T09:58:36+01:00
   wayback_url: https://web.archive.org/web/20261103183037/https://solutiondemocratique.fr/notre-solution/
-  binaire_sha256: d7f1bfd2062a906401d06f97149f799344ffdb2a0ef49d138cf093cbc8a659ac
+  binaire_sha256: bab02d6655f51e16109e8f0a18c5f2ac75420da24cad8cffe9d989fa0632c7aa

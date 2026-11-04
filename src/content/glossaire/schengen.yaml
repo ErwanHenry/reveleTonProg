@@ -1,0 +1,5 @@
+version_schema: 1
+id: schengen
+type: terme
+libelle: "espace Schengen"
+definition: "L'espace Schengen est un groupe de pays d'Europe. Entre eux, on peut passer la frontière sans contrôle à chaque passage."

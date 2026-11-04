@@ -1,0 +1,20 @@
+version_schema: 1
+id: raphael-glucksmann/europe-et-monde-drones-spatial-ia-defense
+candidat: raphael-glucksmann
+theme: europe-et-monde
+sous_theme: defense-et-alliances
+titre: "Programmes de drones, de capacités spatiales et d'intelligence artificielle pour la défense"
+texte_source: >-
+  Lancer de grands programmes de production de drones, de modernisation de nos capacités spatiales et travailler à l’intégration de l’Intelligence Artificielle dans notre outil de défense.
+source: raphael-glucksmann-projet-acte-1
+source_localisation: "chantier Défendre la France et l’Europe, partie Adapter la défense française à la guerre contemporaine, rubrique Nous voulons, page 10 du PDF"
+redactions:
+  resume: >-
+    Raphaël Glucksmann et son parti veulent lancer de grands programmes de drones, moderniser les capacités spatiales et intégrer l'intelligence artificielle à la défense.
+  detaille: >-
+    Dans le projet Acte I de Place publique, parti de Raphaël Glucksmann, le chantier Défendre la France et l'Europe propose, sous la rubrique Nous voulons, de « lancer de grands programmes de production de drones, de modernisation de nos capacités spatiales ». Le texte ajoute qu'il faut « travailler à l'intégration de l'Intelligence Artificielle dans notre outil de défense ». Le texte cité ne précise ni le nombre de drones, ni les capacités spatiales visées, ni la forme que prendrait cette intégration. Il ne donne ni calendrier, ni montant, ni coût.
+  enfant: >-
+    Raphaël Glucksmann et son parti veulent de grands programmes pour fabriquer des [[drones|drone]]. Ils veulent aussi moderniser les moyens de la France dans l'espace. Ils veulent utiliser l'[[intelligence artificielle]] pour la défense du pays. Le texte ne dit ni combien ni quand.
+  aine: >-
+    Dans le projet Acte I de Place publique, parti de Raphaël Glucksmann, le chantier consacré à la défense propose de lancer de grands programmes de production de drones et de modernisation des capacités spatiales. Il propose aussi de travailler à l'intégration de l'intelligence artificielle dans l'outil de défense. Le texte cité ne précise ni le nombre de drones, ni les capacités spatiales concernées, ni la façon d'intégrer l'intelligence artificielle. Il ne donne aucun calendrier, aucun montant ni aucun coût.
+statut_relecture: brouillon

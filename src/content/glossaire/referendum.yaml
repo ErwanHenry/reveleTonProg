@@ -1,0 +1,5 @@
+version_schema: 1
+id: referendum
+type: terme
+libelle: "référendum"
+definition: "Un référendum est un vote où tous les citoyens répondent par oui ou par non à une question posée par l'État."

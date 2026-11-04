@@ -54,3 +54,68 @@ cases:
       - emmanuel-dubuisson-europe-outre-mer
     verifie_le: 2026-11-04
     verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: nicolas-dupont-aignan
+    etat: mesures
+    verifie_le: 2026-11-04
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: sylvain-durif
+    etat: programme_non_publie
+    verifie_le: 2026-11-04
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: clara-egger
+    etat: non_precise
+    sources_consultees:
+      - clara-egger-parrainage-2027
+      - clara-egger-presentation-candidate
+      - clara-egger-notre-solution
+    verifie_le: 2026-11-04
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: raphael-glucksmann
+    etat: mesures
+    verifie_le: 2026-11-04
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: anasse-kazib
+    etat: mesures
+    verifie_le: 2026-11-04
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: selma-labib
+    etat: non_precise
+    sources_consultees:
+      - selma-labib-4-pages-campagne
+    verifie_le: 2026-11-04
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: francis-lalanne
+    etat: mesures
+    verifie_le: 2026-11-04
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: marine-le-pen
+    etat: programme_non_publie
+    verifie_le: 2026-11-04
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: jean-francois-legendre
+    etat: mesures
+    verifie_le: 2026-11-04
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: david-lisnard
+    etat: mesures
+    verifie_le: 2026-11-04
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: mira-markovic
+    etat: programme_non_publie
+    verifie_le: 2026-11-04
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: benoit-mathieu
+    etat: non_precise
+    sources_consultees:
+      - benoit-mathieu-programme
+      - benoit-mathieu-le-candidat
+    verifie_le: 2026-11-04
+    verifie_par: Claude (agent), à relire par Erwan Henry
+  - candidat: jean-luc-melenchon
+    etat: non_precise
+    sources_consultees:
+      - jean-luc-melenchon-lettre-au-peuple
+      - jean-luc-melenchon-comptes-publics
+      - jean-luc-melenchon-pole-public-bancaire
+    verifie_le: 2026-11-04
+    verifie_par: Claude (agent), à relire par Erwan Henry

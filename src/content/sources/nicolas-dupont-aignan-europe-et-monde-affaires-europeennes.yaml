@@ -1,0 +1,15 @@
+version_schema: 1
+id: nicolas-dupont-aignan-europe-et-monde-affaires-europeennes
+type: site_parti
+auteur: parti_du_candidat
+candidats:
+  - nicolas-dupont-aignan
+titre: "Debout la France, Projet : Affaires européennes"
+url: https://www.debout-la-france.fr/projet/affaires-europeennes/
+date_publication: 2026-11
+date_consultation: 2026-11-04
+archive:
+  extrait: archives/nicolas-dupont-aignan/d74726b0ac78.txt
+  sha256: d74726b0ac7856d47e3490ef2bcc4f625bed01e36c6b3aa18919c96ee6ce4329
+  capture_le: 2026-11-04T09:59:03+01:00
+  binaire_sha256: 73701de7e6979a3bfe1c458356e2c033067f8d8249201fa2d0548a97df8ab79a
