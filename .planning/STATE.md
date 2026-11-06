@@ -1,17 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: Lots 1 et 2
-status: Awaiting next milestone
-stopped_at: Milestone v1.0 shipped, next: /gsd:new-milestone (v1.1, Lot 3)
-last_updated: "2026-11-04T18:54:32.006Z"
-last_activity: 2026-11-04 — Milestone v1.0 completed and archived
+milestone: v1.1
+milestone_name: "Lot 3 : hébergement et mise en ligne"
+status: planning
+last_updated: "2026-11-06T22:06:09.138Z"
+last_activity: 2026-11-06
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 40
-  completed_plans: 40
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -26,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-11-04)
 
 ## Current Position
 
-Phase: Milestone v1.0 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-11-04 — Milestone v1.0 completed and archived
+Status: Defining requirements
+Last activity: 2026-11-06 — Milestone v1.1 started
 
 ## Performance Metrics
 

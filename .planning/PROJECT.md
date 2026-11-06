@@ -14,12 +14,20 @@ Un visiteur choisit un thème et lit, en moins de 3 minutes, la position de chaq
 
 **v1.0 livré le 2026-11-04** (Lots 1 et 2 du cahier des charges). Le corpus pilote réel (santé, travail, Europe et monde ; 59 personnalités, 134 mesures en brouillon) est navigable sur l'URL de test : artefact CI `site-preview` ou `node e2e/serveur.ts dist-preview 4173`. Dépôt public depuis le 2026-11-04 ; binaires d'archives dans le dépôt privé `reveleTonProg-archives`. Rien n'est en ligne : la relecture éditoriale d'Erwan et le Lot 3 restent à faire.
 
-## Next Milestone Goals (v1.1, à définir avec `/gsd:new-milestone`)
+## Current Milestone: v1.1 Lot 3 : hébergement et mise en ligne
 
-- Lot 3 : domaine, VPS Hetzner + Caddy, relecture juridique des mentions, hébergeur `actif`, contact réel, déploiement reproductible.
-- Relecture éditoriale du corpus pilote et passage en `relu` / `publie`.
-- Nouvel import data.gouv (statuts attendus vers le 10-13 décembre 2026).
-- Dette reportée de l'audit v1.0 (W3, W4, W6 à W10) et lecture du critère 4G.
+**Goal:** Mettre en ligne sur le domaine, avec un déploiement reproductible et surveillé, le site pilote limité au contenu relu par Erwan.
+
+**Target features:**
+- Diagnostic du VPS Hetzner en lecture seule (mémoire, disque, Caddy), puis décision d'Erwan : libérer ou monter en gamme
+- Domaine paramétrable (pas encore acheté), bloc Caddy, HTTPS, déploiement rsync depuis GitHub Actions avec la garde `RTP_DEPLOIEMENT=1`, hébergeur `actif`, contact réel
+- Mise en ligne en production du seul contenu relu (au moins un thème `relu` / `publie`), avec le temps de relecture d'Erwan prévu
+- Import data.gouv de décembre (statuts attendus vers le 10-13 décembre 2026)
+- Dette de l'audit v1.0 (W3, W4, W6, W7, W8, W10)
+- Critère « < 1 s » en Slow 4G : CSS et script de niveau dans chaque page
+- Monitoring (sonde de disponibilité, alerte Telegram) et sauvegardes testées
+
+**Échéance spec :** lots 1 à 3 avant le 2026-12-15.
 
 ## Requirements
 
@@ -33,7 +41,7 @@ Un visiteur choisit un thème et lit, en moins de 3 minutes, la position de chaq
 
 ### Active
 
-Prochain milestone (v1.1) à définir : voir « Next Milestone Goals ». Toutes les exigences de v1.0 (lots 1 et 2) sont validées ; détail dans `milestones/v1.0-REQUIREMENTS.md`.
+Milestone v1.1 en cours : voir « Current Milestone » ; les exigences détaillées sont dans REQUIREMENTS.md. Toutes les exigences de v1.0 (lots 1 et 2) sont validées ; détail dans `milestones/v1.0-REQUIREMENTS.md`.
 
 ### Out of Scope
 
@@ -96,4 +104,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-04 after v1.0 milestone*
+*Last updated: 2026-11-06, start of milestone v1.1*
