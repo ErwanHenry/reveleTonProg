@@ -97,12 +97,45 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (rempli par la feuille de route) | | |
+| HEB-03 | Phase 6 | Pending |
+| HEB-04 | Phase 6 | Pending |
+| DETTE-01 | Phase 7 | Pending |
+| DETTE-02 | Phase 7 | Pending |
+| DETTE-03 | Phase 7 | Pending |
+| DETTE-05 | Phase 7 | Pending |
+| HEB-05 | Phase 7 | Pending |
+| HEB-06 | Phase 7 | Pending |
+| PERF-01 | Phase 7 | Pending |
+| HEB-01 | Phase 8 | Pending |
+| HEB-02 | Phase 8 | Pending |
+| HEB-07 | Phase 8 | Pending |
+| HEB-08 | Phase 8 | Pending |
+| HEB-09 | Phase 8 | Pending |
+| HEB-10 | Phase 8 | Pending |
+| HEB-11 | Phase 8 | Pending |
+| HEB-12 | Phase 8 | Pending |
+| HEB-13 | Phase 8 | Pending |
+| HEB-14 | Phase 8 | Pending |
+| OPS-01 | Phase 8 | Pending |
+| OPS-02 | Phase 8 | Pending |
+| OPS-03 | Phase 8 | Pending |
+| PERF-02 | Phase 8 | Pending |
+| DETTE-04 | Phase 9 | Pending |
+| LEG-01 | Phase 9 | Pending |
+| LEG-02 | Phase 9 | Pending |
+| LEG-03 | Phase 9 | Pending |
+| PUB-01 | Phase 9 | Pending |
+| PUB-02 | Phase 9 | Pending |
+| PUB-03 | Phase 9 | Pending |
+| PUB-04 | Phase 9 | Pending |
+| IMP-01 | Phase 10 | Pending |
+| IMP-02 | Phase 10 | Pending |
+| IMP-03 | Phase 10 | Pending |
 
 **Coverage:**
 - v1.1 requirements: 34 total
-- Mapped to phases: 0
-- Unmapped: 34
+- Mapped to phases: 34
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-11-06*

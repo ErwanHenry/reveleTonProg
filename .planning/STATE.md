@@ -2,11 +2,11 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: "Lot 3 : hébergement et mise en ligne"
-status: planning
-last_updated: "2026-11-06T22:06:09.138Z"
+status: ready_to_plan
+last_updated: "2026-11-06T23:00:00.000Z"
 last_activity: 2026-11-06
 progress:
-  total_phases: 0
+  total_phases: 5
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -19,26 +19,27 @@ progress:
 
 See: .planning/PROJECT.md (updated 2026-11-04)
 
-**Core value:** Un visiteur choisit un thème et lit, en moins de 3 minutes, la position de chaque candidat au niveau de détail qui lui convient — chaque mesure affichée étant rattachée à une source primaire datée, sans jamais prendre parti.
-**Current focus:** Planning next milestone (v1.1 : Lot 3, hébergement et mise en ligne)
-**Milestone:** v1.0 — Lots 1 & 2 (squelette, données, référentiel M1)
+**Core value:** Un visiteur choisit un thème et lit, en moins de 3 minutes, la position de chaque candidat au niveau de détail qui lui convient, chaque mesure affichée étant rattachée à une source primaire datée, sans jamais prendre parti.
+**Current focus:** Phase 6, diagnostic du VPS et décision (en parallèle de la Phase 7)
+**Milestone:** v1.1 Lot 3 : hébergement et mise en ligne (Phases 6 à 10)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-11-06 — Milestone v1.1 started
+Phase: 6 of 10 (Diagnostic du VPS et décision)
+Plan: not started
+Status: Ready to plan
+Last activity: 2026-11-06 : feuille de route v1.1 créée (5 phases, 34 exigences)
+
+Progress v1.1: [..........] 0/5 phases, 0 plans
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 40
-- Average duration: -
-- Total execution time: 0.0 hours
+- Total plans completed: 40 (v1.0)
+- v1.1 plans completed: 0
 
-**By Phase:**
+**By Phase (v1.0):**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
@@ -48,18 +49,7 @@ Last activity: 2026-11-06 — Milestone v1.1 started
 | 3 | 9 | - | - |
 | 05 | 8 | - | - |
 
-**Recent Trend:**
-
-- Last 5 plans: -
-- Trend: -
-
 *Updated after each plan completion*
-| Phase 01 P01 | 25min | 2 tasks | 13 files |
-| Phase 01 P02 | 35min | 2 tasks | 13 files |
-| Phase 01 P04 | 25min | 2 tasks | 8 files |
-| Phase 01 P06 | 25min | 2 tasks | 14 files |
-| Phase 01 P07 | 40min | 3 tasks | 10 files |
-| Phase 02 P01 | 20min | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -70,18 +60,13 @@ Recent decisions affecting current work:
 
 - [Init]: D-1 codes statut du dataset (`declare|primaire|pressenti|empeche|renonce`), `renonce` affiché « Ne se présente pas » + `motif`
 - [Init]: D-2 périmètre d'équité = `declare` + `primaire`
-- [Init]: D-4 mentions légales éditeur non professionnel (LCEN art. 1-1 II, pas d'adresse perso)
+- [Init]: D-4 mentions légales éditeur non professionnel (LCEN art. 1-1 II, pas d'adresse perso), à faire valider (Phase 9)
 - [Init]: D-5 Node 24 LTS (exception au défaut Node 20 d'Erwan)
-- [Init]: D-3, D-6…D-13 = défauts recommandés de `research/SUMMARY.md` (à confirmer en ouverture de Phase 1 pour D-3, D-7, D-8)
-- [Roadmap]: granularité coarse, 7 phases de recherche fusionnées en 5 ; Phases 2, 3, 4 parallélisables après la Phase 1
-- [Roadmap]: QUAL-01 (contrôle post-build) placé en Phase 4 pour attraper les régressions de poids dès la première page
-- [Phase 01]: [01-01] fsevents@2.3.3 (optional, darwin-only, signed, install script not run) is the single documented exception to the zero-install-script lockfile gate; plan 01-03 CI check must allow it
-- [Phase 01]: [01-01] .gitignore dist/ anchored to /dist/ so tests/dist/ is tracked
-- [Phase 01]: [01-02] Ajv dedupe key = code+pointer+message so multiple missing required props on one object all surface; empty RTP_CONTENT_ROOT treated as unset
-- [Phase 01-04]: Astro loader memo key includes projectRoot+contentRoot besides file fingerprint; only errors abort build, warnings logged once
-- [Phase 01]: [01-06] Fixture texte_source is a single-line substring of the hashed archive extract; file named <sha12>.txt, verified by skeleton test case (d) — Lets Phase 2 verify quotes and hashes without rewriting the fixture
-- [Phase 01]: [01-06] source.type has no presse; theme/source/mesure schemas copied from RESEARCH Pattern 1 under unmodified Ajv strict — D-3: press never backs a measure
-- [Phase 02]: [Phase 02-01]: ids.lock rewritten only when ids are added or file absent; ajouterIds refuses invalid candidat ids
+- [Roadmap v1.1]: 5 phases (6 à 10) ; Phases 6 et 7 parallélisables ; Phase 8 dépend de la décision VPS et du domaine (piste 0)
+- [Roadmap v1.1]: PERF-02 et HEB-07 en Phase 8 (mesure réelle et version servie exigent un hôte déployé) ; DETTE-04 en Phase 9 (audit sur la build mise en ligne)
+- [Roadmap v1.1]: critère 4G lu comme « Slow 4G simulé » (Lighthouse), mesure réelle consignée
+- [Roadmap v1.1]: déploiement par releases datées + lien `current`, job dans `ci.yml`, build de production reconstruite, jamais d'artefact preview
+- [Roadmap v1.1]: dépôt public depuis le 2026-11-04 : réviser l'ADR-051, la preview n'est jamais servie
 
 ### Pending Todos
 
@@ -89,28 +74,15 @@ None yet.
 
 ### Blockers/Concerns
 
-- Churn des statuts autour du 10-13 déc. 2026 : `statuts[]` (Phase 1) et import par diff (Phase 3) doivent exister avant
-- Jalon spec : lots 1 à 3 avant le 2026-12-15 ; le Lot 3 (hébergement) est en v1.1 et dépend du domaine et de la décision VPS
-- VPS Hetzner saturé (RAM 3,7 Go, disque 90 %) : décision d'Erwan attendue pendant le Lot 2 (sans impact sur v1.0, preview = artefact CI ou locale)
-- Mentions légales : relecture par un avocat recommandée avant le lancement public (Lot 3)
+- Chemin critique humain (voir « Piste 0 » dans ROADMAP.md) : décision VPS (13 nov.), domaine et DNS (16 nov.), identité d'éditeur à Hetzner (16 nov.), relecture du thème santé (fin 1er déc.), juriste (avis 2 déc.)
+- VPS Hetzner saturé (RAM 3,7 Go, disque 90 %) : aucun déploiement avant la décision et le snapshot
+- Churn des statuts data.gouv autour du 10-13 déc. 2026 : import par PR relue (Phase 10), gel du 13 au 15
+- Jalon spec : lots 1 à 3 avant le 2026-12-15 ; ouverture visée vers le 2026-12-05
+- Base légale du droit de réponse (art. 6 IV ou 1-1 LCEN) et régime d'éditeur à vérifier avec un juriste
 
 ## Deferred Items
 
-Items acknowledged and carried forward from previous milestone close:
-
-| Category | Item | Status | Deferred At |
-|----------|------|--------|-------------|
-| *(none)* | | | |
-
-## Session Continuity
-
-Last session: 2026-11-03T14:53:49.067Z
-Stopped at: Completed 02-01-PLAN.md
-Resume file: None
-
-## Deferred Items
-
-Items acknowledged and deferred at milestone close on 2026-11-04 (Erwan: « Fix, then close »):
+Items acknowledged and deferred at v1.0 close on 2026-11-04 (Erwan: « Fix, then close »):
 
 | Category | Item | Status |
 |----------|------|--------|
@@ -118,8 +90,14 @@ Items acknowledged and deferred at milestone close on 2026-11-04 (Erwan: « Fix,
 | uat_gap | 05-HUMAN-UAT.md (critère 4G, parcours d'Erwan, constats S1/S2/S3, relecture) | partial |
 | verification_gap | 03-VERIFICATION.md | human_needed |
 | verification_gap | 05-VERIFICATION.md | human_needed |
-| tech_debt | W9 : Wayback des 3 sources Batho (HTTP 520 puis 429, à relancer) | open |
+| tech_debt | W9 : Wayback des 3 sources Batho (HTTP 520 puis 429, à relancer), à résoudre avant de publier les mesures concernées (Phase 9) | open |
+
+## Session Continuity
+
+Last session: 2026-11-06
+Stopped at: Roadmap v1.1 créé
+Resume file: None
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- `/gsd:plan-phase 6` (et `/gsd:plan-phase 7` en parallèle)
