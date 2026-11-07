@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CATALOGUE, HYPOTHESES } from '../../src/lib/content-core/rules/config.ts';
+import { CODES_CHECK_DIST } from '../../scripts/lib/check-dist.ts';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const read = (f: string): string => fs.readFileSync(path.join(ROOT, f), 'utf8');
@@ -311,6 +312,69 @@ describe('docs/AUDIT-TEST-CROISE.md (QUAL-06)', () => {
     for (const [i, l] of lignes.entries()) {
       const o = JSON.parse(l) as Record<string, unknown>;
       assert.equal(Object.keys(o).sort().join(), 'chemin,horodatage,niveau,octets,persona,sha256', `ligne ${i + 1}`);
+    }
+  });
+});
+
+/** Texte d'un ADR : de son titre au titre `### ` suivant (ou à la section `## ` suivante). */
+function sectionAdr(numero: string): string {
+  const debut = architecture.search(new RegExp(`^### ADR-${numero} : `, 'm'));
+  assert.ok(debut >= 0, `ADR-${numero} absent`);
+  const reste = architecture.slice(debut + 1);
+  const fin = reste.search(/^#{2,3} /m);
+  return fin < 0 ? reste : reste.slice(0, fin);
+}
+
+describe('documentation (phase 7)', () => {
+  it('ARCHITECTURE : ADR-053 et ADR-056 seulement (054, 055, 057 et 058 réservés aux phases 6 et 8)', () => {
+    assert.match(architecture, /^### ADR-053 : domaine déclaré une seule fois/m);
+    assert.match(architecture, /^### ADR-056 : CSS et scripts dans la page, CSP à empreintes/m);
+    assert.doesNotMatch(architecture, /^### ADR-05[4578] : /m);
+  });
+
+  it('ARCHITECTURE : l\'ADR-037 est marqué remplacé par l\'ADR-056 et garde son début de titre', () => {
+    const titre = architecture.match(/^### ADR-037 : .*$/m)?.[0] ?? '';
+    assert.ok(titre.startsWith('### ADR-037 : pages compatibles CSP'), titre);
+    assert.ok(titre.includes("(remplacée par l'ADR-056)"), titre);
+  });
+
+  it('ARCHITECTURE : l\'ADR-056 dit que l\'en-tête Caddy couvre le script d\'ordre, pas la meta', () => {
+    const adr = sectionAdr('056');
+    for (const needle of ['deploy/caddy/site.caddy', 'en-tête', "script d'ordre", 'insertScriptHash', 'bypassCSP']) {
+      assert.ok(adr.includes(needle), `ADR-056 doit contenir « ${needle} »`);
+    }
+    assert.doesNotMatch(adr, /meta[^.\n]{0,80}(couvre|protège) (le|aussi le) script d'ordre/);
+  });
+
+  it('ARCHITECTURE : l\'ADR-051 note que le dépôt est public depuis le 2026-11-04', () => {
+    const adr = sectionAdr('051');
+    for (const needle of ['2026-11-04', 'public', 'site-preview', 'jamais déployée']) {
+      assert.ok(adr.includes(needle), `ADR-051 doit contenir « ${needle} »`);
+    }
+  });
+
+  it('ARCHITECTURE : l\'ADR-053 décrit la source unique du domaine et sa garde', () => {
+    const adr = sectionAdr('053');
+    for (const needle of ['config/site.yml', 'RTP_DEPLOIEMENT=1', 'sitemap.xml', 'node scripts/render-caddy.ts']) {
+      assert.ok(adr.includes(needle), `ADR-053 doit contenir « ${needle} »`);
+    }
+  });
+
+  it('RUNBOOK : changer de domaine, bloc Caddy, e2e CSP et bfcache, astro dev', () => {
+    assert.match(runbook, /^### Changer de domaine$/m);
+    for (const needle of ['node scripts/render-caddy.ts', "channel: 'chromium'", 'bypassCSP', 'astro dev']) {
+      assert.ok(runbook.includes(needle), `RUNBOOK doit contenir « ${needle} »`);
+    }
+  });
+
+  it('RUNBOOK : chaque code de check-dist est documenté', () => {
+    const manquants = CODES_CHECK_DIST.filter((code) => !runbook.includes(`\`${code}\``));
+    assert.deepEqual(manquants, [], `codes check-dist absents du RUNBOOK : ${manquants.join(', ')}`);
+  });
+
+  it('README : domaine dans config/site.yml, bloc Caddy généré', () => {
+    for (const needle of ['config/site.yml', 'deploy/caddy/site.caddy']) {
+      assert.ok(readme.includes(needle), `README doit contenir « ${needle} »`);
     }
   });
 });
