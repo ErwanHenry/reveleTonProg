@@ -182,3 +182,31 @@ describe('W5 : une seule définition du périmètre (dansPerimetre)', () => {
     assert.deepEqual(fautifs, [], 'utiliser PERIMETRE_EQUITE et dansPerimetre');
   });
 });
+
+describe('COUVERTURE_VERIFIEE_AVANT_SOURCE : case vérifiée avant la consultation d’une source (WR-05)', () => {
+  /** Case de Jean passée en « non précisé » avec une source consultée le 2026-10-20, vérifiée le `verifie`. */
+  const casJean = (verifie: string): Remplacement => ({
+    fichier: COUVERTURE,
+    de: CAS_JEAN,
+    par: `  - candidat: jean-imaginaire\n    etat: non_precise\n    verifie_le: ${verifie}\n    verifie_par: Erwan Henry\n    sources_consultees: [marie-fictive-programme]\n`,
+  });
+  const dates = (remplacer: Remplacement[], mode: Mode = 'production'): Triplet[] =>
+    executerPiege({ piege: 'test', regle: 'REGLE-08', mode, remplacer, attendu: [] })
+      .filter((d) => d.code === 'COUVERTURE_VERIFIEE_AVANT_SOURCE')
+      .map((d): Triplet => [d.code, d.severite, d.fichier, d.pointer]);
+
+  it('vérifiée la veille de la consultation : avertissement (jamais une erreur), en production comme en preview', () => {
+    const attendu: Triplet[] = [['COUVERTURE_VERIFIEE_AVANT_SOURCE', 'warning', COUVERTURE, '/cases/1/verifie_le']];
+    assert.deepEqual(dates([casJean('2026-10-19')], 'production'), attendu);
+    assert.deepEqual(dates([casJean('2026-10-19')], 'preview'), attendu);
+  });
+
+  it('vérifiée le jour de la consultation ou après : rien', () => {
+    assert.deepEqual(dates([casJean('2026-10-20')]), []);
+    assert.deepEqual(dates([casJean('2026-10-21')]), []);
+  });
+
+  it('le corpus de référence ne la déclenche pas', () => {
+    assert.deepEqual(dates([]), []);
+  });
+});

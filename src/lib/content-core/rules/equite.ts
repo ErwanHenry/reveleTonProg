@@ -118,3 +118,39 @@ export const regleEquite: CorpusRule = {
     return out;
   },
 };
+
+/**
+ * COUVERTURE_VERIFIEE_AVANT_SOURCE (avertissement, WR-05 de la revue de la phase 7) : une case de couverture dit
+ * « vérifié le J » alors qu'une de ses sources consultées porte une date de consultation postérieure à J. La page du
+ * thème affiche les deux dates (D-13) : le lecteur lirait une vérification faite avant la lecture des sources. Un
+ * seul avertissement par case, pour la source consultée le plus tard. Jamais une erreur : corriger demande une
+ * relecture éditoriale (revérifier la case, ou corriger la date de consultation), pas un contournement.
+ */
+export const regleDatesCouverture: CorpusRule = {
+  id: 'dates-couverture',
+  run(ctx) {
+    if (ctx.corpus.aDesInvalides('couverture') || ctx.corpus.aDesInvalides('sources')) return [];
+    const out: Finding[] = [];
+    for (const couv of ctx.corpus.de('couverture')) {
+      tableau(couv.data.cases).forEach((brut, i) => {
+        const cas = objet(brut);
+        const verifie = cas.verifie_le;
+        if (typeof verifie !== 'string') return;
+        let plusTard: { id: string; date: string } | undefined;
+        for (const id of tableau(cas.sources_consultees)) {
+          const date = ctx.corpus.entree('sources', String(id))?.data.date_consultation;
+          if (typeof date === 'string' && date > verifie && (plusTard === undefined || date > plusTard.date)) plusTard = { id: String(id), date };
+        }
+        if (plusTard === undefined) return;
+        out.push({
+          code: 'COUVERTURE_VERIFIEE_AVANT_SOURCE',
+          severity: 'warning',
+          pointer: `/cases/${i}/verifie_le`,
+          file: couv.file,
+          message: `la case de « ${String(cas.candidat)} » est vérifiée le ${verifie}, avant la consultation de la source « ${plusTard.id} » (le ${plusTard.date}) : la page affiche une vérification antérieure à la lecture de la source ; revérifier la case et mettre à jour verifie_le, ou corriger la date de consultation`,
+        });
+      });
+    }
+    return out;
+  },
+};

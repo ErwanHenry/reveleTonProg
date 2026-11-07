@@ -89,6 +89,7 @@ Dans GitHub Actions, la sortie `--format github` produit des annotations sur les
 | `EQUITE_CANDIDAT_MANQUANT` | REGLE-08 | selon le mode | Un candidat `declare` ou `primaire` n'a ni mesure publiée ni case de couverture sur un thème publié : ajouter la mesure ou la case, ou repasser le thème en brouillon. |
 | `EQUITE_PERIMETRE_VIDE` | REGLE-08 | selon le mode | Un thème est publié alors qu'aucun candidat n'a de statut `declare` ou `primaire` relu (en production) : relire les statuts des candidats avant de publier le thème, ou le repasser en brouillon. |
 | `EQUITE_COUVERTURE_INCOHERENTE` | REGLE-08 | selon le mode | Aligner la couverture du thème sur les mesures publiées : l'état `mesures` exige une mesure publiée, `non_precise` et `programme_non_publie` n'en admettent pas. |
+| `COUVERTURE_VERIFIEE_AVANT_SOURCE` | REGLE-08 | avertissement | Une case est datée (`verifie_le`) d'avant la consultation d'une de ses `sources_consultees` : la page afficherait « Non précisé dans les sources consultées le 3 novembre » au-dessus de « Consultée le 4 novembre ». Relecture éditoriale (jamais corrigée par script) : revérifier la case dans les sources et passer `verifie_le` à la date de cette relecture, ou corriger `date_consultation` si c'est elle qui est fausse. Voir « Relire les dates de couverture ». |
 | `SONDAGE_NOTICE_ABSENTE` | REGLE-09 | erreur | Renseigner `url_notice` : la notice officielle de la Commission des sondages. |
 | `SONDAGE_SOMME_HORS_BORNES` | REGLE-09 | erreur | La somme des scores d'une hypothèse doit tenir entre 95 et 105 : corriger les scores. |
 | `SONDAGE_TOUR2_EN_TOUR1` | REGLE-09 | erreur | Une hypothèse de duel ne va pas dans un sondage de `tour: 1` : la placer dans un sondage de second tour. |
@@ -243,6 +244,10 @@ Règle de classement : positions décroissantes, puis cases « fort », puis ord
 ### Ouvrir la relecture
 
 `pilote.relecture_ouverte` (dans `data/couverture-themes.yaml`) vaut `false` pendant la phase 3 : toutes les mesures, les fichiers thème, les fichiers de couverture et les statuts des fiches du corpus pilote doivent rester en `brouillon`, sans relecteur, et `tests/corpus` le fait respecter (code `PILOTE_NON_BROUILLON`). Erwan passe la valeur à `true` dans le commit où il commence à marquer des fichiers `relu` ou `publie` ; ensuite seuls les schémas et les règles de la phase 2 encadrent les états de relecture. Ne jamais la remettre à `false` une fois qu'un fichier est `relu`.
+
+### Relire les dates de couverture
+
+Chaque case « Non précisé » affiche « Non précisé dans les sources consultées le <`verifie_le`> », puis la date de consultation de chaque source listée. Si une source a été consultée **après** `verifie_le`, le lecteur lit une vérification faite avant la lecture de la source : `npm run validate` le signale par l'avertissement `COUVERTURE_VERIFIEE_AVANT_SOURCE` (il ne bloque pas la CI et figure dans le catalogue de la page Méthode). Correction éditoriale, jamais par script ni par recherche-remplacement : relire la case dans les sources listées, puis mettre `verifie_le` à la date de cette relecture ; ou, si c'est la date de consultation qui est fausse, la corriger d'après la capture archivée (`archive.capture_le`). Les cas ouverts au 2026-11-07 sont listés dans `.planning/phases/07-domaine-param-tr-inlining-et-dette/07-REVIEW-FIX.md` (WR-05).
 
 ### Archiver une source
 
