@@ -74,9 +74,16 @@ const modules = fs
   .sort();
 assert.ok(modules.length > 0, `aucun module de cas dans ${DOSSIER_CAS}`);
 
+// Tous les modules sont importés avant de déclarer la première suite. Alterner `await import()` et
+// `describe()` laisse le test racine démarrer entre deux imports : si une suite entièrement filtrée par
+// --test-name-pattern se termine alors qu'aucune autre n'est encore déclarée, la racine se croit finie,
+// lance son `after` et supprime les dist mémorisés pendant que les suites suivantes en ont besoin.
+const declarations: [string, (c: ContexteSite) => void][] = [];
 for (const fichier of modules) {
   const mod = (await import(pathToFileURL(path.join(DOSSIER_CAS, fichier)).href)) as { default?: (c: ContexteSite) => void };
   assert.equal(typeof mod.default, 'function', `${fichier} doit exporter par défaut une fonction (ctx) => void`);
-  const declarer = mod.default as (c: ContexteSite) => void;
+  declarations.push([fichier, mod.default as (c: ContexteSite) => void]);
+}
+for (const [fichier, declarer] of declarations) {
   describe(fichier.replace(/\.cas\.ts$/, ''), { concurrency: false }, () => declarer(ctx));
 }
