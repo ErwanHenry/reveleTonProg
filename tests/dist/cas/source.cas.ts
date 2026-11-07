@@ -7,6 +7,7 @@ import { analyserHtml, aClasse, texte, trouver } from '../../../scripts/lib/html
 import type { Noeud } from '../../../scripts/lib/html.ts';
 import { cellulesAttendues, checkDist } from '../../../scripts/lib/check-dist.ts';
 import { lienExtrait, lienIssue, lienMailto } from '../../../src/lib/corpus/signalement.ts';
+import { loadSiteConfig } from '../../../src/lib/site-config.ts';
 import { materialiserCorpusM1 } from '../../helpers/corpus-m1.ts';
 import type { ContexteSite } from '../contexte.ts';
 
@@ -66,7 +67,8 @@ export default function source(ctx: ContexteSite): void {
 
     it('deux liens de signalement encodés, avec suffixe masqué nommant la mesure', () => {
       const [, , , mail, issue] = liens(bloc());
-      assert.equal(mail?.attrs.href, lienMailto('contact@domaine-a-definir.invalid', ID, '/themes/logement/#m-marie-fictive-aide-construction'));
+      // contact lu dans config/site.yml (env vide : pas de garde de déploiement ici), jamais écrit en dur (HEB-05)
+      assert.equal(mail?.attrs.href, lienMailto(loadSiteConfig(ctx.repoRoot, {}).contact, ID, '/themes/logement/#m-marie-fictive-aide-construction'));
       assert.equal(issue?.attrs.href, lienIssue('ErwanHenry/reveleTonProg', ID));
       assert.equal(issue?.attrs.rel, 'noopener noreferrer');
       for (const a of [mail, issue]) {
