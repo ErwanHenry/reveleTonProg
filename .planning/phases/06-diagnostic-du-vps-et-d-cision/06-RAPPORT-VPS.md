@@ -47,4 +47,7 @@ Non visibles depuis la machine. À vérifier par Erwan dans la console Hetzner (
 
 ## Décision d'Erwan
 
-À compléter par Erwan : garder l'instance (recommandé), nettoyer, ou monter en gamme ; date de l'instantané Hetzner.
+- **Décision (Erwan, 2026-11-07) : garder l'instance actuelle**, sans nettoyage ni montée en gamme pour le Lot 3.
+- **Marge disque retenue :** 42 % libres sur le disque système au relevé du 2026-11-06 (seuil HEB-04 : 30 %). À remesurer avec le script avant la Phase 8.
+- **Instantané Hetzner :** à prendre par Erwan dans la console avant toute modification de la machine (Phase 8) ; date à reporter ici.
+- **Sauvegardes Hetzner automatiques :** état à vérifier par Erwan dans la console.
