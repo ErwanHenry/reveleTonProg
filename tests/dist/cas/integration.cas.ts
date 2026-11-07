@@ -39,8 +39,13 @@ export default function integration(ctx: ContexteSite): void {
       const a = arbre();
       const f = trouver(a, (n) => n.tag === 'fieldset' && aClasse(n, 'niveaux') && n.attrs.id === 'niveaux');
       assert.equal(f.length, 1, 'fieldset.niveaux#niveaux');
-      const html = ctx.lire(production().outDir, 'candidats/marie-fictive/index.html');
-      assert.match(html, /<script[^>]+src="\/_astro\/niveau\.[^"]+\.js"/);
+      // ADR-056 : le script de niveau est en ligne, juste après </fieldset>, identique à sa source.
+      const f0 = f[0] as Noeud;
+      const freres = elements(f0.parent as Noeud);
+      const suivant = freres[freres.indexOf(f0) + 1] as Noeud;
+      assert.equal(suivant?.tag, 'script', 'un <script> suit </fieldset>');
+      assert.deepEqual(Object.keys(suivant.attrs), [], 'script sans attribut');
+      assert.equal(texte(suivant), fs.readFileSync(path.join(ctx.repoRoot, 'src', 'scripts', 'niveau.js'), 'utf8'), 'corps identique à src/scripts/niveau.js');
     });
 
     it('« Ce qui me concerne » en premier dans .lecteur-contenu, un seul lien vers #logement', () => {
@@ -132,17 +137,15 @@ export default function integration(ctx: ContexteSite): void {
   }
 
   describe('diagnostic : pages les plus lourdes', () => {
-    it('affiche les 3 pages les plus lourdes (HTML + ressources liées)', () => {
+    it('affiche les 3 pages les plus lourdes (HTML seul, qui contient CSS et scripts)', () => {
+      // ADR-056 : CSS et scripts sont dans la page, rien d'externe n'est chargé ; le HTML est donc tout le poids
+      // de la page (check-dist POIDS_BRUT / POIDS_GZIP applique le budget, ce cas ne fait qu'afficher).
       const { outDir } = production();
       const lourdes = ctx
         .pagesHtml(outDir)
         .map((f) => {
-          const html = fs.readFileSync(f, 'utf8');
-          const refs = [...html.matchAll(/(?:href|src)="(\/_astro\/[^"]+)"/g)].map((m) => m[1] as string);
-          const bufs = [Buffer.from(html), ...[...new Set(refs)].map((r) => fs.readFileSync(path.join(outDir, r)))];
-          const brut = bufs.reduce((s, b) => s + b.length, 0);
-          const gzip = bufs.reduce((s, b) => s + zlib.gzipSync(b).length, 0);
-          return { page: path.relative(outDir, f), brut, gzip };
+          const octets = fs.readFileSync(f);
+          return { page: path.relative(outDir, f), brut: octets.length, gzip: zlib.gzipSync(octets).length };
         })
         .sort((a, b) => b.gzip - a.gzip)
         .slice(0, 3);

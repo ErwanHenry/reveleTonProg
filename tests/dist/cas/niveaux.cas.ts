@@ -81,22 +81,34 @@ export default function niveaux(ctx: ContexteSite): void {
       assert.equal(norm(texte(statut[0] as Noeud)), '');
     });
 
-    it('le script classique suit immédiatement </fieldset> : bloquant, haché, identique à la source, ≤ 2048 octets', () => {
+    it('le script classique suit immédiatement </fieldset> : sans attribut, identique à src/scripts/niveau.js, ≤ 2048 octets', () => {
+      // ADR-056 : le script est inclus dans la page (`?raw` + is:inline) ; son empreinte est vérifiée par csp.cas.
       const { outDir } = production();
-      const { arbre } = page('themes/logement/index.html');
-      const f = fieldset(arbre);
-      const freres = elements(f.parent as Noeud);
-      const suivant = freres[freres.indexOf(f) + 1] as Noeud;
-      assert.equal(suivant.tag, 'script');
-      assert.equal(suivant.attrs.async, undefined);
-      assert.equal(suivant.attrs.defer, undefined);
-      assert.equal(suivant.attrs.type, undefined);
-      assert.equal(texte(suivant), '', 'aucun corps de script');
-      const src = suivant.attrs.src as string;
-      assert.match(src, /^\/_astro\/niveau\.[A-Za-z0-9_-]+\.js$/);
-      const dist = fs.readFileSync(path.join(outDir, src.slice(1)));
-      assert.ok(dist.length <= 2048, `${dist.length} octets`);
-      assert.ok(dist.equals(fs.readFileSync(path.join(ctx.repoRoot, 'src', 'scripts', 'niveau.js'))), 'octet pour octet identique à src/scripts/niveau.js');
+      const source = fs.readFileSync(path.join(ctx.repoRoot, 'src', 'scripts', 'niveau.js'), 'utf8');
+      assert.ok(Buffer.byteLength(source) <= 2048, `src/scripts/niveau.js : ${Buffer.byteLength(source)} octets (plafond 2048)`);
+      const avecSelecteur: string[] = [];
+      for (const f of ctx.pagesHtml(outDir)) {
+        const rel = path.relative(outDir, f).split(path.sep).join('/');
+        const arbre = analyserHtml(fs.readFileSync(f, 'utf8'));
+        const selecteurs = trouver(arbre, (n) => n.tag === 'fieldset' && n.attrs.id === 'niveaux');
+        const corps = trouver(arbre, (n) => n.tag === 'script' && texte(n) === source);
+        if (selecteurs.length === 0) {
+          assert.equal(corps.length, 0, `${rel} : script de niveau sans sélecteur`);
+          continue;
+        }
+        avecSelecteur.push(rel);
+        assert.equal(selecteurs.length, 1, `${rel} : un seul fieldset#niveaux`);
+        const f0 = selecteurs[0] as Noeud;
+        const freres = elements(f0.parent as Noeud);
+        const suivant = freres[freres.indexOf(f0) + 1] as Noeud;
+        assert.equal(suivant?.tag, 'script', `${rel} : un <script> suit </fieldset>`);
+        assert.deepEqual(Object.keys(suivant.attrs), [], `${rel} : script sans attribut (classique, bloquant, ni src)`);
+        assert.equal(texte(suivant), source, `${rel} : octet pour octet identique à src/scripts/niveau.js`);
+        assert.ok(Buffer.byteLength(texte(suivant)) <= 2048, `${rel} : ${Buffer.byteLength(texte(suivant))} octets`);
+        assert.equal(corps.length, 1, `${rel} : le script de niveau n'est inclus qu'une fois`);
+      }
+      assert.ok(avecSelecteur.includes('themes/logement/index.html'), `pages à sélecteur : ${avecSelecteur.join(', ')}`);
+      assert.ok(avecSelecteur.some((p) => p.startsWith('candidats/') && p !== 'candidats/index.html'), 'au moins une page candidat porte le sélecteur');
     });
 
     it('le contenu vient après le script : .lecteur-contenu est le frère suivant du script', () => {

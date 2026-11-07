@@ -45,36 +45,26 @@ export default function ordre(ctx: ContexteSite): void {
     [...compact(css).matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((m) => ({ sel: m[1] ?? '', decl: m[2] ?? '' }));
 
   describe('script dans <head>', () => {
-    it('toutes les pages : <script src="/_astro/ordre.<hash>.js"> bloquant, sans corps, avant le <body>', () => {
+    // ADR-056 : le script est inclus dans la page (`?raw` + is:inline), aucun fichier de script séparé n'est servi.
+    // Il précède le meta CSP (Pitfall 1) : on n'affirme rien sur leur ordre, csp.cas vérifie l'empreinte.
+    it("toutes les pages : script d'ordre en ligne, premier <script> de <head>, sans attribut, identique à src/scripts/ordre.js", () => {
       const { outDir } = production();
+      const source = fs.readFileSync(path.join(ctx.repoRoot, 'src', 'scripts', 'ordre.js'), 'utf8');
+      assert.ok(Buffer.byteLength(source) <= 2048, `src/scripts/ordre.js : ${Buffer.byteLength(source)} octets (plafond 2048)`);
       const pages = ctx.pagesHtml(outDir);
       assert.ok(pages.length > 10);
       for (const f of pages) {
         const rel = path.relative(outDir, f);
         const arbre = analyserHtml(fs.readFileSync(f, 'utf8'));
         const head = trouver(arbre, (n) => n.tag === 'head')[0] as Noeud;
-        const scripts = elements(head).filter((n) => n.tag === 'script' && /ordre\./.test(n.attrs.src ?? ''));
-        assert.equal(scripts.length, 1, `${rel} : un seul script ordre dans <head>`);
+        const scripts = elements(head).filter((n) => n.tag === 'script');
+        assert.equal(scripts.filter((n) => texte(n) === source).length, 1, `${rel} : un seul script d'ordre dans <head>`);
         const s = scripts[0] as Noeud;
-        assert.match(s.attrs.src as string, /^\/_astro\/ordre\.[A-Za-z0-9_-]+\.js$/, rel);
-        assert.equal(s.attrs.async, undefined, rel);
-        assert.equal(s.attrs.defer, undefined, rel);
-        assert.equal(s.attrs.type, undefined, rel);
-        assert.equal(texte(s), '', `${rel} : aucun corps de script`);
-        const fils = elements(head);
-        // Astro place ses <link rel="stylesheet"> en fin de <head>, après les scripts is:inline : l'ordre script / feuille
-        // n'a pas d'incidence (le script ne lit aucun style), l'essentiel est qu'il précède l'analyse du <body>.
-        assert.ok(fils.some((n) => n.tag === 'link' && /(^|\s)stylesheet(\s|$)/i.test(n.attrs.rel ?? '')), `${rel} : feuille de style liée`);
+        assert.equal(texte(s), source, `${rel} : le premier <script> de <head> est le script d'ordre, octet pour octet`);
+        assert.deepEqual(Object.keys(s.attrs), [], `${rel} : script sans attribut (classique, bloquant, ni src)`);
+        assert.ok(Buffer.byteLength(texte(s)) <= 2048, `${rel} : ${Buffer.byteLength(texte(s))} octets`);
+        assert.equal(trouver(arbre, (n) => n.tag === 'body' && trouver(n, (x) => x.tag === 'script' && texte(x) === source).length > 0).length, 0, `${rel} : pas de script d'ordre dans <body>`);
       }
-    });
-
-    it('le fichier du dist pèse au plus 2048 octets et est identique à src/scripts/ordre.js', () => {
-      const { outDir } = production();
-      const { arbre } = page('candidats/index.html');
-      const s = trouver(arbre, (n) => n.tag === 'script' && /ordre\./.test(n.attrs.src ?? ''))[0] as Noeud;
-      const dist = fs.readFileSync(path.join(outDir, (s.attrs.src as string).slice(1)));
-      assert.ok(dist.length <= 2048, `${dist.length} octets`);
-      assert.ok(dist.equals(fs.readFileSync(path.join(ctx.repoRoot, 'src', 'scripts', 'ordre.js'))), 'octet pour octet identique à la source');
     });
   });
 
