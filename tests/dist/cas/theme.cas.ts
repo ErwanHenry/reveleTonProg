@@ -247,16 +247,25 @@ export default function theme(ctx: ContexteSite): void {
     });
   });
 
-  describe('CSS externe', () => {
+  // ADR-056 : CSS et scripts sont dans chaque page ; plus aucun fichier .css ni .js n'est servi.
+  describe('CSS en ligne', () => {
     for (const cle of ['production', 'preview'] as const) {
-      it(`${cle} : feuille de style dans _astro/, aucun <style> ni style="" dans le HTML`, () => {
+      it(`${cle} : une <style> par page, aucun fichier .css ni .js, aucun style=`, () => {
         const { outDir } = cle === 'production' ? production() : preview();
-        const css = ctx.fichiers(outDir).filter((f) => f.includes(`${path.sep}_astro${path.sep}`) && f.endsWith('.css'));
-        assert.ok(css.length >= 1, 'au moins une feuille .css dans dist/_astro/');
-        for (const f of ctx.pagesHtml(outDir)) {
-          const html = fs.readFileSync(f, 'utf8');
-          assert.ok(!/<style/i.test(html), `${path.relative(outDir, f)} contient <style`);
-          assert.ok(!/\sstyle=/i.test(html), `${path.relative(outDir, f)} contient style=`);
+        assert.equal(fs.existsSync(path.join(outDir, '_astro')), false, 'dist/_astro/ ne doit plus exister');
+        const externes = ctx.fichiers(outDir).filter((f) => /\.(css|js)$/i.test(f));
+        assert.deepEqual(externes.map((f) => path.relative(outDir, f)), [], 'aucun fichier .css ni .js dans le dist');
+        const pages = ctx.pagesHtml(outDir);
+        assert.ok(pages.length > 10, `${pages.length} pages`);
+        for (const f of pages) {
+          const rel = path.relative(outDir, f);
+          const arbre = analyserHtml(fs.readFileSync(f, 'utf8'));
+          const styles = trouver(arbre, (n) => n.tag === 'style');
+          assert.equal(styles.length, 1, `${rel} : ${styles.length} <style> (une seule attendue)`);
+          assert.equal(styles[0]?.parent?.tag, 'head', `${rel} : la <style> est dans <head>`);
+          assert.notEqual(texte(styles[0] as Noeud), '', `${rel} : <style> vide`);
+          const avecStyle = trouver(arbre, (n) => n.attrs.style !== undefined);
+          assert.deepEqual(avecStyle.map((n) => n.tag), [], `${rel} : attribut style=`);
         }
       });
     }

@@ -10,6 +10,7 @@ import type { Noeud } from '../../../scripts/lib/html.ts';
 import { cellulesAttendues, checkDist } from '../../../scripts/lib/check-dist.ts';
 import { materialiserCorpusM1 } from '../../helpers/corpus-m1.ts';
 import type { ContexteSite } from '../contexte.ts';
+import { cssDesPages } from '../css-pages.ts';
 
 const norm = (s: string): string => s.replace(/\s+/g, ' ').trim();
 const elements = (n: Noeud): Noeud[] => n.enfants.filter((e): e is Noeud => typeof e !== 'string');
@@ -156,19 +157,11 @@ export default function niveaux(ctx: ContexteSite): void {
   });
 
   describe('feuille de style construite', () => {
-    const cssDist = (): string => {
-      const { outDir } = production();
-      return ctx
-        .fichiers(outDir)
-        .filter((f) => f.includes(`${path.sep}_astro${path.sep}`) && f.endsWith('.css'))
-        .map((f) => fs.readFileSync(f, 'utf8'))
-        .join('\n');
-    };
     const blocs = (css: string): { sel: string; decl: string }[] =>
       [...compact(css).matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((m) => ({ sel: m[1] ?? '', decl: m[2] ?? '' }));
 
     it('quatre règles :has() masquent les rédactions des autres niveaux (display: none)', () => {
-      const tous = blocs(cssDist());
+      const tous = blocs(cssDesPages(production().outDir));
       for (const [n] of NIVEAUX) {
         const sel = compact(`.lecteur:has(> .niveaux #niv-${n}:checked) .redaction:not([data-niveau="${n}"])`);
         const bloc = tous.find((b) => b.sel.split(',').includes(sel));
@@ -178,7 +171,7 @@ export default function niveaux(ctx: ContexteSite): void {
     });
 
     it('@supports :has() masque visuellement .etiquette (clip-path, 1px, pas display: none)', () => {
-      const css = cssDist();
+      const css = cssDesPages(production().outDir);
       assert.match(compact(css), /@supports\(?selector\(:has\(\*\)\)\)?\{/);
       const bloc = blocs(css).find((b) => b.sel.includes('.redaction>.etiquette') && b.decl.includes('clip-path'));
       assert.ok(bloc, 'règle de masquage visuel de .etiquette absente');
@@ -188,7 +181,7 @@ export default function niveaux(ctx: ContexteSite): void {
     });
 
     it('.concerne-aine masqué par défaut, affiché seulement au niveau Gros caractères', () => {
-      const tous = blocs(cssDist());
+      const tous = blocs(cssDesPages(production().outDir));
       assert.ok(tous.some((b) => b.sel.split(',').includes('.concerne-aine') && /display:none/.test(b.decl)));
       const aine = compact('.lecteur:has(> .niveaux #niv-aine:checked) .concerne-aine');
       assert.ok(tous.some((b) => b.sel.split(',').includes(aine) && /display:block/.test(b.decl)));

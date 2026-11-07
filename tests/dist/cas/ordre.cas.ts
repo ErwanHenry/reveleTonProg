@@ -9,6 +9,7 @@ import type { Noeud } from '../../../scripts/lib/html.ts';
 import { cellulesAttendues, checkDist } from '../../../scripts/lib/check-dist.ts';
 import { materialiserCorpusM1 } from '../../helpers/corpus-m1.ts';
 import type { ContexteSite } from '../contexte.ts';
+import { cssDesPages } from '../css-pages.ts';
 
 const norm = (s: string): string => s.replace(/\s+/g, ' ').trim();
 const elements = (n: Noeud): Noeud[] => n.enfants.filter((e): e is Noeud => typeof e !== 'string');
@@ -39,14 +40,6 @@ export default function ordre(ctx: ContexteSite): void {
     const c = trouver(arbre, (n) => n.attrs['data-ordre-controle'] !== undefined);
     assert.equal(c.length, 1, 'un seul [data-ordre-controle]');
     return c[0] as Noeud;
-  };
-  const cssDist = (): string => {
-    const { outDir } = production();
-    return ctx
-      .fichiers(outDir)
-      .filter((f) => f.includes(`${path.sep}_astro${path.sep}`) && f.endsWith('.css'))
-      .map((f) => fs.readFileSync(f, 'utf8'))
-      .join('\n');
   };
   const blocs = (css: string): { sel: string; decl: string }[] =>
     [...compact(css).matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((m) => ({ sel: m[1] ?? '', decl: m[2] ?? '' }));
@@ -170,7 +163,7 @@ export default function ordre(ctx: ContexteSite): void {
 
   describe('CSS de mise en attente du tirage', () => {
     it('listes cachées sans décalage tant que data-ordre-fait manque, révélées par rtp-reveler après 1,5 s', () => {
-      const css = cssDist();
+      const css = cssDesPages(production().outDir);
       const bloc = blocs(css).find((b) => b.sel.includes('html[data-ordre=aleatoire]') && b.sel.includes('[data-ordonnable]:not([data-ordre-fait])'));
       assert.ok(bloc, 'règle de masquage absente');
       assert.match(bloc.decl, /visibility:hidden/);
@@ -182,13 +175,13 @@ export default function ordre(ctx: ContexteSite): void {
     });
 
     it('la phrase « demande JavaScript » est masquée quand le script a tourné', () => {
-      const bloc = blocs(cssDist()).find((b) => b.sel.includes('html[data-ordre-js].ordre-aide-sansjs'));
+      const bloc = blocs(cssDesPages(production().outDir)).find((b) => b.sel.includes('html[data-ordre-js].ordre-aide-sansjs'));
       assert.ok(bloc, 'règle absente');
       assert.match(bloc.decl, /display:none/);
     });
 
     it('le sélecteur de masquage ne dépend pas de prefers-reduced-motion (filet de sécurité, pas un mouvement)', () => {
-      const css = compact(cssDist());
+      const css = compact(cssDesPages(production().outDir));
       const i = css.indexOf('[data-ordonnable]:not([data-ordre-fait])');
       assert.ok(i > 0);
       const avant = css.slice(Math.max(0, i - 200), i);

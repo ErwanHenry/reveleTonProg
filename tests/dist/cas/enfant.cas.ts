@@ -10,6 +10,7 @@ import type { Noeud } from '../../../scripts/lib/html.ts';
 import { cellulesAttendues, checkDist } from '../../../scripts/lib/check-dist.ts';
 import { materialiserCorpusM1 } from '../../helpers/corpus-m1.ts';
 import type { ContexteSite } from '../contexte.ts';
+import { cssDesPages } from '../css-pages.ts';
 
 const norm = (s: string): string => s.replace(/\s+/g, ' ').trim();
 const elements = (n: Noeud): Noeud[] => n.enfants.filter((e): e is Noeud => typeof e !== 'string');
@@ -156,19 +157,11 @@ export default function enfant(ctx: ContexteSite): void {
   });
 
   describe('feuille de style construite', () => {
-    const cssDist = (): string => {
-      const { outDir } = production();
-      return ctx
-        .fichiers(outDir)
-        .filter((f) => f.includes(`${path.sep}_astro${path.sep}`) && f.endsWith('.css'))
-        .map((f) => fs.readFileSync(f, 'utf8'))
-        .join('\n');
-    };
     const blocs = (css: string): { sel: string; decl: string }[] =>
       [...compact(css).matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((m) => ({ sel: m[1] ?? '', decl: m[2] ?? '' }));
 
     it('repli sans Popover : @supports not selector(:popover-open) masque .definition et montre l’aide', () => {
-      const css = compact(cssDist());
+      const css = compact(cssDesPages(production().outDir));
       const m = /@supportsnot\(?selector\(:popover-open\)\)?\{(.*?)\}\}/.exec(css);
       assert.ok(m, '@supports not selector(:popover-open) absent');
       const interne = m[1] ?? '';
@@ -180,13 +173,13 @@ export default function enfant(ctx: ContexteSite): void {
 
     it('« Mots expliqués » est masqué hors du niveau enfant, par :not(:has()) pour rester visible sans :has()', () => {
       const sel = compact('.lecteur:not(:has(> .niveaux #niv-enfant:checked)) .mots-expliques');
-      const bloc = blocs(cssDist()).find((b) => b.sel.split(',').includes(sel));
+      const bloc = blocs(cssDesPages(production().outDir)).find((b) => b.sel.split(',').includes(sel));
       assert.ok(bloc, 'règle de masquage absente');
       assert.match(bloc.decl, /display:none/);
     });
 
     it('terme en pointillé et marqueur « ? » avec sa variante à texte alternatif vide', () => {
-      const tous = blocs(cssDist());
+      const tous = blocs(cssDesPages(production().outDir));
       assert.ok(
         tous.some((b) => /(^|,)\.terme(,|$)/.test(b.sel) && /text-decoration:underline[^;]*dotted|text-decoration-style:dotted/.test(b.decl)),
         'pointillé sur .terme',
