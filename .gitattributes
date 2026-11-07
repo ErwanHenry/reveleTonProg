@@ -9,3 +9,5 @@ data/import/*.json -text
 # Scripts inclus dans les pages et autorisés par leur empreinte sha256 (CSP, ADR-056) : le navigateur ramène
 # CR LF à LF avant de hacher, une copie en CRLF désynchroniserait l'empreinte calculée par Node.
 src/scripts/*.js text eol=lf
+# Bloc Caddy généré, comparé octet par octet à un rendu neuf (tests/repo/caddy.test.ts) : toujours LF.
+deploy/caddy/site.caddy text eol=lf

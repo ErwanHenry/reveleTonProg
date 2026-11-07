@@ -2,7 +2,12 @@
 // config/site.yml et les empreintes de src/scripts/*.js, puis écrit dans deploy/caddy/site.caddy (versionné).
 // tests/repo/caddy.test.ts compare le fichier versionné à un rendu neuf : changer le domaine ou un script sans
 // relancer ce script fait échouer npm test. Aucun serveur n'est touché ici ; « caddy validate » a lieu en Phase 8.
-import { estDomaineValide } from '../src/lib/site-config.ts';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { parseArgs } from 'node:util';
+import { scriptsEnLigne } from '../src/lib/csp-empreintes.ts';
+import { estDomaineValide, loadSiteConfig } from '../src/lib/site-config.ts';
 
 /**
  * Racine servie, vue depuis le conteneur Caddy : la Phase 8 monte le dossier du site en lecture seule sur
@@ -104,3 +109,68 @@ export function renderCaddy(o: OptionsCaddy): string {
   ];
   return `${lignes.join('\n')}\n`;
 }
+
+const USAGE = `Usage : node scripts/render-caddy.ts [--check] [--sortie <fichier>]
+
+  (sans option)       écrit le bloc Caddy rendu depuis config/site.yml et src/scripts/*.js
+  --check             n'écrit rien : vérifie que le fichier est à jour (code 1 sinon)
+  --sortie <fichier>  fichier écrit ou vérifié (défaut : deploy/caddy/site.caddy, dossier créé au besoin)
+  RTP_DEPLOIEMENT=1 : un domaine ou un contact provisoire (.invalid) dans config/site.yml est refusé (code 2).
+  Code de sortie : 0 si écrit ou à jour, 1 si --check trouve un fichier absent ou différent, 2 si les arguments
+  ou config/site.yml sont invalides.
+`;
+
+function usageError(message: string): never {
+  process.stderr.write(`${message}\n\n${USAGE}`);
+  process.exit(2);
+}
+
+function main(): void {
+  let values: { check?: boolean; sortie?: string };
+  try {
+    ({ values } = parseArgs({
+      args: process.argv.slice(2),
+      options: { check: { type: 'boolean' }, sortie: { type: 'string' } },
+      strict: true,
+      allowPositionals: false,
+    }));
+  } catch (e) {
+    usageError(e instanceof Error ? e.message : String(e));
+  }
+
+  const projectRoot = process.cwd();
+  const sortie = path.resolve(projectRoot, values.sortie ?? path.join('deploy', 'caddy', 'site.caddy'));
+  const rel = path.relative(projectRoot, sortie).split(path.sep).join('/');
+
+  let rendu: string;
+  try {
+    // Env du processus : sous RTP_DEPLOIEMENT=1, un domaine provisoire refuse le rendu (fail-closed).
+    const { domaine } = loadSiteConfig(projectRoot, process.env);
+    rendu = renderCaddy({
+      domaine,
+      empreintesScripts: scriptsEnLigne(projectRoot).map((s) => s.empreinte),
+      racine: RACINE_SERVEUR,
+      journal: JOURNAL,
+    });
+  } catch (e) {
+    process.stderr.write(`${e instanceof Error ? e.message : String(e)}\n`);
+    process.exit(2);
+  }
+
+  if (values.check === true) {
+    const actuel = fs.existsSync(sortie) ? fs.readFileSync(sortie, 'utf8') : undefined;
+    if (actuel !== rendu) {
+      const etat = actuel === undefined ? 'absent' : 'pas à jour';
+      process.stderr.write(`render-caddy : ${rel} ${etat} (config/site.yml ou src/scripts/*.js a changé) : lancer node scripts/render-caddy.ts\n`);
+      process.exit(1);
+    }
+    console.log(`render-caddy : ${rel} à jour`);
+    return;
+  }
+  fs.mkdirSync(path.dirname(sortie), { recursive: true });
+  fs.writeFileSync(sortie, rendu);
+  console.log(`render-caddy : ${rel} écrit`);
+}
+
+// Ligne de commande seulement : l'import par les tests n'exécute rien.
+if (process.argv[1] !== undefined && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main();
