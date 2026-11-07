@@ -231,16 +231,61 @@ describe('vue : couverture, dates, libellés', () => {
 
   it('phraseCouverture : clauses à zéro omises, accords au singulier pour 0 et 1', () => {
     assert.equal(
-      phraseCouverture({ total: 5, mesures: 5, nonPrecise: 0, programmeNonPublie: 0, nonVerifie: 0 }),
+      phraseCouverture({ total: 5, mesures: 5, enAttente: 0, nonPrecise: 0, programmeNonPublie: 0, nonVerifie: 0 }),
       'Sur ce thème, 5 candidats sur 5 ont une position publiée.',
     );
     assert.equal(
-      phraseCouverture({ total: 3, mesures: 1, nonPrecise: 0, programmeNonPublie: 0, nonVerifie: 2 }),
+      phraseCouverture({ total: 3, mesures: 1, enAttente: 0, nonPrecise: 0, programmeNonPublie: 0, nonVerifie: 2 }),
       'Sur ce thème, 1 candidat sur 3 a une position publiée, 2 cases ne sont pas encore vérifiées.',
     );
     assert.equal(
-      phraseCouverture({ total: 3, mesures: 1, nonPrecise: 0, programmeNonPublie: 1, nonVerifie: 1 }),
+      phraseCouverture({ total: 3, mesures: 1, enAttente: 0, nonPrecise: 0, programmeNonPublie: 1, nonVerifie: 1 }),
       "Sur ce thème, 1 candidat sur 3 a une position publiée, 1 n'a pas publié de programme, 1 case n'est pas encore vérifiée.",
+    );
+  });
+
+  it('W3 : production, aucune case en attente sur chaque thème du jeu de test', () => {
+    const prod = construireCorpus(brut, 'production');
+    for (const t of prod.themes) assert.equal(t.couverture.enAttente, 0, t.theme.id);
+  });
+
+  it('W3 : preview, une case qui ne tient qu’un brouillon n’est pas comptée comme publiée', () => {
+    const prev = construireCorpus(brut, 'preview');
+    const logement = prev.theme('logement');
+    const elise = logement.cellules.find((x) => x.candidat.id === 'elise-erard')!;
+    assert.equal(elise.etat, 'mesures');
+    assert.ok(elise.mesures.length > 0 && elise.mesures.every((m) => m.mesure.statut_relecture !== 'publie'));
+    assert.deepEqual(logement.couverture, { total: 4, mesures: 1, enAttente: 1, nonPrecise: 0, programmeNonPublie: 2, nonVerifie: 0 });
+    assert.equal(
+      phraseCouverture(logement.couverture),
+      "Sur ce thème, 1 candidat sur 4 a une position publiée, 1 a une position rédigée mais pas encore publiée, 2 n'ont pas publié de programme.",
+    );
+    for (const t of prev.themes) {
+      const c = t.couverture;
+      assert.equal(c.mesures + c.enAttente + c.nonPrecise + c.programmeNonPublie + c.nonVerifie, c.total, `${t.theme.id} : aucune case comptée deux fois`);
+    }
+  });
+
+  it('W3 : phraseCouverture avec des positions rédigées mais pas encore publiées', () => {
+    assert.equal(
+      phraseCouverture({ total: 37, mesures: 0, enAttente: 27, nonPrecise: 0, programmeNonPublie: 0, nonVerifie: 10 }),
+      'Sur ce thème, 27 candidats sur 37 ont une position rédigée mais pas encore publiée, 10 cases ne sont pas encore vérifiées.',
+    );
+    assert.equal(
+      phraseCouverture({ total: 3, mesures: 1, enAttente: 1, nonPrecise: 1, programmeNonPublie: 0, nonVerifie: 0 }),
+      "Sur ce thème, 1 candidat sur 3 a une position publiée, 1 a une position rédigée mais pas encore publiée, 1 n'a rien de précisé dans les sources consultées.",
+    );
+    assert.equal(
+      phraseCouverture({ total: 4, mesures: 0, enAttente: 0, nonPrecise: 0, programmeNonPublie: 0, nonVerifie: 4 }),
+      'Sur ce thème, 0 candidat sur 4 a une position publiée, 4 cases ne sont pas encore vérifiées.',
+    );
+    assert.equal(
+      phraseCouverture({ total: 5, mesures: 2, enAttente: 2, nonPrecise: 0, programmeNonPublie: 1, nonVerifie: 0 }),
+      "Sur ce thème, 2 candidats sur 5 ont une position publiée, 2 ont une position rédigée mais pas encore publiée, 1 n'a pas publié de programme.",
+    );
+    assert.equal(
+      phraseCouverture({ total: 2, mesures: 0, enAttente: 1, nonPrecise: 1, programmeNonPublie: 0, nonVerifie: 0 }),
+      "Sur ce thème, 1 candidat sur 2 a une position rédigée mais pas encore publiée, 1 n'a rien de précisé dans les sources consultées.",
     );
   });
 

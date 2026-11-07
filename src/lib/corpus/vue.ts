@@ -98,7 +98,10 @@ export interface VueCellule {
 
 export interface CompteCouverture {
   total: number;
+  /** Cases qui tiennent au moins une mesure publiée. */
   mesures: number;
+  /** Cases à l'état `mesures` sans aucune mesure publiée (brouillon ou relu, visibles en preview seulement). */
+  enAttente: number;
   nonPrecise: number;
   programmeNonPublie: number;
   nonVerifie: number;
@@ -189,12 +192,25 @@ export function dateMax(ds: readonly (string | undefined)[]): string | undefined
   return max;
 }
 
-/** Phrase de couverture d'un thème ; les clauses à zéro (sauf la première) sont omises. */
+/**
+ * Phrase de couverture d'un thème ; les clauses à zéro (sauf la première) sont omises.
+ * W3 (DETTE-01) : une case qui ne tient que des brouillons ou des mesures relues (preview) n'est jamais comptée comme publiée.
+ * La clause « publiée » reste quand il y en a au moins une ou quand rien n'attend ; sinon la clause
+ * « rédigée » prend sa place et porte « sur T ». En production `enAttente` vaut 0 : phrase inchangée.
+ */
 export function phraseCouverture(c: CompteCouverture): string {
   const pluriel = (n: number): boolean => n > 1;
-  const clauses = [
-    `${c.mesures} ${pluriel(c.mesures) ? 'candidats' : 'candidat'} sur ${c.total} ${pluriel(c.mesures) ? 'ont' : 'a'} une position publiée`,
-  ];
+  const clauses: string[] = [];
+  const publiee = c.mesures > 0 || c.enAttente === 0;
+  if (publiee) {
+    clauses.push(
+      `${c.mesures} ${pluriel(c.mesures) ? 'candidats' : 'candidat'} sur ${c.total} ${pluriel(c.mesures) ? 'ont' : 'a'} une position publiée`,
+    );
+  }
+  if (c.enAttente > 0) {
+    const sujet = publiee ? `${c.enAttente}` : `${c.enAttente} ${pluriel(c.enAttente) ? 'candidats' : 'candidat'} sur ${c.total}`;
+    clauses.push(`${sujet} ${pluriel(c.enAttente) ? 'ont' : 'a'} une position rédigée mais pas encore publiée`);
+  }
   if (c.nonPrecise > 0) {
     clauses.push(`${c.nonPrecise} ${pluriel(c.nonPrecise) ? "n'ont" : "n'a"} rien de précisé dans les sources consultées`);
   }
@@ -315,9 +331,11 @@ export function construireCorpus(brut: Brut, mode: Mode): Corpus {
         return { ...base, etat: cas.etat, verifieLe: cas.verifie_le, sourcesConsultees: consultees };
       });
 
+    const publiee = (m: VueMesure): boolean => m.mesure.statut_relecture === 'publie';
     const compte: CompteCouverture = {
       total: cellules.length,
-      mesures: cellules.filter((c) => c.etat === 'mesures').length,
+      mesures: cellules.filter((c) => c.etat === 'mesures' && c.mesures.some(publiee)).length,
+      enAttente: cellules.filter((c) => c.etat === 'mesures' && !c.mesures.some(publiee)).length,
       nonPrecise: cellules.filter((c) => c.etat === 'non_precise').length,
       programmeNonPublie: cellules.filter((c) => c.etat === 'programme_non_publie').length,
       nonVerifie: cellules.filter((c) => c.etat === 'non_verifie').length,
