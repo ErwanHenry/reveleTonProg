@@ -1,5 +1,7 @@
-// Page la plus lourde du dist : HTML + CSS/JS de /_astro/ qu'elle référence, en octets gzip (niveau 6, comme
-// le serveur de test). Même comptage que scripts/lib/check-dist.ts.
+// Page la plus lourde du dist, en octets gzip (niveau 6, comme le serveur de test). Depuis l'ADR-056, CSS et
+// scripts sont dans la page et aucune page ne référence de fichier /_astro/ : le poids est celui du HTML seul.
+// La boucle sur les références est gardée pour qu'un fichier externe qui réapparaîtrait soit encore pesé.
+// Même comptage que scripts/lib/check-dist.ts.
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { gzipSync } from 'node:zlib';
