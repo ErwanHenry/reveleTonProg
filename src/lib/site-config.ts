@@ -51,14 +51,30 @@ function erreur(detail: string): Error {
   return new Error(`${FICHIER} : ${detail}`);
 }
 
-/** Lit et valide `config/site.yml` ; lève une Error qui nomme le fichier si quoi que ce soit cloche. */
+/**
+ * Lit et valide `config/site.yml` ; lève une Error qui nomme le fichier si quoi que ce soit cloche. La lecture est
+ * mémorisée par racine, mais la garde de déploiement est évaluée à chaque appel (IN-02 de la revue de la phase 7) :
+ * une première lecture avec un env vide ne laisse jamais passer une lecture suivante sous RTP_DEPLOIEMENT=1.
+ */
 export function loadSiteConfig(projectRoot: string = process.cwd(), env: NodeJS.ProcessEnv = process.env): SiteConfig {
   const racine = path.resolve(projectRoot);
   // Lue d'abord : une valeur invalide de RTP_DEPLOIEMENT échoue même quand la garde ne mord pas (IN-06).
   const deploiement = estDeploiement(env);
-  const connue = memo.get(racine);
-  if (connue !== undefined) return connue;
+  let cfg = memo.get(racine);
+  if (cfg === undefined) {
+    cfg = lireFichier(racine);
+    memo.set(racine, cfg);
+  }
+  if (deploiement) verifierDeploiement(cfg);
+  const provisoires = [cfg.domaineProvisoire && `domaine « ${cfg.domaine} »`, cfg.contactProvisoire && `contact « ${cfg.contact} »`].filter(Boolean);
+  if (provisoires.length > 0 && !avertie) {
+    avertie = true;
+    console.warn(`${FICHIER} : valeurs provisoires (TLD réservé), à remplacer avant le déploiement : ${provisoires.join(', ')}`);
+  }
+  return cfg;
+}
 
+function lireFichier(racine: string): SiteConfig {
   const fichier = path.join(racine, 'config', 'site.yml');
   if (!existsSync(fichier)) throw erreur(`fichier introuvable (${fichier}) ; il porte le domaine du site, le contact public et le dépôt GitHub`);
 
@@ -87,27 +103,21 @@ export function loadSiteConfig(projectRoot: string = process.cwd(), env: NodeJS.
   if (typeof contact !== 'string' || !RE_CONTACT.test(contact)) throw erreur('« contact » doit être une adresse courriel (ex. contact@exemple.fr)');
   if (typeof depot !== 'string' || !RE_DEPOT.test(depot)) throw erreur('« depot » doit avoir la forme propriétaire/dépôt (ex. ErwanHenry/reveleTonProg)');
 
-  const cfg: SiteConfig = {
+  return {
     domaine,
     domaineProvisoire: estHoteProvisoire(domaine),
     contact,
     depot,
     contactProvisoire: estHoteProvisoire(contact),
   };
+}
+
+function verifierDeploiement(cfg: SiteConfig): void {
   // Garde de déploiement (WR-03, HEB-06) : le job de déploiement positionne RTP_DEPLOIEMENT=1 ; ni un
   // domaine provisoire (URL canoniques et sitemap vers un domaine mort) ni un contact provisoire (canal de
   // correction mort) ne doivent alors partir en ligne. Une seule erreur nomme tous les champs fautifs.
-  if (deploiement) {
-    const refus: string[] = [];
-    if (cfg.domaineProvisoire) refus.push('domaine provisoire (TLD réservé : .invalid, .test, .example, .localhost) refusé quand RTP_DEPLOIEMENT=1 : renseigner le vrai domaine avant de déployer');
-    if (cfg.contactProvisoire) refus.push('contact provisoire (TLD réservé : .invalid, .test, .example, .localhost) refusé quand RTP_DEPLOIEMENT=1 : renseigner une vraie adresse avant de déployer');
-    if (refus.length > 0) throw erreur(refus.join(' ; '));
-  }
-  const provisoires = [cfg.domaineProvisoire && `domaine « ${domaine} »`, cfg.contactProvisoire && `contact « ${contact} »`].filter(Boolean);
-  if (provisoires.length > 0 && !avertie) {
-    avertie = true;
-    console.warn(`${FICHIER} : valeurs provisoires (TLD réservé), à remplacer avant le déploiement : ${provisoires.join(', ')}`);
-  }
-  memo.set(racine, cfg);
-  return cfg;
+  const refus: string[] = [];
+  if (cfg.domaineProvisoire) refus.push('domaine provisoire (TLD réservé : .invalid, .test, .example, .localhost) refusé quand RTP_DEPLOIEMENT=1 : renseigner le vrai domaine avant de déployer');
+  if (cfg.contactProvisoire) refus.push('contact provisoire (TLD réservé : .invalid, .test, .example, .localhost) refusé quand RTP_DEPLOIEMENT=1 : renseigner une vraie adresse avant de déployer');
+  if (refus.length > 0) throw erreur(refus.join(' ; '));
 }

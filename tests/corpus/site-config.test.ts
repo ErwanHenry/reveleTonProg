@@ -85,6 +85,17 @@ describe('loadSiteConfig', () => {
     }
   });
 
+  it('IN-02 : la garde de déploiement mord aussi sur une lecture mémorisée (env vide d’abord, puis RTP_DEPLOIEMENT=1)', () => {
+    const provisoire = projet(yml('exemple.invalid', 'contact@exemple.invalid'));
+    const premiere = loadSiteConfig(provisoire, {});
+    assert.equal(premiere.domaineProvisoire, true);
+    assert.throws(() => loadSiteConfig(provisoire, { RTP_DEPLOIEMENT: '1' }), /domaine provisoire .* refusé quand RTP_DEPLOIEMENT=1/);
+    assert.equal(loadSiteConfig(provisoire, {}), premiere, 'la lecture reste mémorisée');
+    const reel = projet(REEL);
+    loadSiteConfig(reel, {});
+    assert.equal(loadSiteConfig(reel, { RTP_DEPLOIEMENT: '1' }).domaine, 'exemple.fr');
+  });
+
   it('IN-04 : estHoteProvisoire ne juge que le dernier label (TLD), casse et point final ignorés', () => {
     for (const h of ['a.invalid', 'a.test', 'a.example', 'a.localhost', 'A.TEST', 'a.test.', 'x@a.example', 'contact@exemple.invalid']) {
       assert.equal(estHoteProvisoire(h), true, h);
