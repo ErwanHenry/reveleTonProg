@@ -47,15 +47,29 @@ const RE_EMPREINTE = /^sha256-[A-Za-z0-9+/]+=*$/;
 // Chemin absolu sans blanc, guillemet, accolade ni autre caractère qui changerait la lecture du Caddyfile.
 const RE_CHEMIN = /^\/[A-Za-z0-9._/-]+$/;
 
+function verifierEmpreintes(empreintesScripts: readonly string[]): void {
+  if (empreintesScripts.length === 0) throw new Error('render-caddy : aucune empreinte de script (src/scripts/*.js vide ?)');
+  for (const e of empreintesScripts) {
+    if (!RE_EMPREINTE.test(e)) throw new Error(`render-caddy : empreinte mal formée « ${e.slice(0, 80)} » (attendu sha256-<base64>, sans guillemets)`);
+  }
+  if (new Set(empreintesScripts).size !== empreintesScripts.length) throw new Error('render-caddy : empreinte en double');
+}
+
+/**
+ * Valeur de l'en-tête Content-Security-Policy du bloc Caddy (fonction pure). Partagée avec e2e/serveur.ts (WR-02) :
+ * les specs CSP font appliquer par le navigateur la même politique d'en-tête qu'en production, en plus du meta.
+ */
+export function cspEnTete(empreintesScripts: readonly string[]): string {
+  verifierEmpreintes(empreintesScripts);
+  const scriptSrc = empreintesScripts.map((e) => `'${e}'`).join(' ');
+  return [`script-src ${scriptSrc}`, "frame-ancestors 'none'", "base-uri 'none'", "form-action 'none'", "object-src 'none'"].join('; ');
+}
+
 function verifier(o: OptionsCaddy): void {
   if (!estDomaineValide(o.domaine)) {
     throw new Error(`render-caddy : domaine invalide « ${String(o.domaine).slice(0, 80)} » (nom d'hôte en minuscules, sans schéma, port, chemin ni « www. »)`);
   }
-  if (o.empreintesScripts.length === 0) throw new Error('render-caddy : aucune empreinte de script (src/scripts/*.js vide ?)');
-  for (const e of o.empreintesScripts) {
-    if (!RE_EMPREINTE.test(e)) throw new Error(`render-caddy : empreinte mal formée « ${e.slice(0, 80)} » (attendu sha256-<base64>, sans guillemets)`);
-  }
-  if (new Set(o.empreintesScripts).size !== o.empreintesScripts.length) throw new Error('render-caddy : empreinte en double');
+  verifierEmpreintes(o.empreintesScripts);
   if (!RE_CHEMIN.test(o.racine)) throw new Error(`render-caddy : racine invalide « ${o.racine.slice(0, 80)} » (chemin absolu sans blanc ni caractère spécial)`);
   if (!RE_CHEMIN.test(o.journal)) throw new Error(`render-caddy : journal invalide « ${o.journal.slice(0, 80)} » (chemin absolu sans blanc ni caractère spécial)`);
 }
@@ -67,8 +81,7 @@ function verifier(o: OptionsCaddy): void {
 export function renderCaddy(o: OptionsCaddy): string {
   verifier(o);
   const { domaine, racine, journal } = o;
-  const scriptSrc = o.empreintesScripts.map((e) => `'${e}'`).join(' ');
-  const csp = [`script-src ${scriptSrc}`, "frame-ancestors 'none'", "base-uri 'none'", "form-action 'none'", "object-src 'none'"].join('; ');
+  const csp = cspEnTete(o.empreintesScripts);
   const lignes = [
     '# Généré par scripts/render-caddy.ts depuis config/site.yml et src/scripts/*.js : ne pas modifier à la main.',
     '# Régénérer avec « node scripts/render-caddy.ts » ; tests/repo/caddy.test.ts échoue si ce fichier dérive.',

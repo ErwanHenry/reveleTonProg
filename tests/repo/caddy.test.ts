@@ -12,6 +12,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
+  cspEnTete,
   FICHIERS_TOURNES_GARDES,
   JOURNAL,
   RACINE_SERVEUR,
@@ -132,6 +133,13 @@ describe('renderCaddy : en-têtes de sécurité', () => {
     assert.match(bloc, /^\t\tPermissions-Policy "camera=\(\), microphone=\(\), geolocation=\(\)"$/m);
     assert.match(bloc, /^\t\tCross-Origin-Opener-Policy "same-origin"$/m);
     assert.match(bloc, /^\t\tCache-Control "no-cache"$/m);
+  });
+
+  it('en-tête calculé par cspEnTete, la fonction que sert aussi e2e/serveur.ts (WR-02), avec les mêmes refus', () => {
+    assert.equal(csp, cspEnTete(SYNTHETIQUE.empreintesScripts));
+    const serveur = fs.readFileSync(path.join(REPO, 'e2e', 'serveur.ts'), 'utf8');
+    assert.match(serveur, /import \{ cspEnTete \} from '\.\.\/scripts\/render-caddy\.ts';/);
+    for (const e of [[], ["'sha256-AAA='"], ['sha256-AAA=', 'sha256-AAA=']]) assert.throws(() => cspEnTete(e), /empreinte/);
   });
 
   it('aucun matcher /_astro/ (plus aucun fichier séparé après l’inlining)', () => {

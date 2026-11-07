@@ -161,7 +161,7 @@ La Phase 7 ajoute quatre fichiers. `csp` et `csp-sans-js` chargent chaque page d
 Le livrable du lot 2 est l'artefact `site-preview` du job `verifier` : la build preview du vrai corpus (`dist-preview`, déjà contrôlée `noindex` et `robots.txt`), conservée 14 jours.
 
 1. GitHub, Actions, dernière exécution de `CI` sur `main`, télécharger `site-preview` (zip) et le décompresser.
-2. `node e2e/serveur.ts <dossier> 4173`, ouvrir http://127.0.0.1:4173/.
+2. `node e2e/serveur.ts <dossier> 4173`, ouvrir http://127.0.0.1:4173/. Le serveur envoie l'en-tête CSP du bloc Caddy, calculé depuis les scripts de la copie locale : si l'artefact vient d'un autre commit et que ses scripts ont changé, ils sont bloqués (la page reste lisible sans JS) ; ajouter `--sans-entete-csp` ou se placer sur le commit de l'exécution.
 3. Pour partager avec un relecteur : lui donner le lien de l'exécution (accès selon la visibilité du dépôt) ou le zip ; au-delà de 14 jours, relancer le workflow.
 
 En local : `RTP_MODE=preview npm run build -- --outDir dist-preview`, puis la même commande de service.
