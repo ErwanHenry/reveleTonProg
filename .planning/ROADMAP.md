@@ -67,7 +67,17 @@ Actions humaines qui conditionnent le code. Dates proposées pour tenir le 2026-
   3. Chaque page contient son CSS et ses scripts de niveau et d'ordre ; check-dist prouve que chaque script en ligne est identique à sa source et que son empreinte sha256 figure dans la CSP, sans `unsafe-inline` sur les scripts ; le site reste complet avec JS désactivé.
   4. Un test navigateur suit le parcours par clics et prouve que le niveau de lecture est gardé d'une page à l'autre et après un retour arrière.
   5. En preview, la phrase de couverture ne présente plus de brouillons comme des positions publiées ; les « Sources consultées » des cases vides donnent lien, date et extrait archivé ; un test compare les types de vue aux schémas JSON.
-**Plans**: TBD
+**Plans**: 8 plans (4 waves)
+
+Plans:
+- [ ] 07-01-PLAN.md — CSS et scripts dans la page, CSP meta à empreintes, règles check-dist à empreintes (vague 1)
+- [ ] 07-02-PLAN.md — Dette W7 (types contre schémas), W3 (phrase de couverture en preview), W10 (sources consultées complètes) (vague 1)
+- [ ] 07-03-PLAN.md — Cas dist réécrits pour la forme en ligne, cas CSP avec mutations (vague 2)
+- [ ] 07-04-PLAN.md — Domaine dans config/site.yml : site, canonique, sitemap, robots, build refusée sous RTP_DEPLOIEMENT=1 (vague 2)
+- [ ] 07-05-PLAN.md — Navigateur : zéro violation CSP avec et sans JS, parcours et bfcache, 4G après inlining (vague 2)
+- [ ] 07-06-PLAN.md — check-dist : canonique, sitemap, robots, DOMAINE_PROVISOIRE ; garde anti nom d'hôte en dur (vague 3)
+- [ ] 07-07-PLAN.md — Bloc Caddy rendu depuis la configuration et test de dérive (vague 3)
+- [ ] 07-08-PLAN.md — ADR-053, ADR-056, note ADR-051, RUNBOOK, README, porte complète avec npm run e2e et CI (vague 4)
 **UI hint**: yes
 
 ### Phase 8: Serveur, pipeline, supervision et sauvegardes
