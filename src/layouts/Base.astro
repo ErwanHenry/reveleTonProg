@@ -1,7 +1,7 @@
 ---
 import '../styles/base.css';
 import '../styles/pages.css';
-import ordreUrl from '../scripts/ordre.js?url';
+import ordreSource from '../scripts/ordre.js?raw';
 import { formatDate, getCorpus } from '../lib/corpus/index.ts';
 import { SOURCE_DATES, TOURS } from '../lib/dates-tours.ts';
 
@@ -29,7 +29,7 @@ const courante = /^\/themes(\/|$)/.test(chemin) ? 'themes' : /^\/candidats(\/|$)
     <title>{titre}</title>
     <meta name="description" content={description} />
     {corpus.mode === 'preview' && <meta name="robots" content="noindex" />}
-    <script is:inline src={ordreUrl}></script>
+    <script is:inline set:html={ordreSource}></script>
   </head>
   <body>
     <a class="skip-link" href="#contenu">Aller au contenu</a>

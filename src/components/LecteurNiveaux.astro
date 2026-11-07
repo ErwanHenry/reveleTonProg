@@ -3,7 +3,7 @@
 // bloc « Ce qui me concerne », contenu de la page (slot par défaut) et rappel du niveau.
 // La liste « Mots expliqués » (mots du glossaire des textes enfant de la page) suit le contenu : les pages n'ont rien à passer.
 import '../styles/niveaux.css';
-import niveauUrl from '../scripts/niveau.js?url';
+import niveauSource from '../scripts/niveau.js?raw';
 import ConcerneAine from './ConcerneAine.astro';
 import MotsExpliques from './MotsExpliques.astro';
 import { termesDe } from '../lib/corpus/enfant.ts';
@@ -31,7 +31,7 @@ const corpus = await getCorpus();
     <p class="aide aide-sansjs">Sans JavaScript, votre choix n'est pas mémorisé d'une page à l'autre : il faut le refaire sur chaque page.</p>
     <p class="sr-only" role="status" data-niveau-annonce></p>
   </fieldset>
-  <script is:inline src={niveauUrl}></script>
+  <script is:inline set:html={niveauSource}></script>
   <div class="lecteur-contenu">
     <ConcerneAine contexte={contexte} mesures={mesures} />
     <slot />

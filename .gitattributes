@@ -6,3 +6,6 @@ ids.lock text eol=lf
 **/ids.lock text eol=lf
 # Instantanés data.gouv hachés octet par octet : aucune conversion de fin de ligne.
 data/import/*.json -text
+# Scripts inclus dans les pages et autorisés par leur empreinte sha256 (CSP, ADR-056) : le navigateur ramène
+# CR LF à LF avant de hacher, une copie en CRLF désynchroniserait l'empreinte calculée par Node.
+src/scripts/*.js text eol=lf
