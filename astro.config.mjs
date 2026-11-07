@@ -1,11 +1,16 @@
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'astro/config';
 import { scriptsEnLigne } from './src/lib/csp-empreintes.ts';
+import { loadSiteConfig } from './src/lib/site-config.ts';
 
 // Racine du projet en chemin système (fileURLToPath, jamais `.pathname` : un dossier avec une espace casserait).
 const racine = fileURLToPath(new URL('.', import.meta.url));
+// Domaine déclaré une seule fois dans config/site.yml (HEB-05, ADR-053). Sous RTP_DEPLOIEMENT=1, un domaine
+// ou un contact provisoire (.invalid) fait échouer le chargement de cette configuration, donc la build (HEB-06).
+const { domaine } = loadSiteConfig(racine);
 
 export default defineConfig({
+  site: `https://${domaine}`,
   output: 'static',
   compressHTML: true,
   prefetch: false,

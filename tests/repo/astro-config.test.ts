@@ -3,10 +3,12 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { scriptsEnLigne } from '../../src/lib/csp-empreintes.ts';
+import { loadSiteConfig } from '../../src/lib/site-config.ts';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const mod = (await import(pathToFileURL(path.join(ROOT, 'astro.config.mjs')).href)) as {
   default: {
+    site?: string;
     output?: string;
     compressHTML?: unknown;
     prefetch?: unknown;
@@ -23,6 +25,10 @@ const config = mod.default;
 describe('astro.config.mjs', () => {
   it('sortie statique', () => {
     assert.equal(config.output, 'static');
+  });
+
+  it('HEB-05 : site vaut https:// + le domaine de config/site.yml', () => {
+    assert.equal(config.site, `https://${loadSiteConfig(ROOT).domaine}`);
   });
 
   it("compressHTML vaut true (booléen), pas 'jsx' qui colle les mots (Pitfall 3)", () => {

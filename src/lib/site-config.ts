@@ -7,6 +7,10 @@ import { estDeploiement } from './deploiement.ts';
 // Même discipline de parsing que content-core : schéma core, clés uniques, aucun alias.
 
 export interface SiteConfig {
+  /** Nom d'hôte du site (apex, minuscules, sans schéma, port, chemin ni `www.`) : alimente `site`, les URL canoniques, sitemap.xml, robots.txt et le bloc Caddy. */
+  domaine: string;
+  /** Vrai tant que le domaine est un placeholder `.invalid` (domaine pas encore acheté). */
+  domaineProvisoire: boolean;
   /** Adresse publique des signalements. */
   contact: string;
   /** « propriétaire/dépôt » GitHub. */
@@ -16,7 +20,10 @@ export interface SiteConfig {
 }
 
 const FICHIER = 'config/site.yml';
-const CLES = ['contact', 'depot'] as const;
+const CLES = ['domaine', 'contact', 'depot'] as const;
+// Nom d'hôte strict : étiquettes [a-z0-9] avec tirets internes (63 caractères au plus), au moins deux
+// étiquettes, TLD alphabétique de 2 à 63 lettres ; la longueur totale (≤ 253) et `www.` sont vérifiées à part.
+const RE_DOMAINE = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/;
 const RE_CONTACT = /^[^@\s<>"]+@[^@\s<>"]+\.[^@\s<>"]+$/;
 const RE_DEPOT = /^[\w.-]+\/[\w.-]+$/;
 
@@ -36,7 +43,7 @@ export function loadSiteConfig(projectRoot: string = process.cwd(), env: NodeJS.
   if (connue !== undefined) return connue;
 
   const fichier = path.join(racine, 'config', 'site.yml');
-  if (!existsSync(fichier)) throw erreur(`fichier introuvable (${fichier}) ; il porte le contact public et le dépôt GitHub`);
+  if (!existsSync(fichier)) throw erreur(`fichier introuvable (${fichier}) ; il porte le domaine du site, le contact public et le dépôt GitHub`);
 
   const doc = parseDocument(readFileSync(fichier, 'utf8'), { schema: 'core', uniqueKeys: true, merge: false });
   if (doc.errors.length > 0) throw erreur(`YAML invalide (${(doc.errors[0]?.message ?? '').split('\n')[0]})`);
@@ -47,7 +54,7 @@ export function loadSiteConfig(projectRoot: string = process.cwd(), env: NodeJS.
     },
   });
   if (alias || isAlias(doc.contents)) throw erreur('les alias YAML ne sont pas acceptés');
-  if (!isMap(doc.contents)) throw erreur('la racine doit être un objet avec les clés contact et depot');
+  if (!isMap(doc.contents)) throw erreur('la racine doit être un objet avec les clés domaine, contact et depot');
 
   const brut: Record<string, unknown> = {};
   for (const paire of doc.contents.items) {
@@ -56,19 +63,33 @@ export function loadSiteConfig(projectRoot: string = process.cwd(), env: NodeJS.
     brut[cle] = isScalar(paire.value) ? paire.value.value : undefined;
   }
 
-  const { contact, depot } = brut;
+  const { domaine, contact, depot } = brut;
+  if (typeof domaine !== 'string' || domaine.length > 253 || !RE_DOMAINE.test(domaine) || domaine.startsWith('www.')) {
+    throw erreur('« domaine » doit être un nom d\'hôte en minuscules, sans schéma, port, chemin ni « www. » (ex. exemple.fr)');
+  }
   if (typeof contact !== 'string' || !RE_CONTACT.test(contact)) throw erreur('« contact » doit être une adresse courriel (ex. contact@exemple.fr)');
   if (typeof depot !== 'string' || !RE_DEPOT.test(depot)) throw erreur('« depot » doit avoir la forme propriétaire/dépôt (ex. ErwanHenry/reveleTonProg)');
 
-  const cfg: SiteConfig = { contact, depot, contactProvisoire: contact.toLowerCase().endsWith('.invalid') };
-  // Garde de déploiement (WR-03) : le job de déploiement du lot 3 positionne RTP_DEPLOIEMENT=1 ; un
-  // contact provisoire ne doit alors jamais partir en ligne (canal de correction mort).
-  if (cfg.contactProvisoire && deploiement) {
-    throw erreur('contact provisoire (.invalid) refusé quand RTP_DEPLOIEMENT=1 : renseigner une vraie adresse avant de déployer');
+  const cfg: SiteConfig = {
+    domaine,
+    domaineProvisoire: domaine.endsWith('.invalid'),
+    contact,
+    depot,
+    contactProvisoire: contact.toLowerCase().endsWith('.invalid'),
+  };
+  // Garde de déploiement (WR-03, HEB-06) : le job de déploiement positionne RTP_DEPLOIEMENT=1 ; ni un
+  // domaine provisoire (URL canoniques et sitemap vers un domaine mort) ni un contact provisoire (canal de
+  // correction mort) ne doivent alors partir en ligne. Une seule erreur nomme tous les champs fautifs.
+  if (deploiement) {
+    const refus: string[] = [];
+    if (cfg.domaineProvisoire) refus.push('domaine provisoire (.invalid) refusé quand RTP_DEPLOIEMENT=1 : renseigner le vrai domaine avant de déployer');
+    if (cfg.contactProvisoire) refus.push('contact provisoire (.invalid) refusé quand RTP_DEPLOIEMENT=1 : renseigner une vraie adresse avant de déployer');
+    if (refus.length > 0) throw erreur(refus.join(' ; '));
   }
-  if (cfg.contactProvisoire && !avertie) {
+  const provisoires = [cfg.domaineProvisoire && `domaine « ${domaine} »`, cfg.contactProvisoire && `contact « ${contact} »`].filter(Boolean);
+  if (provisoires.length > 0 && !avertie) {
     avertie = true;
-    console.warn('contact provisoire (.invalid) : à remplacer au lot 3');
+    console.warn(`${FICHIER} : valeurs provisoires (.invalid), à remplacer avant le déploiement : ${provisoires.join(', ')}`);
   }
   memo.set(racine, cfg);
   return cfg;
