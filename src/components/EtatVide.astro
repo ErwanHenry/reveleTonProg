@@ -1,5 +1,6 @@
 ---
 import BadgeBrouillon from './BadgeBrouillon.astro';
+import BlocSource from './BlocSource.astro';
 import { BADGES, ETAT_VIDE_TEXTES, formatDate } from '../lib/corpus/index.ts';
 import type { VueCellule } from '../lib/corpus/index.ts';
 
@@ -9,7 +10,7 @@ interface Props {
 
 const { cellule } = Astro.props;
 const date = cellule.verifieLe;
-const titres = cellule.sourcesConsultees.map((s) => s.titre);
+const sources = cellule.sourcesConsultees;
 ---
 <p class="vide" data-etat={cellule.etat}>
   {cellule.etat === 'non_precise' && date !== undefined && (
@@ -20,4 +21,13 @@ const titres = cellule.sourcesConsultees.map((s) => s.titre);
   )}
   {cellule.etat === 'non_verifie' && <>Case non vérifiée : à compléter avant publication. <BadgeBrouillon texte={BADGES.brouillon} /></>}
 </p>
-{titres.length > 0 && <p class="vide-sources">Sources consultées : {titres.join(', ')}.</p>}
+{sources.length > 0 && (
+  <div class="source sources-consultees">
+    <p>Sources consultées :</p>
+    <ul>
+      {sources.map((s) => (
+        <li><BlocSource source={s} nommer /></li>
+      ))}
+    </ul>
+  </div>
+)}

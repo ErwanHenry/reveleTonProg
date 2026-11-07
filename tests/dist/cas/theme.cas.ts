@@ -6,6 +6,10 @@ import path from 'node:path';
 import { analyserHtml, aClasse, texte, trouver } from '../../../scripts/lib/html.ts';
 import type { Noeud } from '../../../scripts/lib/html.ts';
 import { cellulesAttendues, checkDist } from '../../../scripts/lib/check-dist.ts';
+import { parse as parseYaml } from 'yaml';
+import { formatDate } from '../../../src/lib/corpus/vue.ts';
+import { lienExtrait } from '../../../src/lib/corpus/signalement.ts';
+import type { Source } from '../../../src/lib/corpus/types.ts';
 import { TRAPPE_BROUILLON, materialiserCorpusM1, nettoyerCorpusM1 } from '../../helpers/corpus-m1.ts';
 import type { ContexteSite } from '../contexte.ts';
 
@@ -87,18 +91,95 @@ export default function theme(ctx: ContexteSite): void {
       assert.ok(trouver(source, (n) => n.tag === 'time' && /^\d{4}-\d{2}-\d{2}$/.test(n.attrs.datetime ?? '')).length > 0);
     });
 
-    it('états vides typés et datés (Élise, Jean), sources consultées', () => {
+    it('W10 : états vides typés et datés (Élise, Jean), sources consultées avec lien, date et extrait', () => {
       const { html, arbre } = page(production().outDir, 'themes/logement/index.html');
       const elise = carte(arbre, 'Élise Érard');
       assert.equal(trouver(elise, (n) => aClasse(n, 'mesure')).length, 0);
       const vide = norm(texte(trouver(elise, (n) => aClasse(n, 'vide'))[0] as Noeud));
       assert.match(vide, /^Non précisé dans les sources consultées le 24 octobre 2026\.$/);
       assert.ok(trouver(elise, (n) => n.tag === 'time' && n.attrs.datetime === '2026-10-24' && norm(texte(n)) === '24 octobre 2026').length >= 1);
-      assert.ok(norm(texte(elise)).includes("Sources consultées : Programme commun fictif d'Élise Érard et Jean Imaginaire."));
+      const blocs = trouver(elise, (n) => n.tag === 'div' && aClasse(n, 'source') && aClasse(n, 'sources-consultees'));
+      assert.equal(blocs.length, 1, 'un div.source.sources-consultees');
+      const bloc = blocs[0] as Noeud;
+      const [entete, liste] = enfantsElements(bloc);
+      assert.equal(entete?.tag, 'p');
+      assert.equal(norm(texte(entete as Noeud)), 'Sources consultées :');
+      assert.equal(liste?.tag, 'ul');
+      const entrees = enfantsElements(liste as Noeud);
+      assert.equal(entrees.length, 1);
+      const li = entrees[0] as Noeud;
+      assert.equal(li.tag, 'li');
+      const titre = "Programme commun fictif d'Élise Érard et Jean Imaginaire";
+      const cite = trouver(li, (n) => n.tag === 'span' && n.attrs['data-citation'] !== undefined);
+      assert.equal(cite.length, 1);
+      assert.equal(norm(texte(cite[0] as Noeud)), titre);
+      const lignes = enfantsElements(li).map((e) => norm(texte(e, (x) => aClasse(x, 'sr-only'))));
+      assert.deepEqual(lignes, [
+        titre,
+        'Consultée le 24 octobre 2026',
+        'Lire le document original',
+        'Copie archivée (Wayback Machine)',
+        'Extrait archivé, empreinte sha256 c3107ed7287b',
+      ]);
+      const t = trouver(li, (n) => n.tag === 'time');
+      assert.equal(t.length, 1);
+      assert.equal(t[0]?.attrs.datetime, '2026-10-24');
+      const [original, wayback, extrait, ...reste] = trouver(li, (n) => n.tag === 'a');
+      assert.equal(reste.length, 0, 'trois liens exactement');
+      assert.equal(original?.attrs.href, 'https://programme-commun.exemple.invalid/programme');
+      assert.equal(wayback?.attrs.href, 'https://web.archive.org/web/20261024100000/https://programme-commun.exemple.invalid/programme');
+      assert.equal(extrait?.attrs.href, lienExtrait('ErwanHenry/reveleTonProg', 'archives/programme-commun-fictif/c3107ed7287b.txt', racine, ctx.repoRoot));
+      assert.match(extrait?.attrs.href ?? '', /^https:\/\/github\.com\/ErwanHenry\/reveleTonProg\/blob\/main\/archives\/programme-commun-fictif\/c3107ed7287b\.txt$/);
+      for (const a of [original, wayback, extrait] as Noeud[]) {
+        assert.equal(a.attrs.rel, 'noopener noreferrer');
+        const sr = trouver(a, (n) => n.tag === 'span' && aClasse(n, 'sr-only'));
+        assert.equal(sr.length, 1, `suffixe .sr-only dans « ${norm(texte(a))} »`);
+        assert.equal(norm(texte(sr[0] as Noeud)), `: ${titre}`);
+      }
+      assert.equal(norm(texte(original as Noeud)), `Lire le document original : ${titre}`);
       const jean = carte(arbre, 'Jean Imaginaire');
       assert.match(norm(texte(trouver(jean, (n) => aClasse(n, 'vide'))[0] as Noeud)), /^Programme non publié à ce jour\. Vérifié le 21 octobre 2026\.$/);
       assert.ok(trouver(jean, (n) => n.tag === 'time' && n.attrs.datetime === '2026-10-21').length === 1);
       assert.ok(html.includes('Programme non publié à ce jour. Vérifié le'));
+    });
+
+    it('W10 : chaque source consultée de chaque page (production et preview) a titre, date, original, extrait et Wayback si elle existe', () => {
+      const dossier = path.join(racine, 'src', 'content', 'sources');
+      const parTitre = new Map<string, Source>();
+      for (const f of fs.readdirSync(dossier).filter((x) => x.endsWith('.yaml'))) {
+        const s = parseYaml(fs.readFileSync(path.join(dossier, f), 'utf8')) as Source;
+        parTitre.set(s.titre, s);
+      }
+      let vues = 0;
+      for (const b of [production(), preview()]) {
+        for (const f of ctx.pagesHtml(b.outDir)) {
+          const arbre = analyserHtml(fs.readFileSync(f, 'utf8'));
+          const entrees = trouver(
+            arbre,
+            (n) => n.tag === 'li' && n.parent?.tag === 'ul' && n.parent.parent !== null && aClasse(n.parent.parent, 'sources-consultees'),
+          );
+          for (const li of entrees) {
+            vues++;
+            const ou = path.relative(b.outDir, f);
+            const titre = norm(texte(trouver(li, (n) => n.tag === 'span' && n.attrs['data-citation'] !== undefined)[0] as Noeud));
+            const s = parTitre.get(titre);
+            assert.ok(s, `${ou} : titre « ${titre} » inconnu des sources`);
+            const t = trouver(li, (n) => n.tag === 'time');
+            assert.equal(t.length, 1, ou);
+            assert.equal(t[0]?.attrs.datetime, s.date_consultation, ou);
+            assert.equal(norm(texte(t[0] as Noeud)), formatDate(s.date_consultation), ou);
+            const hrefs = trouver(li, (n) => n.tag === 'a').map((a) => a.attrs.href);
+            const attendus = [
+              s.url,
+              ...(s.archive.wayback_url === undefined ? [] : [s.archive.wayback_url]),
+              lienExtrait('ErwanHenry/reveleTonProg', s.archive.extrait, racine, ctx.repoRoot),
+            ];
+            assert.deepEqual(hrefs, attendus, ou);
+            assert.ok(norm(texte(li)).includes(`Extrait archivé, empreinte sha256 ${s.archive.sha256.slice(0, 12)}`), ou);
+          }
+        }
+      }
+      assert.ok(vues >= 2, `entrées de sources consultées vues : ${vues}`);
     });
 
     it('phrase de couverture exacte', () => {

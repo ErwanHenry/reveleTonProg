@@ -1,0 +1,37 @@
+---
+// Bloc source partagé (DETTE-03, D-13) : titre du document, date de consultation, lien vers l'original,
+// copie Wayback si elle existe, lien vers l'extrait archivé avec le début de son empreinte sha256.
+// Utilisé par Mesure.astro (dans div.source, avant les liens de signalement) et par EtatVide.astro
+// (une entrée par source consultée). Aucun conteneur ici : l'appelant fournit div.source, qui exempte
+// le titre en span[data-citation] des mots interdits (un titre de document est une citation).
+import { formatDate } from '../lib/corpus/index.ts';
+import type { Source } from '../lib/corpus/types.ts';
+import { resolveContentRoot } from '../lib/content-core/root.ts';
+import { lienExtrait } from '../lib/corpus/signalement.ts';
+import { loadSiteConfig } from '../lib/site-config.ts';
+
+interface Props {
+  source: Source;
+  /** Libellé avant le titre (« Source primaire »), sinon le titre seul. */
+  libelle?: string;
+  /** Ajoute le titre du document, masqué visuellement, au nom accessible de chaque lien. */
+  nommer?: boolean;
+}
+
+const { source, libelle, nommer = false } = Astro.props;
+const config = loadSiteConfig();
+const archive = source.archive;
+---
+{libelle === undefined
+  ? <p><span data-citation>{source.titre}</span></p>
+  : <p>{libelle} : <span data-citation>{source.titre}</span></p>}
+<p>Consultée le <time datetime={source.date_consultation}>{formatDate(source.date_consultation)}</time></p>
+<p><a href={source.url} rel="noopener noreferrer">Lire le document original{nommer && <span class="sr-only"> : {source.titre}</span>}</a></p>
+{archive?.wayback_url !== undefined && (
+  <p><a href={archive.wayback_url} rel="noopener noreferrer">Copie archivée (Wayback Machine){nommer && <span class="sr-only"> : {source.titre}</span>}</a></p>
+)}
+{archive !== undefined && (
+  <p>
+    <a href={lienExtrait(config.depot, archive.extrait, resolveContentRoot(process.cwd(), process.env), process.cwd())} rel="noopener noreferrer">Extrait archivé, empreinte sha256 {archive.sha256.slice(0, 12)}{nommer && <span class="sr-only"> : {source.titre}</span>}</a>
+  </p>
+)}
