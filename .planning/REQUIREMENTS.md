@@ -15,8 +15,8 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 
 ### Domaine et configuration
 
-- [ ] **HEB-05**: Le domaine est déclaré une seule fois (`config/site.yml`) et alimente `site` Astro, l'URL canonique de chaque page, `sitemap.xml`, `robots.txt` et le bloc Caddy ; un test refuse tout nom d'hôte écrit en dur ailleurs
-- [ ] **HEB-06**: Un domaine provisoire (`.invalid`) fait échouer la build sous `RTP_DEPLOIEMENT=1`, comme le contact provisoire
+- [x] **HEB-05**: Le domaine est déclaré une seule fois (`config/site.yml`) et alimente `site` Astro, l'URL canonique de chaque page, `sitemap.xml`, `robots.txt` et le bloc Caddy ; un test refuse tout nom d'hôte écrit en dur ailleurs
+- [x] **HEB-06**: Un domaine provisoire (`.invalid`) fait échouer la build sous `RTP_DEPLOIEMENT=1`, comme le contact provisoire
 - [ ] **HEB-07**: `/version.json` indique le commit et la date de la version servie
 
 ### Serveur (Caddy, HTTPS)
@@ -36,7 +36,7 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 
 ### Performance (Slow 4G simulé)
 
-- [ ] **PERF-01**: Le CSS et les scripts de niveau et d'ordre sont dans chaque page, couverts par une CSP à empreintes sha256 sans `unsafe-inline` sur les scripts ; check-dist vérifie que chaque script en ligne est identique octet pour octet à sa source et que son empreinte figure dans la CSP
+- [x] **PERF-01**: Le CSS et les scripts de niveau et d'ordre sont dans chaque page, couverts par une CSP à empreintes sha256 sans `unsafe-inline` sur les scripts ; check-dist vérifie que chaque script en ligne est identique octet pour octet à sa source et que son empreinte figure dans la CSP
 - [ ] **PERF-02**: Un chargement à froid de la page la plus lourde tient sous 1 s sur le profil « Slow 4G simulé » (Lighthouse), le site reste complet sans JS, et Méthode, README et RUNBOOK publient ce libellé ainsi qu'une mesure réelle consignée
 
 ### Publication (contenu relu)
@@ -66,11 +66,11 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 
 ### Dette de l'audit v1.0
 
-- [ ] **DETTE-01**: En preview, la phrase de couverture ne présente pas des brouillons comme des positions publiées (W3)
-- [ ] **DETTE-02**: Un test navigateur suit le parcours par clics : niveau gardé d'une page à l'autre et après un retour arrière (W4)
-- [ ] **DETTE-03**: Les « Sources consultées » des cases vides donnent lien, date et extrait archivé (W10)
+- [x] **DETTE-01**: En preview, la phrase de couverture ne présente pas des brouillons comme des positions publiées (W3)
+- [x] **DETTE-02**: Un test navigateur suit le parcours par clics : niveau gardé d'une page à l'autre et après un retour arrière (W4)
+- [x] **DETTE-03**: Les « Sources consultées » des cases vides donnent lien, date et extrait archivé (W10)
 - [ ] **DETTE-04**: Le journal d'audit et ses empreintes sont refaits sur la build réellement mise en ligne (W8)
-- [ ] **DETTE-05**: Un test compare les types de vue écrits à la main aux schémas JSON (W7)
+- [x] **DETTE-05**: Un test compare les types de vue écrits à la main aux schémas JSON (W7)
 
 ## Future Requirements
 
@@ -99,13 +99,13 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 |-------------|-------|--------|
 | HEB-03 | Phase 6 | Pending |
 | HEB-04 | Phase 6 | Pending |
-| DETTE-01 | Phase 7 | Pending |
-| DETTE-02 | Phase 7 | Pending |
-| DETTE-03 | Phase 7 | Pending |
-| DETTE-05 | Phase 7 | Pending |
-| HEB-05 | Phase 7 | Pending |
-| HEB-06 | Phase 7 | Pending |
-| PERF-01 | Phase 7 | Pending |
+| DETTE-01 | Phase 7 | Complete |
+| DETTE-02 | Phase 7 | Complete |
+| DETTE-03 | Phase 7 | Complete |
+| DETTE-05 | Phase 7 | Complete |
+| HEB-05 | Phase 7 | Complete |
+| HEB-06 | Phase 7 | Complete |
+| PERF-01 | Phase 7 | Complete |
 | HEB-01 | Phase 8 | Pending |
 | HEB-02 | Phase 8 | Pending |
 | HEB-07 | Phase 8 | Pending |
@@ -133,6 +133,7 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 | IMP-03 | Phase 10 | Pending |
 
 **Coverage:**
+
 - v1.1 requirements: 34 total
 - Mapped to phases: 34
 - Unmapped: 0

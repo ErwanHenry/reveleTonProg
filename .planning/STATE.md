@@ -2,15 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: "Lot 3 : hébergement et mise en ligne"
-status: ready_to_plan
-last_updated: "2026-11-06T23:00:00.000Z"
-last_activity: 2026-11-06
+status: planning
+stopped_at: Roadmap v1.1 créé
+last_updated: "2026-11-07T02:53:35.859Z"
+last_activity: 2026-11-07
 progress:
   total_phases: 5
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  completed_phases: 1
+  total_plans: 8
+  completed_plans: 9
+  percent: 20
 ---
 
 # Project State
@@ -25,10 +26,10 @@ See: .planning/PROJECT.md (updated 2026-11-04)
 
 ## Current Position
 
-Phase: 6 of 10 (Diagnostic du VPS et décision)
-Plan: not started
+Phase: 8 of 10 (serveur, pipeline, supervision et sauvegardes)
+Plan: Not started
 Status: Ready to plan
-Last activity: 2026-11-06 : feuille de route v1.1 créée (5 phases, 34 exigences)
+Last activity: 2026-11-07
 
 Progress v1.1: [..........] 0/5 phases, 0 plans
 
@@ -36,7 +37,7 @@ Progress v1.1: [..........] 0/5 phases, 0 plans
 
 **Velocity:**
 
-- Total plans completed: 40 (v1.0)
+- Total plans completed: 48 (v1.0)
 - v1.1 plans completed: 0
 
 **By Phase (v1.0):**
@@ -48,6 +49,7 @@ Progress v1.1: [..........] 0/5 phases, 0 plans
 | 4 | 9 | - | - |
 | 3 | 9 | - | - |
 | 05 | 8 | - | - |
+| 07 | 8 | - | - |
 
 *Updated after each plan completion*
 
