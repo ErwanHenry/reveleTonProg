@@ -3,14 +3,20 @@
 // de scripts plus frame-ancestors (jamais de default-src : l'intersection avec le meta de chaque page bloquerait
 // les <style> hachés), journal d'accès de 14 jours avec IP masquée et en-têtes de requête supprimés.
 // Domaine synthétique : exemple.test ; le domaine du dépôt n'est jamais écrit ici (garde 07-06), il est lu.
-import { describe, it } from 'node:test';
+import { after, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { JOURNAL, RACINE_SERVEUR, renderCaddy } from '../../scripts/render-caddy.ts';
+import { scriptsEnLigne } from '../../src/lib/csp-empreintes.ts';
 import { loadSiteConfig } from '../../src/lib/site-config.ts';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+const CLI = path.join(REPO, 'scripts', 'render-caddy.ts');
+const BLOC = path.join(REPO, 'deploy', 'caddy', 'site.caddy');
 
 const SYNTHETIQUE = {
   domaine: 'exemple.test',
@@ -166,5 +172,95 @@ describe('renderCaddy : entrées refusées', () => {
       assert.throws(() => renderCaddy({ ...SYNTHETIQUE, racine: chemin }), /racine/, chemin);
       assert.throws(() => renderCaddy({ ...SYNTHETIQUE, journal: chemin }), /journal/, chemin);
     }
+  });
+});
+
+/** Rendu attendu pour le dépôt : domaine de config/site.yml (lu avec un env vide), empreintes de src/scripts/*.js. */
+function renduDuDepot(): string {
+  return renderCaddy({
+    domaine: loadSiteConfig(REPO, {}).domaine,
+    empreintesScripts: scriptsEnLigne(REPO).map((s) => s.empreinte),
+    racine: RACINE_SERVEUR,
+    journal: JOURNAL,
+  });
+}
+
+describe('deploy/caddy/site.caddy : dérive', () => {
+  it('le fichier versionné est égal à un rendu neuf', () => {
+    assert.ok(fs.existsSync(BLOC), 'deploy/caddy/site.caddy absent : lancer node scripts/render-caddy.ts');
+    const versionne = fs.readFileSync(BLOC, 'utf8');
+    assert.ok(versionne === renduDuDepot(), 'deploy/caddy/site.caddy a dérivé de config/site.yml ou de src/scripts/*.js : lancer node scripts/render-caddy.ts');
+  });
+
+  it('les empreintes de l’en-tête sont exactement celles de src/scripts/*.js, dans l’ordre des noms', () => {
+    const csp = valeurCsp(fs.readFileSync(BLOC, 'utf8'));
+    const scriptSrc = csp.split('; ').find((d) => d.startsWith('script-src '))!;
+    const attendues = scriptsEnLigne(REPO).map((s) => `'${s.empreinte}'`);
+    assert.equal(attendues.length, 2);
+    assert.deepEqual(scriptSrc.split(' ').slice(1), attendues);
+  });
+
+  it('le bloc versionné sert le domaine de config/site.yml et sa variante www', () => {
+    const { domaine } = loadSiteConfig(REPO, {});
+    const versionne = fs.readFileSync(BLOC, 'utf8');
+    assert.ok(versionne.includes(`\n${domaine} {\n`));
+    assert.ok(versionne.includes(`\nwww.${domaine} {\n`));
+    assert.ok(versionne.includes(`\tredir https://${domaine}{uri} permanent\n`));
+  });
+});
+
+describe('CLI scripts/render-caddy.ts', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rtp-caddy-'));
+  after(() => fs.rmSync(tmp, { recursive: true, force: true }));
+
+  const lancer = (args: string[], env: Record<string, string> = {}) => {
+    const propre: NodeJS.ProcessEnv = { ...process.env };
+    delete propre.RTP_DEPLOIEMENT;
+    const r = spawnSync(process.execPath, [CLI, ...args], { cwd: REPO, env: { ...propre, ...env }, encoding: 'utf8' });
+    return { status: r.status, out: r.stdout ?? '', err: r.stderr ?? '' };
+  };
+
+  it('--check : code 0 sur le fichier versionné', () => {
+    const r = lancer(['--check']);
+    assert.equal(r.status, 0, r.out + r.err);
+  });
+
+  it('--sortie <fichier> : écrit le rendu (dossier créé au besoin), code 0', () => {
+    const sortie = path.join(tmp, 'sous', 'dossier', 'site.caddy');
+    const r = lancer(['--sortie', sortie]);
+    assert.equal(r.status, 0, r.out + r.err);
+    assert.equal(fs.readFileSync(sortie, 'utf8'), renduDuDepot());
+  });
+
+  it('--check --sortie sur un fichier modifié d’un octet : code 1 et consigne de régénération', () => {
+    const sortie = path.join(tmp, 'modifie.caddy');
+    const rendu = renduDuDepot();
+    fs.writeFileSync(sortie, `${rendu.slice(0, -1)} \n`);
+    const r = lancer(['--check', '--sortie', sortie]);
+    assert.equal(r.status, 1, r.out + r.err);
+    assert.match(r.err, /lancer node scripts\/render-caddy\.ts/);
+    assert.equal(fs.readFileSync(sortie, 'utf8'), `${rendu.slice(0, -1)} \n`, '--check ne doit rien écrire');
+  });
+
+  it('--check sur un fichier absent : code 1', () => {
+    const r = lancer(['--check', '--sortie', path.join(tmp, 'absent.caddy')]);
+    assert.equal(r.status, 1, r.out + r.err);
+    assert.ok(!fs.existsSync(path.join(tmp, 'absent.caddy')));
+  });
+
+  it('option inconnue ou argument positionnel : code 2 et usage', () => {
+    for (const args of [['--inconnue'], ['site.caddy'], ['--sortie']]) {
+      const r = lancer(args);
+      assert.equal(r.status, 2, `${args.join(' ')} : ${r.out}${r.err}`);
+      assert.match(r.err, /Usage : node scripts\/render-caddy\.ts/);
+    }
+  });
+
+  it('RTP_DEPLOIEMENT=1 avec un domaine provisoire : refus (code 2), rien n’est écrit', { skip: !loadSiteConfig(REPO, {}).domaineProvisoire && 'domaine réel' }, () => {
+    const sortie = path.join(tmp, 'deploiement.caddy');
+    const r = lancer(['--sortie', sortie], { RTP_DEPLOIEMENT: '1' });
+    assert.equal(r.status, 2, r.out + r.err);
+    assert.match(r.err, /domaine provisoire/);
+    assert.ok(!fs.existsSync(sortie));
   });
 });
