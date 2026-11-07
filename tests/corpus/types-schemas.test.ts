@@ -2,7 +2,9 @@
 // des schémas JSON de schemas/. Le corpus est validé par Ajv contre les schémas, puis typé par un
 // « as unknown as » (src/lib/corpus/index.ts) : une dérive ne se verrait qu'à l'exécution, sur une page.
 // Ce test lit types.ts avec l'API du compilateur TypeScript (déjà en devDependency) et compare, dans les
-// deux sens, les propriétés de 13 interfaces et les valeurs de 7 unions de littéraux aux schémas.
+// deux sens, les propriétés de 13 interfaces et les valeurs de 7 unions de littéraux aux schémas : présence,
+// requisition (required de l'objet et de allOf[*] ; une propriété non optionnelle du type doit être requise),
+// nullabilité, et enum d'une propriété (en place ou derrière un $ref) contre l'union ou l'alias du type.
 // Pas de génération de types (hors périmètre de D-14). Les schémas sondage et journal n'ont pas de type
 // dans types.ts : hors périmètre. Les types dérivés de src/lib/corpus/vue.ts ne sont pas comparés.
 import { describe, it } from 'node:test';
@@ -51,6 +53,10 @@ interface ProprieteType {
   optionnelle: boolean;
   /** Valeurs si le type de la propriété est une union de littéraux chaînes écrite en place (ex. 'terme' | 'parti'). */
   litteraux: string[] | null;
+  /** Le type admet null (membre `null` d'une union). */
+  nullable: boolean;
+  /** Nom de l'alias si le type est une simple référence (ex. StatutRelecture), sinon null. */
+  reference: string | null;
 }
 
 interface TypesLus {
@@ -75,6 +81,13 @@ function litterauxChaines(type: ts.TypeNode | undefined): string[] | null {
   return valeurs;
 }
 
+/** Le type est une union (ou un type seul) qui contient le littéral null. */
+function admetNull(type: ts.TypeNode | undefined): boolean {
+  if (type === undefined) return false;
+  const membres = ts.isUnionTypeNode(type) ? [...type.types] : [type];
+  return membres.some((m) => ts.isLiteralTypeNode(m) && m.literal.kind === ts.SyntaxKind.NullKeyword);
+}
+
 function lireTypes(texte: string): TypesLus {
   const src = ts.createSourceFile('types.ts', texte, ts.ScriptTarget.Latest, true);
   const interfaces = new Map<string, Map<string, ProprieteType>>();
@@ -84,7 +97,12 @@ function lireTypes(texte: string): TypesLus {
       const proprietes = new Map<string, ProprieteType>();
       for (const m of n.members) {
         if (!ts.isPropertySignature(m)) throw new Error(`${n.name.text} : membre non géré ${m.getText()}`);
-        proprietes.set(nomPropriete(m.name), { optionnelle: m.questionToken !== undefined, litteraux: litterauxChaines(m.type) });
+        proprietes.set(nomPropriete(m.name), {
+          optionnelle: m.questionToken !== undefined,
+          litteraux: litterauxChaines(m.type),
+          nullable: admetNull(m.type),
+          reference: m.type !== undefined && ts.isTypeReferenceNode(m.type) && ts.isIdentifier(m.type.typeName) ? m.type.typeName.text : null,
+        });
       }
       interfaces.set(n.name.text, proprietes);
     } else if (ts.isTypeAliasDeclaration(n)) {
@@ -144,6 +162,33 @@ function proprietesSchema(s: Json): Map<string, unknown> {
   return connues;
 }
 
+/** Propriétés requises sans condition : required de l'objet et de chaque branche allOf[*] (pas les then/else). */
+function requisesSchema(s: Json): Set<string> {
+  const niveaux = [s, ...((Array.isArray(s['allOf']) ? s['allOf'] : []) as unknown[])];
+  return new Set(niveaux.flatMap((n) => { const r = objet(n)?.['required']; return Array.isArray(r) ? (r as string[]) : []; }));
+}
+
+/** Suit un $ref (« #/… » relatif au fichier, ou « <$id>#/… ») ; rend la définition telle quelle si elle n'en a pas. */
+function suivreRef(schemas: Schemas, fichier: string, def: Json | null, profondeur = 0): { def: Json | null; fichier: string } {
+  const ref = def?.['$ref'];
+  if (typeof ref !== 'string' || profondeur > 8) return { def, fichier };
+  const [id = '', pointeur = ''] = ref.split('#');
+  const cible = id === '' ? fichier : Object.keys(schemas).find((f) => schemas[f]?.['$id'] === id);
+  if (cible === undefined) throw new Error(`$ref introuvable : ${ref}`);
+  return suivreRef(schemas, cible, objet(resoudre(schemas, `${cible}#${pointeur}`)), profondeur + 1);
+}
+
+/** La définition admet null : type null (seul ou en tableau), const ou enum null, ou branche anyOf/oneOf qui l'admet. */
+function schemaAdmetNull(schemas: Schemas, fichier: string, brute: Json | null): boolean {
+  const { def, fichier: f } = suivreRef(schemas, fichier, brute);
+  if (def === null) return false;
+  const t = def['type'];
+  if (t === 'null' || (Array.isArray(t) && t.includes('null'))) return true;
+  if ('const' in def && def['const'] === null) return true;
+  if (Array.isArray(def['enum']) && def['enum'].includes(null)) return true;
+  return (['anyOf', 'oneOf'] as const).some((k) => Array.isArray(def[k]) && (def[k] as unknown[]).some((b) => schemaAdmetNull(schemas, f, objet(b))));
+}
+
 function memeEnsemble(a: string[], b: string[]): { manquantes: string[]; enTrop: string[] } {
   return { manquantes: b.filter((v) => !a.includes(v)), enTrop: a.filter((v) => !b.includes(v)) };
 }
@@ -165,8 +210,9 @@ function comparer(texteTypes: string, schemas: Schemas): string[] {
     if (type === undefined) throw new Error(`interface ${nom} introuvable dans types.ts`);
     const s = objet(resoudre(schemas, emplacement));
     if (s === null || objet(s['properties']) === null) throw new Error(`${emplacement} n'est pas un objet de schéma avec properties`);
-    const requises = (Array.isArray(s['required']) ? s['required'] : []) as string[];
+    const requises = [...requisesSchema(s)];
     const connues = proprietesSchema(s);
+    const fichier = emplacement.split('#')[0] ?? '';
 
     for (const r of requises) {
       const p = type.get(r);
@@ -178,12 +224,21 @@ function comparer(texteTypes: string, schemas: Schemas): string[] {
         ecarts.push(`${nom}.${cle} : déclarée dans le type, inconnue de ${emplacement}`);
         continue;
       }
-      const def = objet(connues.get(cle));
+      // Sens dangereux (WR-03) : le type promet la propriété, le schéma la laisse absente. Les propriétés requises
+      // seulement sous condition (then : enfant et aine si publie, motif si renonce) restent « ? » dans le type.
+      if (!p.optionnelle && !requises.includes(cle)) ecarts.push(`${nom}.${cle} : non optionnelle dans le type, pas requise par ${emplacement}`);
+      const brute = objet(connues.get(cle));
+      const nullSchema = schemaAdmetNull(schemas, fichier, brute);
+      if (nullSchema && !p.nullable) ecarts.push(`${nom}.${cle} : null permis par ${emplacement}, absent du type`);
+      if (!nullSchema && p.nullable) ecarts.push(`${nom}.${cle} : null dans le type, refusé par ${emplacement}`);
+      const def = suivreRef(schemas, fichier, brute).def;
       const enumSchema = Array.isArray(def?.['enum']) ? (def['enum'] as string[]) : null;
-      if (p.litteraux !== null && enumSchema !== null) {
-        const { manquantes, enTrop } = memeEnsemble(p.litteraux, enumSchema);
+      // Union en place ou alias (StatutRelecture…) : comparée à l'enum, y compris derrière un $ref.
+      const valeursType = p.litteraux ?? (p.reference !== null ? (unions.get(p.reference) ?? null) : null);
+      if (valeursType !== null && enumSchema !== null) {
+        const { manquantes, enTrop } = memeEnsemble(valeursType, enumSchema);
         if (manquantes.length > 0 || enTrop.length > 0)
-          ecarts.push(`${nom}.${cle} : union [${p.litteraux.join(', ')}] différente de l'enum [${enumSchema.join(', ')}]`);
+          ecarts.push(`${nom}.${cle} : union [${valeursType.join(', ')}] différente de l'enum [${enumSchema.join(', ')}]`);
       }
     }
     for (const cle of connues.keys()) if (!type.has(cle)) ecarts.push(`${nom}.${cle} : connue de ${emplacement}, absente du type`);
@@ -269,6 +324,54 @@ describe('W7 : types.ts aligné sur schemas/', () => {
   it('faute : union en place différente de l’enum (EntreeGlossaire.type)', () => {
     const texte = injecter("type: 'terme' | 'parti';", "type: 'terme' | 'parti' | 'sigle';");
     ecartsContiennent(comparer(texte, SCHEMAS), 'EntreeGlossaire.type', 'enum');
+  });
+
+  // WR-03 (revue de la phase 7) : sens inverse de la requisition, nullabilité, required de allOf, enum derrière un $ref.
+  /** Copie des schémas avec une modification ciblée (les vrais fichiers ne sont jamais touchés). */
+  function schemasModifies(modifier: (s: Schemas) => void): Schemas {
+    const copie = structuredClone(SCHEMAS);
+    modifier(copie);
+    return copie;
+  }
+  const source = (s: Schemas): Json => s['source.schema.json']!;
+  const sansUrl = (r: unknown): string[] => (r as string[]).filter((c) => c !== 'url');
+
+  it('faute : propriété non optionnelle dans le type mais plus requise par le schéma (url retirée de source#/required)', () => {
+    const schemas = schemasModifies((s) => { source(s)['required'] = sansUrl(source(s)['required']); });
+    ecartsContiennent(comparer(TEXTE, schemas), 'Source.url', 'non optionnelle dans le type', 'pas requise');
+  });
+
+  it('les required d’une branche allOf[*] comptent comme requis (url déplacée de required vers allOf)', () => {
+    const schemas = schemasModifies((s) => {
+      source(s)['required'] = sansUrl(source(s)['required']);
+      source(s)['allOf'] = [...((source(s)['allOf'] as unknown[] | undefined) ?? []), { required: ['url'] }];
+    });
+    assert.deepEqual(comparer(TEXTE, schemas), []);
+  });
+
+  it('un required conditionnel (then) ne compte pas : motif reste optionnel dans StatutEntree sans écart', () => {
+    assert.ok(!requisesSchema(objet(resoudre(SCHEMAS, INTERFACES['StatutEntree'] ?? ''))!).has('motif'));
+  });
+
+  it('faute : null permis par le schéma, absent du type (Source.titre nullable, puis Candidat.parti sans | null)', () => {
+    const schemas = schemasModifies((s) => {
+      (objet(source(s)['properties'])!)['titre'] = { anyOf: [{ $ref: 'urn:reveletonprog:schema:common#/$defs/texte' }, { type: 'null' }] };
+    });
+    ecartsContiennent(comparer(TEXTE, schemas), 'Source.titre', 'null permis');
+    ecartsContiennent(comparer(injecter('  parti: string | null;\n', '  parti: string;\n'), SCHEMAS), 'Candidat.parti', 'null permis');
+  });
+
+  it('faute : null dans le type, refusé par le schéma (Source.url: string | null)', () => {
+    const texte = injecter('  candidats: string[];\n  titre: string;\n  url: string;\n', '  candidats: string[];\n  titre: string;\n  url: string | null;\n');
+    ecartsContiennent(comparer(texte, SCHEMAS), 'Source.url', 'null dans le type');
+  });
+
+  it('faute : enum atteint par un $ref différent de l’alias du type (Mesure.statut_relecture)', () => {
+    const schemas = schemasModifies((s) => {
+      ((objet(s['defs/common.schema.json']!['$defs'])!)['statutRestreint']) = { enum: ['brouillon', 'publie'] };
+      (objet(s['mesure.schema.json']!['properties'])!)['statut_relecture'] = { $ref: 'urn:reveletonprog:schema:common#/$defs/statutRestreint' };
+    });
+    ecartsContiennent(comparer(TEXTE, schemas), 'Mesure.statut_relecture', 'enum');
   });
 
   it('échec bruyant : interface de la table absente de types.ts', () => {
