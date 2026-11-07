@@ -24,7 +24,8 @@ const sources = cellule.sourcesConsultees;
 {sources.length > 0 && (
   <div class="source sources-consultees">
     <p>Sources consultées :</p>
-    <ul>
+    {/* role="list" : WebKit et VoiceOver retirent la sémantique de liste d'un <ul> en list-style: none (base.css). */}
+    <ul role="list">
       {sources.map((s) => (
         <li><BlocSource source={s} nommer /></li>
       ))}

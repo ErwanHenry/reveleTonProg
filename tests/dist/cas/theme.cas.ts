@@ -105,6 +105,7 @@ export default function theme(ctx: ContexteSite): void {
       assert.equal(entete?.tag, 'p');
       assert.equal(norm(texte(entete as Noeud)), 'Sources consultées :');
       assert.equal(liste?.tag, 'ul');
+      assert.equal(liste?.attrs.role, 'list', 'IN-03 : sémantique de liste gardée malgré list-style: none');
       const entrees = enfantsElements(liste as Noeud);
       assert.equal(entrees.length, 1);
       const li = entrees[0] as Noeud;
