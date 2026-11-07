@@ -41,9 +41,29 @@ const exclu = (chemin: string): boolean => EXCLUSIONS.some((e) => (e.endsWith('/
 const echapper = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /**
+ * Ligne dont chaque échappement %XX est décodé (WR-04) : sans cela, le chiffre hexadécimal de « %40 » ou « %2F »
+ * passe pour un caractère d'hôte et masque « contact%40exemple.test » ou « https%3A%2F%2Fexemple.test ». Décodage
+ * répété (3 fois au plus) pour un double encodage (« %2540 ») ; un octet isolé d'une séquence UTF-8 devient une espace.
+ */
+export function vueDecodee(texte: string): string {
+  let vue = texte;
+  for (let i = 0; i < 3 && /%[0-9a-f]{2}/i.test(vue); i++) {
+    vue = vue.replace(/%[0-9a-f]{2}/gi, (h) => {
+      try {
+        return decodeURIComponent(h);
+      } catch {
+        return ' ';
+      }
+    });
+  }
+  return vue;
+}
+
+/**
  * Occurrences du domaine (ou d'un sous-domaine) dans des fichiers texte, insensible à la casse, sur des frontières
  * de nom d'hôte : un caractère d'hôte juste avant (« autre-exemple.test ») ou juste après (« exemple.test2 »,
- * « exemple.testeur.fr », « exemple.test.fr ») désigne un autre nom et n'est pas signalé. Fonction pure.
+ * « exemple.testeur.fr », « exemple.test.fr ») désigne un autre nom et n'est pas signalé. Chaque ligne est aussi lue
+ * décodée (vueDecodee) : les copies encodées en pourcentage sont signalées. Fonction pure.
  */
 export function trouverHotesEnDur(fichiers: readonly FichierTexte[], domaine: string): HoteEnDur[] {
   const motif = new RegExp(`(?<![a-z0-9-])(?:[a-z0-9-]+\\.)*${echapper(domaine)}(?![a-z0-9-]|\\.[a-z0-9-])`, 'gi');
@@ -52,8 +72,11 @@ export function trouverHotesEnDur(fichiers: readonly FichierTexte[], domaine: st
     if (exclu(chemin) || contenu.includes('\u0000')) continue;
     const lignes = contenu.split('\n');
     lignes.forEach((texte, i) => {
-      motif.lastIndex = 0;
-      if (motif.test(texte)) out.push({ chemin, ligne: i + 1, extrait: texte.trim().slice(0, 120) });
+      const trouve = [texte, vueDecodee(texte)].some((vue) => {
+        motif.lastIndex = 0;
+        return motif.test(vue);
+      });
+      if (trouve) out.push({ chemin, ligne: i + 1, extrait: texte.trim().slice(0, 120) });
     });
   }
   return out;
@@ -105,6 +128,11 @@ describe('trouverHotesEnDur : fautes injectées (domaine synthétique exemple.te
     `Voir https://Www.Exemple.Test/themes/.`,
     `fin de phrase : ${D}.`,
     `<loc>https://${D}/</loc>`,
+    // WR-04 : copies encodées en pourcentage (lien mailto, URL passée en paramètre, double encodage, point encodé)
+    `href="mailto:contact%40${D}"`,
+    `https%3A%2F%2F${D}%2Fthemes%2F`,
+    `?u=https%253A%252F%252F${D}`,
+    `exemple%2Etest`,
   ]) {
     it(`signale « ${contenu} »`, () => {
       const r = trouve(contenu);
@@ -122,6 +150,10 @@ describe('trouverHotesEnDur : fautes injectées (domaine synthétique exemple.te
     'https://web.archive.org/web/2026/https://candidat.fr/',
     'https://www.data.gouv.fr/fr/datasets/x/ https://github.com/ErwanHenry/reveleTonProg',
     'exemple test',
+    'https%3A%2F%2Fautre-exemple.test%2F',
+    'contact%40exemple.testeur.fr',
+    '100%25 exemple',
+    '%E9t%E9 exemple test',
   ]) {
     it(`ne signale pas « ${contenu} »`, () => {
       assert.deepEqual(trouve(contenu), []);
