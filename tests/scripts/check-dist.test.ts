@@ -8,11 +8,16 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CODES_CHECK_DIST, LIMITES, cellulesAttendues, checkDist } from '../../scripts/lib/check-dist.ts';
+import type { OptionsCheckDist } from '../../scripts/lib/check-dist.ts';
+import { empreinteCsp } from '../../src/lib/csp-empreintes.ts';
 import type { Mode } from '../../src/lib/content-core/rules/types.ts';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const CORPUS = path.join(REPO_ROOT, 'tests', 'fixtures', 'corpus-valide');
 const CLI = path.join(REPO_ROOT, 'scripts', 'check-dist.ts');
+/** Texte exact de src/scripts/niveau.js : seul un script identique à une source est accepté en ligne. */
+const NIVEAU = fs.readFileSync(path.join(REPO_ROOT, 'src', 'scripts', 'niveau.js'), 'utf8');
+const H_NIVEAU = `'${empreinteCsp(NIVEAU)}'`;
 
 const tmpDirs: string[] = [];
 after(() => {
@@ -44,7 +49,12 @@ interface OptsPage {
   noindex?: boolean;
   h1?: number;
   main?: string; // attributs de <main>
+  /** Contenu du meta CSP ; `null` : aucun meta. Défaut : CSP_DEFAUT (aucun code en ligne autorisé). */
+  csp?: string | null;
 }
+
+const CSP_DEFAUT = "default-src 'none'; script-src 'self'; style-src 'self'";
+const metaCsp = (contenu: string): string => `<meta http-equiv="content-security-policy" content="${contenu}">`;
 
 function page(o: OptsPage = {}): string {
   const lang = o.lang === null ? '' : ` lang="${o.lang ?? 'fr'}"`;
@@ -52,7 +62,7 @@ function page(o: OptsPage = {}): string {
   const robots = o.noindex ? '<meta name="robots" content="noindex, nofollow">' : '';
   return (
     `<!doctype html><html${lang}><head><meta charset="utf-8"><title>${o.titre ?? 'Page'}</title>${robots}` +
-    `<link rel="stylesheet" href="/_astro/a.css">${o.head ?? ''}</head>` +
+    `<link rel="stylesheet" href="/_astro/a.css">${o.head ?? ''}${o.csp === null ? '' : metaCsp(o.csp ?? CSP_DEFAUT)}</head>` +
     `<body><main${o.main ? ` ${o.main}` : ''}>${h1}${o.corps ?? ''}</main><script src="/_astro/n.js"></script></body></html>`
   );
 }
@@ -113,9 +123,14 @@ interface Resultat {
   messages: string[];
 }
 
-function verifier(fichiers: Fichiers, mode: Mode = 'production', cellules: Record<string, number> | null = { logement: 2 }): Resultat {
+function verifier(
+  fichiers: Fichiers,
+  mode: Mode = 'production',
+  cellules: Record<string, number> | null = { logement: 2 },
+  extra: Partial<OptionsCheckDist> = {},
+): Resultat {
   const dist = ecrireDist(fichiers);
-  const constats = checkDist(dist, cellules === null ? { mode } : { mode, cellulesParTheme: new Map(Object.entries(cellules)) });
+  const constats = checkDist(dist, { ...extra, mode, ...(cellules === null ? {} : { cellulesParTheme: new Map(Object.entries(cellules)) }) });
   return {
     codes: [...new Set(constats.map((c) => c.code))].sort(),
     fichiers: constats.map((c) => c.fichier),
@@ -274,23 +289,148 @@ describe('checkDist : ressources tierces, scripts et styles', () => {
     exactement('BASE_INTERDITE', { 'index.html': page({ head: '<base href="https://x.exemple.invalid/">' }) });
   });
 
-  it('SCRIPT_EN_LIGNE : <script> sans src', () => {
-    exactement('SCRIPT_EN_LIGNE', { 'index.html': page({ head: '<script>var a=1;</script>' }) });
+  it('SCRIPT_EN_LIGNE : script en ligne différent de toutes les sources de src/scripts/ (même haché dans la CSP)', () => {
+    for (const corps of [`${NIVEAU} `, ` ${NIVEAU}`, `${NIVEAU}\n`, NIVEAU.replace('rtp:niveau', 'rtp:niveaux'), 'var a=1;']) {
+      const csp = `default-src 'none'; script-src 'self' '${empreinteCsp(corps)}'`;
+      const r = exactement('SCRIPT_EN_LIGNE', { 'index.html': page({ csp, corps: `<script>${corps}</script>` }) });
+      assert.match(r.messages.join(' '), /différent des sources de src\/scripts\//);
+    }
   });
 
   it('SCRIPT_DATA_URI : script data:', () => {
     exactement('SCRIPT_DATA_URI', { 'index.html': page({ head: '<script src="data:text/javascript;base64,AAAA"></script>' }) });
   });
 
-  it('SCRIPT_NON_BLOQUANT : type=module, async ou defer', () => {
-    exactement('SCRIPT_NON_BLOQUANT', { 'index.html': page({ head: '<script src="/_astro/n.js" type="module"></script>' }) });
-    exactement('SCRIPT_NON_BLOQUANT', { 'index.html': page({ head: '<script src="/_astro/n.js" async></script>' }) });
-    exactement('SCRIPT_NON_BLOQUANT', { 'index.html': page({ head: '<script src="/_astro/n.js" defer></script>' }) });
+  it('SCRIPT_NON_BLOQUANT : type=module, async, defer ou type non classique, externe comme en ligne', () => {
+    const attributs = ['type="module"', 'async', 'defer', 'type="text/plain"', 'type="application/ld+json"'];
+    for (const a of attributs) {
+      exactement('SCRIPT_NON_BLOQUANT', { 'index.html': page({ head: `<script src="/_astro/n.js" ${a}></script>` }) });
+      const csp = `default-src 'none'; script-src 'self' ${H_NIVEAU}`;
+      exactement('SCRIPT_NON_BLOQUANT', { 'index.html': page({ csp, corps: `<script ${a}>${NIVEAU}</script>` }) });
+    }
+    // type vide ou text/javascript (casse indifférente) : script classique, accepté
+    const csp = `default-src 'none'; script-src 'self' ${H_NIVEAU}`;
+    for (const a of ['type=""', 'type="text/javascript"', 'type="TEXT/JavaScript"']) {
+      assert.deepEqual(verifier(distPropre({ 'index.html': page({ csp, corps: `<script ${a}>${NIVEAU}</script>` }) })).codes, [], a);
+      assert.deepEqual(verifier(distPropre({ 'index.html': page({ head: `<script src="/_astro/n.js" ${a}></script>` }) })).codes, [], a);
+    }
   });
 
-  it('STYLE_EN_LIGNE : <style> ou attribut style', () => {
-    exactement('STYLE_EN_LIGNE', { 'index.html': page({ head: '<style>p{color:red}</style>' }) });
+  it('STYLE_EN_LIGNE : attribut style (un <style> haché est permis, voir STYLE_SANS_EMPREINTE)', () => {
     exactement('STYLE_EN_LIGNE', { 'index.html': page({ corps: '<p style="color:red">x</p>' }) });
+    const css = 'p{color:red}';
+    const csp = `default-src 'none'; style-src 'self' '${empreinteCsp(css)}'`;
+    exactement('STYLE_EN_LIGNE', { 'index.html': page({ csp, head: `<style>${css}</style>`, corps: '<p style="color:red">x</p>' }) });
+  });
+});
+
+describe('checkDist : CSP à empreintes (ADR-056, remplace les règles « aucun code en ligne » de l’ADR-037)', () => {
+  const CSS = '.cellule{padding:1rem}';
+  const H_CSS = `'${empreinteCsp(CSS)}'`;
+  /** Page conforme : le vrai src/scripts/niveau.js en ligne, un <style>, un meta qui liste les deux empreintes. */
+  const conforme = (o: { csp?: string; script?: string; style?: string } = {}): string =>
+    page({
+      csp: o.csp ?? `default-src 'none'; img-src 'self'; script-src 'self' ${H_NIVEAU}; style-src 'self' ${H_CSS}`,
+      head: `<style>${o.style ?? CSS}</style>`,
+      corps: `<fieldset></fieldset><script>${o.script ?? NIVEAU}</script>`,
+    });
+
+  it('une page conforme (script identique à la source, <style>, empreintes dans le meta) ne produit aucun constat', () => {
+    assert.deepEqual(verifier(distPropre({ 'index.html': conforme() })), { codes: [], fichiers: [], messages: [] });
+    // l'empreinte d'un script peut figurer dans script-src-elem seul, ou dans default-src à défaut de script-src
+    assert.deepEqual(verifier(distPropre({ 'index.html': conforme({ csp: `default-src 'none'; script-src-elem ${H_NIVEAU}; style-src ${H_CSS}` }) })).codes, []);
+    assert.deepEqual(verifier(distPropre({ 'index.html': conforme({ csp: `default-src 'self' ${H_NIVEAU} ${H_CSS}` }) })).codes, []);
+  });
+
+  it('un script placé avant le meta est accepté (le script d’ordre précède toujours le meta, Pitfall 1)', () => {
+    const csp = `default-src 'none'; script-src 'self' ${H_NIVEAU}`;
+    const html = page({ csp: null, head: `<script>${NIVEAU}</script>${metaCsp(csp)}` });
+    assert.deepEqual(verifier(distPropre({ 'index.html': html })).codes, []);
+  });
+
+  it('la CSP peut lister des empreintes sans script correspondant (5 empreintes de directives d’îlots d’Astro)', () => {
+    const autres = ['a', 'b', 'c', 'd', 'e'].map((x) => `'${empreinteCsp(x)}'`).join(' ');
+    const html = conforme({ csp: `default-src 'none'; script-src 'self' ${H_NIVEAU} ${autres}; style-src 'self' ${H_CSS}` });
+    assert.deepEqual(verifier(distPropre({ 'index.html': html })).codes, []);
+  });
+
+  it('CSP_ABSENTE : aucun meta, deux metas, ou un meta hors de <head>', () => {
+    const r = exactement('CSP_ABSENTE', { 'index.html': page({ csp: null }) });
+    assert.deepEqual(r.fichiers, ['index.html']);
+    exactement('CSP_ABSENTE', { 'index.html': page({ head: metaCsp(CSP_DEFAUT) }) });
+    exactement('CSP_ABSENTE', { 'index.html': page({ csp: null, corps: metaCsp(CSP_DEFAUT) }) });
+    // http-equiv insensible à la casse : un meta « Content-Security-Policy » compte
+    assert.deepEqual(verifier(distPropre({ 'index.html': page({ csp: null, head: `<meta http-equiv="Content-Security-Policy" content="${CSP_DEFAUT}">` }) })).codes, []);
+  });
+
+  it('CSP_TROP_PERMISSIVE : tout jeton autre que self, none ou une empreinte, dans toute directive', () => {
+    const jetons = ["'unsafe-inline'", "'unsafe-eval'", "'unsafe-hashes'", "'strict-dynamic'", "'nonce-abc123'", "'wasm-unsafe-eval'", '*', 'https:', 'http:', 'data:', 'blob:', 'https://x.exemple.invalid', 'x.exemple.invalid'];
+    for (const j of jetons) {
+      for (const directive of ['script-src', 'style-src', 'default-src', 'img-src', 'script-src-elem', 'style-src-attr']) {
+        const csp = directive === 'default-src' ? `default-src 'self' ${j}` : `default-src 'none'; ${directive} 'self' ${j}`;
+        const r = exactement('CSP_TROP_PERMISSIVE', { 'index.html': page({ csp }) });
+        assert.match(r.messages.join(' '), new RegExp(directive), `${directive} ${j}`);
+      }
+    }
+    // une directive répétée (ignorée par le navigateur) est vérifiée quand même
+    exactement('CSP_TROP_PERMISSIVE', { 'index.html': page({ csp: "default-src 'none'; script-src 'self'; script-src 'unsafe-inline'" }) });
+    // mots-clés et algorithme insensibles à la casse ; sha384 et sha512 acceptés
+    const ok = `default-src 'NONE'; script-src 'Self' 'sha384-${'A'.repeat(64)}' 'sha512-${'B'.repeat(86)}=='; img-src 'self'`;
+    assert.deepEqual(verifier(distPropre({ 'index.html': page({ csp: ok }) })).codes, []);
+  });
+
+  it('SCRIPT_SANS_EMPREINTE : script identique à la source mais empreinte absente de la directive effective', () => {
+    // empreinte absente
+    exactement('SCRIPT_SANS_EMPREINTE', { 'index.html': conforme({ csp: `default-src 'none'; script-src 'self'; style-src ${H_CSS}` }) });
+    // empreinte seulement dans style-src
+    exactement('SCRIPT_SANS_EMPREINTE', { 'index.html': conforme({ csp: `default-src 'none'; script-src 'self'; style-src ${H_CSS} ${H_NIVEAU}` }) });
+    // script-src-elem prime sur script-src : une empreinte dans script-src seul ne suffit pas
+    exactement('SCRIPT_SANS_EMPREINTE', { 'index.html': conforme({ csp: `default-src 'none'; script-src-elem 'self'; script-src ${H_NIVEAU}; style-src ${H_CSS}` }) });
+    // script-src prime sur default-src
+    exactement('SCRIPT_SANS_EMPREINTE', { 'index.html': conforme({ csp: `default-src ${H_NIVEAU}; script-src 'self'; style-src ${H_CSS}` }) });
+    // empreinte d'un texte voisin (retour ligne final en plus) : jamais de trim
+    exactement('SCRIPT_SANS_EMPREINTE', { 'index.html': conforme({ csp: `default-src 'none'; script-src '${empreinteCsp(`${NIVEAU}\n`)}'; style-src ${H_CSS}` }) });
+  });
+
+  it('STYLE_SANS_EMPREINTE : <style> dont l’empreinte manque à style-src-elem, style-src ou default-src', () => {
+    exactement('STYLE_SANS_EMPREINTE', { 'index.html': conforme({ csp: `default-src 'none'; script-src ${H_NIVEAU}; style-src 'self'` }) });
+    exactement('STYLE_SANS_EMPREINTE', { 'index.html': conforme({ csp: `default-src 'none'; script-src ${H_NIVEAU} ${H_CSS}` }) });
+    exactement('STYLE_SANS_EMPREINTE', { 'index.html': conforme({ csp: `default-src 'none'; script-src ${H_NIVEAU}; style-src-elem 'self'; style-src ${H_CSS}` }) });
+    exactement('STYLE_SANS_EMPREINTE', { 'index.html': conforme({ style: `${CSS} ` }) });
+    exactement('STYLE_SANS_EMPREINTE', { 'index.html': page({ head: '<style>p{color:red}</style>' }) });
+  });
+
+  it('SCRIPT_TROP_LOURD : script en ligne de plus de 2048 octets UTF-8, même identique à une source déclarée', () => {
+    const gros = `/* é */${'a'.repeat(LIMITES.script - 7)}`; // 2049 octets UTF-8 pour 2048 caractères
+    assert.equal(Buffer.byteLength(gros), LIMITES.script + 1);
+    const csp = `default-src 'none'; script-src '${empreinteCsp(gros)}'`;
+    const r = verifier(distPropre({ 'index.html': page({ csp, corps: `<script>${gros}</script>` }) }), 'production', { logement: 2 }, { sourcesScripts: [gros] });
+    assert.deepEqual(r.codes, ['SCRIPT_TROP_LOURD']);
+    const juste = gros.slice(1);
+    const cspJuste = `default-src 'none'; script-src '${empreinteCsp(juste)}'`;
+    const ok = verifier(distPropre({ 'index.html': page({ csp: cspJuste, corps: `<script>${juste}</script>` }) }), 'production', { logement: 2 }, { sourcesScripts: [juste] });
+    assert.deepEqual(ok.codes, []);
+  });
+
+  it('sourcesScripts par défaut : les fichiers de src/scripts/ ; une liste fournie les remplace', () => {
+    const html = conforme();
+    assert.deepEqual(verifier(distPropre({ 'index.html': html }), 'production', { logement: 2 }, { sourcesScripts: ['autre'] }).codes, ['SCRIPT_EN_LIGNE']);
+  });
+
+  it('RESSOURCE_TIERCE : @import et url() externes ou data: dans un <style> en ligne', () => {
+    for (const css of ['@import url(https://fonts.exemple.invalid/f.css);p{margin:0}', '@import "//fonts.exemple.invalid/f.css";', 'body{background:url("http://cdn.exemple.invalid/a.png")}', 'body{background:url(data:image/png;base64,AAAA)}']) {
+      const csp = `default-src 'none'; style-src '${empreinteCsp(css)}'`;
+      const r = exactement('RESSOURCE_TIERCE', { 'index.html': page({ csp, head: `<style>${css}</style>` }) });
+      assert.deepEqual(r.fichiers, ['index.html'], css);
+    }
+  });
+
+  it('script data: toujours refusé, script externe du même site toujours accepté et pesé', () => {
+    exactement('SCRIPT_DATA_URI', { 'index.html': page({ head: '<script src="data:text/javascript;base64,AAAA"></script>' }) });
+    // le dist propre lie /_astro/n.js : accepté ; un .js lié trop gros est compté dans le poids de la page
+    const r = verifier(distPropre({ '_astro/n.js': ' '.repeat(500_100) }));
+    assert.deepEqual(r.codes, ['POIDS_BRUT', 'SCRIPT_TROP_LOURD']);
+    assert.ok(r.fichiers.includes('index.html') && r.fichiers.includes('_astro/n.js'), r.fichiers.join(', '));
   });
 });
 
@@ -343,9 +483,12 @@ describe('checkDist : structure et texte', () => {
   });
 
   it('MOT_INTERDIT : jamais dans <script> ni <style> (le texte brut y est ignoré)', () => {
-    // un .js lié n'est pas du texte visible ; un script inline est déjà SCRIPT_EN_LIGNE
+    // un script en ligne inconnu est refusé par SCRIPT_EN_LIGNE et SCRIPT_SANS_EMPREINTE, jamais par MOT_INTERDIT
     const r = verifier(distPropre({ 'index.html': page({ head: '<script>var extrême=1;</script>' }) }));
-    assert.deepEqual(r.codes, ['SCRIPT_EN_LIGNE']);
+    assert.deepEqual(r.codes, ['SCRIPT_EN_LIGNE', 'SCRIPT_SANS_EMPREINTE']);
+    const css = '.extrême{margin:0}';
+    const csp = `default-src 'none'; style-src 'self' '${empreinteCsp(css)}'`;
+    assert.deepEqual(verifier(distPropre({ 'index.html': page({ csp, head: `<style>${css}</style>` }) })).codes, []);
   });
 
   it('MESURE_SANS_SOURCE_DATEE : pas de .source, pas de date, ou pas de lien https', () => {

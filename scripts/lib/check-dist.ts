@@ -4,6 +4,7 @@
 // de content-core (même liste que le validateur et la future page Méthode).
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import zlib from 'node:zlib';
 import { loadAll } from '../../src/lib/content-core/load.ts';
 import { PERIMETRE_EQUITE } from '../../src/lib/content-core/rules/config.ts';
@@ -11,6 +12,7 @@ import { statutRetenu } from '../../src/lib/content-core/rules/equite.ts';
 import { motsInterdits } from '../../src/lib/content-core/rules/text/forbidden.ts';
 import type { Mode } from '../../src/lib/content-core/rules/types.ts';
 import { schemasDirOf } from '../../src/lib/content-core/root.ts';
+import { empreinteCsp, scriptsEnLigne } from '../../src/lib/csp-empreintes.ts';
 import { aClasse, analyserHtml, trouver } from './html.ts';
 import type { Noeud } from './html.ts';
 
@@ -49,6 +51,10 @@ export const CODES_CHECK_DIST = [
   'HEBERGEUR_PREVU',
   'META_REFRESH',
   'BASE_INTERDITE',
+  'CSP_ABSENTE',
+  'CSP_TROP_PERMISSIVE',
+  'SCRIPT_SANS_EMPREINTE',
+  'STYLE_SANS_EMPREINTE',
 ] as const;
 export type CodeCheckDist = (typeof CODES_CHECK_DIST)[number];
 
@@ -69,7 +75,15 @@ export interface OptionsCheckDist {
    * une page qui annonce un hébergeur seulement prévu (HEBERGEUR_PREVU) deviennent des erreurs, sinon des avertissements.
    */
   deploiement?: boolean;
+  /**
+   * Textes acceptés comme corps d'un <script> en ligne (identité octet pour octet, ADR-056). Défaut : le contenu
+   * des fichiers src/scripts/*.js du dépôt, ceux que Base.astro et LecteurNiveaux.astro incluent par `?raw`.
+   */
+  sourcesScripts?: readonly string[];
 }
+
+/** Racine du dépôt, déduite de l'emplacement de ce module (scripts/lib/). */
+const RACINE_DEPOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 // ---------------------------------------------------------------------------
 // Utilitaires
@@ -97,6 +111,48 @@ function lister(dir: string, base = dir): string[] {
 }
 
 const dansDist = (dist: string, abs: string): boolean => abs === dist || abs.startsWith(dist + path.sep);
+
+/** Directives d'une politique CSP dans l'ordre du texte : nom en minuscules et jetons, répétitions comprises. */
+function directivesCsp(contenu: string): Array<[string, string[]]> {
+  const out: Array<[string, string[]]> = [];
+  for (const brute of contenu.split(';')) {
+    const [nom, ...jetons] = brute.trim().split(/[\t\n\f\r ]+/);
+    if (nom === undefined || nom === '') continue;
+    out.push([nom.toLowerCase(), jetons]);
+  }
+  return out;
+}
+
+/** Politique effective : une directive répétée est ignorée après la première, comme le fait le navigateur. */
+function politiqueEffective(directives: ReadonlyArray<readonly [string, string[]]>): Map<string, string[]> {
+  const out = new Map<string, string[]>();
+  for (const [nom, jetons] of directives) if (!out.has(nom)) out.set(nom, jetons);
+  return out;
+}
+
+/** Seules expressions de source permises dans la CSP du site : 'self', 'none' et une empreinte sha256/384/512. */
+const JETON_CSP_PERMIS = /^'(?:self|none|sha(?:256|384|512)-[A-Za-z0-9+/_-]+={0,2})'$/i;
+
+/** Liste effective d'une directive « …-elem », à défaut la directive générale, à défaut default-src. */
+function sourcesEffectives(csp: ReadonlyMap<string, readonly string[]>, type: 'script' | 'style'): readonly string[] {
+  return csp.get(`${type}-src-elem`) ?? csp.get(`${type}-src`) ?? csp.get('default-src') ?? [];
+}
+
+/** Type de <script> classique (exécuté et bloquant) : absent, vide ou text/javascript. */
+const typeClassique = (type: string | undefined): boolean =>
+  type === undefined || type.trim() === '' || type.trim().toLowerCase() === 'text/javascript';
+
+/** @import et url() vers une ressource externe ou data: dans un texte CSS (fichier du dist ou <style> en ligne). */
+function ressourcesCss(css: string): string[] {
+  const out: string[] = [];
+  const IMPORT = /@import\s+(?:url\(\s*)?["']?\s*((?:[a-z][a-z0-9+.-]*:|\/\/)[^"')\s;]*)/gi;
+  for (const m of css.matchAll(IMPORT)) out.push(`@import vers une ressource externe : ${m[1] ?? ''}`);
+  // un @import déjà signalé ne l'est pas une seconde fois comme url()
+  for (const m of css.replace(IMPORT, '').matchAll(/url\(\s*["']?\s*((?:[a-z][a-z0-9+.-]*:|\/\/)[^"')]*)/gi)) {
+    out.push(`url() vers une ressource externe ou data: : ${(m[1] ?? '').slice(0, 60)}`);
+  }
+  return out;
+}
 
 // ---------------------------------------------------------------------------
 // Cellules attendues
@@ -158,6 +214,8 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
   const pages = fichiers.filter((f) => f.endsWith('.html')).map(lirePage);
   if (pages.length === 0) signaler('DIST_VIDE', '.', 'aucune page HTML dans le dist (build manquant ou mauvais dossier ?)');
 
+  const sourcesScripts = opts.sourcesScripts ?? scriptsEnLigne(RACINE_DEPOT).map((s) => s.texte);
+
   const cellules = opts.cellulesParTheme
     ? opts.cellulesParTheme instanceof Map
       ? opts.cellulesParTheme
@@ -198,15 +256,7 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
       if (taille > LIMITES.script) signaler('SCRIPT_TROP_LOURD', f, `script de ${taille} octets (limite ${LIMITES.script})`);
     }
     if (f.endsWith('.css')) {
-      const css = fs.readFileSync(path.join(racineDist, f), 'utf8');
-      const IMPORT = /@import\s+(?:url\(\s*)?["']?\s*((?:[a-z][a-z0-9+.-]*:|\/\/)[^"')\s;]*)/gi;
-      for (const m of css.matchAll(IMPORT)) {
-        signaler('RESSOURCE_TIERCE', f, `@import vers une ressource externe : ${m[1] ?? ''}`);
-      }
-      // un @import déjà signalé ne l'est pas une seconde fois comme url()
-      for (const m of css.replace(IMPORT, '').matchAll(/url\(\s*["']?\s*((?:[a-z][a-z0-9+.-]*:|\/\/)[^"')]*)/gi)) {
-        signaler('RESSOURCE_TIERCE', f, `url() vers une ressource externe ou data: : ${(m[1] ?? '').slice(0, 60)}`);
-      }
+      for (const message of ressourcesCss(fs.readFileSync(path.join(racineDist, f), 'utf8'))) signaler('RESSOURCE_TIERCE', f, message);
     }
   }
 
@@ -235,6 +285,28 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
     if (brut > LIMITES.brut) signaler('POIDS_BRUT', rel, `page de ${brut} octets avec ses CSS/JS (limite ${LIMITES.brut})`);
     if (gzip > LIMITES.gzip) signaler('POIDS_GZIP', rel, `page de ${gzip} octets compressés avec ses CSS/JS (limite ${LIMITES.gzip})`);
 
+    // politique CSP de la page (ADR-056) : un seul meta, enfant de <head>, sans aucune source permissive.
+    // Le meta peut suivre des scripts (celui d'ordre le précède toujours, Pitfall 1) : on n'exige pas d'ordre.
+    const metasCsp = tous.filter((n) => n.tag === 'meta' && (n.attrs['http-equiv'] ?? '').trim().toLowerCase() === 'content-security-policy');
+    const metaCsp = metasCsp[0];
+    if (metasCsp.length !== 1) {
+      signaler('CSP_ABSENTE', rel, `${metasCsp.length} <meta http-equiv="content-security-policy"> (un seul attendu, dans <head>)`);
+    } else if (metaCsp?.parent?.tag !== 'head') {
+      signaler('CSP_ABSENTE', rel, `<meta http-equiv="content-security-policy"> hors de <head> (dans <${metaCsp?.parent?.tag ?? '?'}>) : le navigateur l'ignore`);
+    }
+    const directives = metasCsp.length === 1 && metaCsp?.parent?.tag === 'head' ? directivesCsp(metaCsp.attrs.content ?? '') : [];
+    const csp = politiqueEffective(directives);
+    // jetons vérifiés dans toutes les directives, même une répétition que le navigateur ignore (plus strict)
+    for (const [directive, jetons] of directives) {
+      for (const jeton of jetons) {
+        if (!JETON_CSP_PERMIS.test(jeton)) {
+          signaler('CSP_TROP_PERMISSIVE', rel, `CSP : « ${jeton.slice(0, 40)} » interdit dans ${directive} ('self', 'none' ou une empreinte sha256 seulement)`);
+        }
+      }
+    }
+    const cspScripts = sourcesEffectives(csp, 'script');
+    const cspStyles = sourcesEffectives(csp, 'style');
+
     // ressources tierces, scripts, styles
     for (const n of tous) {
       const srcData = n.tag === 'script' && n.attrs.src !== undefined && /^data:/i.test(nettoyerUrl(n.attrs.src));
@@ -256,20 +328,40 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
         if (!nonChargeant) signaler('RESSOURCE_TIERCE', rel, `<link href> charge une ressource externe : ${nettoyerUrl(n.attrs.href).slice(0, 80)}`);
       }
       if (n.tag === 'script') {
-        if (n.attrs.src === undefined) signaler('SCRIPT_EN_LIGNE', rel, '<script> sans src : le code doit être un fichier du site (CSP script-src \'self\')');
-        else if (n.attrs.type?.toLowerCase() === 'module' || n.attrs.async !== undefined || n.attrs.defer !== undefined) {
-          signaler('SCRIPT_NON_BLOQUANT', rel, `<script src="${nettoyerUrl(n.attrs.src)}"> doit rester bloquant (ni type=module, ni async, ni defer)`);
+        const libelle = n.attrs.src === undefined ? '<script> en ligne' : `<script src="${nettoyerUrl(n.attrs.src).slice(0, 80)}">`;
+        if (!typeClassique(n.attrs.type) || n.attrs.async !== undefined || n.attrs.defer !== undefined) {
+          signaler('SCRIPT_NON_BLOQUANT', rel, `${libelle} doit rester classique et bloquant (ni type=module ou autre type, ni async, ni defer)`);
+        }
+        if (n.attrs.src === undefined) {
+          // corps exact, jamais trimé : c'est le texte que le navigateur hache
+          const corps = n.enfants.filter((e): e is string => typeof e === 'string').join('');
+          if (!sourcesScripts.includes(corps)) {
+            signaler('SCRIPT_EN_LIGNE', rel, `script en ligne différent des sources de src/scripts/ (${Buffer.byteLength(corps)} octets) : seul un fichier du dépôt inclus tel quel est permis`);
+          }
+          const empreinte = empreinteCsp(corps);
+          if (!cspScripts.includes(`'${empreinte}'`)) {
+            signaler('SCRIPT_SANS_EMPREINTE', rel, `empreinte ${empreinte} du script en ligne absente de la CSP (script-src-elem, script-src ou default-src)`);
+          }
+          const taille = Buffer.byteLength(corps);
+          if (taille > LIMITES.script) signaler('SCRIPT_TROP_LOURD', rel, `script en ligne de ${taille} octets (limite ${LIMITES.script})`);
         }
       }
       for (const nom of Object.keys(n.attrs)) {
-        if (/^on/i.test(nom)) signaler('SCRIPT_EN_LIGNE', rel, `gestionnaire d'événement en ligne « ${nom.slice(0, 30)} » sur <${n.tag}> interdit (CSP script-src 'self')`);
+        if (/^on/i.test(nom)) signaler('SCRIPT_EN_LIGNE', rel, `gestionnaire d'événement en ligne « ${nom.slice(0, 30)} » sur <${n.tag}> interdit (CSP sans 'unsafe-inline' ni 'unsafe-hashes')`);
       }
       if (n.tag === 'meta' && (n.attrs['http-equiv'] ?? '').toLowerCase() === 'refresh') {
         signaler('META_REFRESH', rel, `<meta http-equiv="refresh"> interdit (redirection hors de contrôle) : ${(n.attrs.content ?? '').slice(0, 60)}`);
       }
       if (n.tag === 'base') signaler('BASE_INTERDITE', rel, '<base> interdit : il réécrit tous les liens relatifs de la page');
-      if (n.tag === 'style') signaler('STYLE_EN_LIGNE', rel, "<style> interdit : la feuille de style doit être un fichier du site (CSP style-src 'self')");
-      if (n.attrs.style !== undefined) signaler('STYLE_EN_LIGNE', rel, `attribut style sur <${n.tag}> interdit (CSP style-src 'self')`);
+      if (n.tag === 'style') {
+        const css = n.enfants.filter((e): e is string => typeof e === 'string').join('');
+        const empreinte = empreinteCsp(css);
+        if (!cspStyles.includes(`'${empreinte}'`)) {
+          signaler('STYLE_SANS_EMPREINTE', rel, `empreinte ${empreinte} du <style> absente de la CSP (style-src-elem, style-src ou default-src)`);
+        }
+        for (const message of ressourcesCss(css)) signaler('RESSOURCE_TIERCE', rel, `<style> : ${message}`);
+      }
+      if (n.attrs.style !== undefined) signaler('STYLE_EN_LIGNE', rel, `attribut style sur <${n.tag}> interdit (CSP sans 'unsafe-inline' ni 'unsafe-hashes')`);
     }
 
     // liens
