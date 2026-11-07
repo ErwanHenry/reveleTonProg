@@ -30,7 +30,8 @@ created: 2026-11-07
 ## Sampling Rate
 
 - **After every task commit:** quick run + the test file added or changed by the task; build run (filtered) for any task touching pages, layout, components, CSS, astro.config.mjs or `tests/dist/**`
-- **After every plan wave:** `npm test` + `npm run check`; after wave 2 and wave 4, `npm run e2e`
+- **Execution order (orchestrator, plan-check W1):** plans run one at a time on main, in the order 01, 02, 04, 03, 05, 06, 07, 08 (shared Astro cache and dist folders forbid concurrent builds).
+- **After every plan:** `npm test` + `npm run check`; green expected only from the end of 07-03 (dist cases of the external form are red by design between 07-01 and 07-03, `e2e/texte.spec` until 07-05). No push before 07-08; after 07-05 and 07-08, `npm run e2e`.
 - **Before `/gsd:verify-work`:** full suite green locally, then CI green on main (`gh run list --branch main`)
 - **Max feedback latency:** 60 s (node), 8 min (e2e)
 
