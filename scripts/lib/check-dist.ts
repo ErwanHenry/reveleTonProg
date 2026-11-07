@@ -55,6 +55,11 @@ export const CODES_CHECK_DIST = [
   'CSP_TROP_PERMISSIVE',
   'SCRIPT_SANS_EMPREINTE',
   'STYLE_SANS_EMPREINTE',
+  'CANONIQUE_ABSENT',
+  'CANONIQUE_INCORRECT',
+  'SITEMAP_INCOHERENT',
+  'ROBOTS_SANS_SITEMAP',
+  'DOMAINE_PROVISOIRE',
 ] as const;
 export type CodeCheckDist = (typeof CODES_CHECK_DIST)[number];
 
@@ -80,6 +85,14 @@ export interface OptionsCheckDist {
    * des fichiers src/scripts/*.js du dépôt, ceux que Base.astro et LecteurNiveaux.astro incluent par `?raw`.
    */
   sourcesScripts?: readonly string[];
+  /**
+   * Domaine du site (config/site.yml) : nom d'hôte apex, sans schéma, port ni chemin (ex. exemple.fr). Le CLI le
+   * passe toujours. Avec lui, en production, chaque page porte exactement une URL canonique égale à
+   * `https://<domaine>` + son chemin, sitemap.xml liste exactement ces URL et robots.txt pointe vers le sitemap ;
+   * un domaine `.invalid` donne DOMAINE_PROVISOIRE (erreur sous `deploiement`). Sans lui, ces règles sont inactives,
+   * sauf DOMAINE_PROVISOIRE sur une page de production dont l'URL canonique vise un hôte `.invalid`.
+   */
+  domaine?: string;
 }
 
 /** Racine du dépôt, déduite de l'emplacement de ce module (scripts/lib/). */
@@ -154,6 +167,35 @@ function ressourcesCss(css: string): string[] {
   return out;
 }
 
+/** Valeurs `rel` d'un <link> qui le désignent comme URL canonique de la page. */
+const estCanonique = (n: Noeud): boolean => n.tag === 'link' && (n.attrs.rel ?? '').toLowerCase().split(/\s+/).includes('canonical');
+
+/** Chemin public d'une page du dist : `index.html` → `/`, `a/index.html` → `/a/`, `a.html` → `/a.html`. */
+function cheminPublic(rel: string): string {
+  if (rel === 'index.html') return '/';
+  if (rel.endsWith('/index.html')) return `/${rel.slice(0, -'index.html'.length)}`;
+  return `/${rel}`;
+}
+
+/** URL absolue normalisée (`new URL().href`), ou undefined si le texte n'en est pas une. */
+function urlAbsolue(texte: string): string | undefined {
+  try {
+    return new URL(texte).href;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Valeurs des <loc> d'un sitemap.xml généré (entités XML décodées, &amp; en dernier). */
+function locsSitemap(xml: string): string[] {
+  return [...xml.matchAll(/<loc>\s*([^<]*?)\s*<\/loc>/g)].map((m) =>
+    (m[1] ?? '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&'),
+  );
+}
+
+/** Jusqu'à 3 éléments, puis « … (N au total) ». */
+const extraitListe = (xs: readonly string[]): string => `${xs.slice(0, 3).join(', ')}${xs.length > 3 ? ` … (${xs.length} au total)` : ''}`;
+
 // ---------------------------------------------------------------------------
 // Cellules attendues
 // ---------------------------------------------------------------------------
@@ -215,6 +257,23 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
   if (pages.length === 0) signaler('DIST_VIDE', '.', 'aucune page HTML dans le dist (build manquant ou mauvais dossier ?)');
 
   const sourcesScripts = opts.sourcesScripts ?? scriptsEnLigne(RACINE_DEPOT).map((s) => s.texte);
+  const severiteDeploiement: Constat['severite'] = opts.deploiement === true ? 'erreur' : 'avertissement';
+
+  // Domaine (HEB-05, HEB-06) : origine attendue des URL canoniques, du sitemap et de la ligne Sitemap de robots.txt.
+  const origine = opts.domaine === undefined ? undefined : urlAbsolue(`https://${opts.domaine}/`);
+  if (opts.domaine !== undefined && (origine === undefined || new URL(origine).hostname !== opts.domaine.toLowerCase())) {
+    throw new Error(`checkDist : domaine « ${opts.domaine.slice(0, 60)} » invalide (nom d'hôte attendu, sans schéma, port ni chemin)`);
+  }
+  if (opts.domaine !== undefined && opts.domaine.toLowerCase().endsWith('.invalid')) {
+    signaler(
+      'DOMAINE_PROVISOIRE',
+      '.',
+      `domaine provisoire (.invalid) : ${opts.domaine.slice(0, 60)} ; renseigner le vrai domaine dans config/site.yml avant de déployer`,
+      severiteDeploiement,
+    );
+  }
+  /** URL canonique attendue de chaque page de production (rempli seulement avec un domaine). */
+  const canoniquesAttendues: string[] = [];
 
   const cellules = opts.cellulesParTheme
     ? opts.cellulesParTheme instanceof Map
@@ -377,12 +436,7 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
           // pourcentage mal formé : on garde l'adresse brute
         }
         if (decode.trim().toLowerCase().endsWith('.invalid')) {
-          signaler(
-            'CONTACT_PROVISOIRE',
-            rel,
-            `contact provisoire (.invalid) : ${decode.slice(0, 60)}`,
-            opts.deploiement === true ? 'erreur' : 'avertissement',
-          );
+          signaler('CONTACT_PROVISOIRE', rel, `contact provisoire (.invalid) : ${decode.slice(0, 60)}`, severiteDeploiement);
         }
         continue;
       }
@@ -420,6 +474,33 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
       const src = n.attrs.src;
       if (src === undefined || estAbsolue(src) || nettoyerUrl(src) === '') continue;
       if (cible(rel, src) === undefined) signaler('LIEN_INTERNE_CASSE', rel, `<${n.tag} src> introuvable dans le dist : ${nettoyerUrl(src).slice(0, 80)}`);
+    }
+
+    // URL canonique (HEB-05) : exactement une en production, égale à https://<domaine> + chemin ; aucune en preview
+    const canoniques = tous.filter(estCanonique);
+    if (opts.mode === 'preview') {
+      if (canoniques.length > 0) signaler('PREVIEW_INDEXABLE', rel, `${canoniques.length} <link rel="canonical"> en preview (la preview n'a pas d'URL publique)`);
+    } else {
+      if (origine !== undefined) {
+        const attendue = new URL(cheminPublic(rel), origine).href;
+        canoniquesAttendues.push(attendue);
+        if (canoniques.length !== 1) {
+          signaler('CANONIQUE_ABSENT', rel, `${canoniques.length} <link rel="canonical"> (exactement un attendu : ${attendue})`);
+        } else {
+          const vue = urlAbsolue(nettoyerUrl(canoniques[0]?.attrs.href ?? ''));
+          if (vue !== attendue) {
+            signaler('CANONIQUE_INCORRECT', rel, `URL canonique « ${nettoyerUrl(canoniques[0]?.attrs.href ?? '').slice(0, 80)} », attendue « ${attendue} »`);
+          }
+        }
+      } else {
+        // Sans domaine (dist construit avant, appel direct) : seul un hôte provisoire est jugé.
+        for (const c of canoniques) {
+          const vue = urlAbsolue(nettoyerUrl(c.attrs.href ?? ''));
+          if (vue !== undefined && new URL(vue).hostname.endsWith('.invalid')) {
+            signaler('DOMAINE_PROVISOIRE', rel, `URL canonique vers un domaine provisoire (.invalid) : ${vue.slice(0, 80)}`, severiteDeploiement);
+          }
+        }
+      }
     }
 
     // hébergeur seulement prévu (WR-03) : Méthode et Mentions légales marquent leur texte d'avant la mise en ligne
@@ -544,11 +625,38 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
     }
   }
 
-  // robots.txt en preview
+  // robots.txt et sitemap.xml
+  const lireSiPresent = (rel: string): string | undefined => {
+    const f = path.join(racineDist, rel);
+    return fs.existsSync(f) && fs.statSync(f).isFile() ? fs.readFileSync(f, 'utf8') : undefined;
+  };
+  const robots = lireSiPresent('robots.txt');
+  const sitemap = lireSiPresent('sitemap.xml');
   if (opts.mode === 'preview') {
-    const robots = path.join(racineDist, 'robots.txt');
-    const contenu = fs.existsSync(robots) ? fs.readFileSync(robots, 'utf8') : '';
-    if (!/^\s*Disallow:\s*\/\s*$/m.test(contenu)) signaler('PREVIEW_INDEXABLE', 'robots.txt', 'robots.txt absent ou sans « Disallow: / » en preview');
+    if (!/^\s*Disallow:\s*\/\s*$/m.test(robots ?? '')) signaler('PREVIEW_INDEXABLE', 'robots.txt', 'robots.txt absent ou sans « Disallow: / » en preview');
+    if (/^\s*Sitemap\s*:/im.test(robots ?? '')) signaler('PREVIEW_INDEXABLE', 'robots.txt', 'ligne « Sitemap: » dans robots.txt en preview');
+    if (sitemap !== undefined) signaler('PREVIEW_INDEXABLE', 'sitemap.xml', 'sitemap.xml présent en preview (la preview ne doit lister aucune URL)');
+  } else if (origine !== undefined) {
+    const ligne = `Sitemap: ${new URL('/sitemap.xml', origine).href}`;
+    if (!(robots ?? '').split(/\r?\n/).some((l) => l.trim() === ligne)) {
+      signaler('ROBOTS_SANS_SITEMAP', 'robots.txt', `robots.txt ${robots === undefined ? 'absent' : 'sans la ligne'} « ${ligne} »`);
+    }
+    if (sitemap === undefined) {
+      signaler('SITEMAP_INCOHERENT', 'sitemap.xml', 'sitemap.xml absent en production');
+    } else {
+      const locs = locsSitemap(sitemap).map((l) => urlAbsolue(l) ?? l);
+      const attendues = new Set(canoniquesAttendues);
+      const vues = new Set(locs);
+      const doublons = [...new Set(locs.filter((l, i) => locs.indexOf(l) !== i))];
+      const enTrop = [...vues].filter((l) => !attendues.has(l)).sort();
+      const manquantes = [...attendues].filter((l) => !vues.has(l)).sort();
+      const ecarts = [
+        manquantes.length > 0 && `${manquantes.length} URL canonique(s) manquante(s) : ${extraitListe(manquantes)}`,
+        enTrop.length > 0 && `${enTrop.length} <loc> sans page canonique : ${extraitListe(enTrop)}`,
+        doublons.length > 0 && `${doublons.length} <loc> en double : ${extraitListe(doublons)}`,
+      ].filter((x): x is string => typeof x === 'string');
+      if (ecarts.length > 0) signaler('SITEMAP_INCOHERENT', 'sitemap.xml', `sitemap.xml diffère des URL canoniques des pages : ${ecarts.join(' ; ')}`);
+    }
   }
 
   return constats.sort((a, b) => a.fichier.localeCompare(b.fichier) || a.code.localeCompare(b.code) || a.message.localeCompare(b.message));

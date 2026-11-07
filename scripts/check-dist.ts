@@ -6,6 +6,7 @@ import { parseArgs } from 'node:util';
 import { escapeData, escapeProperty, safe } from '../src/lib/content-core/diagnostics.ts';
 import { ModeInvalideError, resolveContentRoot, resolveMode } from '../src/lib/content-core/root.ts';
 import { DeploiementInvalideError, estDeploiement } from '../src/lib/deploiement.ts';
+import { loadSiteConfig } from '../src/lib/site-config.ts';
 import { cellulesAttendues, checkDist } from './lib/check-dist.ts';
 
 const USAGE = `Usage : node scripts/check-dist.ts [--dist <dossier>] [--root <dossier>] [--mode preview|production] [--format text|github]
@@ -14,9 +15,12 @@ const USAGE = `Usage : node scripts/check-dist.ts [--dist <dossier>] [--root <do
   --root <dossier>        racine du contenu, pour le nombre de cellules attendu (défaut : RTP_CONTENT_ROOT, sinon le vrai corpus « . »)
   --mode preview|production  mode du build contrôlé (défaut : RTP_MODE, sinon production)
   --format text|github    text (défaut) ou annotations GitHub Actions en plus
-  RTP_DEPLOIEMENT=1 (job de déploiement) : un contact provisoire (.invalid) et un hébergeur seulement prévu deviennent des erreurs au lieu d'avertissements.
+  Le domaine du site est lu dans config/site.yml (racine du projet) : en production, URL canonique de chaque page,
+  sitemap.xml et ligne Sitemap de robots.txt doivent le suivre ; en preview, aucun des trois n'est permis.
+  RTP_DEPLOIEMENT=1 (job de déploiement) : un contact provisoire (.invalid), un hébergeur seulement prévu et un domaine
+  provisoire (.invalid) deviennent des erreurs au lieu d'avertissements.
   RTP_DEPLOIEMENT n'accepte que 1, 0 ou vide ; toute autre valeur est refusée (code 2).
-  Code de sortie : 0 sans erreur, 1 si au moins une erreur, 2 si les arguments ou le mode sont invalides.
+  Code de sortie : 0 sans erreur, 1 si au moins une erreur, 2 si les arguments, le mode ou config/site.yml sont invalides.
 `;
 
 function usageError(message: string): never {
@@ -60,7 +64,16 @@ try {
   if (e instanceof DeploiementInvalideError) usageError(e.message);
   throw e;
 }
-const constats = checkDist(dist, { mode, cellulesParTheme: attendues, deploiement });
+// Env vide : la décision de déploiement appartient à check-dist, qui signale DOMAINE_PROVISOIRE comme une erreur
+// sous RTP_DEPLOIEMENT=1 au lieu de laisser le lecteur de config lever une exception.
+let domaine: string;
+try {
+  ({ domaine } = loadSiteConfig(projectRoot, {}));
+} catch (e) {
+  process.stderr.write(`${e instanceof Error ? e.message : String(e)}\n`);
+  process.exit(2);
+}
+const constats = checkDist(dist, { mode, cellulesParTheme: attendues, deploiement, domaine });
 
 for (const c of constats) console.log(`${c.code} ${safe(c.fichier)} : ${safe(c.message)}`);
 if (format === 'github') {

@@ -6,6 +6,8 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { cellulesAttendues, checkDist } from '../../../scripts/lib/check-dist.ts';
+import type { Constat } from '../../../scripts/lib/check-dist.ts';
 import { analyserHtml, trouver } from '../../../scripts/lib/html.ts';
 import { loadSiteConfig } from '../../../src/lib/site-config.ts';
 import { materialiserCorpusM1 } from '../../helpers/corpus-m1.ts';
@@ -94,6 +96,48 @@ export default function domaine(ctx: ContexteSite): void {
       assert.match(robots, /^Disallow: \/$/m);
       assert.doesNotMatch(robots, /Sitemap:/i);
       assert.doesNotMatch(robots, new RegExp(site.domaine.replace(/\./g, '\\.')));
+    });
+  });
+
+  describe('checkDist avec le domaine configuré', () => {
+    const controler = (dist: string, mode: 'production' | 'preview'): Constat[] =>
+      checkDist(dist, { mode, cellulesParTheme: cellulesAttendues(racine, ctx.repoRoot, mode), domaine: site.domaine });
+    const erreurs = (constats: readonly Constat[]): string[] =>
+      constats.filter((c) => c.severite === 'erreur').map((c) => `${c.code} ${c.fichier} : ${c.message}`);
+
+    for (const mode of ['production', 'preview'] as const) {
+      it(`HEB-05 : ${mode}, checkDist({ domaine }) ne signale aucune erreur (canonique, sitemap, robots)`, () => {
+        const constats = controler(build(mode).outDir, mode);
+        assert.deepEqual(erreurs(constats), []);
+        // tant que le domaine est provisoire, un seul avertissement de domaine, sur le dist entier
+        const provisoires = constats.filter((c) => c.code === 'DOMAINE_PROVISOIRE');
+        assert.deepEqual(provisoires.map((c) => [c.fichier, c.severite]), site.domaineProvisoire ? [['.', 'avertissement']] : []);
+      });
+    }
+
+    /** Copie du dist de production, `muter` appliqué au fichier `rel` (qui doit changer), puis contrôle. */
+    const apres = (rel: string, muter: (texte: string) => string): Constat[] => {
+      const copie = path.join(ctx.tmp(), 'dist');
+      fs.cpSync(build('production').outDir, copie, { recursive: true });
+      const fichier = path.join(copie, ...rel.split('/'));
+      const avant = fs.readFileSync(fichier, 'utf8');
+      const texte = muter(avant);
+      assert.notEqual(texte, avant, `faute non injectée dans ${rel}`);
+      fs.writeFileSync(fichier, texte);
+      return controler(copie, 'production').filter((c) => c.severite === 'erreur');
+    };
+
+    it('HEB-05 : copie du dist, une URL canonique modifiée donne CANONIQUE_INCORRECT sur cette page seulement', () => {
+      const rel = 'themes/logement/index.html';
+      const nouveaux = apres(rel, (html) => html.replace(`href="${origine}/themes/logement/"`, `href="${origine}/themes/autre/"`));
+      assert.deepEqual(nouveaux.map((c) => [c.code, c.fichier]), [['CANONIQUE_INCORRECT', rel]]);
+    });
+
+    it('HEB-05 : copie du dist, un <loc> retiré de sitemap.xml donne SITEMAP_INCOHERENT', () => {
+      // forme écrite par src/lib/sitemap.ts : une ligne « <url><loc>…</loc></url> » par page
+      const nouveaux = apres('sitemap.xml', (xml) => xml.replace(`  <url><loc>${origine}/themes/logement/</loc></url>\n`, ''));
+      assert.deepEqual(nouveaux.map((c) => [c.code, c.fichier]), [['SITEMAP_INCOHERENT', 'sitemap.xml']]);
+      assert.match(nouveaux[0]?.message ?? '', /1 URL canonique\(s\) manquante\(s\)/);
     });
   });
 

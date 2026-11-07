@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { CODES_CHECK_DIST, LIMITES, cellulesAttendues, checkDist } from '../../scripts/lib/check-dist.ts';
 import type { OptionsCheckDist } from '../../scripts/lib/check-dist.ts';
 import { empreinteCsp } from '../../src/lib/csp-empreintes.ts';
+import { loadSiteConfig } from '../../src/lib/site-config.ts';
 import type { Mode } from '../../src/lib/content-core/rules/types.ts';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -18,6 +19,14 @@ const CLI = path.join(REPO_ROOT, 'scripts', 'check-dist.ts');
 /** Texte exact de src/scripts/niveau.js : seul un script identique à une source est accepté en ligne. */
 const NIVEAU = fs.readFileSync(path.join(REPO_ROOT, 'src', 'scripts', 'niveau.js'), 'utf8');
 const H_NIVEAU = `'${empreinteCsp(NIVEAU)}'`;
+/**
+ * Configuration réelle du dépôt, celle que lit le CLI (env vide : pas de garde de déploiement dans le processus de
+ * test). Le nom d'hôte du site n'est jamais écrit ici (tests/repo/hote-en-dur.test.ts) ; les cas unitaires du
+ * domaine utilisent exemple.test / exemple.invalid.
+ */
+const SITE = loadSiteConfig(REPO_ROOT, {});
+/** Domaine synthétique par défaut des dists propres appelés directement (jamais `.invalid`). */
+const DOMAINE_TEST = 'exemple.test';
 
 const tmpDirs: string[] = [];
 after(() => {
@@ -95,8 +104,22 @@ function theme(id: string, cellules: number, opts: { mesure?: () => string; noin
 
 const JS = 'a'.repeat(500);
 
-/** Dist synthétique propre : une page d'accueil, une page de thème à 2 cellules, un CSS, un script de 500 octets. */
-function distPropre(surcharges: Record<string, string | Buffer | null> = {}, opts: { preview?: boolean } = {}): Fichiers {
+/** Chemin public d'une page : `index.html` → `/`, `a/index.html` → `/a/`, `a.html` → `/a.html`. */
+const cheminPage = (rel: string): string => (rel === 'index.html' ? '/' : rel.endsWith('/index.html') ? `/${rel.slice(0, -'index.html'.length)}` : `/${rel}`);
+
+/** sitemap.xml de la forme écrite par src/lib/sitemap.ts. */
+const xmlSitemap = (urls: readonly string[]): string =>
+  `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls
+    .map((u) => `  <url><loc>${u.replace(/&/g, '&amp;')}</loc></url>\n`)
+    .join('')}</urlset>\n`;
+
+/**
+ * Dist synthétique propre : une page d'accueil, une page de thème à 2 cellules, un CSS, un script de 500 octets.
+ * En production, chaque page reçoit (après les surcharges) son URL canonique `https://<domaine>` + chemin, et le dist
+ * un sitemap.xml qui les liste et un robots.txt avec la ligne Sitemap, sauf si `sitemap.xml` ou `robots.txt` sont
+ * surchargés. `domaine` : DOMAINE_TEST par défaut ; les cas du CLI passent celui de config/site.yml (SITE.domaine).
+ */
+function distPropre(surcharges: Record<string, string | Buffer | null> = {}, opts: { preview?: boolean; domaine?: string } = {}): Fichiers {
   const noindex = opts.preview === true;
   const base: Fichiers = {
     'index.html': page({
@@ -114,8 +137,23 @@ function distPropre(surcharges: Record<string, string | Buffer | null> = {}, opt
     if (v === null) delete base[k];
     else base[k] = v;
   }
+  if (opts.preview !== true) {
+    const origine = `https://${opts.domaine ?? DOMAINE_TEST}`;
+    const pages = Object.keys(base).filter((k) => k.endsWith('.html')).sort();
+    for (const rel of pages) {
+      const html = base[rel];
+      if (typeof html === 'string' && html.includes('</head>') && !html.includes('rel="canonical"')) {
+        base[rel] = html.replace('</head>', `<link rel="canonical" href="${origine}${cheminPage(rel)}"></head>`);
+      }
+    }
+    if (!('sitemap.xml' in surcharges)) base['sitemap.xml'] = xmlSitemap(pages.map((rel) => `${origine}${cheminPage(rel)}`));
+    if (!('robots.txt' in surcharges)) base['robots.txt'] = `User-agent: *\nAllow: /\nSitemap: ${origine}/sitemap.xml\n`;
+  }
   return base;
 }
+
+/** Dist propre pour le CLI, qui lit toujours le domaine de config/site.yml. */
+const distCli = (surcharges: Record<string, string | Buffer | null> = {}): Fichiers => distPropre(surcharges, { domaine: SITE.domaine });
 
 interface Resultat {
   codes: string[];
@@ -254,7 +292,7 @@ describe('checkDist : ressources tierces, scripts et styles', () => {
   });
 
   it('CONTACT_PROVISOIRE (WR-03) : avertissement par défaut, erreur quand deploiement est vrai', () => {
-    const dist = ecrireDist(distPropre({ 'index.html': page({ corps: '<a href="mailto:contact@domaine-a-definir.invalid?subject=S">m</a>' }) }));
+    const dist = ecrireDist(distPropre({ 'index.html': page({ corps: '<a href="mailto:contact@exemple-provisoire.invalid?subject=S">m</a>' }) }));
     const defaut = checkDist(dist, { mode: 'production' });
     assert.deepEqual(defaut.map((c) => [c.code, c.severite]), [['CONTACT_PROVISOIRE', 'avertissement']]);
     const deploiement = checkDist(dist, { mode: 'production', deploiement: true });
@@ -563,6 +601,142 @@ describe('checkDist : brouillons et indexation', () => {
   });
 });
 
+describe('checkDist : domaine, URL canoniques, sitemap et robots (HEB-05, HEB-06)', () => {
+  const D = DOMAINE_TEST;
+  const ORIGINE = `https://${D}`;
+  const avecDomaine = (fichiers: Fichiers, mode: Mode = 'production', extra: Partial<OptionsCheckDist> = {}): Resultat =>
+    verifier(fichiers, mode, { logement: 2 }, { domaine: D, ...extra });
+  const retoucher = (fichiers: Fichiers, rel: string, muter: (texte: string) => string): Fichiers => {
+    const avant = String(fichiers[rel]);
+    const apres = muter(avant);
+    assert.notEqual(apres, avant, `faute non injectée dans ${rel}`);
+    return { ...fichiers, [rel]: apres };
+  };
+  const CANONIQUE = /<link rel="canonical" href="[^"]*">/;
+  const seul = (r: Resultat, code: string): void => assert.deepEqual(r.codes, [code], r.messages.join(' | '));
+
+  it('dist propre de production avec son domaine : aucun constat, y compris pour a/index.html → /a/ et a.html → /a.html', () => {
+    assert.deepEqual(avecDomaine(distPropre({}, { domaine: D })), { codes: [], fichiers: [], messages: [] });
+    const pages = { 'a/index.html': page(), 'a.html': page(), 'x&y/index.html': page() };
+    assert.deepEqual(avecDomaine(distPropre(pages, { domaine: D })).codes, []);
+    // hôte en majuscules : même URL après normalisation
+    const maj = retoucher(distPropre({}, { domaine: D }), 'index.html', (h) => h.replace(`href="${ORIGINE}/"`, `href="https://${D.toUpperCase()}/"`));
+    assert.deepEqual(avecDomaine(maj).codes, []);
+  });
+
+  it('sans option domaine, les règles de domaine sont inactives (appels directs existants)', () => {
+    const sansRien = distPropre({ 'sitemap.xml': null, 'robots.txt': null }, { domaine: D });
+    assert.deepEqual(verifier(sansRien).codes, []);
+  });
+
+  it('CANONIQUE_ABSENT : page sans URL canonique, ou avec deux', () => {
+    const sans = retoucher(distPropre({}, { domaine: D }), 'index.html', (h) => h.replace(CANONIQUE, ''));
+    const r = avecDomaine(sans);
+    seul(r, 'CANONIQUE_ABSENT');
+    assert.deepEqual(r.fichiers, ['index.html']);
+    assert.match(r.messages[0] ?? '', /0 <link rel="canonical">/);
+    const deux = retoucher(distPropre({}, { domaine: D }), 'index.html', (h) => h.replace(CANONIQUE, (m) => m + m));
+    seul(avecDomaine(deux), 'CANONIQUE_ABSENT');
+  });
+
+  it('CANONIQUE_INCORRECT : autre hôte, bon hôte mais mauvais chemin, http:, URL relative', () => {
+    for (const href of ['https://autre.test/', `${ORIGINE}/themes/logement/`, `http://${D}/`, '/', `${ORIGINE}/index.html`, `https://www.${D}/`]) {
+      const f = retoucher(distPropre({}, { domaine: D }), 'index.html', (h) => h.replace(CANONIQUE, `<link rel="canonical" href="${href}">`));
+      const r = avecDomaine(f);
+      seul(r, 'CANONIQUE_INCORRECT');
+      assert.deepEqual(r.fichiers, ['index.html'], href);
+      assert.match(r.messages[0] ?? '', new RegExp(`attendue « ${ORIGINE}/ »`), href);
+    }
+    const mauvaise = retoucher(distPropre({ 'a.html': page() }, { domaine: D }), 'a.html', (h) => h.replace(`${ORIGINE}/a.html`, `${ORIGINE}/a/`));
+    seul(avecDomaine(mauvaise), 'CANONIQUE_INCORRECT');
+  });
+
+  it('SITEMAP_INCOHERENT : sitemap.xml absent, un <loc> en trop, un <loc> manquant, un doublon ; 3 écarts au plus listés', () => {
+    seul(avecDomaine(distPropre({ 'sitemap.xml': null }, { domaine: D })), 'SITEMAP_INCOHERENT');
+    const enTrop = retoucher(distPropre({}, { domaine: D }), 'sitemap.xml', (x) => x.replace('</urlset>', `  <url><loc>${ORIGINE}/fantome/</loc></url>\n</urlset>`));
+    const r1 = avecDomaine(enTrop);
+    seul(r1, 'SITEMAP_INCOHERENT');
+    assert.deepEqual(r1.fichiers, ['sitemap.xml']);
+    assert.match(r1.messages[0] ?? '', /1 <loc> sans page canonique : https:\/\/exemple\.test\/fantome\//);
+    const manque = retoucher(distPropre({}, { domaine: D }), 'sitemap.xml', (x) => x.replace(`  <url><loc>${ORIGINE}/themes/logement/</loc></url>\n`, ''));
+    const r2 = avecDomaine(manque);
+    seul(r2, 'SITEMAP_INCOHERENT');
+    assert.match(r2.messages[0] ?? '', /1 URL canonique\(s\) manquante\(s\) : https:\/\/exemple\.test\/themes\/logement\//);
+    const double = retoucher(distPropre({}, { domaine: D }), 'sitemap.xml', (x) => x.replace('</urlset>', `  <url><loc>${ORIGINE}/</loc></url>\n</urlset>`));
+    assert.match(avecDomaine(double).messages.join(' '), /1 <loc> en double/);
+    const cinq = Array.from({ length: 5 }, (_, i) => `  <url><loc>${ORIGINE}/f${i}/</loc></url>\n`).join('');
+    const beaucoup = retoucher(distPropre({}, { domaine: D }), 'sitemap.xml', (x) => x.replace('</urlset>', `${cinq}</urlset>`));
+    const r3 = avecDomaine(beaucoup);
+    assert.match(r3.messages[0] ?? '', /5 <loc> sans page canonique : [^;]*f0\/, [^;]*f1\/, [^;]*f2\/ … \(5 au total\)/);
+    assert.doesNotMatch(r3.messages[0] ?? '', /f3\//);
+    // un autre domaine dans le sitemap : toutes les URL en trop et toutes manquantes
+    const autre = distPropre({ 'sitemap.xml': xmlSitemap(['https://autre.test/', 'https://autre.test/themes/logement/']) }, { domaine: D });
+    assert.match(avecDomaine(autre).messages[0] ?? '', /2 URL canonique\(s\) manquante\(s\).*2 <loc> sans page canonique/);
+  });
+
+  it('sitemap.xml : entités XML décodées avant la comparaison (&amp;)', () => {
+    const f = distPropre({ 'x&y/index.html': page() }, { domaine: D });
+    assert.match(String(f['sitemap.xml']), /x&amp;y/);
+    assert.deepEqual(avecDomaine(f).codes, []);
+  });
+
+  it('ROBOTS_SANS_SITEMAP : robots.txt absent, sans ligne Sitemap ou pointant vers un autre domaine', () => {
+    for (const robots of [null, 'User-agent: *\nAllow: /\n', 'User-agent: *\nAllow: /\nSitemap: https://autre.test/sitemap.xml\n', `User-agent: *\n# Sitemap: ${ORIGINE}/sitemap.xml\n`]) {
+      const r = avecDomaine(distPropre({ 'robots.txt': robots }, { domaine: D }));
+      seul(r, 'ROBOTS_SANS_SITEMAP');
+      assert.deepEqual(r.fichiers, ['robots.txt']);
+    }
+    // fins de ligne CRLF et espaces de bord tolérés
+    const crlf = `User-agent: *\r\nAllow: /\r\n  Sitemap: ${ORIGINE}/sitemap.xml  \r\n`;
+    assert.deepEqual(avecDomaine(distPropre({ 'robots.txt': crlf }, { domaine: D })).codes, []);
+  });
+
+  it('PREVIEW_INDEXABLE : en preview, une URL canonique, un sitemap.xml ou une ligne Sitemap dans robots.txt, avec ou sans domaine', () => {
+    const propre = distPropre({}, { preview: true });
+    assert.deepEqual(avecDomaine(propre, 'preview').codes, []);
+    const canonique = retoucher(propre, 'index.html', (h) => h.replace('</head>', `<link rel="canonical" href="${ORIGINE}/"></head>`));
+    const sitemap = { ...propre, 'sitemap.xml': xmlSitemap([`${ORIGINE}/`]) };
+    const robots = { ...propre, 'robots.txt': `User-agent: *\nDisallow: /\nSitemap: ${ORIGINE}/sitemap.xml\n` };
+    for (const [nom, f, fichier] of [['canonique', canonique, 'index.html'], ['sitemap', sitemap, 'sitemap.xml'], ['robots', robots, 'robots.txt']] as const) {
+      for (const r of [avecDomaine(f, 'preview'), verifier(f, 'preview')]) {
+        seul(r, 'PREVIEW_INDEXABLE');
+        assert.deepEqual(r.fichiers, [fichier], nom);
+      }
+    }
+    // la règle Disallow: / de la preview reste entière
+    seul(avecDomaine({ ...propre, 'robots.txt': 'User-agent: *\nAllow: /\n' }, 'preview'), 'PREVIEW_INDEXABLE');
+  });
+
+  it('DOMAINE_PROVISOIRE : domaine .invalid signalé une fois sur le dist (« . »), avertissement par défaut, erreur au déploiement', () => {
+    const P = 'exemple.invalid';
+    const dist = ecrireDist(distPropre({}, { domaine: P }));
+    const defaut = checkDist(dist, { mode: 'production', domaine: P });
+    assert.deepEqual(defaut.map((c) => [c.code, c.fichier, c.severite]), [['DOMAINE_PROVISOIRE', '.', 'avertissement']]);
+    assert.match(defaut[0]?.message ?? '', /exemple\.invalid.*config\/site\.yml/);
+    const deploiement = checkDist(dist, { mode: 'production', domaine: P, deploiement: true });
+    assert.deepEqual(deploiement.map((c) => [c.code, c.fichier, c.severite]), [['DOMAINE_PROVISOIRE', '.', 'erreur']]);
+    // un vrai domaine ne déclenche rien, même au déploiement
+    assert.deepEqual(checkDist(ecrireDist(distPropre({}, { domaine: D })), { mode: 'production', domaine: D, deploiement: true }), []);
+  });
+
+  it('DOMAINE_PROVISOIRE sans option domaine : une fois par page de production dont l’URL canonique vise un hôte .invalid', () => {
+    const dist = ecrireDist(distPropre({}, { domaine: 'exemple.invalid' }));
+    const defaut = checkDist(dist, { mode: 'production' });
+    assert.deepEqual(defaut.map((c) => [c.code, c.fichier, c.severite]), [
+      ['DOMAINE_PROVISOIRE', 'index.html', 'avertissement'],
+      ['DOMAINE_PROVISOIRE', 'themes/logement/index.html', 'avertissement'],
+    ]);
+    assert.deepEqual(new Set(checkDist(dist, { mode: 'production', deploiement: true }).map((c) => c.severite)), new Set(['erreur']));
+  });
+
+  it('option domaine invalide (schéma, port, chemin) : exception, jamais un contrôle silencieusement faux', () => {
+    const dist = ecrireDist(distPropre({}, { domaine: D }));
+    for (const domaine of [`https://${D}`, `${D}:8443`, `${D}/x`, '']) {
+      assert.throws(() => checkDist(dist, { mode: 'production', domaine }), /domaine .* invalide/, domaine);
+    }
+  });
+});
+
 describe('cellulesAttendues', () => {
   it('corpus-valide en production : le thème publié « logement » attend 2 cellules', () => {
     assert.deepEqual(cellulesAttendues(CORPUS, REPO_ROOT, 'production'), new Map([['logement', 2]]));
@@ -579,24 +753,53 @@ describe('CLI scripts/check-dist.ts', () => {
     return { status: r.status, out: r.stdout ?? '', err: r.stderr ?? '' };
   };
 
-  it('dist propre : code 0 et une ligne de résumé', () => {
-    const dist = ecrireDist(distPropre());
+  it('dist propre : code 0 et une ligne de résumé (plus l’avertissement DOMAINE_PROVISOIRE tant que le domaine est provisoire)', () => {
+    const dist = ecrireDist(distCli());
     const r = lancer(['--dist', dist, '--root', CORPUS, '--mode', 'production']);
     assert.equal(r.status, 0, r.out + r.err);
     const lignes = r.out.trim().split('\n');
-    assert.equal(lignes.length, 1, r.out);
-    assert.match(lignes[0] ?? '', /check-dist : .*0 erreur/);
+    if (SITE.domaineProvisoire) {
+      assert.equal(lignes.length, 2, r.out);
+      assert.match(lignes[0] ?? '', /^DOMAINE_PROVISOIRE \. : domaine provisoire \(\.invalid\)/);
+      assert.match(lignes[1] ?? '', /check-dist : 0 erreur\(s\), 1 avertissement/);
+    } else {
+      assert.equal(lignes.length, 1, r.out);
+      assert.match(lignes[0] ?? '', /check-dist : 0 erreur\(s\), 0 avertissement/);
+    }
+  });
+
+  it('HEB-05 : le CLI passe le domaine de config/site.yml (URL canonique d’un autre domaine : CANONIQUE_INCORRECT)', () => {
+    const autre = ecrireDist(distPropre({}, { domaine: DOMAINE_TEST }));
+    const r = lancer(['--dist', autre, '--root', CORPUS, '--mode', 'production']);
+    assert.equal(r.status, 1, r.out + r.err);
+    assert.match(r.out, /^CANONIQUE_INCORRECT index\.html : /m);
+    assert.match(r.out, /^SITEMAP_INCOHERENT sitemap\.xml : /m);
+    assert.match(r.out, /^ROBOTS_SANS_SITEMAP robots\.txt : /m);
+  });
+
+  it('HEB-06 : RTP_DEPLOIEMENT=1 sur un dist propre : code 1 et DOMAINE_PROVISOIRE tant que le domaine est provisoire', () => {
+    const dist = ecrireDist(distCli());
+    const r = lancer(['--dist', dist, '--root', CORPUS, '--mode', 'production'], { RTP_DEPLOIEMENT: '1' });
+    if (SITE.domaineProvisoire) {
+      assert.equal(r.status, 1, r.out + r.err);
+      assert.match(r.out, /^DOMAINE_PROVISOIRE \. : domaine provisoire \(\.invalid\)/m);
+      assert.match(r.out, /check-dist : 1 erreur\(s\)/);
+      const gh = lancer(['--dist', dist, '--root', CORPUS, '--mode', 'production', '--format', 'github'], { RTP_DEPLOIEMENT: '1' });
+      assert.match(gh.out, /^::error file=.*title=DOMAINE_PROVISOIRE::/m);
+    } else {
+      assert.doesNotMatch(r.out, /DOMAINE_PROVISOIRE/);
+    }
   });
 
   it('dist fautif : code 1 et lignes « CODE chemin : message »', () => {
-    const dist = ecrireDist(distPropre({ 'index.html': page({ corps: '<img src="https://cdn.exemple.invalid/a.png" alt="">' }) }));
+    const dist = ecrireDist(distCli({ 'index.html': page({ corps: '<img src="https://cdn.exemple.invalid/a.png" alt="">' }) }));
     const r = lancer(['--dist', dist, '--root', CORPUS, '--mode', 'production']);
     assert.equal(r.status, 1, r.out + r.err);
     assert.match(r.out, /^RESSOURCE_TIERCE index\.html : .+$/m);
   });
 
   it('--format github : annotations ::error file=…::…', () => {
-    const dist = ecrireDist(distPropre({ 'index.html': page({ corps: '<p>extrême</p>' }) }));
+    const dist = ecrireDist(distCli({ 'index.html': page({ corps: '<p>extrême</p>' }) }));
     const r = lancer(['--dist', dist, '--root', CORPUS, '--mode', 'production', '--format', 'github']);
     assert.equal(r.status, 1);
     assert.match(r.out, /^::error file=.*index\.html.*title=MOT_INTERDIT::/m);
@@ -604,9 +807,9 @@ describe('CLI scripts/check-dist.ts', () => {
 
   it('--format github (IN-03) : les erreurs passent avant les avertissements dans les 10 annotations', () => {
     const pages: Record<string, string> = {};
-    for (let i = 1; i <= 11; i++) pages[`a${String(i).padStart(2, '0')}.html`] = page({ corps: '<a href="mailto:contact@domaine-a-definir.invalid">m</a>' });
+    for (let i = 1; i <= 11; i++) pages[`a${String(i).padStart(2, '0')}.html`] = page({ corps: '<a href="mailto:contact@exemple-provisoire.invalid">m</a>' });
     pages['z.html'] = page({ corps: '<p>extrême</p>' });
-    const r = lancer(['--dist', ecrireDist(distPropre(pages)), '--root', CORPUS, '--mode', 'production', '--format', 'github']);
+    const r = lancer(['--dist', ecrireDist(distCli(pages)), '--root', CORPUS, '--mode', 'production', '--format', 'github']);
     assert.equal(r.status, 1, r.out + r.err);
     const annotations = r.out.split('\n').filter((l) => l.startsWith('::'));
     assert.equal(annotations.length, 10, r.out);
@@ -614,21 +817,21 @@ describe('CLI scripts/check-dist.ts', () => {
   });
 
   it('--mode invalide : code 2 et message de ModeInvalideError', () => {
-    const dist = ecrireDist(distPropre());
+    const dist = ecrireDist(distCli());
     const r = lancer(['--dist', dist, '--root', CORPUS, '--mode', 'bidon']);
     assert.equal(r.status, 2);
     assert.match(r.err, /mode de validation inconnu/);
   });
 
   it('RTP_MODE=preview est lu quand --mode est absent', () => {
-    const dist = ecrireDist(distPropre());
+    const dist = ecrireDist(distCli());
     const r = lancer(['--dist', dist, '--root', CORPUS], { RTP_MODE: 'preview' });
     assert.equal(r.status, 1, 'un dist de production sans noindex est indexable en preview');
     assert.match(r.out, /PREVIEW_INDEXABLE/);
   });
 
   it('RTP_DEPLOIEMENT invalide (IN-06) : code 2 ; RTP_DEPLOIEMENT=1 rend CONTACT_PROVISOIRE bloquant', () => {
-    const dist = ecrireDist(distPropre({ 'index.html': page({ corps: '<a href="mailto:contact@domaine-a-definir.invalid">m</a>' }) }));
+    const dist = ecrireDist(distCli({ 'index.html': page({ corps: '<a href="mailto:contact@exemple-provisoire.invalid">m</a>' }) }));
     const invalide = lancer(['--dist', dist, '--root', CORPUS, '--mode', 'production'], { RTP_DEPLOIEMENT: 'true' });
     assert.equal(invalide.status, 2, invalide.out + invalide.err);
     assert.match(invalide.err, /RTP_DEPLOIEMENT doit valoir 1/);
