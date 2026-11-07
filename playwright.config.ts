@@ -31,5 +31,18 @@ export default defineConfig({
     { name: 'avec-js', testIgnore: /sans-js|4g|parcours/ },
     { name: '4g', testMatch: /4g\.spec\.ts/, use: { ...devices['Desktop Chrome'] } },
     { name: 'sans-js', testMatch: /sans-js\.spec\.ts/, use: { javaScriptEnabled: false } },
+    // Retour arrière restauré du bfcache (DETTE-02) : le headless shell par défaut refuse le bfcache et Playwright
+    // le coupe par une option de lancement (retirée ci-dessous). channel 'chromium' = nouveau headless, installé par
+    // `npx playwright install chromium` (déjà lancé en CI). bypassCSP reste à true : la preuve par mutation sert
+    // un script de niveau modifié, qui n'a plus son empreinte dans la CSP.
+    {
+      name: 'parcours',
+      testMatch: /parcours\.spec\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+        channel: 'chromium',
+        launchOptions: { ignoreDefaultArgs: ['--disable-back-forward-cache'] },
+      },
+    },
   ],
 });
