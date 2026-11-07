@@ -15,6 +15,9 @@ import { schemasDirOf } from '../../src/lib/content-core/root.ts';
 import { empreinteCsp, scriptsEnLigne } from '../../src/lib/csp-empreintes.ts';
 import { estHoteProvisoire } from '../../src/lib/site-config.ts';
 import { aClasse, analyserHtml, trouver } from './html.ts';
+
+/** Page d'erreur 404 d'Astro (src/pages/404.astro donnerait dist/404.html) : exclue des canoniques et du sitemap (IN-07). */
+export const PAGE_ERREUR = '404.html';
 import type { Noeud } from './html.ts';
 
 /** 1 Ko = 1000 octets (plus strict et sans ambiguïté). Poids d'une page = HTML + CSS/JS liés du même site. */
@@ -273,7 +276,7 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
       severiteDeploiement,
     );
   }
-  /** URL canonique attendue de chaque page de production (rempli seulement avec un domaine). */
+  /** URL canonique attendue de chaque page de production sauf la page d'erreur (rempli seulement avec un domaine). */
   const canoniquesAttendues: string[] = [];
 
   const cellules = opts.cellulesParTheme
@@ -481,6 +484,9 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
     const canoniques = tous.filter(estCanonique);
     if (opts.mode === 'preview') {
       if (canoniques.length > 0) signaler('PREVIEW_INDEXABLE', rel, `${canoniques.length} <link rel="canonical"> en preview (la preview n'a pas d'URL publique)`);
+    } else if (rel === PAGE_ERREUR) {
+      // IN-07 : une page d'erreur n'a pas d'URL publique à indexer : ni canonique ni entrée de sitemap.
+      if (canoniques.length > 0) signaler('CANONIQUE_INCORRECT', rel, `${canoniques.length} <link rel="canonical"> sur la page d'erreur (aucun attendu, ni entrée de sitemap)`);
     } else {
       if (origine !== undefined) {
         const attendue = new URL(cheminPublic(rel), origine).href;

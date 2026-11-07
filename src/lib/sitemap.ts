@@ -9,7 +9,8 @@ export interface PagesDuCorpus {
   candidats: readonly { id: string }[];
 }
 
-// Pages fixes (trailingSlash 'always', aucune page 404) : à garder alignées sur src/pages/.
+// Pages fixes (trailingSlash 'always', aucune page 404) : à garder alignées sur src/pages/. Une future page 404
+// n'entre jamais ici : check-dist l'exclut des URL canoniques et du sitemap (PAGE_ERREUR, IN-07).
 const PAGES_FIXES = ['/', '/themes/', '/candidats/', '/methode/', '/mentions-legales/', '/qui-sommes-nous/'] as const;
 
 /** Chemins de toutes les pages construites, triés, sans doublon. */

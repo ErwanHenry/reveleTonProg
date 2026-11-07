@@ -732,6 +732,16 @@ describe('checkDist : domaine, URL canoniques, sitemap et robots (HEB-05, HEB-06
     assert.deepEqual(checkDist(contact, { mode: 'production', deploiement: true }).map((c) => [c.code, c.severite]), [['CONTACT_PROVISOIRE', 'erreur']]);
   });
 
+  it('IN-07 : une page 404.html n’attend ni URL canonique ni entrée de sitemap ; une canonique y est refusée', () => {
+    const avec404 = (html: string): Fichiers => ({ ...distPropre({}, { domaine: D }), '404.html': html });
+    assert.deepEqual(checkDist(ecrireDist(avec404(page({ titre: 'Page introuvable' }))), { mode: 'production', domaine: D }), []);
+    const canonique = checkDist(ecrireDist(avec404(page({ head: `<link rel="canonical" href="https://${D}/404.html">` }))), { mode: 'production', domaine: D });
+    assert.deepEqual(canonique.map((c) => [c.code, c.fichier]), [['CANONIQUE_INCORRECT', '404.html']]);
+    // une autre page d'erreur ou une page 404 dans un sous-dossier reste une page ordinaire
+    const ailleurs = checkDist(ecrireDist({ ...distPropre({}, { domaine: D }), 'a/404.html': page() }), { mode: 'production', domaine: D });
+    assert.ok(ailleurs.some((c) => c.code === 'CANONIQUE_ABSENT' && c.fichier === 'a/404.html'), JSON.stringify(ailleurs));
+  });
+
   it('DOMAINE_PROVISOIRE sans option domaine : une fois par page de production dont l’URL canonique vise un hôte .invalid', () => {
     const dist = ecrireDist(distPropre({}, { domaine: 'exemple.invalid' }));
     const defaut = checkDist(dist, { mode: 'production' });
