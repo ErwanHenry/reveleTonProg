@@ -3,12 +3,12 @@
 // preview de corpus-m1 : le nombre annoncé est recompté sur les articles rendus de chaque page thème.
 // La page thème montre la première mesure de chaque case (tri par titre) ; dans corpus-m1, une case qui
 // tient une mesure publiée la montre en premier, donc le recomptage sur les articles est exact.
-import { after, describe, it } from 'node:test';
+import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { aClasse, analyserHtml, texte, trouver } from '../../../scripts/lib/html.ts';
 import type { Noeud } from '../../../scripts/lib/html.ts';
-import { materialiserCorpusM1, nettoyerCorpusM1 } from '../../helpers/corpus-m1.ts';
+import { materialiserCorpusM1 } from '../../helpers/corpus-m1.ts';
 import type { ContexteSite } from '../contexte.ts';
 
 const norm = (s: string): string => s.replace(/\s+/g, ' ').trim();
@@ -22,8 +22,8 @@ interface PageTheme {
 }
 
 export default function couverturePreview(ctx: ContexteSite): void {
-  const racine = materialiserCorpusM1();
-  after(nettoyerCorpusM1);
+  // Racine dédiée dans un dossier temporaire du contexte : nettoyerCorpusM1() supprimerait aussi celles des autres modules de cas.
+  const racine = materialiserCorpusM1(path.join(ctx.tmp(), 'corpus-m1'));
 
   const pagesTheme = (): PageTheme[] => {
     const b = ctx.construire('m1-preview', { racine, mode: 'preview' });
