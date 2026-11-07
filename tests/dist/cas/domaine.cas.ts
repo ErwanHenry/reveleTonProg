@@ -148,7 +148,7 @@ export default function domaine(ctx: ContexteSite): void {
       if (site.domaineProvisoire) {
         assert.notEqual(b.status, 0, `la build de déploiement aurait dû échouer :\n${b.output.slice(-2000)}`);
         assert.match(b.output, /config\/site\.yml/);
-        assert.match(b.output, /domaine provisoire \(\.invalid\)/);
+        assert.match(b.output, /domaine provisoire \(TLD réservé : \.invalid/);
         assert.equal(fs.existsSync(path.join(b.outDir, 'index.html')), false, 'une page a été écrite malgré le refus');
       } else {
         // Domaine acheté : la garde du domaine ne mord plus (le contact ou l'hébergeur peuvent encore refuser).

@@ -17,8 +17,8 @@ const USAGE = `Usage : node scripts/check-dist.ts [--dist <dossier>] [--root <do
   --format text|github    text (défaut) ou annotations GitHub Actions en plus
   Le domaine du site est lu dans config/site.yml (racine du projet) : en production, URL canonique de chaque page,
   sitemap.xml et ligne Sitemap de robots.txt doivent le suivre ; en preview, aucun des trois n'est permis.
-  RTP_DEPLOIEMENT=1 (job de déploiement) : un contact provisoire (.invalid), un hébergeur seulement prévu et un domaine
-  provisoire (.invalid) deviennent des erreurs au lieu d'avertissements.
+  RTP_DEPLOIEMENT=1 (job de déploiement) : un contact provisoire, un hébergeur seulement prévu et un domaine
+  provisoire (TLD réservé : .invalid, .test, .example, .localhost) deviennent des erreurs au lieu d'avertissements.
   RTP_DEPLOIEMENT n'accepte que 1, 0 ou vide ; toute autre valeur est refusée (code 2).
   Code de sortie : 0 sans erreur, 1 si au moins une erreur, 2 si les arguments, le mode ou config/site.yml sont invalides.
 `;

@@ -13,6 +13,7 @@ import { motsInterdits } from '../../src/lib/content-core/rules/text/forbidden.t
 import type { Mode } from '../../src/lib/content-core/rules/types.ts';
 import { schemasDirOf } from '../../src/lib/content-core/root.ts';
 import { empreinteCsp, scriptsEnLigne } from '../../src/lib/csp-empreintes.ts';
+import { estHoteProvisoire } from '../../src/lib/site-config.ts';
 import { aClasse, analyserHtml, trouver } from './html.ts';
 import type { Noeud } from './html.ts';
 
@@ -76,7 +77,7 @@ export interface OptionsCheckDist {
   /** Nombre de cellules attendu par thème visible (sans elle, CELLULES_INCOHERENTES et THEME_INATTENDU sont inactifs). */
   cellulesParTheme?: ReadonlyMap<string, number> | Readonly<Record<string, number>>;
   /**
-   * Vrai pour un contrôle avant déploiement (RTP_DEPLOIEMENT=1) : un contact `.invalid` (CONTACT_PROVISOIRE) et
+   * Vrai pour un contrôle avant déploiement (RTP_DEPLOIEMENT=1) : un contact provisoire (CONTACT_PROVISOIRE, TLD réservé) et
    * une page qui annonce un hébergeur seulement prévu (HEBERGEUR_PREVU) deviennent des erreurs, sinon des avertissements.
    */
   deploiement?: boolean;
@@ -89,8 +90,8 @@ export interface OptionsCheckDist {
    * Domaine du site (config/site.yml) : nom d'hôte apex, sans schéma, port ni chemin (ex. exemple.fr). Le CLI le
    * passe toujours. Avec lui, en production, chaque page porte exactement une URL canonique égale à
    * `https://<domaine>` + son chemin, sitemap.xml liste exactement ces URL et robots.txt pointe vers le sitemap ;
-   * un domaine `.invalid` donne DOMAINE_PROVISOIRE (erreur sous `deploiement`). Sans lui, ces règles sont inactives,
-   * sauf DOMAINE_PROVISOIRE sur une page de production dont l'URL canonique vise un hôte `.invalid`.
+   * un domaine provisoire (TLD réservé) donne DOMAINE_PROVISOIRE (erreur sous `deploiement`). Sans lui, ces règles sont inactives,
+   * sauf DOMAINE_PROVISOIRE sur une page de production dont l'URL canonique vise un hôte provisoire.
    */
   domaine?: string;
 }
@@ -264,11 +265,11 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
   if (opts.domaine !== undefined && (origine === undefined || new URL(origine).hostname !== opts.domaine.toLowerCase())) {
     throw new Error(`checkDist : domaine « ${opts.domaine.slice(0, 60)} » invalide (nom d'hôte attendu, sans schéma, port ni chemin)`);
   }
-  if (opts.domaine !== undefined && opts.domaine.toLowerCase().endsWith('.invalid')) {
+  if (opts.domaine !== undefined && estHoteProvisoire(opts.domaine)) {
     signaler(
       'DOMAINE_PROVISOIRE',
       '.',
-      `domaine provisoire (.invalid) : ${opts.domaine.slice(0, 60)} ; renseigner le vrai domaine dans config/site.yml avant de déployer`,
+      `domaine provisoire (TLD réservé : .invalid, .test, .example, .localhost) : ${opts.domaine.slice(0, 60)} ; renseigner le vrai domaine dans config/site.yml avant de déployer`,
       severiteDeploiement,
     );
   }
@@ -435,8 +436,8 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
         } catch {
           // pourcentage mal formé : on garde l'adresse brute
         }
-        if (decode.trim().toLowerCase().endsWith('.invalid')) {
-          signaler('CONTACT_PROVISOIRE', rel, `contact provisoire (.invalid) : ${decode.slice(0, 60)}`, severiteDeploiement);
+        if (estHoteProvisoire(decode)) {
+          signaler('CONTACT_PROVISOIRE', rel, `contact provisoire (TLD réservé) : ${decode.slice(0, 60)}`, severiteDeploiement);
         }
         continue;
       }
@@ -496,8 +497,8 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
         // Sans domaine (dist construit avant, appel direct) : seul un hôte provisoire est jugé.
         for (const c of canoniques) {
           const vue = urlAbsolue(nettoyerUrl(c.attrs.href ?? ''));
-          if (vue !== undefined && new URL(vue).hostname.endsWith('.invalid')) {
-            signaler('DOMAINE_PROVISOIRE', rel, `URL canonique vers un domaine provisoire (.invalid) : ${vue.slice(0, 80)}`, severiteDeploiement);
+          if (vue !== undefined && estHoteProvisoire(new URL(vue).hostname)) {
+            signaler('DOMAINE_PROVISOIRE', rel, `URL canonique vers un domaine provisoire (TLD réservé) : ${vue.slice(0, 80)}`, severiteDeploiement);
           }
         }
       }

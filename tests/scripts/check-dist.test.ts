@@ -22,11 +22,12 @@ const H_NIVEAU = `'${empreinteCsp(NIVEAU)}'`;
 /**
  * Configuration réelle du dépôt, celle que lit le CLI (env vide : pas de garde de déploiement dans le processus de
  * test). Le nom d'hôte du site n'est jamais écrit ici (tests/repo/hote-en-dur.test.ts) ; les cas unitaires du
- * domaine utilisent exemple.test / exemple.invalid.
+ * domaine utilisent example.org (nom réservé par la RFC 2606, mais pas un TLD réservé : un « vrai » domaine pour la
+ * garde) et exemple.invalid, exemple.test, exemple.example, exemple.localhost (provisoires, IN-04).
  */
 const SITE = loadSiteConfig(REPO_ROOT, {});
-/** Domaine synthétique par défaut des dists propres appelés directement (jamais `.invalid`). */
-const DOMAINE_TEST = 'exemple.test';
+/** Domaine synthétique par défaut des dists propres appelés directement (jamais un TLD réservé : estHoteProvisoire). */
+const DOMAINE_TEST = 'example.org';
 
 const tmpDirs: string[] = [];
 after(() => {
@@ -657,11 +658,11 @@ describe('checkDist : domaine, URL canoniques, sitemap et robots (HEB-05, HEB-06
     const r1 = avecDomaine(enTrop);
     seul(r1, 'SITEMAP_INCOHERENT');
     assert.deepEqual(r1.fichiers, ['sitemap.xml']);
-    assert.match(r1.messages[0] ?? '', /1 <loc> sans page canonique : https:\/\/exemple\.test\/fantome\//);
+    assert.match(r1.messages[0] ?? '', /1 <loc> sans page canonique : https:\/\/example\.org\/fantome\//);
     const manque = retoucher(distPropre({}, { domaine: D }), 'sitemap.xml', (x) => x.replace(`  <url><loc>${ORIGINE}/themes/logement/</loc></url>\n`, ''));
     const r2 = avecDomaine(manque);
     seul(r2, 'SITEMAP_INCOHERENT');
-    assert.match(r2.messages[0] ?? '', /1 URL canonique\(s\) manquante\(s\) : https:\/\/exemple\.test\/themes\/logement\//);
+    assert.match(r2.messages[0] ?? '', /1 URL canonique\(s\) manquante\(s\) : https:\/\/example\.org\/themes\/logement\//);
     const double = retoucher(distPropre({}, { domaine: D }), 'sitemap.xml', (x) => x.replace('</urlset>', `  <url><loc>${ORIGINE}/</loc></url>\n</urlset>`));
     assert.match(avecDomaine(double).messages.join(' '), /1 <loc> en double/);
     const cinq = Array.from({ length: 5 }, (_, i) => `  <url><loc>${ORIGINE}/f${i}/</loc></url>\n`).join('');
@@ -719,6 +720,18 @@ describe('checkDist : domaine, URL canoniques, sitemap et robots (HEB-05, HEB-06
     assert.deepEqual(checkDist(ecrireDist(distPropre({}, { domaine: D })), { mode: 'production', domaine: D, deploiement: true }), []);
   });
 
+  it('IN-04 : .test, .example et .localhost sont provisoires comme .invalid (option domaine et URL canonique)', () => {
+    for (const P of ['exemple.test', 'exemple.example', 'exemple.localhost', 'Exemple.TEST']) {
+      const dist = ecrireDist(distPropre({}, { domaine: P.toLowerCase() }));
+      const avecOption = checkDist(dist, { mode: 'production', domaine: P.toLowerCase(), deploiement: true });
+      assert.deepEqual(avecOption.map((c) => [c.code, c.fichier, c.severite]), [['DOMAINE_PROVISOIRE', '.', 'erreur']], P);
+      const sansOption = checkDist(dist, { mode: 'production', deploiement: true });
+      assert.ok(sansOption.length > 0 && sansOption.every((c) => c.code === 'DOMAINE_PROVISOIRE' && c.severite === 'erreur'), P);
+    }
+    const contact = ecrireDist(distPropre({ 'index.html': page({ corps: '<a href="mailto:contact@exemple.test">m</a>' }) }));
+    assert.deepEqual(checkDist(contact, { mode: 'production', deploiement: true }).map((c) => [c.code, c.severite]), [['CONTACT_PROVISOIRE', 'erreur']]);
+  });
+
   it('DOMAINE_PROVISOIRE sans option domaine : une fois par page de production dont l’URL canonique vise un hôte .invalid', () => {
     const dist = ecrireDist(distPropre({}, { domaine: 'exemple.invalid' }));
     const defaut = checkDist(dist, { mode: 'production' });
@@ -760,7 +773,7 @@ describe('CLI scripts/check-dist.ts', () => {
     const lignes = r.out.trim().split('\n');
     if (SITE.domaineProvisoire) {
       assert.equal(lignes.length, 2, r.out);
-      assert.match(lignes[0] ?? '', /^DOMAINE_PROVISOIRE \. : domaine provisoire \(\.invalid\)/);
+      assert.match(lignes[0] ?? '', /^DOMAINE_PROVISOIRE \. : domaine provisoire \(TLD réservé/);
       assert.match(lignes[1] ?? '', /check-dist : 0 erreur\(s\), 1 avertissement/);
     } else {
       assert.equal(lignes.length, 1, r.out);
@@ -782,7 +795,7 @@ describe('CLI scripts/check-dist.ts', () => {
     const r = lancer(['--dist', dist, '--root', CORPUS, '--mode', 'production'], { RTP_DEPLOIEMENT: '1' });
     if (SITE.domaineProvisoire) {
       assert.equal(r.status, 1, r.out + r.err);
-      assert.match(r.out, /^DOMAINE_PROVISOIRE \. : domaine provisoire \(\.invalid\)/m);
+      assert.match(r.out, /^DOMAINE_PROVISOIRE \. : domaine provisoire \(TLD réservé/m);
       assert.match(r.out, /check-dist : 1 erreur\(s\)/);
       const gh = lancer(['--dist', dist, '--root', CORPUS, '--mode', 'production', '--format', 'github'], { RTP_DEPLOIEMENT: '1' });
       assert.match(gh.out, /^::error file=.*title=DOMAINE_PROVISOIRE::/m);

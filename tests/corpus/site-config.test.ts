@@ -7,7 +7,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadSiteConfig } from '../../src/lib/site-config.ts';
+import { estHoteProvisoire, loadSiteConfig, TLD_PROVISOIRES } from '../../src/lib/site-config.ts';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const dossiers: string[] = [];
@@ -54,7 +54,7 @@ describe('loadSiteConfig', () => {
 
   it('WR-03 : RTP_DEPLOIEMENT=1 refuse le contact provisoire, accepte un contact réel', () => {
     const provisoire = projet(yml('exemple.fr', 'contact@exemple.invalid'));
-    assert.throws(() => loadSiteConfig(provisoire, { RTP_DEPLOIEMENT: '1' }), /contact provisoire \(\.invalid\) refusé quand RTP_DEPLOIEMENT=1/);
+    assert.throws(() => loadSiteConfig(provisoire, { RTP_DEPLOIEMENT: '1' }), /contact provisoire \(TLD réservé : \.invalid, \.test, \.example, \.localhost\) refusé quand RTP_DEPLOIEMENT=1/);
     assert.equal(loadSiteConfig(provisoire, {}).contactProvisoire, true);
     assert.equal(loadSiteConfig(projet(REEL), { RTP_DEPLOIEMENT: '1' }).contactProvisoire, false);
   });
@@ -66,12 +66,33 @@ describe('loadSiteConfig', () => {
       (e: unknown) => {
         const m = (e as Error).message;
         assert.match(m, /^config\/site\.yml : /);
-        assert.match(m, /domaine provisoire \(\.invalid\) refusé quand RTP_DEPLOIEMENT=1 : renseigner le vrai domaine avant de déployer/);
+        assert.match(m, /domaine provisoire \(TLD réservé : \.invalid, \.test, \.example, \.localhost\) refusé quand RTP_DEPLOIEMENT=1 : renseigner le vrai domaine avant de déployer/);
         assert.doesNotMatch(m, /contact provisoire/);
         return true;
       },
     );
     assert.equal(loadSiteConfig(provisoire, {}).domaineProvisoire, true);
+  });
+
+  it('IN-04 : .test, .example et .localhost sont provisoires comme .invalid (domaine et contact), refusés au déploiement', () => {
+    for (const tld of ['test', 'example', 'localhost']) {
+      const domaine = projet(yml(`exemple.${tld}`, 'bonjour@exemple.fr'));
+      assert.throws(() => loadSiteConfig(domaine, { RTP_DEPLOIEMENT: '1' }), /domaine provisoire/, tld);
+      assert.equal(loadSiteConfig(domaine, {}).domaineProvisoire, true, tld);
+      const contact = projet(yml('exemple.fr', `contact@exemple.${tld}`));
+      assert.throws(() => loadSiteConfig(contact, { RTP_DEPLOIEMENT: '1' }), /contact provisoire/, tld);
+      assert.equal(loadSiteConfig(contact, {}).contactProvisoire, true, tld);
+    }
+  });
+
+  it('IN-04 : estHoteProvisoire ne juge que le dernier label (TLD), casse et point final ignorés', () => {
+    for (const h of ['a.invalid', 'a.test', 'a.example', 'a.localhost', 'A.TEST', 'a.test.', 'x@a.example', 'contact@exemple.invalid']) {
+      assert.equal(estHoteProvisoire(h), true, h);
+    }
+    for (const h of ['exemple.fr', 'test.fr', 'example.org', 'a.testeur', 'invalid.com', 'x@test.fr', 'localhost.fr']) {
+      assert.equal(estHoteProvisoire(h), false, h);
+    }
+    assert.deepEqual([...TLD_PROVISOIRES].sort(), ['example', 'invalid', 'localhost', 'test']);
   });
 
   it('HEB-06 : domaine et contact provisoires, une seule erreur qui nomme les deux champs', () => {
@@ -81,8 +102,8 @@ describe('loadSiteConfig', () => {
       (e: unknown) => {
         const m = (e as Error).message;
         assert.equal(m.match(/config\/site\.yml/g)?.length, 1, m);
-        assert.match(m, /domaine provisoire \(\.invalid\) refusé quand RTP_DEPLOIEMENT=1/);
-        assert.match(m, /contact provisoire \(\.invalid\) refusé quand RTP_DEPLOIEMENT=1/);
+        assert.match(m, /domaine provisoire \(TLD réservé : \.invalid, \.test, \.example, \.localhost\) refusé quand RTP_DEPLOIEMENT=1/);
+        assert.match(m, /contact provisoire \(TLD réservé : \.invalid, \.test, \.example, \.localhost\) refusé quand RTP_DEPLOIEMENT=1/);
         assert.match(m, / ; /);
         return true;
       },

@@ -9,13 +9,13 @@ import { estDeploiement } from './deploiement.ts';
 export interface SiteConfig {
   /** Nom d'hôte du site (apex, minuscules, sans schéma, port, chemin ni `www.`) : alimente `site`, les URL canoniques, sitemap.xml, robots.txt et le bloc Caddy. */
   domaine: string;
-  /** Vrai tant que le domaine est un placeholder `.invalid` (domaine pas encore acheté). */
+  /** Vrai tant que le domaine finit par un TLD réservé (estHoteProvisoire : .invalid, .test, .example, .localhost). */
   domaineProvisoire: boolean;
   /** Adresse publique des signalements. */
   contact: string;
   /** « propriétaire/dépôt » GitHub. */
   depot: string;
-  /** Vrai tant que le contact est un placeholder `.invalid` (remplacé au lot 3). */
+  /** Vrai tant que le domaine du contact finit par un TLD réservé (estHoteProvisoire ; remplacé au lot 3). */
   contactProvisoire: boolean;
 }
 
@@ -26,6 +26,18 @@ const CLES = ['domaine', 'contact', 'depot'] as const;
 const RE_DOMAINE = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/;
 const RE_CONTACT = /^[^@\s<>"]+@[^@\s<>"]+\.[^@\s<>"]+$/;
 const RE_DEPOT = /^[\w.-]+\/[\w.-]+$/;
+
+/**
+ * TLD réservés (RFC 2606 et RFC 6761) : un hôte qui finit par l'un d'eux ne sert jamais un vrai site. Tous comptent
+ * comme provisoires pour la garde de déploiement (IN-04 de la revue de la phase 7), pas seulement `.invalid`.
+ */
+export const TLD_PROVISOIRES: readonly string[] = ['invalid', 'test', 'example', 'localhost'];
+
+/** Vrai si le nom d'hôte (ou le domaine d'une adresse courriel) finit par un TLD de TLD_PROVISOIRES, casse ignorée. */
+export function estHoteProvisoire(hote: string): boolean {
+  const nom = (hote.split('@').pop() ?? '').trim().toLowerCase().replace(/\.$/, '');
+  return TLD_PROVISOIRES.includes(nom.split('.').pop() ?? '');
+}
 
 /** Vrai si `domaine` est un nom d'hôte accepté dans config/site.yml (même règle pour le rendu Caddy). */
 export function estDomaineValide(domaine: unknown): domaine is string {
@@ -77,24 +89,24 @@ export function loadSiteConfig(projectRoot: string = process.cwd(), env: NodeJS.
 
   const cfg: SiteConfig = {
     domaine,
-    domaineProvisoire: domaine.endsWith('.invalid'),
+    domaineProvisoire: estHoteProvisoire(domaine),
     contact,
     depot,
-    contactProvisoire: contact.toLowerCase().endsWith('.invalid'),
+    contactProvisoire: estHoteProvisoire(contact),
   };
   // Garde de déploiement (WR-03, HEB-06) : le job de déploiement positionne RTP_DEPLOIEMENT=1 ; ni un
   // domaine provisoire (URL canoniques et sitemap vers un domaine mort) ni un contact provisoire (canal de
   // correction mort) ne doivent alors partir en ligne. Une seule erreur nomme tous les champs fautifs.
   if (deploiement) {
     const refus: string[] = [];
-    if (cfg.domaineProvisoire) refus.push('domaine provisoire (.invalid) refusé quand RTP_DEPLOIEMENT=1 : renseigner le vrai domaine avant de déployer');
-    if (cfg.contactProvisoire) refus.push('contact provisoire (.invalid) refusé quand RTP_DEPLOIEMENT=1 : renseigner une vraie adresse avant de déployer');
+    if (cfg.domaineProvisoire) refus.push('domaine provisoire (TLD réservé : .invalid, .test, .example, .localhost) refusé quand RTP_DEPLOIEMENT=1 : renseigner le vrai domaine avant de déployer');
+    if (cfg.contactProvisoire) refus.push('contact provisoire (TLD réservé : .invalid, .test, .example, .localhost) refusé quand RTP_DEPLOIEMENT=1 : renseigner une vraie adresse avant de déployer');
     if (refus.length > 0) throw erreur(refus.join(' ; '));
   }
   const provisoires = [cfg.domaineProvisoire && `domaine « ${domaine} »`, cfg.contactProvisoire && `contact « ${contact} »`].filter(Boolean);
   if (provisoires.length > 0 && !avertie) {
     avertie = true;
-    console.warn(`${FICHIER} : valeurs provisoires (.invalid), à remplacer avant le déploiement : ${provisoires.join(', ')}`);
+    console.warn(`${FICHIER} : valeurs provisoires (TLD réservé), à remplacer avant le déploiement : ${provisoires.join(', ')}`);
   }
   memo.set(racine, cfg);
   return cfg;
