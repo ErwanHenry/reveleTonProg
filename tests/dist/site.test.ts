@@ -2,6 +2,10 @@
 // Il construit un site à la fois (spawnSync), mémorise chaque build par clé, puis charge chaque module
 // tests/dist/cas/*.cas.ts (ordre alphabétique) : les tranches suivantes ajoutent leurs assertions
 // dans un nouveau module, sans toucher à ce fichier.
+// Exception assumée (07-04, HEB-06) : `construire` accepte une option `env` (fusionnée en dernier, la clé de
+// mémoire reste celle de l'appelant) et supprime un RTP_DEPLOIEMENT hérité du shell, comme RTP_MODE : un
+// développeur qui a exporté RTP_DEPLOIEMENT=1 ne fait plus échouer toutes les builds de test, et le cas
+// « build de déploiement refusée » demande la variable explicitement.
 import { after, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -42,7 +46,7 @@ const builds = new Map<string, Build>();
 const ctx: ContexteSite = {
   repoRoot: REPO_ROOT,
   tmp,
-  construire(cle, { racine, mode }) {
+  construire(cle, { racine, mode, env: envCas }) {
     const memo = builds.get(cle);
     if (memo) return memo;
     assert.ok(
@@ -58,6 +62,9 @@ const ctx: ContexteSite = {
     // Jamais de RTP_MODE hérité : sans mode demandé, le build prend le défaut fail-closed (production).
     if (mode === undefined) delete env.RTP_MODE;
     else env.RTP_MODE = mode;
+    // Jamais de RTP_DEPLOIEMENT hérité : la garde de déploiement (config/site.yml) ferait échouer chaque build.
+    delete env.RTP_DEPLOIEMENT;
+    if (envCas !== undefined) Object.assign(env, envCas);
     const res = spawnSync(ASTRO_BIN, ['build', '--outDir', outDir], { cwd: REPO_ROOT, env, encoding: 'utf8', timeout: 120_000 });
     const build: Build = { status: res.status, output: `${res.stdout ?? ''}${res.stderr ?? ''}`, outDir };
     builds.set(cle, build);

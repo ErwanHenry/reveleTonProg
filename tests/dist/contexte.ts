@@ -18,10 +18,12 @@ export interface Build {
 export interface ContexteSite {
   /**
    * Construit le site pour `racine` (RTP_CONTENT_ROOT) et `mode` (RTP_MODE ; sans mode, la variable est
-   * supprimée de l'environnement du build, jamais héritée de l'appelant). Les builds sont séquentiels
-   * et mémorisés par `cle` : deux appels avec la même clé renvoient le même résultat sans reconstruire.
+   * supprimée de l'environnement du build, jamais héritée de l'appelant). RTP_DEPLOIEMENT hérité est
+   * toujours supprimé ; `env` est fusionné en dernier (ex. `{ RTP_DEPLOIEMENT: '1' }` pour la build de
+   * déploiement). Les builds sont séquentiels et mémorisés par `cle` seule : deux appels avec la même clé
+   * renvoient le même résultat sans reconstruire, quelles que soient leurs options.
    */
-  construire(cle: string, opts: { racine: string; mode?: 'preview' | 'production' }): Build;
+  construire(cle: string, opts: { racine: string; mode?: 'preview' | 'production'; env?: Readonly<Record<string, string>> }): Build;
   /** Contenu texte d'un fichier du dist (chemin relatif, séparateurs « / »). */
   lire(outDir: string, chemin: string): string;
   /** Tous les fichiers du dist (chemins absolus, triés). */
