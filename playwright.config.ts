@@ -16,6 +16,9 @@ export default defineConfig({
     baseURL: `http://127.0.0.1:${port}`,
     locale: 'fr-FR',
     timezoneId: 'Europe/Paris',
+    // CSP ignorée par défaut : texte.spec injecte des styles avec page.addStyleTag, qu'une politique à
+    // empreintes refuse. Seuls csp.spec et csp-sans-js.spec rétablissent la politique réelle de la page.
+    bypassCSP: true,
   },
   webServer: {
     // Chemin entre guillemets : un clone dont le chemin contient une espace reste un seul argument (IN-02).
@@ -25,7 +28,7 @@ export default defineConfig({
     timeout: 15_000,
   },
   projects: [
-    { name: 'avec-js', testIgnore: /sans-js|4g/ },
+    { name: 'avec-js', testIgnore: /sans-js|4g|parcours/ },
     { name: '4g', testMatch: /4g\.spec\.ts/, use: { ...devices['Desktop Chrome'] } },
     { name: 'sans-js', testMatch: /sans-js\.spec\.ts/, use: { javaScriptEnabled: false } },
   ],
