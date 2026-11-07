@@ -146,6 +146,11 @@ Le mode `preview` ne sert qu'en local, pour rédiger un thème sans avoir encore
 
 `npm run e2e` construit la fixture (`corpus-m1`) puis le vrai corpus en mode preview, sert chaque dossier avec `e2e/serveur.ts` (compression gzip comme Caddy) et lance Playwright. Les fichiers de `e2e/` prouvent : fonctionnement sans JS et changement de niveau (`sans-js`), parcours au clavier (`clavier`), WCAG 2.2 AA par axe (`axe` : échec sur toute violation d'impact `serious` ou `critical`, les impacts `minor` et `moderate` ne bloquent pas ; même seuil annoncé sur la page Méthode), contraste (`contraste`), texte agrandi à 160 % (`texte`), `prefers-reduced-motion` (`mouvement`), aucun tiers, cookie ni clé `localStorage` hors réglages (`vie-privee`), et le temps de chargement à froid de la page la plus lourde sur deux connexions lentes simulées par CDP (`4g`, Chromium uniquement) : moins de 1 s avec 150 ms de latence par requête et 1,6 Mbit/s, moins de 1,5 s avec l'équivalent DevTools du « Slow 4G » de Lighthouse (562,5 ms par requête, 1,44 Mbit/s). Profils et budgets : `src/lib/profil-4g.ts`, repris tels quels par la page Méthode. Chaque mesure ouvre un contexte de navigateur neuf (cache et connexions neufs) ; le serveur local n'a ni DNS ni TLS, une mesure réelle derrière Caddy peut être plus lente.
 
+La Phase 7 ajoute quatre fichiers. `csp` et `csp-sans-js` chargent chaque page des deux dist sous sa propre CSP et exigent zéro `securitypolicyviolation` et une console vide, avec et sans JavaScript, et que les deux scripts en ligne aient tourné. `parcours` suit le chemin accueil, Thèmes, thème, Aîné, candidat, Enfant, retour arrière, et prouve que la page revenue du bfcache affiche Enfant ; une copie du dist sans le gestionnaire `pageshow` doit échouer. `retour` fait le même chemin avec un retour arrière sans bfcache.
+
+- `bypassCSP: true` est le défaut de `playwright.config.ts` (texte.spec injecte des styles par `page.addStyleTag`, qu'une CSP à empreintes refuse) ; seuls `csp.spec.ts` et `csp-sans-js.spec.ts` posent `bypassCSP: false`.
+- Le projet `parcours` utilise `channel: 'chromium'` (nouveau mode headless) et retire l'option de lancement qui coupe le bfcache : le headless shell par défaut ne restaure jamais une page du bfcache. `npx playwright install chromium` installe ce navigateur ; la CI le fait déjà.
+- Mesures 4G après l'intégration du CSS et des scripts dans la page (07-05, serveur local gzip, page la plus lourde `/themes/sante/` du vrai corpus, 180 590 octets bruts, 29 622 octets gzip) : environ 730 ms en « Slow 4G » (1257 ms avant) et environ 300 ms à 150 ms de latence (environ 420 ms avant). Les budgets publiés (1 s et 1,5 s) n'ont pas changé.
 - Première exécution : `npx playwright install chromium` (téléchargement du navigateur).
 - Ne jamais le lancer en même temps que `npm test` (cache `.astro` partagé). Un seul jeu : `npm run e2e -- --jeu m1` ; un seul fichier : `npm run e2e -- --jeu m1 -- e2e/axe.spec.ts`.
 - Le rapport HTML est écrit dans `playwright-report/` (ignoré par Git). En CI, le job `e2e` le téléverse seulement en cas d'échec (7 jours).
@@ -172,10 +177,10 @@ En local : `RTP_MODE=preview npm run build -- --outDir dist-preview`, puis la m�
 | `SCRIPT_TROP_LOURD` | script de plus de 2048 octets | réduire le script |
 | `RESSOURCE_TIERCE` | ressource chargée depuis un autre site | héberger la ressource dans le dépôt ou la retirer |
 | `LIEN_EXTERNE_NON_PROTEGE` | lien externe sans `rel="noopener noreferrer"`, ou schéma autre que `https:`, `mailto:` et lien relatif | ajouter le `rel`, ou remplacer le lien |
-| `SCRIPT_EN_LIGNE` | `<script>` avec un corps, ou gestionnaire `on…=` en attribut | passer par un fichier dans `src/scripts/` |
+| `SCRIPT_EN_LIGNE` | `<script>` en ligne dont le corps diffère, octet pour octet, de chaque fichier de `src/scripts/`, ou gestionnaire `on…=` en attribut | inclure le fichier tel quel (`?raw` + `is:inline set:html`), jamais de code écrit dans la page |
 | `SCRIPT_DATA_URI` | script en `data:` | idem |
 | `SCRIPT_NON_BLOQUANT` | script d'ordre ou de niveau en `async`/`defer`/`module` | le remettre bloquant dans `<head>` |
-| `STYLE_EN_LIGNE` | attribut `style=` | utiliser une classe CSS |
+| `STYLE_EN_LIGNE` | attribut `style=` (les blocs `<style>` sont permis s'ils sont hachés, voir `STYLE_SANS_EMPREINTE`) | utiliser une classe CSS |
 | `ID_DUPLIQUE` | même `id` deux fois dans une page | rendre l'id unique |
 | `ESPACE_PERDU` | mot collé à un bouton ou à une définition | remettre l'espace ou la ponctuation |
 | `MOT_INTERDIT` | mot interdit dans le texte rendu | reformuler la rédaction |
@@ -183,7 +188,7 @@ En local : `RTP_MODE=preview npm run build -- --outDir dist-preview`, puis la m�
 | `CELLULES_INCOHERENTES` | nombre de cellules différent du attendu pour le thème | vérifier la couverture et les candidats |
 | `THEME_INATTENDU` | page de thème absente du corpus publié | retirer la page ou publier le thème |
 | `BROUILLON_EN_PRODUCTION` | trace de brouillon dans un build de production | vérifier `RTP_MODE` et le statut de la mesure |
-| `PREVIEW_INDEXABLE` | page de prévisualisation sans `noindex` | vérifier le mode du build |
+| `PREVIEW_INDEXABLE` | build preview indexable : page sans `noindex`, `robots.txt` sans `Disallow: /`, `<link rel="canonical">` dans une page, `sitemap.xml` présent ou ligne `Sitemap:` dans `robots.txt` | vérifier le mode du build (`RTP_MODE=preview`) ; la preview n'a pas d'URL publique |
 | `LIEN_INTERNE_CASSE` | lien interne vers une page ou une ancre absente | corriger le lien |
 | `LANG_ABSENTE` | `<html>` sans `lang="fr"` | corriger la mise en page |
 | `H1_NOMBRE` | zéro ou plusieurs `h1` | un seul `h1` par page |
@@ -192,9 +197,32 @@ En local : `RTP_MODE=preview npm run build -- --outDir dist-preview`, puis la m�
 | `META_REFRESH` | `<meta http-equiv="refresh">` dans une page | retirer la redirection ; en faire une règle du serveur |
 | `BASE_INTERDITE` | `<base>` dans une page | le retirer : il réécrit tous les liens relatifs |
 | `CONTACT_PROVISOIRE` | lien `mailto:` en `.invalid` (contact de `config/site.yml` pas encore remplacé) | avertissement en CI ; erreur quand `RTP_DEPLOIEMENT=1` : renseigner un vrai contact |
+| `CSP_ABSENTE` | page sans meta CSP, avec plusieurs, ou meta hors de `<head>` (le navigateur l'ignore) | vérifier `security.csp` dans `astro.config.mjs` et la mise en page |
+| `CSP_TROP_PERMISSIVE` | jeton de la CSP autre que `'self'`, `'none'` ou une empreinte sha256 (`'unsafe-inline'`, `*`, `https:`…), y compris dans une directive répétée | retirer le jeton ; ne jamais affaiblir la politique pour faire passer un script |
+| `SCRIPT_SANS_EMPREINTE` | empreinte d'un script en ligne absente de la directive effective (`script-src-elem`, sinon `script-src`, sinon `default-src`) | reconstruire : les empreintes sont calculées au chargement de `astro.config.mjs` par `src/lib/csp-empreintes.ts` |
+| `STYLE_SANS_EMPREINTE` | empreinte d'un `<style>` absente de la directive effective (`style-src-elem`, `style-src`, `default-src`) | reconstruire ; vérifier `security.csp` (Astro hache les styles qu'il écrit) |
+| `CANONIQUE_ABSENT` | page de production sans `<link rel="canonical">` ou avec plusieurs | vérifier `Base.astro` (un seul lien, production seulement) |
+| `CANONIQUE_INCORRECT` | URL canonique différente de `https://` + domaine de `config/site.yml` + chemin de la page (relative, `http:`, autre hôte, `www.`, mauvais chemin) | reconstruire après tout changement de domaine ; ne jamais écrire l'URL à la main |
+| `SITEMAP_INCOHERENT` | `sitemap.xml` absent en production, ou liste différente des URL canoniques des pages (manquante, en trop, en double) | reconstruire ; vérifier `src/lib/sitemap.ts` si une page a été ajoutée hors de `cheminsDuSite` |
+| `ROBOTS_SANS_SITEMAP` | `robots.txt` de production absent ou sans la ligne `Sitemap: https://<domaine>/sitemap.xml` | reconstruire ; vérifier `src/pages/robots.txt.ts` |
+| `DOMAINE_PROVISOIRE` | domaine de `config/site.yml` en `.invalid` (un constat pour le dist), ou URL canonique vers un domaine `.invalid` | avertissement en CI ; erreur quand `RTP_DEPLOIEMENT=1` : voir « Changer de domaine » |
 | `HEBERGEUR_PREVU` | page qui porte `data-hebergeur="prevu"` (Méthode, Mentions légales : « pas encore en ligne », relecture par un juriste à venir) | avertissement en CI ; erreur quand `RTP_DEPLOIEMENT=1` : passer `statut: actif` dans `config/hebergeur.yml` et reconstruire |
 
-**Garde de déploiement (contact).** Tant que le domaine n'est pas acheté, `config/site.yml` garde `contact@domaine-a-definir.invalid` et la CI passe avec un avertissement. Le job de déploiement du lot 3 doit définir `RTP_DEPLOIEMENT=1` : le build (`astro build`) échoue alors si le contact finit par `.invalid`, et `check-dist` signale `CONTACT_PROVISOIRE` en erreur. Même logique pour l'hébergeur : tant que `config/hebergeur.yml` dit `statut: prevu`, le build échoue sous `RTP_DEPLOIEMENT=1`, et `check-dist` signale `HEBERGEUR_PREVU` en erreur sur un dist construit plus tôt (artefact `site-preview`, `dist-reel`) qui contient encore les phrases d'avant la mise en ligne. `RTP_DEPLOIEMENT` n'accepte que `1` (déploiement), `0` ou une valeur vide : `true`, `yes` ou toute autre valeur font échouer le build et `check-dist` (code 2) au lieu de désactiver les gardes en silence (`src/lib/deploiement.ts`).
+**Garde de déploiement (contact et domaine).** Tant que le domaine n'est pas acheté, `config/site.yml` garde `contact@domaine-a-definir.invalid` et la CI passe avec un avertissement. Le job de déploiement du lot 3 doit définir `RTP_DEPLOIEMENT=1` : le build (`astro build`) échoue alors si le contact finit par `.invalid`, et `check-dist` signale `CONTACT_PROVISOIRE` en erreur. Même logique pour l'hébergeur : tant que `config/hebergeur.yml` dit `statut: prevu`, le build échoue sous `RTP_DEPLOIEMENT=1`, et `check-dist` signale `HEBERGEUR_PREVU` en erreur sur un dist construit plus tôt (artefact `site-preview`, `dist-reel`) qui contient encore les phrases d'avant la mise en ligne. Même logique pour le domaine : tant que `domaine` finit par `.invalid`, le build échoue sous `RTP_DEPLOIEMENT=1` et `check-dist` signale `DOMAINE_PROVISOIRE` en erreur. Quand le domaine et le contact sont tous deux provisoires, le build s'arrête sur une seule erreur qui nomme les deux : « config/site.yml : domaine provisoire (.invalid) refusé quand RTP_DEPLOIEMENT=1 : renseigner le vrai domaine avant de déployer ; contact provisoire (.invalid) refusé quand RTP_DEPLOIEMENT=1 : renseigner une vraie adresse avant de déployer ». Sans la variable, le build passe avec un seul avertissement « config/site.yml : valeurs provisoires (.invalid), à remplacer avant le déploiement : … ». `node scripts/render-caddy.ts` refuse aussi de rendre le bloc (code 2) sous `RTP_DEPLOIEMENT=1`. `RTP_DEPLOIEMENT` n'accepte que `1` (déploiement), `0` ou une valeur vide : `true`, `yes` ou toute autre valeur font échouer le build et `check-dist` (code 2) au lieu de désactiver les gardes en silence (`src/lib/deploiement.ts`).
+
+### Changer de domaine
+
+Le domaine n'est écrit qu'à un seul endroit : le champ `domaine:` de `config/site.yml` (ADR-053). Le site (`site` d'Astro), les URL canoniques, `sitemap.xml`, la ligne `Sitemap:` de `robots.txt` et le bloc Caddy en dérivent.
+
+1. Modifier `domaine:` dans `config/site.yml` (nom d'hôte seul, en minuscules, sans `https://`, sans `www.` ni port).
+2. Régénérer le bloc Caddy : `fnm exec --using=24 node scripts/render-caddy.ts` (réécrit `deploy/caddy/site.caddy`). `node scripts/render-caddy.ts --check` n'écrit rien et sort en code 1 si le fichier commité n'est plus à jour.
+3. `npm test` : le test de dérive (`tests/repo/caddy.test.ts`) et la garde des noms d'hôte écrits en dur (`tests/repo/hote-en-dur.test.ts`) doivent passer. Un nom d'hôte copié ailleurs que dans `config/site.yml` (sous-domaines compris) fait échouer le second.
+4. Commiter `config/site.yml` et `deploy/caddy/site.caddy` ensemble.
+5. Appliquer le bloc sur le serveur en Phase 8 (« Bloc Caddy » ci-dessous), puis remplacer aussi le contact `.invalid` de `config/site.yml` : la garde de déploiement refuse l'un comme l'autre.
+
+### Modifier un script de src/scripts/
+
+Les empreintes CSP de `src/scripts/*.js` sont calculées au chargement de `astro.config.mjs`. Après une modification de `src/scripts/*.js`, redémarrer `astro dev` (`npm run dev`) : les empreintes calculées au chargement de la configuration ne suivent pas le fichier, et le navigateur refuserait le script modifié. Relancer ensuite `node scripts/render-caddy.ts` et commiter `deploy/caddy/site.caddy` : l'en-tête CSP du bloc porte les mêmes empreintes, et le test de dérive échoue tant qu'il n'est pas régénéré. Un script reste bloquant, sans attribut, et pèse au plus 2048 octets.
 
 ### Importer les statuts data.gouv
 
@@ -287,9 +315,21 @@ GitHub Actions → `rsync -az --delete dist/ $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_P
 3. Passer `statut: actif` dans `config/hebergeur.yml`, dans le commit de déploiement. Tant que le statut est `prevu`, un build avec `RTP_DEPLOIEMENT=1` échoue.
 4. Décrire dans les Mentions légales ce que garde le journal d'accès de Caddy (champs, adresse IP entière ou tronquée, durée de conservation) une fois sa configuration arrêtée. Avec `statut: actif`, la page dit seulement que le serveur reçoit l'adresse IP pour envoyer les pages ; elle ne dit plus que le site ne collecte aucune donnée personnelle.
 5. Faire relire par un juriste les Mentions légales et l'interprétation de la CNIL sur `localStorage` (hypothèse A2 : réglages d'affichage exemptés de consentement).
-6. Remplacer l'adresse de contact provisoire de `config/site.yml`.
-7. Vérifier que le dépôt `ErwanHenry/reveleTonProg` est toujours public (il l'est depuis le 2026-11-04) et le garder public : les liens du site vers le dépôt (Qui sommes-nous, « Signaler une erreur (GitHub) », « Extrait archivé ») en dépendent et renverraient une erreur 404 s'il redevenait privé. Contrôle : `gh repo view ErwanHenry/reveleTonProg --json visibility` doit répondre `PUBLIC`.
-8. Vérifier au premier run que `actions/upload-artifact` fonctionne avec `permissions: contents: read` (hypothèse A4).
+6. Remplacer le domaine provisoire de `config/site.yml` (le build échoue sous `RTP_DEPLOIEMENT=1` tant qu'il finit par `.invalid`), puis régénérer le bloc Caddy (« Changer de domaine »).
+7. Remplacer l'adresse de contact provisoire de `config/site.yml`.
+8. Vérifier que le dépôt `ErwanHenry/reveleTonProg` est toujours public (il l'est depuis le 2026-11-04) et le garder public : les liens du site vers le dépôt (Qui sommes-nous, « Signaler une erreur (GitHub) », « Extrait archivé ») en dépendent et renverraient une erreur 404 s'il redevenait privé. Contrôle : `gh repo view ErwanHenry/reveleTonProg --json visibility` doit répondre `PUBLIC`.
+9. Vérifier au premier run que `actions/upload-artifact` fonctionne avec `permissions: contents: read` (hypothèse A4).
+
+### Bloc Caddy (Phase 8)
+
+`deploy/caddy/site.caddy` est généré (`node scripts/render-caddy.ts`, ne pas l'éditer à la main) : bloc du domaine (`root`, `encode zstd gzip`, `file_server`, en-têtes, journal) et redirection permanente de `www.` vers le domaine. Son en-tête `Content-Security-Policy` porte les empreintes des deux scripts et `frame-ancestors 'none'` : c'est lui qui couvre le script d'ordre, placé avant la meta CSP de la page (ADR-056). Le journal d'accès est gardé 14 jours, adresses IP tronquées (/24 et /48), en-têtes de requête supprimés.
+
+Hypothèses à confirmer en Phase 8 (constat de la Phase 6 : Caddy tourne dans un conteneur `caddy:2-alpine`, un seul Caddyfile monté avec une quinzaine de blocs, sans `import`, aucun dossier de site statique monté) :
+
+- `root * /srv/reveletonprog/current` est un chemin **dans le conteneur** : monter en lecture seule le dossier des versions de l'hôte sur `/srv/reveletonprog` (versions dans `releases/<sha>/`, lien `current`), ce qui recrée le conteneur une fois.
+- `output file /var/log/caddy/reveletonprog.log` est aussi dans le conteneur : monter un dossier de l'hôte **en écriture** sur `/var/log/caddy`, sinon le journal disparaît à chaque recréation. Pour un autre chemin, changer la constante `JOURNAL` de `scripts/render-caddy.ts` et régénérer.
+- Coller le bloc dans le Caddyfile monté (ou ajouter une ligne `import`), puis `docker exec <conteneur> caddy validate --config <Caddyfile monté>` avant tout rechargement. À vérifier au même moment : la forme `request>headers delete`, `ip_mask 24 48` et la prise en charge de `request>client_ip` par la version de Caddy de l'image.
+- Ne pas appliquer le bloc tant que le domaine finit par `.invalid`.
 
 ## Incidents fréquents
 

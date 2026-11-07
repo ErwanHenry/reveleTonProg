@@ -320,9 +320,11 @@ describe('docs/AUDIT-TEST-CROISE.md (QUAL-06)', () => {
 function sectionAdr(numero: string): string {
   const debut = architecture.search(new RegExp(`^### ADR-${numero} : `, 'm'));
   assert.ok(debut >= 0, `ADR-${numero} absent`);
-  const reste = architecture.slice(debut + 1);
-  const fin = reste.search(/^#{2,3} /m);
-  return fin < 0 ? reste : reste.slice(0, fin);
+  const finTitre = architecture.indexOf('\n', debut);
+  const reste = architecture.slice(debut, finTitre < 0 ? undefined : finTitre + 1);
+  const corps = finTitre < 0 ? '' : architecture.slice(finTitre + 1);
+  const fin = corps.search(/^#{2,3} /m);
+  return reste + (fin < 0 ? corps : corps.slice(0, fin));
 }
 
 describe('documentation (phase 7)', () => {

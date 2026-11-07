@@ -14,7 +14,7 @@
 - Contenu en YAML dans `src/content/`, validé par JSON Schema 2020-12 à travers `src/lib/content-core` : le même code sert la CI (`scripts/validate.ts`) et le loader Astro.
 - **Node 24 LTS** (décision D-5, voir [ADR](./docs/ARCHITECTURE.md)) : la version est fixée par `.nvmrc`. Avec fnm : `fnm use`, ou `fnm exec --using=24 <commande>`.
 - GitHub Actions : migrate, validate, check, test, build et recherche de secrets (gitleaks) à chaque push et pull request.
-- Hébergement : Caddy sur le VPS Hetzner existant (lot 3).
+- Hébergement : Caddy sur le VPS Hetzner existant (lot 3). Le domaine n'est écrit que dans `config/site.yml` ; le bloc Caddy (CSP en en-tête, journal d'accès) est généré dans `deploy/caddy/site.caddy` par `node scripts/render-caddy.ts` (procédure « Changer de domaine » du [runbook](./docs/RUNBOOK.md)).
 
 ### Dépendances
 

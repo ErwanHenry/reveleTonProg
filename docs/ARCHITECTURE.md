@@ -42,6 +42,10 @@ flowchart LR
   B --> CD[scripts/check-dist.ts<br/>poids, tiers, sources datées, cellules]
   V -->|échec = build refusé| B
   B -->|GitHub Actions rsync SSH, lot 3| VPS[Caddy sur VPS Hetzner]
+  SY[config/site.yml<br/>domaine, contact] --> B
+  SY --> RCY[scripts/render-caddy.ts]
+  RCY --> DC[deploy/caddy/site.caddy<br/>CSP en en-tête, journal]
+  DC -.->|appliqué en Phase 8| VPS
   IM[data/import/ + scripts/import-datagouv.ts<br/>instantané haché, correspondances] -->|fiches brouillon| C
   AR[scripts/archive-source.ts<br/>fetch, pdftotext, --file] -->|extrait + sha256| A
   AR -->|binaire| PR
@@ -286,10 +290,11 @@ Les ADR techniques de la phase 1 (sans D-n) vont de l'ADR-017 à l'ADR-026 ; ceu
 - **Décision** : A1, le statut affiché en production est celui de la dernière entrée relue, sinon « Statut en cours de vérification » ; A2, des cartes seulement pour les statuts `declare` et `primaire`, `renonce` dans la section repliée, les autres comptés sur une seule ligne ; A3, textes des badges « brouillon, non relu » et « relu, pas encore publié » ; A4, copie archivée = lien Wayback plus lien vers l'extrait (sha256) sur GitHub, en 404 tant que le dépôt n'est pas public.
 - **Conséquence** : chaque défaut est modifiable à un seul endroit ; la liste est reprise dans le SUMMARY 04-09 pour la relecture d'Erwan.
 
-### ADR-037 : pages compatibles CSP, CSS et scripts externes hachés, aucun code en ligne
+### ADR-037 : pages compatibles CSP, CSS et scripts externes hachés, aucun code en ligne (remplacée par l'ADR-056)
 - **Contexte** : vie privée et sécurité imposent zéro script externe ; une politique CSP stricte du lot 3 ne doit pas casser les pages.
 - **Décision** : aucun `<script>` ni `style=` en ligne, CSS et scripts servis depuis `/_astro/` avec un nom haché, seules clés `localStorage` : `rtp:niveau` et `rtp:ordre`. `check-dist` rejette `SCRIPT_EN_LIGNE`, `STYLE_EN_LIGNE`, `SCRIPT_DATA_URI` et `RESSOURCE_TIERCE`.
 - **Conséquence** : la CSP du lot 3 peut interdire `unsafe-inline` ; un script de plus de 2 Ko échoue au contrôle.
+- **Remplacée** (Phase 7) : CSS et scripts sont désormais dans la page, sous une CSP à empreintes (ADR-056). Les clés `localStorage`, le plafond de 2 Ko et le refus de `unsafe-inline` restent.
 
 ### ADR-038 : contrôle post-build `check-dist` sans dépendance, gzip d'abord
 - **Contexte** : le budget de poids et les règles de page doivent échouer en CI, sur ce qui est réellement servi.
@@ -360,11 +365,25 @@ Les ADR techniques de la phase 1 (sans D-n) vont de l'ADR-017 à l'ADR-026 ; ceu
 - **Contexte** : le Lot 2 exige une URL de test, mais aucun nom de domaine ni hébergement n'est prévu avant le Lot 3.
 - **Décision** : le job `verifier` téléverse `dist-preview` (déjà contrôlé `noindex` et `robots.txt`) comme artefact `site-preview`, conservé 14 jours, servi en local avec `e2e/serveur.ts`. Action `upload-artifact` épinglée par SHA, droits `contents: read`.
 - **Conséquence** : rien n'est exposé publiquement ; l'accès suit la visibilité du dépôt ; l'artefact expire et doit être régénéré.
+- **Note du 2026-11-07 (Phase 7)** : le dépôt est public depuis le 2026-11-04. Les brouillons de `src/content/` et l'artefact `site-preview` (téléchargeable par toute personne connectée à GitHub) sont donc lisibles par tout le monde : « rien n'est exposé » ne vaut plus que pour l'hébergement. La build preview reste `noindex` et n'est jamais déployée ; la Phase 8 vérifie qu'aucun fichier de la build preview n'arrive dans le déploiement.
 
 ### ADR-052 : test croisé simulé : banc journalisé, scénario écrit avant les résultats
 - **Contexte** : les relectures par des lecteurs d'âges différents ne peuvent pas être menées avant le Lot 3, mais la lisibilité doit être éprouvée.
 - **Décision** : un lecteur simulé (`npm run audit:lire`) lit le site construit en texte brut sous un identifiant de persona et journalise chaque lecture (horodatage, chemin, niveau, empreinte) ; le scénario et les critères sont écrits avant d'observer les résultats. Il ne remplace pas un test avec de vraies personnes.
 - **Conséquence** : le résultat est présenté comme une simulation, jamais comme une validation d'usage.
+
+### ADR-053 : domaine déclaré une seule fois dans config/site.yml : site, canonique, sitemap, robots et bloc Caddy rendus
+- **Contexte** : le nom de domaine n'est pas encore acheté. Le jour où il l'est, il doit changer à un seul endroit, sans URL oubliée dans une page, un fichier du serveur ou un test.
+- **Décision** : le champ `domaine` de `config/site.yml` (valeur provisoire en `.invalid`) est lu par un lecteur strict (nom d'hôte en minuscules, au moins deux labels, pas de `www.`, pas de schéma ni de port). Il donne `site` dans `astro.config.mjs`, un `<link rel="canonical">` par page et `sitemap.xml` en production seulement (aucun des deux en preview), et la ligne `Sitemap:` de `robots.txt` en production. `node scripts/render-caddy.ts` rend `deploy/caddy/site.caddy` depuis le même champ, et un test de dérive de `npm test` compare le fichier commité à un rendu neuf. Le test `tests/repo/hote-en-dur.test.ts` refuse le nom d'hôte (et ses sous-domaines) dans tout fichier suivi hors de `config/site.yml` et des exclusions documentées. `check-dist` contrôle canonique, sitemap et robots (`CANONIQUE_ABSENT`, `CANONIQUE_INCORRECT`, `SITEMAP_INCOHERENT`, `ROBOTS_SANS_SITEMAP`) et signale `DOMAINE_PROVISOIRE`. Avec `RTP_DEPLOIEMENT=1`, le build échoue sur un domaine ou un contact provisoire, avec une seule erreur qui nomme les deux : « config/site.yml : domaine provisoire (.invalid) refusé quand RTP_DEPLOIEMENT=1 : renseigner le vrai domaine avant de déployer ; contact provisoire (.invalid) refusé… ». Sans la variable, un seul avertissement nomme les valeurs provisoires.
+- **Conséquence** : changer de domaine = modifier `config/site.yml`, relancer `node scripts/render-caddy.ts`, lancer `npm test`, commiter, puis appliquer le bloc en Phase 8 (RUNBOOK, « Changer de domaine »). Aucune dépendance ajoutée (pas de `@astrojs/sitemap`).
+
+### ADR-056 : CSS et scripts dans la page, CSP à empreintes (remplace l'ADR-037)
+- **Contexte** : sur la connexion « Slow 4G », chaque fichier externe coûte un aller-retour. La mesure de la Phase 7 sur `/themes/sante/` passe de 1257 ms à environ 730 ms quand la feuille de style et les deux scripts sont dans la page. Le refus de `unsafe-inline` de l'ADR-037 doit rester vrai.
+- **Décision** : `build.inlineStylesheets: 'always'` et `assetsInlineLimit: 0` ; les scripts `src/scripts/ordre.js` et `niveau.js` sont importés en `?raw` et écrits par `<script is:inline set:html>` aux mêmes places qu'avant (script d'ordre en tête de `<head>`, script de niveau juste après `</fieldset>`), bloquants. `security.csp` d'Astro écrit une meta CSP par page ; `scriptDirective.hashes` reçoit les empreintes sha256 calculées sur les fichiers sources par `src/lib/csp-empreintes.ts`, seul calcul d'empreinte du dépôt. `check-dist` remplace l'interdit du code en ligne par une règle d'identité et d'empreinte : un script en ligne doit être identique octet pour octet à un fichier de `src/scripts/` (`SCRIPT_EN_LIGNE` sinon), son empreinte doit figurer dans la directive effective (`SCRIPT_SANS_EMPREINTE`), celle de chaque `<style>` aussi (`STYLE_SANS_EMPREINTE`), la meta doit exister une fois dans `<head>` (`CSP_ABSENTE`) et chaque jeton de chaque directive est `'self'`, `'none'` ou une empreinte sha256 (`CSP_TROP_PERMISSIVE` sinon : aucun `unsafe-*`, joker ni schéma). Astro ajoute 5 empreintes de directives d'îlots : `check-dist` exige l'inclusion des empreintes de la page, jamais l'égalité.
+- **Limite** : Astro place la meta en fin de `<head>`, après le script d'ordre. Une CSP en meta ne s'applique qu'aux éléments qui la suivent, donc la meta ne protège pas ce premier script. C'est l'en-tête `Content-Security-Policy` de `deploy/caddy/site.caddy` (les deux empreintes, `frame-ancestors 'none'`, sans `default-src` pour ne pas bloquer le `<style>` haché de la meta) qui le couvre dès le premier octet, une fois le bloc appliqué en Phase 8. Jusque-là, aucun serveur n'envoie cet en-tête.
+- **Alternatives** : la variante d'exécution `Astro.csp.insertScriptHash`, page par page, donnerait le moindre privilège (la page sans sélecteur n'aurait pas l'empreinte du script de niveau) ; gardée en réserve. Le repli « option B » (CSP en en-tête seulement) n'a pas été nécessaire.
+- **Tests** : `bypassCSP: true` dans `playwright.config.ts` (texte.spec injecte des styles), `bypassCSP: false` dans `e2e/csp.spec.ts` et `e2e/csp-sans-js.spec.ts`, qui exigent zéro violation sur chaque page avec et sans JavaScript. Le projet `parcours` (`channel: 'chromium'`, bfcache actif) prouve le retour arrière restauré du bfcache.
+- **Conséquence** : une requête de moins par page, pas de dossier `/_astro/`, budgets publiés inchangés. Modifier un fichier de `src/scripts/` change son empreinte : redémarrer `astro dev`, relancer `node scripts/render-caddy.ts` et commiter le bloc (le test de dérive échoue sinon).
 
 ## Dépendances externes critiques
 
