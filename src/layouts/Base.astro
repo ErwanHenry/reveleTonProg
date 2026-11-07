@@ -20,6 +20,8 @@ const corpus = await getCorpus();
 const chemin = Astro.url.pathname;
 const institutionnelle = /^\/(methode|mentions-legales|qui-sommes-nous)\/?$/.exec(chemin)?.[1];
 const courante = /^\/themes(\/|$)/.test(chemin) ? 'themes' : /^\/candidats(\/|$)/.test(chemin) ? 'candidats' : undefined;
+// URL canonique (HEB-05) : https://<domaine de config/site.yml> + chemin, seulement quand corpus.mode !== 'preview'.
+// Astro.site vaut https://<domaine> dans les deux modes : la build preview (artefact public) ne doit jamais revendiquer le domaine.
 ---
 <!doctype html>
 <html lang="fr">
@@ -29,6 +31,7 @@ const courante = /^\/themes(\/|$)/.test(chemin) ? 'themes' : /^\/candidats(\/|$)
     <title>{titre}</title>
     <meta name="description" content={description} />
     {corpus.mode === 'preview' && <meta name="robots" content="noindex" />}
+    {corpus.mode !== 'preview' && Astro.site && <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site).href} />}
     <script is:inline set:html={ordreSource}></script>
   </head>
   <body>
