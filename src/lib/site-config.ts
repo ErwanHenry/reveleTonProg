@@ -27,6 +27,11 @@ const RE_DOMAINE = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/;
 const RE_CONTACT = /^[^@\s<>"]+@[^@\s<>"]+\.[^@\s<>"]+$/;
 const RE_DEPOT = /^[\w.-]+\/[\w.-]+$/;
 
+/** Vrai si `domaine` est un nom d'hôte accepté dans config/site.yml (même règle pour le rendu Caddy). */
+export function estDomaineValide(domaine: unknown): domaine is string {
+  return typeof domaine === 'string' && domaine.length <= 253 && RE_DOMAINE.test(domaine) && !domaine.startsWith('www.');
+}
+
 const memo = new Map<string, SiteConfig>();
 let avertie = false;
 
@@ -64,7 +69,7 @@ export function loadSiteConfig(projectRoot: string = process.cwd(), env: NodeJS.
   }
 
   const { domaine, contact, depot } = brut;
-  if (typeof domaine !== 'string' || domaine.length > 253 || !RE_DOMAINE.test(domaine) || domaine.startsWith('www.')) {
+  if (!estDomaineValide(domaine)) {
     throw erreur('« domaine » doit être un nom d\'hôte en minuscules, sans schéma, port, chemin ni « www. » (ex. exemple.fr)');
   }
   if (typeof contact !== 'string' || !RE_CONTACT.test(contact)) throw erreur('« contact » doit être une adresse courriel (ex. contact@exemple.fr)');

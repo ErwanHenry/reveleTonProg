@@ -1,0 +1,106 @@
+// Bloc Caddy du site (HEB-05, PERF-01 ; D-03, 07-07). Rendu par une fonction pure depuis le domaine de
+// config/site.yml et les empreintes de src/scripts/*.js, puis écrit dans deploy/caddy/site.caddy (versionné).
+// tests/repo/caddy.test.ts compare le fichier versionné à un rendu neuf : changer le domaine ou un script sans
+// relancer ce script fait échouer npm test. Aucun serveur n'est touché ici ; « caddy validate » a lieu en Phase 8.
+import { estDomaineValide } from '../src/lib/site-config.ts';
+
+/**
+ * Racine servie, vue depuis le conteneur Caddy : la Phase 8 monte le dossier du site en lecture seule sur
+ * /srv/reveletonprog ; chaque version vit dans releases/<sha>/ et `current` pointe la version en ligne.
+ */
+export const RACINE_SERVEUR = '/srv/reveletonprog/current';
+/** Fichier du journal d'accès, vu depuis le conteneur : /var/log/caddy est un dossier de l'hôte monté en écriture (Phase 8). */
+export const JOURNAL = '/var/log/caddy/reveletonprog.log';
+
+export interface OptionsCaddy {
+  /** Nom d'hôte apex (même règle que config/site.yml : minuscules, sans schéma, port, chemin ni `www.`). */
+  domaine: string;
+  /** Empreintes CSP « sha256-<base64> » des scripts du site, sans guillemets, dans l'ordre de scriptsEnLigne(). */
+  empreintesScripts: readonly string[];
+  /** Chemin absolu de la racine servie (dans le conteneur). */
+  racine: string;
+  /** Chemin absolu du fichier de journal d'accès (dans le conteneur). */
+  journal: string;
+}
+
+const RE_EMPREINTE = /^sha256-[A-Za-z0-9+/]+=*$/;
+// Chemin absolu sans blanc, guillemet, accolade ni autre caractère qui changerait la lecture du Caddyfile.
+const RE_CHEMIN = /^\/[A-Za-z0-9._/-]+$/;
+
+function verifier(o: OptionsCaddy): void {
+  if (!estDomaineValide(o.domaine)) {
+    throw new Error(`render-caddy : domaine invalide « ${String(o.domaine).slice(0, 80)} » (nom d'hôte en minuscules, sans schéma, port, chemin ni « www. »)`);
+  }
+  if (o.empreintesScripts.length === 0) throw new Error('render-caddy : aucune empreinte de script (src/scripts/*.js vide ?)');
+  for (const e of o.empreintesScripts) {
+    if (!RE_EMPREINTE.test(e)) throw new Error(`render-caddy : empreinte mal formée « ${e.slice(0, 80)} » (attendu sha256-<base64>, sans guillemets)`);
+  }
+  if (new Set(o.empreintesScripts).size !== o.empreintesScripts.length) throw new Error('render-caddy : empreinte en double');
+  if (!RE_CHEMIN.test(o.racine)) throw new Error(`render-caddy : racine invalide « ${o.racine.slice(0, 80)} » (chemin absolu sans blanc ni caractère spécial)`);
+  if (!RE_CHEMIN.test(o.journal)) throw new Error(`render-caddy : journal invalide « ${o.journal.slice(0, 80)} » (chemin absolu sans blanc ni caractère spécial)`);
+}
+
+/**
+ * Texte du bloc Caddy (fonction pure : aucune lecture du système, même entrée, même chaîne).
+ * Indentation par tabulations, retour ligne final. Lève une Error si une entrée casserait le bloc.
+ */
+export function renderCaddy(o: OptionsCaddy): string {
+  verifier(o);
+  const { domaine, racine, journal } = o;
+  const scriptSrc = o.empreintesScripts.map((e) => `'${e}'`).join(' ');
+  const csp = [`script-src ${scriptSrc}`, "frame-ancestors 'none'", "base-uri 'none'", "form-action 'none'", "object-src 'none'"].join('; ');
+  const lignes = [
+    '# Généré par scripts/render-caddy.ts depuis config/site.yml et src/scripts/*.js : ne pas modifier à la main.',
+    '# Régénérer avec « node scripts/render-caddy.ts » ; tests/repo/caddy.test.ts échoue si ce fichier dérive.',
+    '#',
+    '# Caddy tourne dans un conteneur Docker (caddy:2-alpine, Phase 6) : les chemins ci-dessous sont ceux du',
+    '# conteneur. La Phase 8 monte la racine du site en lecture seule et le dossier du journal en écriture, place',
+    '# ce bloc dans le Caddyfile monté (collé ou importé) et le vérifie par « caddy validate » avant tout rechargement.',
+    `${domaine} {`,
+    '\t# Version en ligne : releases/<sha>/ pointée par le lien « current » (disposition à confirmer en Phase 8).',
+    `\troot * ${racine}`,
+    '\tencode zstd gzip',
+    '\tfile_server',
+    '',
+    '\theader {',
+    '\t\t-Server',
+    '\t\t# HSTS court la première semaine, à relever (max-age=31536000) une fois le domaine stable (Phase 8).',
+    '\t\tStrict-Transport-Security "max-age=300"',
+    '\t\tX-Content-Type-Options "nosniff"',
+    '\t\tReferrer-Policy "no-referrer"',
+    '\t\tPermissions-Policy "camera=(), microphone=(), geolocation=()"',
+    '\t\tCross-Origin-Opener-Policy "same-origin"',
+    "\t\t# En-tête CSP : script-src n'admet que les empreintes des scripts du site. Il couvre dès le premier octet",
+    '\t\t# le script d\'ordre, placé avant le meta CSP de la page, que ce meta ne gouverne donc pas.',
+    "\t\t# frame-ancestors n'a d'effet que dans un en-tête (un meta ne peut pas le porter).",
+    "\t\t# Pas de default-src ici : les deux politiques s'appliquent ensemble, style-src retomberait sur",
+    '\t\t# default-src et les <style> hachés par le meta de chaque page seraient bloqués.',
+    `\t\tContent-Security-Policy "${csp}"`,
+    "\t\t# Pages revalidées à chaque visite ; plus de fichier haché séparé depuis l'inlining, donc pas de cache long.",
+    '\t\tCache-Control "no-cache"',
+    '\t}',
+    '',
+    "\t# Journal d'accès : 14 jours au plus, adresse IP tronquée (/24 en IPv4, /48 en IPv6), en-têtes de",
+    '\t# requête supprimés, détails TLS supprimés. Syntaxe des filtres à confirmer par « caddy validate » (Phase 8).',
+    '\tlog {',
+    `\t\toutput file ${journal} {`,
+    '\t\t\troll_size 10MiB',
+    '\t\t\troll_keep 14',
+    '\t\t\troll_keep_for 336h',
+    '\t\t}',
+    '\t\tformat filter {',
+    '\t\t\trequest>remote_ip ip_mask 24 48',
+    '\t\t\trequest>client_ip ip_mask 24 48',
+    '\t\t\trequest>headers delete',
+    '\t\t\trequest>tls delete',
+    '\t\t\twrap json',
+    '\t\t}',
+    '\t}',
+    '}',
+    '',
+    `www.${domaine} {`,
+    `\tredir https://${domaine}{uri} permanent`,
+    '}',
+  ];
+  return `${lignes.join('\n')}\n`;
+}
