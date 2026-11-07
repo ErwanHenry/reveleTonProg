@@ -29,8 +29,9 @@ export default function institutionnel(ctx: ContexteSite): void {
   const vu = (chemin: string): string => norm(texte(analyserHtml(html(chemin))));
 
   describe('mentions légales', () => {
-    const heb = loadHebergeurConfig(ctx.repoRoot);
-    const site = loadSiteConfig(ctx.repoRoot);
+    // env vide : un RTP_DEPLOIEMENT=1 exporté par le développeur ne doit pas empêcher de déclarer ces cas
+    const heb = loadHebergeurConfig(ctx.repoRoot, {});
+    const site = loadSiteConfig(ctx.repoRoot, {});
     const chemin = 'mentions-legales/index.html';
 
     it('contenu LCEN, éditeur, hébergeur, droit de réponse, Arcom', () => {

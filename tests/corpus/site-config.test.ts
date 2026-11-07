@@ -32,7 +32,7 @@ const REEL = yml('exemple.fr', 'bonjour@exemple.fr');
 
 describe('loadSiteConfig', () => {
   it('lit le domaine, le contact provisoire (.invalid) et le dépôt', () => {
-    const cfg = loadSiteConfig(projet(yml('exemple.invalid', 'contact@exemple.invalid')));
+    const cfg = loadSiteConfig(projet(yml('exemple.invalid', 'contact@exemple.invalid')), {});
     assert.deepEqual(cfg, {
       domaine: 'exemple.invalid',
       domaineProvisoire: true,
@@ -111,7 +111,7 @@ describe('loadSiteConfig', () => {
   });
 
   it('le config/site.yml du dépôt est valide, domaine et contact provisoires tant que le domaine n’est pas acheté', () => {
-    const cfg = loadSiteConfig(REPO);
+    const cfg = loadSiteConfig(REPO, {});
     assert.equal(cfg.depot, 'ErwanHenry/reveleTonProg');
     assert.ok(cfg.domaine.endsWith('.invalid'), cfg.domaine);
     assert.equal(cfg.domaineProvisoire, true);

@@ -6,6 +6,9 @@ import { scriptsEnLigne } from '../../src/lib/csp-empreintes.ts';
 import { loadSiteConfig } from '../../src/lib/site-config.ts';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+// Ce test lit la forme de la configuration, pas la garde de déploiement (couverte par tests/dist/cas/domaine.cas.ts) :
+// un RTP_DEPLOIEMENT=1 exporté par le développeur ferait échouer l'import tant que le domaine est provisoire.
+delete process.env.RTP_DEPLOIEMENT;
 const mod = (await import(pathToFileURL(path.join(ROOT, 'astro.config.mjs')).href)) as {
   default: {
     site?: string;
@@ -28,7 +31,7 @@ describe('astro.config.mjs', () => {
   });
 
   it('HEB-05 : site vaut https:// + le domaine de config/site.yml', () => {
-    assert.equal(config.site, `https://${loadSiteConfig(ROOT).domaine}`);
+    assert.equal(config.site, `https://${loadSiteConfig(ROOT, {}).domaine}`);
   });
 
   it("compressHTML vaut true (booléen), pas 'jsx' qui colle les mots (Pitfall 3)", () => {

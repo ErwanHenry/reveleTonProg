@@ -155,7 +155,7 @@ export default function methode(ctx: ContexteSite): void {
 
     it("« pas encore en ligne » seulement sous l'hébergeur prévu, marqué pour check-dist (WR-03)", () => {
       const a = page();
-      const heb = loadHebergeurConfig(ctx.repoRoot);
+      const heb = loadHebergeurConfig(ctx.repoRoot, {});
       const marques = trouver(a, (n) => n.attrs['data-hebergeur'] === 'prevu').map(txt).join(' | ');
       if (heb.statut === 'prevu') assert.ok(marques.includes("pas encore en ligne"), marques);
       else assert.ok(!txt(a).includes('pas encore en ligne'));
