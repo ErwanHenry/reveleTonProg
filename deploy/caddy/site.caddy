@@ -28,13 +28,17 @@ domaine-a-definir.invalid {
 		Cache-Control "no-cache"
 	}
 
-	# Journal d'accès : 14 jours au plus, adresse IP tronquée (/24 en IPv4, /48 en IPv6), en-têtes de
-	# requête supprimés, détails TLS supprimés. Syntaxe des filtres à confirmer par « caddy validate » (Phase 8).
+	# Journal d'accès : rotation chaque jour à 00:00 UTC (roll_at, Caddy 2.11 ou plus) ou dès 10MiB,
+	# 12 fichiers tournés gardés au plus (roll_keep, et roll_keep_for 288h) plus le fichier du jour.
+	# Une entrée y reste donc moins de 13 jours, 14 jours au plus si une rotation de minuit est manquée
+	# (Caddy arrêté à minuit). Adresse IP tronquée (/24 en IPv4, /48 en IPv6), en-têtes de requête supprimés,
+	# détails TLS supprimés. Syntaxe (roll_at, filtres) à confirmer par « caddy validate » (Phase 8).
 	log {
 		output file /var/log/caddy/reveletonprog.log {
 			roll_size 10MiB
-			roll_keep 14
-			roll_keep_for 336h
+			roll_at 00:00
+			roll_keep 12
+			roll_keep_for 288h
 		}
 		format filter {
 			request>remote_ip ip_mask 24 48

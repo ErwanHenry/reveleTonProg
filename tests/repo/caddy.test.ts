@@ -1,7 +1,8 @@
 // HEB-05, PERF-01 (D-03, 07-07) : le bloc Caddy du site est rendu depuis config/site.yml et src/scripts/*.js par
 // une fonction pure (scripts/render-caddy.ts). Ce test fige sa politique : en-tête CSP limité aux deux empreintes
 // de scripts plus frame-ancestors (jamais de default-src : l'intersection avec le meta de chaque page bloquerait
-// les <style> hachés), journal d'accès de 14 jours avec IP masquée et en-têtes de requête supprimés.
+// les <style> hachés), journal d'accès tourné chaque jour et gardé 14 jours au plus (CR-01), IP masquée et en-têtes
+// de requête supprimés.
 // Domaine synthétique : exemple.test ; le domaine du dépôt n'est jamais écrit ici (garde 07-06), il est lu.
 import { after, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -10,7 +11,15 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { JOURNAL, RACINE_SERVEUR, renderCaddy } from '../../scripts/render-caddy.ts';
+import {
+  FICHIERS_TOURNES_GARDES,
+  JOURNAL,
+  RACINE_SERVEUR,
+  RETENTION_MAX_JOURS,
+  ROTATION_JOURNAL,
+  TAILLE_JOURNAL,
+  renderCaddy,
+} from '../../scripts/render-caddy.ts';
 import { scriptsEnLigne } from '../../src/lib/csp-empreintes.ts';
 import { loadSiteConfig } from '../../src/lib/site-config.ts';
 
@@ -134,10 +143,33 @@ describe('renderCaddy : journal d’accès', () => {
   const bloc = renderCaddy(SYNTHETIQUE);
   const journal = blocJournal(bloc);
 
-  it('14 jours de rétention : roll_keep_for 336h, roll_keep 14', () => {
-    assert.match(journal, /^\t\t\troll_keep_for 336h$/m);
-    assert.match(journal, /^\t\t\troll_keep 14$/m);
+  it('rotation chaque jour à 00:00 UTC (roll_at) ou à 10 Mio, 12 fichiers tournés et 12 jours gardés au plus', () => {
+    assert.match(journal, /^\t\t\troll_at 00:00$/m);
     assert.match(journal, /^\t\t\troll_size 10MiB$/m);
+    assert.match(journal, /^\t\t\troll_keep 12$/m);
+    assert.match(journal, /^\t\t\troll_keep_for 288h$/m);
+    assert.doesNotMatch(journal, /roll_disabled|roll_local_time/);
+  });
+
+  it('borne de rétention : moins de 13 jours, 14 jours au plus avec une rotation de minuit manquée', () => {
+    // Rotation quotidienne : le plus vieux des N fichiers tournés gardés couvre le jour J-N-1, le fichier courant le
+    // jour J ; une rotation de minuit manquée fait couvrir deux jours à un fichier (N+2). roll_keep_for ne doit pas
+    // garder plus longtemps que roll_keep (résolution d'un jour, arrondi au jour supérieur par Caddy).
+    const n = Number(/^\t\t\troll_keep (\d+)$/m.exec(journal)![1]);
+    const heures = Number(/^\t\t\troll_keep_for (\d+)h$/m.exec(journal)![1]);
+    assert.equal(n, FICHIERS_TOURNES_GARDES);
+    assert.ok(Math.ceil(heures / 24) <= n, `roll_keep_for ${heures}h dépasse ${n} jours`);
+    assert.equal(RETENTION_MAX_JOURS, n + 2);
+    assert.ok(RETENTION_MAX_JOURS <= 14, `rétention possible de ${RETENTION_MAX_JOURS} jours, promesse : 14 jours au plus`);
+    assert.equal(ROTATION_JOURNAL, '00:00');
+    assert.equal(TAILLE_JOURNAL, '10MiB');
+  });
+
+  it('le commentaire du bloc dit la borne exacte et ne promet plus « 14 jours au plus » sans condition', () => {
+    assert.match(bloc, /rotation chaque jour à 00:00 UTC/);
+    assert.match(bloc, /moins de 13 jours, 14 jours au plus si une rotation de minuit est manquée/);
+    assert.match(bloc, /Syntaxe \(roll_at, filtres\) à confirmer par « caddy validate »/);
+    assert.doesNotMatch(bloc, /Journal d'accès : 14 jours au plus/);
   });
 
   it('IP masquées en /24 et /48 (remote_ip et client_ip), en-têtes de requête et TLS supprimés, sortie JSON', () => {

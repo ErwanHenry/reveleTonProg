@@ -17,6 +17,21 @@ export const RACINE_SERVEUR = '/srv/reveletonprog/current';
 /** Fichier du journal d'accès, vu depuis le conteneur : /var/log/caddy est un dossier de l'hôte monté en écriture (Phase 8). */
 export const JOURNAL = '/var/log/caddy/reveletonprog.log';
 
+/**
+ * Rétention du journal d'accès (CR-01, revue de la phase 7). Caddy 2.11 (timberjack) tourne le fichier courant à
+ * l'heure ROTATION_JOURNAL (UTC, minuteur actif même sans trafic) ou dès TAILLE_JOURNAL, et ne garde que les
+ * FICHIERS_TOURNES_GARDES fichiers tournés les plus récents (roll_keep compte les horodatages de rotation distincts ;
+ * roll_keep_for, à résolution d'un jour, double la règle). Avec une rotation par jour, le plus vieux fichier gardé
+ * couvre le jour J-N-1 : une entrée vit moins de N+1 jours. Une rotation de minuit manquée (Caddy arrêté à minuit :
+ * au redémarrage, timberjack repart de l'heure de la première écriture) fait couvrir deux jours à un fichier, d'où
+ * N+2 jours au plus. Une rotation à la taille ne fait que raccourcir la durée couverte.
+ */
+export const ROTATION_JOURNAL = '00:00';
+export const TAILLE_JOURNAL = '10MiB';
+export const FICHIERS_TOURNES_GARDES = 12;
+/** Durée maximale promise (Mentions légales) : N+2 jours, une rotation de minuit manquée comprise. */
+export const RETENTION_MAX_JOURS = FICHIERS_TOURNES_GARDES + 2;
+
 export interface OptionsCaddy {
   /** Nom d'hôte apex (même règle que config/site.yml : minuscules, sans schéma, port, chemin ni `www.`). */
   domaine: string;
@@ -85,13 +100,17 @@ export function renderCaddy(o: OptionsCaddy): string {
     '\t\tCache-Control "no-cache"',
     '\t}',
     '',
-    "\t# Journal d'accès : 14 jours au plus, adresse IP tronquée (/24 en IPv4, /48 en IPv6), en-têtes de",
-    '\t# requête supprimés, détails TLS supprimés. Syntaxe des filtres à confirmer par « caddy validate » (Phase 8).',
+    `\t# Journal d'accès : rotation chaque jour à ${ROTATION_JOURNAL} UTC (roll_at, Caddy 2.11 ou plus) ou dès ${TAILLE_JOURNAL},`,
+    `\t# ${FICHIERS_TOURNES_GARDES} fichiers tournés gardés au plus (roll_keep, et roll_keep_for ${FICHIERS_TOURNES_GARDES * 24}h) plus le fichier du jour.`,
+    `\t# Une entrée y reste donc moins de ${FICHIERS_TOURNES_GARDES + 1} jours, ${RETENTION_MAX_JOURS} jours au plus si une rotation de minuit est manquée`,
+    '\t# (Caddy arrêté à minuit). Adresse IP tronquée (/24 en IPv4, /48 en IPv6), en-têtes de requête supprimés,',
+    '\t# détails TLS supprimés. Syntaxe (roll_at, filtres) à confirmer par « caddy validate » (Phase 8).',
     '\tlog {',
     `\t\toutput file ${journal} {`,
-    '\t\t\troll_size 10MiB',
-    '\t\t\troll_keep 14',
-    '\t\t\troll_keep_for 336h',
+    `\t\t\troll_size ${TAILLE_JOURNAL}`,
+    `\t\t\troll_at ${ROTATION_JOURNAL}`,
+    `\t\t\troll_keep ${FICHIERS_TOURNES_GARDES}`,
+    `\t\t\troll_keep_for ${FICHIERS_TOURNES_GARDES * 24}h`,
     '\t\t}',
     '\t\tformat filter {',
     '\t\t\trequest>remote_ip ip_mask 24 48',
