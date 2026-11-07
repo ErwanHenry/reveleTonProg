@@ -32,7 +32,8 @@ domaine-a-definir.invalid {
 	# 12 fichiers tournés gardés au plus (roll_keep, et roll_keep_for 288h) plus le fichier du jour.
 	# Une entrée y reste donc moins de 13 jours, 14 jours au plus si une rotation de minuit est manquée
 	# (Caddy arrêté à minuit). Adresse IP tronquée (/24 en IPv4, /48 en IPv6), en-têtes de requête supprimés,
-	# détails TLS supprimés. Syntaxe (roll_at, filtres) à confirmer par « caddy validate » (Phase 8).
+	# détails TLS supprimés. Ces règles ne couvrent que le journal d'accès : journaux d'erreurs et par défaut,
+	# voir RUNBOOK « Bloc Caddy (Phase 8) ». Syntaxe (roll_at, filtres) à confirmer par « caddy validate » (Phase 8).
 	log {
 		output file /var/log/caddy/reveletonprog.log {
 			roll_size 10MiB

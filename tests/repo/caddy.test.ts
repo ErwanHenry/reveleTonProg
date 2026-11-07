@@ -172,6 +172,12 @@ describe('renderCaddy : journal d’accès', () => {
     assert.doesNotMatch(bloc, /Journal d'accès : 14 jours au plus/);
   });
 
+  it('le commentaire limite la politique au journal d’accès et renvoie au RUNBOOK pour les autres journaux (WR-01)', () => {
+    assert.match(bloc, /Ces règles ne couvrent que le journal d'accès/);
+    const runbook = fs.readFileSync(path.join(REPO, 'docs', 'RUNBOOK.md'), 'utf8');
+    for (const needle of ['http.log.error', 'max-size', 'max-file', 'json-file']) assert.ok(runbook.includes(needle), `RUNBOOK doit contenir « ${needle} »`);
+  });
+
   it('IP masquées en /24 et /48 (remote_ip et client_ip), en-têtes de requête et TLS supprimés, sortie JSON', () => {
     assert.match(journal, /^\t\t\trequest>remote_ip ip_mask 24 48$/m);
     assert.match(journal, /^\t\t\trequest>client_ip ip_mask 24 48$/m);
