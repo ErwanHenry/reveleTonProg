@@ -302,6 +302,41 @@ describe('CLI scripts/render-caddy.ts', () => {
     }
   });
 
+  /** Projet minimal (config/site.yml et src/scripts/ du dépôt) pour lancer le CLI avec un autre config/site.yml. */
+  const projetAvec = (domaine: string, contact: string): string => {
+    const racine = fs.mkdtempSync(path.join(tmp, 'projet-'));
+    fs.mkdirSync(path.join(racine, 'config'));
+    fs.writeFileSync(path.join(racine, 'config', 'site.yml'), `domaine: ${domaine}\ncontact: ${contact}\ndepot: a/b\n`);
+    fs.cpSync(path.join(REPO, 'src', 'scripts'), path.join(racine, 'src', 'scripts'), { recursive: true });
+    return racine;
+  };
+  const lancerDans = (cwd: string, args: string[], env: Record<string, string>) => {
+    const propre: NodeJS.ProcessEnv = { ...process.env };
+    delete propre.RTP_DEPLOIEMENT;
+    const r = spawnSync(process.execPath, [CLI, ...args], { cwd, env: { ...propre, ...env }, encoding: 'utf8' });
+    return { status: r.status, out: r.stdout ?? '', err: r.stderr ?? '' };
+  };
+
+  it('IN-05 : RTP_DEPLOIEMENT=1 avec un vrai domaine et un contact provisoire : rendu accepté (le contact n’est pas dans le bloc)', () => {
+    const racine = projetAvec('example.org', 'contact@exemple.invalid');
+    const r = lancerDans(racine, ['--sortie', 'site.caddy'], { RTP_DEPLOIEMENT: '1' });
+    assert.equal(r.status, 0, r.out + r.err);
+    assert.match(fs.readFileSync(path.join(racine, 'site.caddy'), 'utf8'), /^example\.org \{$/m);
+  });
+
+  it('IN-05 : RTP_DEPLOIEMENT=1 refuse un domaine provisoire même avec un vrai contact (.test compris), et une valeur invalide de la variable', () => {
+    for (const domaine of ['exemple.invalid', 'exemple.test']) {
+      const racine = projetAvec(domaine, 'bonjour@example.org');
+      const r = lancerDans(racine, ['--sortie', 'site.caddy'], { RTP_DEPLOIEMENT: '1' });
+      assert.equal(r.status, 2, r.out + r.err);
+      assert.match(r.err, /render-caddy : domaine provisoire/);
+      assert.ok(!fs.existsSync(path.join(racine, 'site.caddy')));
+    }
+    const r = lancerDans(projetAvec('example.org', 'bonjour@example.org'), ['--check'], { RTP_DEPLOIEMENT: 'oui' });
+    assert.equal(r.status, 2, r.out + r.err);
+    assert.match(r.err, /RTP_DEPLOIEMENT doit valoir 1/);
+  });
+
   it('RTP_DEPLOIEMENT=1 avec un domaine provisoire : refus (code 2), rien n’est écrit', { skip: !loadSiteConfig(REPO, {}).domaineProvisoire && 'domaine réel' }, () => {
     const sortie = path.join(tmp, 'deploiement.caddy');
     const r = lancer(['--sortie', sortie], { RTP_DEPLOIEMENT: '1' });

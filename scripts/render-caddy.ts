@@ -7,6 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { scriptsEnLigne } from '../src/lib/csp-empreintes.ts';
+import { estDeploiement } from '../src/lib/deploiement.ts';
 import { estDomaineValide, loadSiteConfig } from '../src/lib/site-config.ts';
 
 /**
@@ -148,7 +149,9 @@ const USAGE = `Usage : node scripts/render-caddy.ts [--check] [--sortie <fichier
   (sans option)       écrit le bloc Caddy rendu depuis config/site.yml et src/scripts/*.js
   --check             n'écrit rien : vérifie que le fichier est à jour (code 1 sinon)
   --sortie <fichier>  fichier écrit ou vérifié (défaut : deploy/caddy/site.caddy, dossier créé au besoin)
-  RTP_DEPLOIEMENT=1 : un domaine ou un contact provisoire (.invalid) dans config/site.yml est refusé (code 2).
+  RTP_DEPLOIEMENT=1 : un domaine provisoire (TLD réservé : .invalid, .test, .example, .localhost) dans config/site.yml
+  est refusé (code 2). Le contact n'entre pas dans le bloc : un contact provisoire ne bloque pas le rendu (le build et
+  check-dist le refusent au déploiement).
   Code de sortie : 0 si écrit ou à jour, 1 si --check trouve un fichier absent ou différent, 2 si les arguments
   ou config/site.yml sont invalides.
 `;
@@ -177,8 +180,13 @@ function main(): void {
 
   let rendu: string;
   try {
-    // Env du processus : sous RTP_DEPLOIEMENT=1, un domaine provisoire refuse le rendu (fail-closed).
-    const { domaine } = loadSiteConfig(projectRoot, process.env);
+    // Sous RTP_DEPLOIEMENT=1, seul le domaine compte (IN-05) : le contact n'est pas dans le bloc. Lecture avec un env
+    // vide, puis garde explicite, comme check-dist ; une valeur invalide de RTP_DEPLOIEMENT reste refusée (code 2).
+    const deploiement = estDeploiement(process.env);
+    const { domaine, domaineProvisoire } = loadSiteConfig(projectRoot, {});
+    if (deploiement && domaineProvisoire) {
+      throw new Error(`render-caddy : domaine provisoire « ${domaine} » refusé quand RTP_DEPLOIEMENT=1 : renseigner le vrai domaine dans config/site.yml`);
+    }
     rendu = renderCaddy({
       domaine,
       empreintesScripts: scriptsEnLigne(projectRoot).map((s) => s.empreinte),
