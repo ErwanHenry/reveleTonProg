@@ -1,0 +1,73 @@
+# Sonde externe de contenu (OPS-01 ; D-14). Healthchecks.io ne sonde pas les URL : il attend des pings. Ce workflow
+# vérifie toutes les 10 minutes que la page d'accueil répond 200 et contient le marqueur reveleTonProg, et que
+# /version.json répond 200 avec un commit de 7 à 40 caractères hexadécimaux. Il ne pingue Healthchecks qu'en cas de
+# succès ; en cas d'échec il envoie seulement la raison au journal du check (/log), jamais l'URL d'échec immédiat.
+# L'alerte « après 3 échecs » vient du réglage du check sonde-externe (période 10 min, délai de grâce 20 min, posé
+# en 08-11) : environ trois sondes manquées avant le message Telegram, puis un message de rétablissement au
+# premier ping suivant.
+# GitHub peut retarder les exécutions planifiées de quelques minutes et désactive la planification après 60 jours sans
+# activité dans le dépôt : le check Healthchecks (interrupteur de l'homme mort) le signale alors comme une panne.
+# Environment sonde (sans relecteur, limité à main) : l'Environment production exige une approbation par run.
+# En sommeil tant que la variable de dépôt SONDE_URL n'existe pas (job sauté). Aucun checkout : la sonde n'exécute
+# aucun code du dépôt.
+name: Sonde externe
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sonde
+  cancel-in-progress: true
+
+jobs:
+  sonde:
+    name: Sonder le contenu du site
+    if: vars.SONDE_URL != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    environment: sonde
+    steps:
+      - name: Sonder / et /version.json, pinguer Healthchecks si tout va bien
+        env:
+          SONDE_URL: ${{ vars.SONDE_URL }}
+          SONDE_USER: ${{ secrets.SONDE_USER }}
+          SONDE_PASS: ${{ secrets.SONDE_PASS }}
+          SONDE_PING_URL: ${{ secrets.SONDE_PING_URL }}
+        run: |
+          set -uo pipefail
+          echouer() {
+            echo "::error::Sonde externe : $1"
+            if [ -n "$SONDE_PING_URL" ]; then
+              printf 'sonde en échec : %s\n' "$1" | curl -fsS -m 10 --retry 3 --data-binary @- -o /dev/null "$SONDE_PING_URL/log" || true
+            fi
+            exit 1
+          }
+          if [ -z "$SONDE_PING_URL" ]; then
+            echouer "SONDE_PING_URL vide dans l'Environment sonde"
+          fi
+          case "$SONDE_URL" in
+            https://*) ;;
+            *) echouer "SONDE_URL doit commencer par https://" ;;
+          esac
+          BASE="${SONDE_URL%/}"
+          # Identifiants lus par curl sur son entrée standard (printf est interne au shell) : jamais dans argv.
+          config_curl() {
+            if [ -n "$SONDE_USER" ]; then
+              u="${SONDE_USER//\\/\\\\}"; u="${u//\"/\\\"}"
+              p="${SONDE_PASS//\\/\\\\}"; p="${p//\"/\\\"}"
+              printf 'user = "%s:%s"\n' "$u" "$p"
+            fi
+          }
+          statut=$(config_curl | curl -sS -m 20 --retry 2 --retry-all-errors --config - -o "$RUNNER_TEMP/accueil.html" -w '%{http_code}' "$BASE/") || echouer "page d'accueil injoignable"
+          [ "$statut" = 200 ] || echouer "page d'accueil : HTTP $statut"
+          grep -q 'reveleTonProg' "$RUNNER_TEMP/accueil.html" || echouer "marqueur reveleTonProg absent de la page d'accueil"
+          statut=$(config_curl | curl -sS -m 20 --retry 2 --retry-all-errors --config - -o "$RUNNER_TEMP/version.json" -w '%{http_code}' "$BASE/version.json") || echouer "/version.json injoignable"
+          [ "$statut" = 200 ] || echouer "/version.json : HTTP $statut"
+          jq -e '(.commit | type) == "string" and (.commit | test("^[0-9a-f]{7,40}$"))' "$RUNNER_TEMP/version.json" > /dev/null || echouer "/version.json : commit absent ou mal formé"
+          curl -fsS -m 10 --retry 3 -o /dev/null "$SONDE_PING_URL" || echouer "ping Healthchecks en échec"
+          echo "Sonde externe : page d'accueil et /version.json conformes, ping envoyé."

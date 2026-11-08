@@ -1,0 +1,165 @@
+# Retour arrière (HEB-11, HEB-12, HEB-13 ; D-10). Lancé à la main par workflow_dispatch (onglet Actions, branche
+# main) : rebascule current sur la version précédente (version vide) ou sur un commit encore présent dans releases/,
+# par le verbe « retour » de la commande forcée du serveur (ops/commande-deploiement.sh). Objectif : moins de 2 minutes,
+# mesuré par l'heure UTC de début et de fin écrite dans le résumé du job.
+# Même Environment production que le job deploy (Erwan approuve chaque run) et même groupe de concurrence
+# deploy-production : un retour arrière ne chevauche jamais un déploiement.
+# La garde de gel s'applique aussi aux retours : remettre une version plus ancienne un jour de scrutin reste un
+# déploiement. Pendant le gel, seul un retrait d'urgence passe (retrait_urgence coché et justification écrite de
+# 20 caractères au moins, affichée dans le résumé).
+# En sommeil tant que la variable de dépôt DEPLOY_CIBLE n'existe pas (job sauté).
+name: Retour arrière
+
+on:
+  workflow_dispatch:
+    inputs:
+      cible:
+        description: "Cible à rebasculer"
+        type: choice
+        options:
+          - essai
+          - production
+        required: true
+      version:
+        description: "Commit à remettre en ligne (40 caractères hexadécimaux) ; vide = version précédente"
+        type: string
+        default: ""
+      retrait_urgence:
+        description: "Retrait d'urgence pendant un gel des scrutins (justification obligatoire)"
+        type: boolean
+        default: false
+      justification:
+        description: "Justification écrite du retrait d'urgence (20 caractères au moins, affichée dans le résumé)"
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  retour:
+    name: Retour arrière (après approbation)
+    if: vars.DEPLOY_CIBLE != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    environment: production
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    env:
+      CIBLE: ${{ inputs.cible }}
+      VERSION: ${{ inputs.version }}
+      CIBLE_DEPLOYEE: ${{ vars.DEPLOY_CIBLE }}
+      DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+      DEPLOY_URL: ${{ vars.DEPLOY_URL }}
+    steps:
+      - name: Noter l'heure de début (UTC)
+        run: |
+          echo "DEBUT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+      - name: Récupérer le dépôt
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Installer Node (version de .nvmrc)
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Appliquer la garde de gel (dates de Paris, retrait d'urgence justifié)
+        id: gel
+        env:
+          URGENCE: ${{ inputs.retrait_urgence }}
+          JUSTIFICATION: ${{ inputs.justification }}
+        run: node scripts/garde-gel.ts --urgence "$URGENCE" --justification "$JUSTIFICATION"
+      - name: Refuser le retour arrière pendant le gel
+        if: steps.gel.outputs.ok != 'true'
+        run: |
+          echo "::error::Retour arrière refusé par la garde de gel (voir le résumé). Retrait d'urgence : cocher retrait_urgence et écrire une justification."
+          exit 1
+      - name: Contrôler les entrées (cible, version vide ou 40 hex)
+        run: |
+          set -euo pipefail
+          case "$CIBLE" in
+            essai|production) ;;
+            *) echo "::error::cible doit valoir essai ou production."; exit 1 ;;
+          esac
+          if [ -n "$VERSION" ] && ! [[ "$VERSION" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::version doit être vide (version précédente) ou un commit de 40 caractères hexadécimaux en minuscules."
+            exit 1
+          fi
+      - name: Écrire la clé de déploiement et l'empreinte épinglée du serveur (jamais de scan de clé d'hôte)
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ vars.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          umask 077
+          if [ -z "$DEPLOY_SSH_KEY" ] || [ -z "$DEPLOY_KNOWN_HOSTS" ] || [ -z "$DEPLOY_HOST" ] || [ -z "$DEPLOY_USER" ]; then
+            echo "::error::DEPLOY_SSH_KEY, DEPLOY_KNOWN_HOSTS, DEPLOY_HOST et DEPLOY_USER doivent être définis dans l'Environment production."
+            exit 1
+          fi
+          printf '%s\n' "$DEPLOY_SSH_KEY" > "$RUNNER_TEMP/cle"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$RUNNER_TEMP/kh"
+          test -s "$RUNNER_TEMP/cle"
+          test -s "$RUNNER_TEMP/kh"
+      - name: Rebasculer current (version précédente ou version demandée)
+        run: |
+          set -euo pipefail
+          if [ -z "$VERSION" ]; then
+            ssh -i "$RUNNER_TEMP/cle" -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/kh" -o ConnectTimeout=15 "$DEPLOY_USER@$DEPLOY_HOST" "retour $CIBLE"
+          else
+            ssh -i "$RUNNER_TEMP/cle" -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/kh" -o ConnectTimeout=15 "$DEPLOY_USER@$DEPLOY_HOST" "retour $CIBLE $VERSION"
+          fi
+      - name: Vérifier l'état (nouvelle version courante)
+        run: |
+          set -euo pipefail
+          ETAT=$(ssh -i "$RUNNER_TEMP/cle" -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/kh" -o ConnectTimeout=15 "$DEPLOY_USER@$DEPLOY_HOST" "etat $CIBLE")
+          echo "$ETAT"
+          COURANT=$(printf '%s\n' "$ETAT" | sed -n 's/.* courant=\([0-9a-f]\{40\}\) .*/\1/p')
+          if [ -z "$COURANT" ]; then
+            echo "::error::état illisible ou aucune version courante après le retour arrière."
+            exit 1
+          fi
+          if [ -n "$VERSION" ] && [ "$COURANT" != "$VERSION" ]; then
+            echo "::error::current pointe $COURANT au lieu de $VERSION."
+            exit 1
+          fi
+          echo "COURANT=$COURANT" >> "$GITHUB_ENV"
+          echo "- Version active sur le serveur : $COURANT ($CIBLE)" >> "$GITHUB_STEP_SUMMARY"
+      - name: Vérifier la version servie en HTTPS (cible de DEPLOY_URL seulement)
+        env:
+          DEPLOY_SMOKE_USER: ${{ secrets.DEPLOY_SMOKE_USER }}
+          DEPLOY_SMOKE_PASS: ${{ secrets.DEPLOY_SMOKE_PASS }}
+        run: |
+          set -euo pipefail
+          if [ "$CIBLE" != "$CIBLE_DEPLOYEE" ] || [ -z "$DEPLOY_URL" ]; then
+            echo "- Vérification HTTPS : sautée (DEPLOY_URL vide ou désigne l'autre cible)" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          case "$DEPLOY_URL" in
+            https://*) ;;
+            *) echo "::error::DEPLOY_URL doit commencer par https://."; exit 1 ;;
+          esac
+          BASE="${DEPLOY_URL%/}"
+          # Identifiants lus par curl sur son entrée standard (printf est interne au shell) : jamais dans argv.
+          config_curl() {
+            if [ -n "$DEPLOY_SMOKE_USER" ]; then
+              u="${DEPLOY_SMOKE_USER//\\/\\\\}"; u="${u//\"/\\\"}"
+              p="${DEPLOY_SMOKE_PASS//\\/\\\\}"; p="${p//\"/\\\"}"
+              printf 'user = "%s:%s"\n' "$u" "$p"
+            fi
+          }
+          config_curl | curl -fsS --retry 5 --retry-all-errors --retry-delay 3 --max-time 20 --config - -o "$RUNNER_TEMP/version.json" "$BASE/version.json"
+          if ! jq -e --arg s "$COURANT" '.commit == $s' "$RUNNER_TEMP/version.json" > /dev/null; then
+            echo "::error::/version.json ne sert pas le commit $COURANT."
+            exit 1
+          fi
+          echo "- Version servie : $COURANT (/version.json)" >> "$GITHUB_STEP_SUMMARY"
+      - name: Résumé chronométré (heures UTC de début et de fin)
+        if: always()
+        run: |
+          echo "- Retour arrière : début $DEBUT, fin $(date -u +%Y-%m-%dT%H:%M:%SZ) (UTC)" >> "$GITHUB_STEP_SUMMARY"
+      - name: Effacer la clé et l'empreinte du runner
+        if: always()
+        run: rm -f "$RUNNER_TEMP/cle" "$RUNNER_TEMP/kh"
