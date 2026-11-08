@@ -2,6 +2,7 @@
 import Base from '../layouts/Base.astro';
 import { formatDate } from '../lib/corpus/index.ts';
 import { loadHebergeurConfig } from '../lib/hebergeur-config.ts';
+import { phraseJournalAcces } from '../lib/journal-acces.ts';
 import { loadSiteConfig } from '../lib/site-config.ts';
 import { CLES_STOCKAGE } from '../lib/stockage-local.ts';
 
@@ -64,7 +65,11 @@ const site = loadSiteConfig();
       {heb.statut === 'prevu' ? (
         <li data-hebergeur="prevu">Cette version de test n'est pas en ligne : aucun serveur de l'éditeur ne reçoit vos visites.</li>
       ) : (
-        <li>Comme tout serveur web, le serveur qui héberge ce site reçoit l'adresse IP de votre appareil pour lui envoyer les pages demandées.</li>
+        <>
+          <li>Comme tout serveur web, le serveur qui héberge ce site reçoit l'adresse IP de votre appareil pour lui envoyer les pages demandées.</li>
+          {/* Seul le journal d'accès est décrit ici ; la sortie d'erreur du conteneur (plafonnée en taille, adresse complète) est rédigée avec la relecture juridique de la Phase 9 (08-RESEARCH, question O4). */}
+          <li data-journal-acces>{phraseJournalAcces()}</li>
+        </>
       )}
       <li>
         Deux réglages de présentation sont mémorisés dans le stockage local de votre navigateur, seulement si vous les modifiez :

@@ -88,7 +88,7 @@ describe('src/pages/mentions-legales.astro : phrase du journal d’accès', () =
     const debut = section.indexOf("{heb.statut === 'prevu' ? (");
     assert.ok(debut >= 0, 'ternaire hébergeur absent de la section');
     const sinon = section.indexOf(') : (', debut);
-    const fin = section.indexOf(')}', sinon);
+    const fin = section.indexOf('\n      )}', sinon);
     const appel = section.indexOf('phraseJournalAcces()');
     assert.ok(sinon > debut && fin > sinon, 'ternaire mal formé');
     assert.ok(appel > sinon && appel < fin, 'phraseJournalAcces() doit être dans la branche non prevu');
