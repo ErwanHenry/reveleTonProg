@@ -4,12 +4,28 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Lancement à la main (onglet Actions, branche main) : redéploie la tête de main, ou retire un contenu pendant un
+  # gel des scrutins avec retrait_urgence coché et une justification écrite (D-10, scripts/garde-gel.ts).
+  workflow_dispatch:
+    inputs:
+      retrait_urgence:
+        description: "Retrait d'urgence pendant un gel des scrutins (justification obligatoire)"
+        type: boolean
+        default: false
+      justification:
+        description: "Justification écrite du retrait d'urgence (20 caractères au moins, affichée dans le résumé)"
+        type: string
+        default: ""
 
 permissions:
   contents: read
 
+# Un groupe par pull request (un nouveau push annule l'ancien run) et un groupe par exécution sur main (github.run_id) :
+# un run de main qui attend l'approbation du déploiement ne met jamais en file ni n'annule le run suivant, et chaque
+# push sur main reste comparé à son commit de base (ids.lock). Les déploiements se sérialisent par la concurrence du
+# job deploy (deploy-production), pas par celle du workflow.
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   # Sur main, ne jamais annuler : un push annulé ne serait jamais comparé à son commit de base (ids.lock).
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
@@ -175,3 +191,176 @@ jobs:
           tar -xzf "$RUNNER_TEMP/gitleaks.tgz" -C "$RUNNER_TEMP/gitleaks" gitleaks
       - name: Analyser l'historique git
         run: '"$RUNNER_TEMP/gitleaks/gitleaks" git --no-banner --redact -v .'
+
+  gel:
+    name: Garde de gel des scrutins (17-19 avril, 1-3 mai 2027)
+    needs: [verifier, e2e, secrets]
+    # En sommeil tant que la variable de dépôt DEPLOY_CIBLE n'existe pas : le job est sauté, la CI reste verte.
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' && vars.DEPLOY_CIBLE != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      ok: ${{ steps.gel.outputs.ok }}
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Installer Node (version de .nvmrc)
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Appliquer la garde de gel (dates de Paris, retrait d'urgence justifié)
+        id: gel
+        env:
+          URGENCE: ${{ inputs.retrait_urgence }}
+          JUSTIFICATION: ${{ inputs.justification }}
+        run: node scripts/garde-gel.ts --urgence "$URGENCE" --justification "$JUSTIFICATION"
+
+  # Livraison (HEB-02, D-08). En sommeil tant que la variable de dépôt DEPLOY_CIBLE n'existe pas : gel puis deploy sont
+  # sautés et la CI reste verte. Erwan la pose après avoir créé l'Environment production (08-13).
+  # DEPLOY_CIBLE=essai : build de production construite sans RTP_DEPLOIEMENT (hôte privé sous basic_auth, D-07 révisée).
+  # DEPLOY_CIBLE=production : toujours RTP_DEPLOIEMENT=1, donc toutes les gardes de déploiement public (HEB-14).
+  # Erwan approuve chaque run dans l'Environment production (seul relecteur, « prevent self-review » désactivé).
+  # Une approbation donnée après que main a avancé est refusée par le contrôle de la tête de main : seul le dernier
+  # commit de main part en ligne. Aucun artefact n'est téléchargé : la build est refaite ici, depuis le commit du run.
+  deploy:
+    name: Déployer (cible DEPLOY_CIBLE, après approbation)
+    needs: [verifier, e2e, secrets, gel]
+    if: needs.gel.outputs.ok == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: production
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    env:
+      CIBLE: ${{ vars.DEPLOY_CIBLE }}
+      SHA: ${{ github.sha }}
+      REPO: ${{ github.repository }}
+      DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+      DEPLOY_URL: ${{ vars.DEPLOY_URL }}
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Installer Node (version de .nvmrc)
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Installer les dépendances (npm ci)
+        run: npm ci
+      - name: Vérifier les signatures des paquets
+        run: npm audit signatures
+      - name: Vérifier la cible et que le commit est encore la tête de main (approbation périmée refusée)
+        run: |
+          set -euo pipefail
+          case "$CIBLE" in
+            essai|production) ;;
+            *) echo "::error::DEPLOY_CIBLE doit valoir essai ou production."; exit 1 ;;
+          esac
+          TETE=$(git ls-remote "https://github.com/$REPO" refs/heads/main | cut -f1)
+          if [ "$TETE" != "$SHA" ]; then
+            echo "::error::main a avancé (tête ${TETE:-introuvable}) depuis le commit $SHA : approbation périmée, rien n'est déployé. Le run du dernier commit de main déploiera."
+            exit 1
+          fi
+          echo "- Cible : $CIBLE ; commit $SHA, encore la tête de main" >> "$GITHUB_STEP_SUMMARY"
+      - name: Construire le site (corpus réel ; RTP_DEPLOIEMENT=1 pour la production, 0 pour essai)
+        run: npm run build
+        env:
+          RTP_CONTENT_ROOT: "."
+          RTP_DEPLOIEMENT: ${{ vars.DEPLOY_CIBLE == 'production' && '1' || '0' }}
+      - name: Contrôler le site construit (mode production, version.json du commit)
+        run: npm run check-dist -- --mode production
+        env:
+          RTP_CONTENT_ROOT: "."
+          RTP_DEPLOIEMENT: ${{ vars.DEPLOY_CIBLE == 'production' && '1' || '0' }}
+      - name: Écrire la clé de déploiement et l'empreinte épinglée du serveur (jamais de scan de clé d'hôte)
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ vars.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          umask 077
+          if [ -z "$DEPLOY_SSH_KEY" ] || [ -z "$DEPLOY_KNOWN_HOSTS" ] || [ -z "$DEPLOY_HOST" ] || [ -z "$DEPLOY_USER" ]; then
+            echo "::error::DEPLOY_SSH_KEY, DEPLOY_KNOWN_HOSTS, DEPLOY_HOST et DEPLOY_USER doivent être définis dans l'Environment production."
+            exit 1
+          fi
+          printf '%s\n' "$DEPLOY_SSH_KEY" > "$RUNNER_TEMP/cle"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$RUNNER_TEMP/kh"
+          test -s "$RUNNER_TEMP/cle"
+          test -s "$RUNNER_TEMP/kh"
+      - name: Envoyer la build dans incoming/<cible>/<sha>/ (rsync sans suppression)
+        run: |
+          set -euo pipefail
+          rsync -rlt --chmod=D755,F644 --stats -e "ssh -i $RUNNER_TEMP/cle -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$RUNNER_TEMP/kh -o ConnectTimeout=15" dist/ "$DEPLOY_USER@$DEPLOY_HOST:$CIBLE/$SHA/"
+      - name: Activer la version (bascule atomique de current)
+        id: activer
+        run: |
+          set -euo pipefail
+          ssh -i "$RUNNER_TEMP/cle" -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/kh" -o ConnectTimeout=15 "$DEPLOY_USER@$DEPLOY_HOST" "activer $CIBLE $SHA"
+      - name: Vérifier l'état (current pointe le commit du run)
+        run: |
+          set -euo pipefail
+          ETAT=$(ssh -i "$RUNNER_TEMP/cle" -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/kh" -o ConnectTimeout=15 "$DEPLOY_USER@$DEPLOY_HOST" "etat $CIBLE")
+          echo "$ETAT"
+          case " $ETAT " in
+            *" courant=$SHA "*) ;;
+            *) echo "::error::current ne pointe pas le commit $SHA après l'activation."; exit 1 ;;
+          esac
+          echo "- Version active sur le serveur : $SHA ($CIBLE)" >> "$GITHUB_STEP_SUMMARY"
+      - name: Test de fumée HTTPS (version servie, en-têtes HSTS et CSP)
+        env:
+          DEPLOY_SMOKE_USER: ${{ secrets.DEPLOY_SMOKE_USER }}
+          DEPLOY_SMOKE_PASS: ${{ secrets.DEPLOY_SMOKE_PASS }}
+        run: |
+          set -euo pipefail
+          if [ -z "$DEPLOY_URL" ]; then
+            echo "DEPLOY_URL vide : test de fumée HTTPS sauté (current vérifié par etat)."
+            echo "- Test de fumée HTTPS : sauté (DEPLOY_URL vide)" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          case "$DEPLOY_URL" in
+            https://*) ;;
+            *) echo "::error::DEPLOY_URL doit commencer par https://."; exit 1 ;;
+          esac
+          BASE="${DEPLOY_URL%/}"
+          # Identifiants lus par curl sur son entrée standard (printf est interne au shell) : jamais dans argv.
+          config_curl() {
+            if [ -n "$DEPLOY_SMOKE_USER" ]; then
+              u="${DEPLOY_SMOKE_USER//\\/\\\\}"; u="${u//\"/\\\"}"
+              p="${DEPLOY_SMOKE_PASS//\\/\\\\}"; p="${p//\"/\\\"}"
+              printf 'user = "%s:%s"\n' "$u" "$p"
+            fi
+          }
+          config_curl | curl -fsS --retry 5 --retry-all-errors --retry-delay 3 --max-time 20 --config - -o "$RUNNER_TEMP/version.json" "$BASE/version.json"
+          if ! jq -e --arg s "$SHA" '.commit == $s' "$RUNNER_TEMP/version.json" > /dev/null; then
+            echo "::error::/version.json ne sert pas le commit $SHA."
+            exit 1
+          fi
+          config_curl | curl -fsS --retry 5 --retry-all-errors --retry-delay 3 --max-time 20 --config - -o /dev/null -D "$RUNNER_TEMP/entetes" "$BASE/"
+          for entete in strict-transport-security content-security-policy; do
+            if ! grep -qi "^$entete:" "$RUNNER_TEMP/entetes"; then
+              echo "::error::En-tête $entete absent de la page d'accueil."
+              exit 1
+            fi
+          done
+          {
+            echo "- Version servie : $SHA (/version.json)"
+            echo "- En-têtes Strict-Transport-Security et Content-Security-Policy présents"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Retour arrière automatique (une étape a échoué après l'activation)
+        if: failure() && steps.activer.outcome == 'success'
+        run: |
+          set -euo pipefail
+          echo "::error::Une étape a échoué après l'activation : retour à la version précédente."
+          ssh -i "$RUNNER_TEMP/cle" -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/kh" -o ConnectTimeout=15 "$DEPLOY_USER@$DEPLOY_HOST" "retour $CIBLE"
+          ssh -i "$RUNNER_TEMP/cle" -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/kh" -o ConnectTimeout=15 "$DEPLOY_USER@$DEPLOY_HOST" "etat $CIBLE"
+          echo "- Retour arrière automatique : current rebasculé sur la version précédente" >> "$GITHUB_STEP_SUMMARY"
+      - name: Effacer la clé et l'empreinte du runner
+        if: always()
+        run: rm -f "$RUNNER_TEMP/cle" "$RUNNER_TEMP/kh"

@@ -279,7 +279,7 @@ describe('ci.yml : job deploy (HEB-02, HEB-12, HEB-14)', () => {
   it('aucun hôte, adresse IP ou URL du serveur écrit dans le job', () => {
     const texte = JSON.stringify(dep);
     assert.doesNotMatch(texte, /\b\d{1,3}(\.\d{1,3}){3}\b/);
-    const urls = texte.match(/https?:\/\/[^\s"'$*)]+/g) ?? [];
+    const urls = texte.match(/https?:\/\/[A-Za-z0-9][^\s"'$*)\\]*/g) ?? [];
     for (const u of urls) assert.equal(u, 'https://github.com/', `URL en dur : ${u}`);
   });
 
