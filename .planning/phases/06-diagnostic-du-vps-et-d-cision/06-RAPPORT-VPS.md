@@ -48,6 +48,6 @@ Non visibles depuis la machine. À vérifier par Erwan dans la console Hetzner (
 ## Décision d'Erwan
 
 - **Décision (Erwan, 2026-11-07) : garder l'instance actuelle**, sans nettoyage ni montée en gamme pour le Lot 3.
-- **Marge disque retenue :** 42 % libres sur le disque système au relevé du 2026-11-06 (seuil HEB-04 : 30 %). À remesurer avec le script avant la Phase 8.
-- **Instantané Hetzner :** à prendre par Erwan dans la console avant toute modification de la machine (Phase 8) ; date à reporter ici.
+- **Marge disque retenue :** 42 % libres sur le disque système au relevé du 2026-11-06, confirmée au second relevé du 2026-11-08T09:46 (58 % utilisés, 16 Go libres ; seuil HEB-04 : 30 %). RAM disponible au second relevé : 1 220 Mio, swap 1 131 Mio utilisés.
+- **Instantané Hetzner :** pris par Erwan dans la console, déclaré le 2026-11-08, avant toute modification de la machine (aucune action de la Phase 8 n'a eu lieu).
 - **Sauvegardes Hetzner automatiques :** état à vérifier par Erwan dans la console.

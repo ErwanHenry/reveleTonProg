@@ -22,7 +22,7 @@ Détail complet : [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) ; exi
 
 ### 🚧 v1.1 Lot 3 : hébergement et mise en ligne
 
-- [ ] **Phase 6: Diagnostic du VPS et décision** : rapport chiffré en lecture seule, snapshot, décision écrite d'Erwan
+- [x] **Phase 6: Diagnostic du VPS et décision** : rapport chiffré en lecture seule, snapshot, décision écrite d'Erwan (completed 2026-11-08)
 - [x] **Phase 7: Domaine paramétré, inlining et dette** : domaine unique en configuration, CSS et scripts dans la page avec CSP à empreintes, dette W3, W4, W10, W7 (completed 2026-11-07)
 - [ ] **Phase 8: Serveur, pipeline, supervision et sauvegardes** : Caddy en HTTPS, déploiement atomique avec retour arrière, hôte technique protégé, alertes, restauration réelle
 - [ ] **Phase 9: Contenu relu, juridique et ouverture** : un thème relu publié, Mentions légales finales, journal d'audit refait, ouverture publique vers le 5 décembre
@@ -141,7 +141,7 @@ Plans:
 | 3. Import data.gouv et corpus pilote | v1.0 | 9/9 | Complete | 2026-11-04 |
 | 4. Référentiel M1 et 4 niveaux de lecture | v1.0 | 9/9 | Complete | 2026-11-03 |
 | 5. Pages institutionnelles, qualité et URL de test | v1.0 | 8/8 | Complete | 2026-11-04 |
-| 6. Diagnostic du VPS et décision | v1.1 | 0/0 | Not started | - |
+| 6. Diagnostic du VPS et décision | v1.1 | 1/0 | Complete    | 2026-11-08 |
 | 7. Domaine paramétré, inlining et dette | v1.1 | 8/8 | Complete    | 2026-11-07 |
 | 8. Serveur, pipeline, supervision et sauvegardes | v1.1 | 0/0 | Not started | - |
 | 9. Contenu relu, juridique et ouverture | v1.1 | 0/0 | Not started | - |

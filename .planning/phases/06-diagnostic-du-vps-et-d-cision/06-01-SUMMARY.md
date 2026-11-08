@@ -3,7 +3,7 @@ phase: 06-diagnostic-du-vps-et-d-cision
 plan: 01
 subsystem: ops
 tags: [vps, diagnostic]
-requirements-completed: [HEB-03]
+requirements-completed: [HEB-03, HEB-04]
 key-files:
   created:
     - ops/diagnostic-vps.sh

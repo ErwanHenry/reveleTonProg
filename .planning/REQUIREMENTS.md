@@ -10,8 +10,8 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 
 ### VPS (diagnostic et décision)
 
-- [ ] **HEB-03**: Erwan dispose d'un rapport chiffré sur le VPS (mémoire, disque, services, version de Caddy, rrsync, IPv6, ports 80/443, sauvegardes Hetzner) obtenu par un script en lecture seule versionné, avec une recommandation (libérer, monter en gamme, isoler) et sa décision écrite
-- [ ] **HEB-04**: Un instantané (snapshot) du VPS existe avant toute modification de la machine, et la marge libre retenue après décision est d'au moins 30 % du disque
+- [x] **HEB-03**: Erwan dispose d'un rapport chiffré sur le VPS (mémoire, disque, services, version de Caddy, rrsync, IPv6, ports 80/443, sauvegardes Hetzner) obtenu par un script en lecture seule versionné, avec une recommandation (libérer, monter en gamme, isoler) et sa décision écrite
+- [x] **HEB-04**: Un instantané (snapshot) du VPS existe avant toute modification de la machine, et la marge libre retenue après décision est d'au moins 30 % du disque
 
 ### Domaine et configuration
 
@@ -97,8 +97,8 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| HEB-03 | Phase 6 | Pending |
-| HEB-04 | Phase 6 | Pending |
+| HEB-03 | Phase 6 | Complete |
+| HEB-04 | Phase 6 | Complete |
 | DETTE-01 | Phase 7 | Complete |
 | DETTE-02 | Phase 7 | Complete |
 | DETTE-03 | Phase 7 | Complete |
