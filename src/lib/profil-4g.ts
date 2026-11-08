@@ -4,11 +4,13 @@
 // Le test applique les profils par CDP (Network.emulateNetworkConditions) : la latence y est ajoutée à chaque
 // requête, elle ne simule pas un aller-retour de paquet.
 // - `latence-150` : 150 ms par requête, 1,6 Mbit/s. Profil historique du test, nommé pour ce qu'il simule.
-// - `slow-4g-lighthouse` : équivalent du « Slow 4G » de Lighthouse (moteur Lantern : 150 ms d'aller-retour,
-//   1,6 Mbit/s descendant, 750 kbit/s montant) avec les facteurs que Lighthouse applique en mode DevTools pour
-//   ce profil : latence × 3,75 (562,5 ms par requête), débits × 0,9. Une page faite d'un HTML et d'une feuille
-//   de style demande deux requêtes l'une après l'autre, soit 1 125 ms de latence au minimum : la seconde
-//   n'y est pas atteignable, d'où un budget distinct.
+// - `slow-4g-lighthouse`, publié sous le nom « Slow 4G simulé » : équivalent du « Slow 4G » de Lighthouse
+//   (moteur Lantern : 150 ms d'aller-retour, 1,6 Mbit/s descendant, 750 kbit/s montant) avec les facteurs que
+//   Lighthouse applique en mode DevTools pour ce profil : latence × 3,75 (562,5 ms par requête), débits × 0,9.
+//   Depuis l'intégration du CSS et des scripts dans la page (Phase 7, ADR-056), une page est une seule requête
+//   HTML : la latence de 562,5 ms laisse de la place sous 1 s (environ 730 ms mesurés en 07-05 sur la page la
+//   plus lourde). Budget de 1 s comme le premier profil, choix d'Erwan du 2026-11-08 (D-13, 08-05) : ne pas
+//   le relever pour faire passer un test, signaler l'écart.
 const DEBIT_DESCENDANT = (1.6 * 1024 * 1024) / 8;
 const DEBIT_MONTANT = (750 * 1024) / 8;
 const LIGHTHOUSE_LATENCE = 3.75;
@@ -35,10 +37,10 @@ export const PROFILS_4G: readonly Profil4G[] = [
   },
   {
     id: 'slow-4g-lighthouse',
-    libelle: 'le profil « Slow 4G » de Lighthouse (562,5 ms de latence par requête, 1,44 Mbit/s)',
+    libelle: 'le profil « Slow 4G simulé » (équivalent DevTools du Slow 4G de Lighthouse : 562,5 ms de latence par requête, 1,44 Mbit/s)',
     latenceRequeteMs: 150 * LIGHTHOUSE_LATENCE,
     debitDescendantOctetsParSeconde: DEBIT_DESCENDANT * LIGHTHOUSE_DEBIT,
     debitMontantOctetsParSeconde: DEBIT_MONTANT * LIGHTHOUSE_DEBIT,
-    budgetMs: 1500,
+    budgetMs: 1000,
   },
 ];
