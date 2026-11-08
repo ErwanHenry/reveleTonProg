@@ -331,3 +331,242 @@ describe('ci.yml : propriétés de sécurité (HEB-10, D-11)', () => {
     for (const j of Object.values(ci.jobs)) for (const r of runs(j)) assert.ok(!r.includes('${{'), r.slice(0, 60));
   });
 });
+
+const lireWorkflow = (f: string): { raw: string; wf: Workflow } => {
+  const raw = fs.existsSync(path.join(ROOT, f)) ? read(f) : '';
+  return { raw, wf: (parse(raw) ?? { on: {}, jobs: {} }) as Workflow };
+};
+const rollback = lireWorkflow('.github/workflows/rollback.yml');
+const sonde = lireWorkflow('.github/workflows/sonde.yml');
+
+/** Règles communes aux deux workflows : épinglage, persist-credentials, droits, timeouts, pas de ${{ }} dans run. */
+function reglesCommunes(nom: string, raw: string, wf: Workflow): void {
+  it(`${nom} : existe, contents: read, aucun pull_request_target ni push ni pull_request`, () => {
+    assert.ok(raw.length > 0, `${nom} absent`);
+    assert.deepEqual(wf.permissions, { contents: 'read' });
+    for (const interdit of ['pull_request_target', 'pull_request', 'push']) assert.ok(!(interdit in wf.on), interdit);
+    assert.ok(!raw.includes('pull_request_target'));
+  });
+
+  it(`${nom} : actions épinglées par SHA avec # vX, checkout sans identifiants persistés`, () => {
+    for (const j of Object.values(wf.jobs)) {
+      assert.equal(typeof j['timeout-minutes'], 'number');
+      assert.ok(!('permissions' in j));
+      for (const s of j.steps) {
+        if (s.uses === undefined) continue;
+        assert.match(s.uses, /^actions\/(checkout|setup-node)@[0-9a-f]{40}$/);
+        if (s.uses.startsWith('actions/checkout@')) assert.equal(s.with?.['persist-credentials'], false);
+        if (s.uses.startsWith('actions/setup-node@')) {
+          assert.equal(s.with?.['node-version-file'], '.nvmrc');
+          assert.equal(s.with?.cache, 'npm');
+        }
+      }
+    }
+    for (const l of raw.split('\n').filter((x) => /\buses:/.test(x))) assert.match(l, /@[0-9a-f]{40} # v\d/);
+    const pins = [...raw.matchAll(/uses: (\S+)/g)].map((m) => m[1]);
+    for (const p of pins) assert.ok(ciRaw.includes(`uses: ${p}`), `épinglage différent de ci.yml : ${p}`);
+  });
+
+  it(`${nom} : aucune interpolation \${{ }} dans un script, ni ssh-keyscan, ni StrictHostKeyChecking=no`, () => {
+    for (const j of Object.values(wf.jobs)) for (const r of runs(j)) assert.ok(!r.includes('${{'), r.slice(0, 60));
+    assert.ok(!raw.includes('ssh-keyscan'));
+    assert.ok(!raw.includes('StrictHostKeyChecking=no'));
+    assert.ok(!raw.includes('RTP_MODE'));
+  });
+
+  it(`${nom} : commentaire en tête du fichier`, () => {
+    assert.ok(raw.startsWith('#'), 'le fichier commence par un commentaire');
+  });
+}
+
+describe('rollback.yml : retour arrière (HEB-11, HEB-12, HEB-13)', () => {
+  const { raw, wf } = rollback;
+  reglesCommunes('rollback.yml', raw, wf);
+  const retour = (): Job => job(wf, 'retour');
+
+  it('nom « Retour arrière », workflow_dispatch seul avec cible, version, retrait_urgence et justification', () => {
+    assert.equal(wf.name, 'Retour arrière');
+    assert.deepEqual(Object.keys(wf.on), ['workflow_dispatch']);
+    const inputs = (wf.on.workflow_dispatch as { inputs: Record<string, Record<string, unknown>> }).inputs;
+    assert.deepEqual(Object.keys(inputs).sort(), ['cible', 'justification', 'retrait_urgence', 'version']);
+    assert.equal(inputs.cible?.type, 'choice');
+    assert.deepEqual(inputs.cible?.options, ['essai', 'production']);
+    assert.equal(inputs.cible?.required, true);
+    assert.equal(inputs.version?.type, 'string');
+    assert.equal(inputs.version?.default, '');
+    assert.equal(inputs.retrait_urgence?.type, 'boolean');
+    assert.equal(inputs.retrait_urgence?.default, false);
+    assert.equal(inputs.justification?.type, 'string');
+  });
+
+  it('un seul job retour : en sommeil sans DEPLOY_CIBLE, Environment production, même groupe que deploy, 5 min', () => {
+    assert.deepEqual(Object.keys(wf.jobs), ['retour']);
+    const j = retour();
+    assert.equal(j.if, "vars.DEPLOY_CIBLE != ''");
+    assert.equal(j.environment, 'production');
+    assert.deepEqual(j.concurrency, { group: 'deploy-production', 'cancel-in-progress': false });
+    assert.deepEqual(job(ci, 'deploy').concurrency, j.concurrency);
+    assert.equal(j['timeout-minutes'], 5);
+  });
+
+  it('garde de gel appliquée aux retours, refus = job en échec', () => {
+    const j = retour();
+    const iGel = indexEtape(j, (s) => s.id === 'gel', 'garde de gel');
+    const gel = j.steps[iGel] as Step;
+    assert.equal(gel.run?.trim(), 'node scripts/garde-gel.ts --urgence "$URGENCE" --justification "$JUSTIFICATION"');
+    assert.deepEqual(gel.env, { URGENCE: '${{ inputs.retrait_urgence }}', JUSTIFICATION: '${{ inputs.justification }}' });
+    const refus = j.steps[iGel + 1] as Step;
+    assert.equal(refus.if, "steps.gel.outputs.ok != 'true'");
+    assert.match(refus.run ?? '', /::error::/);
+    assert.match(refus.run ?? '', /exit 1/);
+    const iSsh = indexEtape(j, (s) => (s.run ?? '').includes('"retour $CIBLE"'), 'retour ssh');
+    assert.ok(iGel < iSsh, 'la garde passe avant toute bascule');
+  });
+
+  it('entrées contrôlées : cible essai ou production, version vide ou 40 hex', () => {
+    const run = retour().steps.find((s) => (s.run ?? '').includes('[0-9a-f]{40}'))?.run ?? '';
+    assert.match(run, /case "\$CIBLE" in/);
+    assert.match(run, /essai\|production\)/);
+    assert.ok(run.includes('[[ "$VERSION" =~ ^[0-9a-f]{40}$ ]]'));
+    assert.match(run, /exit 1/);
+  });
+
+  it('retour vers la précédente (version vide) ou vers la version demandée, puis état', () => {
+    const j = retour();
+    const run = j.steps.find((s) => (s.run ?? '').includes('"retour $CIBLE"'))?.run ?? '';
+    assert.ok(run.includes('"retour $CIBLE $VERSION"'));
+    assert.match(run, /if \[ -z "\$VERSION" \]/);
+    const iRetour = indexEtape(j, (s) => (s.run ?? '').includes('"retour $CIBLE"'), 'retour');
+    const iEtat = indexEtape(j, (s) => (s.run ?? '').includes('"etat $CIBLE"'), 'état');
+    assert.ok(iRetour < iEtat);
+    assert.match(j.steps[iEtat]?.run ?? '', /courant=/);
+  });
+
+  it('vérification HTTPS du commit servi quand la cible est celle de DEPLOY_URL', () => {
+    const j = retour();
+    const etape = j.steps.find((s) => (s.run ?? '').includes('/version.json'));
+    assert.ok(etape);
+    const run = etape.run ?? '';
+    assert.match(run, /"\$CIBLE" != "\$CIBLE_DEPLOYEE"/);
+    assert.match(run, /-z "\$DEPLOY_URL"/);
+    assert.ok(run.includes(`jq -e --arg s "$COURANT" '.commit == $s'`));
+    assert.ok(run.includes('--config -'));
+    assert.doesNotMatch(run, /curl[^\n]*(\s-u\s|--user\s)/);
+    assert.deepEqual(etape.env, {
+      DEPLOY_SMOKE_USER: '${{ secrets.DEPLOY_SMOKE_USER }}',
+      DEPLOY_SMOKE_PASS: '${{ secrets.DEPLOY_SMOKE_PASS }}',
+    });
+    assert.equal(j.env?.CIBLE_DEPLOYEE, '${{ vars.DEPLOY_CIBLE }}');
+    assert.equal(j.env?.CIBLE, '${{ inputs.cible }}');
+    assert.equal(j.env?.VERSION, '${{ inputs.version }}');
+  });
+
+  it('résumé avec l’heure UTC de début et de fin, nettoyage always() en dernier', () => {
+    const j = retour();
+    const debut = j.steps[0];
+    assert.match(debut?.run ?? '', /date -u/);
+    assert.match(debut?.run ?? '', /GITHUB_ENV/);
+    const resume = j.steps.find((s) => (s.run ?? '').includes('$DEBUT'));
+    assert.match(resume?.run ?? '', /date -u/);
+    assert.match(resume?.run ?? '', /GITHUB_STEP_SUMMARY/);
+    assert.equal(resume?.if, 'always()');
+    const fin = j.steps.at(-1);
+    assert.equal(fin?.if, 'always()');
+    assert.equal(fin?.run?.trim(), 'rm -f "$RUNNER_TEMP/cle" "$RUNNER_TEMP/kh"');
+  });
+
+  it('clé et known_hosts comme le job deploy, options ssh copiées à l’identique', () => {
+    const j = retour();
+    const cle = j.steps.find((s) => (s.run ?? '').includes('umask 077'));
+    const cleDeploy = job(ci, 'deploy').steps.find((s) => (s.run ?? '').includes('umask 077'));
+    assert.deepEqual(cle?.env, cleDeploy?.env);
+    assert.equal(cle?.run, cleDeploy?.run);
+    verifierOptionsSsh(j, 3);
+    const ligneDeploy = appelsSsh(job(ci, 'deploy')).find((l) => l.startsWith('ssh '))?.split(' "$DEPLOY_USER')[0];
+    for (const l of appelsSsh(j)) assert.ok(l.includes(ligneDeploy ?? 'absent'), l);
+  });
+
+  it('secrets seulement dans les env d’étapes du job retour', () => {
+    const chemins = cheminsSecrets(wf);
+    assert.ok(chemins.length >= 3);
+    for (const c of chemins) {
+      assert.deepEqual(c.slice(0, 3), ['jobs', 'retour', 'steps'], c.join('.'));
+      assert.equal(c[4], 'env', c.join('.'));
+    }
+  });
+
+  it('commentaire de tête : workflow_dispatch, gel appliqué aux retours, urgence', () => {
+    const tete = raw.split('\n').filter((l) => l.startsWith('#')).join('\n');
+    for (const mot of ['workflow_dispatch', 'gel', 'urgence', 'deploy-production']) assert.ok(tete.includes(mot), mot);
+  });
+});
+
+describe('sonde.yml : sonde externe de contenu (OPS-01, D-14)', () => {
+  const { raw, wf } = sonde;
+  reglesCommunes('sonde.yml', raw, wf);
+  const j = (): Job => job(wf, 'sonde');
+  const run = (): string => j().steps.find((s) => s.run !== undefined)?.run ?? '';
+  const code = (): string => lignesCode(run()).join('\n');
+
+  it('nom « Sonde externe », toutes les 10 minutes et à la main, concurrence sonde avec annulation', () => {
+    assert.equal(wf.name, 'Sonde externe');
+    assert.deepEqual(Object.keys(wf.on).sort(), ['schedule', 'workflow_dispatch']);
+    assert.deepEqual(wf.on.schedule, [{ cron: '*/10 * * * *' }]);
+    assert.deepEqual(wf.concurrency, { group: 'sonde', 'cancel-in-progress': true });
+  });
+
+  it('job sonde : en sommeil sans SONDE_URL, Environment sonde (jamais production), sans checkout, une seule étape', () => {
+    assert.deepEqual(Object.keys(wf.jobs), ['sonde']);
+    assert.equal(j().if, "vars.SONDE_URL != ''");
+    assert.equal(j().environment, 'sonde');
+    assert.equal(j()['timeout-minutes'], 5);
+    assert.ok(j().steps.every((s) => s.uses === undefined), 'aucune action');
+    assert.equal(j().steps.length, 1);
+    assert.ok(!/environment: production|name: production/.test(raw));
+  });
+
+  it('URL depuis vars, identifiants et ping depuis les secrets, par env', () => {
+    assert.deepEqual(j().steps[0]?.env, {
+      SONDE_URL: '${{ vars.SONDE_URL }}',
+      SONDE_USER: '${{ secrets.SONDE_USER }}',
+      SONDE_PASS: '${{ secrets.SONDE_PASS }}',
+      SONDE_PING_URL: '${{ secrets.SONDE_PING_URL }}',
+    });
+    const chemins = cheminsSecrets(wf);
+    assert.equal(chemins.length, 3);
+    for (const c of chemins) assert.deepEqual(c.slice(0, 5), ['jobs', 'sonde', 'steps', '0', 'env']);
+  });
+
+  it('vérifie / (200 et le marqueur reveleTonProg) puis /version.json (200, commit de 7 à 40 hex)', () => {
+    const c = code();
+    assert.ok(c.includes('"$BASE/"'));
+    assert.ok(c.includes('"$BASE/version.json"'));
+    assert.match(c, /grep -q 'reveleTonProg'/);
+    assert.ok(c.includes('^[0-9a-f]{7,40}$'));
+    assert.equal((c.match(/= 200 \]/g) ?? []).length, 2, 'deux contrôles HTTP 200');
+    assert.ok(c.includes('--config -'));
+    assert.match(c, /-n "\$SONDE_USER"/);
+    assert.doesNotMatch(c, /curl[^\n]*(\s-u\s|--user\s)/);
+  });
+
+  it('ping Healthchecks seulement après les deux contrôles ; en échec, raison vers /log, ::error::, code 1', () => {
+    const c = code();
+    const iPing = c.indexOf('curl -fsS -m 10 --retry 3 -o /dev/null "$SONDE_PING_URL"');
+    assert.ok(iPing >= 0, 'ping de succès absent');
+    assert.ok(iPing > c.indexOf("grep -q 'reveleTonProg'"));
+    assert.ok(iPing > c.indexOf('^[0-9a-f]{7,40}$'));
+    assert.ok(c.includes('"$SONDE_PING_URL/log"'));
+    assert.match(run(), /::error::/);
+    assert.match(c, /exit 1/);
+    assert.ok(!raw.includes('/fail'), 'jamais d’appel d’échec immédiat');
+  });
+
+  it('le marqueur de la sonde existe toujours dans la page (src/layouts/Base.astro)', () => {
+    assert.ok(read('src/layouts/Base.astro').includes('>reveleTonProg</a>'));
+  });
+
+  it('commentaire de tête : succès seul pingué, 3 échecs (période et délai de grâce), planification retardée ou désactivée', () => {
+    const tete = raw.split('\n').filter((l) => l.startsWith('#')).join('\n');
+    for (const mot of ['succès', '3 échecs', '60 jours', 'sonde']) assert.ok(tete.includes(mot), mot);
+  });
+});
