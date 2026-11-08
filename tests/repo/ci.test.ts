@@ -92,7 +92,7 @@ describe('ci.yml : actions épinglées', () => {
 
   it('checkout : persist-credentials false partout', () => {
     const checkouts = allSteps().filter((s) => s.uses?.startsWith('actions/checkout@'));
-    assert.equal(checkouts.length, 3);
+    assert.equal(checkouts.length, 5);
     for (const s of checkouts) {
       assert.equal(s.with?.['persist-credentials'], false);
     }
@@ -106,7 +106,7 @@ describe('ci.yml : actions épinglées', () => {
 
   it('setup-node lit .nvmrc et met npm en cache', () => {
     const node = allSteps().filter((s) => s.uses?.startsWith('actions/setup-node@'));
-    assert.equal(node.length, 2);
+    assert.equal(node.length, 4);
     for (const n of node) {
       assert.equal(n.with?.['node-version-file'], '.nvmrc');
       assert.equal(n.with?.cache, 'npm');
@@ -203,6 +203,11 @@ describe('ci.yml : job verifier', () => {
   it('WR-01 : cancel-in-progress ne s’applique qu’aux pull requests (jamais à main)', () => {
     const conc = (ci as unknown as { concurrency: { 'cancel-in-progress': unknown } }).concurrency;
     assert.equal(conc['cancel-in-progress'], "${{ github.event_name == 'pull_request' }}");
+  });
+
+  it('concurrence : un groupe par PR, un groupe par exécution sur main (une approbation en attente ne bloque ni n’annule le run suivant)', () => {
+    const conc = (ci as unknown as { concurrency: { group: unknown } }).concurrency;
+    assert.equal(conc.group, "ci-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}");
   });
 
   it('aucun corps de script ne contient d’interpolation ${{ }}', () => {
