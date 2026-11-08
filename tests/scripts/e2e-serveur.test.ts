@@ -19,6 +19,7 @@ describe('e2e/serveur.ts', () => {
   let tmp: string;
   let serveur: ReturnType<typeof creerServeur>;
   const HTML = '<!doctype html><title>x</title><p>bonjour bonjour bonjour bonjour</p>';
+  const VERSION = `${JSON.stringify({ commit: 'dev', date: '2026-11-08T20:30:00.000Z' })}\n`;
 
   // Requête HTTP brute : fetch normaliserait « /../ » et décompresserait le gzip.
   function get(chemin: string, headers: Record<string, string> = {}): Promise<Reponse> {
@@ -42,6 +43,7 @@ describe('e2e/serveur.ts', () => {
     writeFileSync(path.join(dist, 'index.html'), HTML);
     writeFileSync(path.join(dist, 'a', 'index.html'), HTML);
     writeFileSync(path.join(dist, '_astro', 'x.css'), 'body{color:red}');
+    writeFileSync(path.join(dist, 'version.json'), VERSION);
     writeFileSync(path.join(tmp, 'secret.txt'), 'SECRET');
     // WR-01 : liens symboliques vers l'extérieur du dist (fichier et dossier) et vers l'intérieur.
     symlinkSync(path.join(tmp, 'secret.txt'), path.join(dist, 'lien.txt'));
@@ -79,6 +81,18 @@ describe('e2e/serveur.ts', () => {
     assert.equal((await get('/a/')).status, 200);
     const css = await get('/_astro/x.css');
     assert.equal(css.headers['content-type'], 'text/css; charset=utf-8');
+  });
+
+  it('HEB-07 : sert version.json en application/json, compressé comme les pages', async () => {
+    const gz = await get('/version.json', { 'accept-encoding': 'gzip' });
+    assert.equal(gz.status, 200);
+    assert.equal(gz.headers['content-type'], 'application/json; charset=utf-8');
+    assert.equal(gz.headers['content-encoding'], 'gzip');
+    assert.equal(gunzipSync(gz.corps).toString('utf8'), VERSION);
+    const brut = await get('/version.json', { 'accept-encoding': 'identity' });
+    assert.equal(brut.headers['content-type'], 'application/json; charset=utf-8');
+    assert.equal(brut.headers['content-encoding'], undefined);
+    assert.equal(brut.corps.toString('utf8'), VERSION);
   });
 
   for (const chemin of ['/%2e%2e/secret.txt', '/../secret.txt', '/..%2fsecret.txt']) {
