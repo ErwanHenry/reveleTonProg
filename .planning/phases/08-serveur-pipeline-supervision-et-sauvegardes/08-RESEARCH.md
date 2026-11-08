@@ -470,7 +470,18 @@ Thresholds are env-overridable (`RTP_SEUIL1=1` etc.) so the simulated disk/cert 
 | A10 | Docker publishes 443 on IPv6 to the container | Pitfall 12 | ACME over AAAA fails; publish A only or fix IPv6 forwarding |
 | A11 | Compose does not re-interpolate `$` inside a value that came from a single-quoted `.env` entry | Pattern 1 | Hash corrupted; verify with the `jq | cut -c1-7` check; fallback `$$` escaping or a `{file.}` placeholder |
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+Resolutions (2026-11-08, planning):
+- O1: RESOLVED by D-07 revised: the essai host gets a production build without RTP_DEPLOIEMENT, no SITE_VIDE guard is implemented, no RTP_ESSAI flag (08-06 pins the RTP_DEPLOIEMENT expression: production always 1).
+- O2: PENDING Erwan's domain purchase and DNS record; gated by the 08-12 Task 1 checkpoint, all DNS-dependent work in waves 3 and later.
+- O3: RESOLVED by D-13 revised: « Slow 4G simulé » = slow-4g-lighthouse (562,5 ms, 1,44 Mbit/s) with a 1000 ms budget (08-05); latence-150 keeps 1000 ms.
+- O4: DEFERRED to the Phase 9 legal wording of Mentions légales (08-01 states the access-log policy only; 08-08 RUNBOOK keeps the caveat).
+- O5: Erwan's answer about Hetzner automatic backups is recorded in 08-11 (Task 1 checkpoint).
+- O6: handled by RTP_DISQUES (default `/`, attached volume added by Erwan if wanted) in 08-07 and 08-11.
+
+Original questions:
+
 
 1. **O1: What does the essai build run under (D-07 vs reality)?**
    - Known: `SITE_VIDE` is not implemented anywhere in code; `RTP_DEPLOIEMENT=1` currently refuses provisional domain, provisional contact and hébergeur `prevu`.

@@ -102,7 +102,7 @@ Plans:
   5. Une panne simulée déclenche l'alerte Telegram après 3 échecs puis un message de rétablissement ; le battement de cœur du VPS alerte sur machine tombée, disque à 85 % puis 92 % et certificat à moins de 14 jours.
   6. Le script d'installation idempotent et la configuration serveur sont dans le dépôt, et une restauration réelle a été faite avant l'ouverture.
 
-**Plans**: 15 plans (5 waves; waves 2 to 5 have checkpoints with Erwan, waves 3 to 5 wait for the domain and DNS)
+**Plans**: 15 plans (6 waves; server plans have checkpoints with Erwan, 08-12 and later wait for the domain and DNS)
 
 Plans:
 
@@ -112,15 +112,15 @@ Plans:
 - [ ] 08-04-PLAN.md — /version.json, règles check-dist, mode 4G distant de Playwright, RUNBOOK (codes et libellé) (vague 1)
 - [ ] 08-05-PLAN.md — Profil « Slow 4G simulé » à 1 s, Méthode et README (vague 1)
 - [ ] 08-06-PLAN.md — Garde de gel, jobs gel et deploy en sommeil, rollback.yml, sonde.yml, tests de dépôt (vague 1)
-- [ ] 08-07-PLAN.md — Battement de cœur, sauvegarde de la configuration, test de restauration (vague 1)
-- [ ] 08-08-PLAN.md — RUNBOOK, ADR-054, 055, 057, 058, README des secrets (vague 2)
+- [ ] 08-07-PLAN.md — Battement de cœur, sauvegarde de la configuration, test de restauration (vague 2)
+- [ ] 08-08-PLAN.md — RUNBOOK, ADR-054, 055, 057, 058, README des secrets (vague 3)
 - [ ] 08-09-PLAN.md — Serveur : validation jetable, montages, empreintes, ligne import, recréation du soir de Caddy (vague 2, accord d'Erwan)
 - [ ] 08-10-PLAN.md — Serveur : utilisateur deploy, commande forcée, preuve rrsync en boucle locale, aller-retour (vague 2, accord d'Erwan)
 - [ ] 08-11-PLAN.md — Serveur : Healthchecks et Telegram, cron du battement, alertes disque simulées, première archive (vague 3, accord d'Erwan)
 - [ ] 08-12-PLAN.md — Domaine réel, bloc essai importé, validate puis reload, HTTPS et en-têtes vérifiés (vague 3, attend le DNS)
 - [ ] 08-13-PLAN.md — Environments GitHub, déploiement approuvé par push, retour chronométré sous 2 min (vague 4)
-- [ ] 08-14-PLAN.md — PERF-02 derrière Caddy, Lighthouse, publication de la mesure (vague 4)
-- [ ] 08-15-PLAN.md — Sonde active, pannes simulées avec Telegram, restauration réelle et cron mensuel (vague 5)
+- [ ] 08-14-PLAN.md — PERF-02 derrière Caddy, Lighthouse, publication de la mesure (vague 5)
+- [ ] 08-15-PLAN.md — Sonde active, pannes simulées avec Telegram, restauration réelle et cron mensuel (vague 6)
 
 ### Phase 9: Contenu relu, juridique et ouverture
 
