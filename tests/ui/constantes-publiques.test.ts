@@ -19,7 +19,7 @@ describe('constantes publiques', () => {
     }
   });
 
-  it('PROFILS_4G (WR-04) : profil historique nommé pour ce qu\'il simule, et équivalent DevTools du Slow 4G de Lighthouse', () => {
+  it('PROFILS_4G (WR-04, D-13) : profil historique nommé pour ce qu\'il simule, et « Slow 4G simulé » (équivalent DevTools du Slow 4G de Lighthouse), 1 s pour les deux', () => {
     assert.deepEqual(PROFILS_4G, [
       {
         id: 'latence-150',
@@ -31,11 +31,12 @@ describe('constantes publiques', () => {
       },
       {
         id: 'slow-4g-lighthouse',
-        libelle: 'le profil « Slow 4G » de Lighthouse (562,5 ms de latence par requête, 1,44 Mbit/s)',
+        libelle: 'le profil « Slow 4G simulé » (équivalent DevTools du Slow 4G de Lighthouse : 562,5 ms de latence par requête, 1,44 Mbit/s)',
         latenceRequeteMs: 562.5,
         debitDescendantOctetsParSeconde: (1.6 * 1024 * 1024 * 0.9) / 8,
         debitMontantOctetsParSeconde: (750 * 1024 * 0.9) / 8,
-        budgetMs: 1500,
+        // D-13 (08-05, choix d'Erwan du 2026-11-08) : 1 s pour les deux profils. Ne pas relever pour faire passer la CI.
+        budgetMs: 1000,
       },
     ]);
     // Les libellés publiés disent les valeurs réellement appliquées.

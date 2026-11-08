@@ -170,7 +170,10 @@ export default function methode(ctx: ContexteSite): void {
         const el = txt(unique(a, 'data-profil-4g', p.id));
         assert.ok(el.includes(p.libelle), el);
         assert.ok(el.includes(`moins de ${(p.budgetMs / 1000).toLocaleString('fr-FR')} s`), el);
+        // D-13 (08-05) : moins de 1 s sur les deux profils publiés.
+        assert.ok(el.includes('moins de 1 s avec '), el);
       }
+      assert.ok(txt(unique(a, 'data-profil-4g', 'slow-4g-lighthouse')).includes('« Slow 4G simulé »'), 'libellé Slow 4G simulé absent');
       assert.doesNotMatch(t, /moins d'une seconde sur une connexion mobile lente/);
       // IN-04 : le seuil d'axe publié est celui de e2e/axe.spec.ts (serious, critical).
       assert.ok(t.includes("le test bloque sur les défauts que l'outil classe graves ou critiques"), 'seuil axe absent');
