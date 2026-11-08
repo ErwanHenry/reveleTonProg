@@ -402,7 +402,8 @@ describe('ops/battement.sh : configuration refusée (code 2)', () => {
 
   it('seuil ou durée non numériques', () => {
     const b = banc();
-    for (const env of [{ RTP_SEUIL1: 'abc' }, { RTP_SEUIL2: '0' }, { RTP_CERT_JOURS: '-1' }, { RTP_HC_SIMULATION: 'oui' }]) {
+    const cas: Record<string, string>[] = [{ RTP_SEUIL1: 'abc' }, { RTP_SEUIL2: '0' }, { RTP_CERT_JOURS: '-1' }, { RTP_HC_SIMULATION: 'oui' }];
+    for (const env of cas) {
       assert.equal(lancer(b, env).status, 2, JSON.stringify(env));
     }
     assert.equal(lire(b, 'curl'), '');
