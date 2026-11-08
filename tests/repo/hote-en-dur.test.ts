@@ -8,6 +8,7 @@
 // Exclusions (documentées, rien d'autre) :
 // - config/site.yml : la seule source du domaine ;
 // - deploy/caddy/site.caddy : bloc généré depuis config/site.yml, couvert par son propre test de dérive (07-07) ;
+// - deploy/caddy/essai.caddy : bloc de l'hôte technique, généré de même, couvert par son propre test de dérive (08-01) ;
 // - .planning/ et docs/ : récits d'audit et de planification qui citent la valeur provisoire ;
 // - archives/ : copies des sources primaires, jamais modifiées ;
 // - tests/fixtures/ : corpus de test figés ;
@@ -34,7 +35,7 @@ export interface HoteEnDur {
 }
 
 /** Chemins exclus : égalité exacte pour un fichier, préfixe pour un dossier (« / » final). */
-export const EXCLUSIONS: readonly string[] = ['config/site.yml', 'deploy/caddy/site.caddy', '.planning/', 'docs/', 'archives/', 'tests/fixtures/'];
+export const EXCLUSIONS: readonly string[] = ['config/site.yml', 'deploy/caddy/site.caddy', 'deploy/caddy/essai.caddy', '.planning/', 'docs/', 'archives/', 'tests/fixtures/'];
 
 const exclu = (chemin: string): boolean => EXCLUSIONS.some((e) => (e.endsWith('/') ? chemin.startsWith(e) : chemin === e));
 
@@ -176,7 +177,7 @@ describe('trouverHotesEnDur : fautes injectées (domaine synthétique exemple.te
 
   it('chemins exclus ignorés, frontières de dossier respectées', () => {
     const contenu = `https://${D}/`;
-    for (const chemin of ['config/site.yml', 'deploy/caddy/site.caddy', '.planning/STATE.md', 'docs/RUNBOOK.md', 'archives/x/a.txt', 'tests/fixtures/corpus-m1/a.yaml']) {
+    for (const chemin of ['config/site.yml', 'deploy/caddy/site.caddy', 'deploy/caddy/essai.caddy', '.planning/STATE.md', 'docs/RUNBOOK.md', 'archives/x/a.txt', 'tests/fixtures/corpus-m1/a.yaml']) {
       assert.deepEqual(trouve(contenu, chemin), [], chemin);
     }
     for (const chemin of ['config/site.yml.bak', 'config/autre.yml', 'deploy/caddy/autre.caddy', 'docs-x/a.md', 'tests/fixturesx/a.ts', 'src/docs/a.ts']) {

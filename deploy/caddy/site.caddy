@@ -5,7 +5,7 @@
 # conteneur. La Phase 8 monte la racine du site en lecture seule et le dossier du journal en écriture, place
 # ce bloc dans le Caddyfile monté (collé ou importé) et le vérifie par « caddy validate » avant tout rechargement.
 domaine-a-definir.invalid {
-	# Version en ligne : releases/<sha>/ pointée par le lien « current » (disposition à confirmer en Phase 8).
+	# Version en ligne : releases/<sha>/ pointée par le lien relatif « current » (disposition retenue en Phase 8).
 	root * /srv/reveletonprog/current
 	encode zstd gzip
 	file_server
@@ -33,7 +33,7 @@ domaine-a-definir.invalid {
 	# Une entrée y reste donc moins de 13 jours, 14 jours au plus si une rotation de minuit est manquée
 	# (Caddy arrêté à minuit). Adresse IP tronquée (/24 en IPv4, /48 en IPv6), en-têtes de requête supprimés,
 	# détails TLS supprimés. Ces règles ne couvrent que le journal d'accès : journaux d'erreurs et par défaut,
-	# voir RUNBOOK « Bloc Caddy (Phase 8) ». Syntaxe (roll_at, filtres) à confirmer par « caddy validate » (Phase 8).
+	# voir RUNBOOK « Bloc Caddy (Phase 8) ». Syntaxe (roll_at, filtres) acceptée par Caddy 2.11.2 (Phase 8).
 	log {
 		output file /var/log/caddy/reveletonprog.log {
 			roll_size 10MiB

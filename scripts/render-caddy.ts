@@ -1,7 +1,8 @@
-// Bloc Caddy du site (HEB-05, PERF-01 ; D-03, 07-07). Rendu par une fonction pure depuis le domaine de
-// config/site.yml et les empreintes de src/scripts/*.js, puis écrit dans deploy/caddy/site.caddy (versionné).
-// tests/repo/caddy.test.ts compare le fichier versionné à un rendu neuf : changer le domaine ou un script sans
-// relancer ce script fait échouer npm test. Aucun serveur n'est touché ici ; « caddy validate » a lieu en Phase 8.
+// Blocs Caddy du site (HEB-05, PERF-01 ; D-03, 07-07) et de l'hôte technique (HEB-14 ; D-07 révisée, 08-01).
+// Rendus par des fonctions pures depuis le domaine de config/site.yml et les empreintes de src/scripts/*.js, puis
+// écrits dans deploy/caddy/site.caddy et deploy/caddy/essai.caddy (versionnés). tests/repo/caddy.test.ts compare
+// chaque fichier versionné à un rendu neuf : changer le domaine ou un script sans relancer ce script fait échouer
+// npm test. Aucun serveur n'est touché ici ; « caddy validate » sur le serveur est l'affaire de ops/valider-caddy.sh.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -17,6 +18,26 @@ import { estDomaineValide, loadSiteConfig } from '../src/lib/site-config.ts';
 export const RACINE_SERVEUR = '/srv/reveletonprog/current';
 /** Fichier du journal d'accès, vu depuis le conteneur : /var/log/caddy est un dossier de l'hôte monté en écriture (Phase 8). */
 export const JOURNAL = '/var/log/caddy/reveletonprog.log';
+/** Racine servie par l'hôte technique (D-07 révisée) : mêmes règles que la production, dans essai/{releases,current}. */
+export const RACINE_ESSAI = '/srv/reveletonprog/essai/current';
+/** Journal d'accès de l'hôte technique : son propre fichier, même politique que la production. */
+export const JOURNAL_ESSAI = '/var/log/caddy/essai.log';
+/** Nom du bloc de l'hôte technique dans le dossier sites.d monté dans le conteneur (installé par la Phase 8). */
+export const FICHIER_SITES_D_ESSAI = 'reveletonprog-essai.caddy';
+/**
+ * Variables d'environnement du conteneur Caddy qui portent les empreintes bcrypt de l'hôte technique : `essai` pour
+ * l'éditeur, `sonde` pour la sonde de supervision (identifiant à part, changé sans toucher celui de l'éditeur).
+ * Les valeurs vivent dans le fichier d'environnement du compose, lisible par root seul, jamais dans le dépôt.
+ */
+export const VARIABLES_HASH = { essai: 'RTP_ESSAI_HASH', sonde: 'RTP_SONDE_HASH' } as const;
+/**
+ * Valeur par défaut des deux variables (08-RESEARCH, Pitfall 1) : Caddy remplace `{$VAR}` avant de lire le Caddyfile
+ * et une empreinte vide fait échouer le Caddyfile entier, donc tous les sites du serveur. Avec cette valeur, une
+ * variable absente laisse le fichier valide et personne ne peut se connecter. Chaîne au format bcrypt (coût 14) faite
+ * d'un mot lisible complété par des points : elle n'est la sortie d'aucun calcul, aucun mot de passe connu ne lui
+ * correspond.
+ */
+export const HASH_FACTICE = `$2a$14$${'factice'.padEnd(53, '.')}`;
 
 /**
  * Rétention du journal d'accès (CR-01, revue de la phase 7). Caddy 2.11 (timberjack) tourne le fichier courant à
@@ -76,26 +97,11 @@ function verifier(o: OptionsCaddy): void {
 }
 
 /**
- * Texte du bloc Caddy (fonction pure : aucune lecture du système, même entrée, même chaîne).
- * Indentation par tabulations, retour ligne final. Lève une Error si une entrée casserait le bloc.
+ * Lignes du sous-bloc `header` (communes aux deux hôtes), suivies de `extra` (lignes déjà indentées) avant la
+ * fermeture. Le CSP vient de cspEnTete, la fonction que sert aussi e2e/serveur.ts.
  */
-export function renderCaddy(o: OptionsCaddy): string {
-  verifier(o);
-  const { domaine, racine, journal } = o;
-  const csp = cspEnTete(o.empreintesScripts);
-  const lignes = [
-    '# Généré par scripts/render-caddy.ts depuis config/site.yml et src/scripts/*.js : ne pas modifier à la main.',
-    '# Régénérer avec « node scripts/render-caddy.ts » ; tests/repo/caddy.test.ts échoue si ce fichier dérive.',
-    '#',
-    '# Caddy tourne dans un conteneur Docker (caddy:2-alpine, Phase 6) : les chemins ci-dessous sont ceux du',
-    '# conteneur. La Phase 8 monte la racine du site en lecture seule et le dossier du journal en écriture, place',
-    '# ce bloc dans le Caddyfile monté (collé ou importé) et le vérifie par « caddy validate » avant tout rechargement.',
-    `${domaine} {`,
-    '\t# Version en ligne : releases/<sha>/ pointée par le lien « current » (disposition à confirmer en Phase 8).',
-    `\troot * ${racine}`,
-    '\tencode zstd gzip',
-    '\tfile_server',
-    '',
+function lignesEnTetes(csp: string, extra: readonly string[] = []): string[] {
+  return [
     '\theader {',
     '\t\t-Server',
     '\t\t# HSTS court la première semaine, à relever (max-age=31536000) une fois le domaine stable (Phase 8).',
@@ -112,14 +118,20 @@ export function renderCaddy(o: OptionsCaddy): string {
     `\t\tContent-Security-Policy "${csp}"`,
     "\t\t# Pages revalidées à chaque visite ; plus de fichier haché séparé depuis l'inlining, donc pas de cache long.",
     '\t\tCache-Control "no-cache"',
+    ...extra,
     '\t}',
-    '',
+  ];
+}
+
+/** Commentaire et sous-bloc `log` du journal d'accès (communs aux deux hôtes, seul le fichier change). */
+function lignesJournal(journal: string): string[] {
+  return [
     `\t# Journal d'accès : rotation chaque jour à ${ROTATION_JOURNAL} UTC (roll_at, Caddy 2.11 ou plus) ou dès ${TAILLE_JOURNAL},`,
     `\t# ${FICHIERS_TOURNES_GARDES} fichiers tournés gardés au plus (roll_keep, et roll_keep_for ${FICHIERS_TOURNES_GARDES * 24}h) plus le fichier du jour.`,
     `\t# Une entrée y reste donc moins de ${FICHIERS_TOURNES_GARDES + 1} jours, ${RETENTION_MAX_JOURS} jours au plus si une rotation de minuit est manquée`,
     '\t# (Caddy arrêté à minuit). Adresse IP tronquée (/24 en IPv4, /48 en IPv6), en-têtes de requête supprimés,',
     '\t# détails TLS supprimés. Ces règles ne couvrent que le journal d\'accès : journaux d\'erreurs et par défaut,',
-    '\t# voir RUNBOOK « Bloc Caddy (Phase 8) ». Syntaxe (roll_at, filtres) à confirmer par « caddy validate » (Phase 8).',
+    '\t# voir RUNBOOK « Bloc Caddy (Phase 8) ». Syntaxe (roll_at, filtres) acceptée par Caddy 2.11.2 (Phase 8).',
     '\tlog {',
     `\t\toutput file ${journal} {`,
     `\t\t\troll_size ${TAILLE_JOURNAL}`,
@@ -135,6 +147,37 @@ export function renderCaddy(o: OptionsCaddy): string {
     '\t\t\twrap json',
     '\t\t}',
     '\t}',
+  ];
+}
+
+const ENTETE_GENERE = [
+  '# Généré par scripts/render-caddy.ts depuis config/site.yml et src/scripts/*.js : ne pas modifier à la main.',
+  '# Régénérer avec « node scripts/render-caddy.ts » ; tests/repo/caddy.test.ts échoue si ce fichier dérive.',
+  '#',
+];
+
+/**
+ * Texte du bloc Caddy (fonction pure : aucune lecture du système, même entrée, même chaîne).
+ * Indentation par tabulations, retour ligne final. Lève une Error si une entrée casserait le bloc.
+ */
+export function renderCaddy(o: OptionsCaddy): string {
+  verifier(o);
+  const { domaine, racine, journal } = o;
+  const csp = cspEnTete(o.empreintesScripts);
+  const lignes = [
+    ...ENTETE_GENERE,
+    '# Caddy tourne dans un conteneur Docker (caddy:2-alpine, Phase 6) : les chemins ci-dessous sont ceux du',
+    '# conteneur. La Phase 8 monte la racine du site en lecture seule et le dossier du journal en écriture, place',
+    '# ce bloc dans le Caddyfile monté (collé ou importé) et le vérifie par « caddy validate » avant tout rechargement.',
+    `${domaine} {`,
+    '\t# Version en ligne : releases/<sha>/ pointée par le lien relatif « current » (disposition retenue en Phase 8).',
+    `\troot * ${racine}`,
+    '\tencode zstd gzip',
+    '\tfile_server',
+    '',
+    ...lignesEnTetes(csp),
+    '',
+    ...lignesJournal(journal),
     '}',
     '',
     `www.${domaine} {`,
@@ -144,11 +187,64 @@ export function renderCaddy(o: OptionsCaddy): string {
   return `${lignes.join('\n')}\n`;
 }
 
-const USAGE = `Usage : node scripts/render-caddy.ts [--check] [--sortie <fichier>]
+/**
+ * Texte du bloc de l'hôte technique essai.<domaine> (fonction pure, mêmes refus que renderCaddy). Mêmes en-têtes,
+ * compression, absence de cache et journal masqué que la production, plus : basic_auth sur tout chemin sauf
+ * /robots.txt (empreintes lues dans l'environnement du conteneur, valeur par défaut factice), X-Robots-Tag noindex et
+ * un robots.txt qui interdit tout. Aucune adresse www ni apex : le bloc de production n'est servi qu'à l'ouverture.
+ */
+export function renderCaddyEssai(o: OptionsCaddy): string {
+  verifier(o);
+  const { domaine, racine, journal } = o;
+  const csp = cspEnTete(o.empreintesScripts);
+  const lignes = [
+    ...ENTETE_GENERE,
+    "# Hôte technique des déploiements d'essai, protégé par mot de passe et jamais indexé ; retiré à l'ouverture",
+    `# (Phase 9). Copié sous ${FICHIER_SITES_D_ESSAI} dans le dossier sites.d monté dans le conteneur, importé par le`,
+    '# Caddyfile après « caddy validate ». Chemins vus depuis le conteneur, comme pour le bloc de production.',
+    '#',
+    `# Empreintes bcrypt : variables ${VARIABLES_HASH.essai} et ${VARIABLES_HASH.sonde} du conteneur, posées par le fichier`,
+    "# d'environnement du compose (lisible par root seul), jamais dans le dépôt. Caddy les lit au démarrage : changer",
+    '# une empreinte demande de recréer le conteneur, un simple rechargement ne suffit pas. Deux identifiants pour que',
+    "# celui de la sonde change sans toucher celui de l'éditeur.",
+    '# Valeur par défaut factice, aucun mot de passe ne lui correspond : une variable absente laisse le Caddyfile',
+    '# valide (personne ne peut se connecter) au lieu de faire échouer tous les sites du serveur.',
+    `essai.${domaine} {`,
+    "\t# Version d'essai : essai/releases/<sha>/ pointée par le lien relatif « current » de essai/.",
+    `\troot * ${racine}`,
+    '\tencode zstd gzip',
+    '\tfile_server',
+    '',
+    ...lignesEnTetes(csp, [
+      '\t\t# Hôte technique : aucune page ne doit être indexée, réponse 401 comprise.',
+      '\t\tX-Robots-Tag "noindex, nofollow"',
+    ]),
+    '',
+    '\t# Mot de passe partout sauf sur /robots.txt : robots.txt reste lisible sans mot de passe, pour que les robots',
+    '\t# lisent « Disallow: / ».',
+    '\t@protege not path /robots.txt',
+    '\tbasic_auth @protege {',
+    `\t\tessai {$${VARIABLES_HASH.essai}:${HASH_FACTICE}} # gitleaks:allow`,
+    `\t\tsonde {$${VARIABLES_HASH.sonde}:${HASH_FACTICE}} # gitleaks:allow`,
+    '\t}',
+    '\trespond /robots.txt <<TXT',
+    '\t\tUser-agent: *',
+    '\t\tDisallow: /',
+    '\t\tTXT 200',
+    '',
+    ...lignesJournal(journal),
+    '}',
+  ];
+  return `${lignes.join('\n')}\n`;
+}
 
-  (sans option)       écrit le bloc Caddy rendu depuis config/site.yml et src/scripts/*.js
-  --check             n'écrit rien : vérifie que le fichier est à jour (code 1 sinon)
-  --sortie <fichier>  fichier écrit ou vérifié (défaut : deploy/caddy/site.caddy, dossier créé au besoin)
+const USAGE = `Usage : node scripts/render-caddy.ts [--check] [--cible <site|essai>] [--sortie <fichier>]
+
+  (sans option)       écrit les deux blocs rendus depuis config/site.yml et src/scripts/*.js :
+                      deploy/caddy/site.caddy (production) puis deploy/caddy/essai.caddy (hôte technique)
+  --check             n'écrit rien : vérifie que chaque fichier est à jour (code 1 sinon, fichier nommé)
+  --cible <site|essai>  un seul bloc : site (production) ou essai (hôte technique)
+  --sortie <fichier>  fichier écrit ou vérifié (dossier créé au besoin) ; sans --cible, c'est le bloc de production
   RTP_DEPLOIEMENT=1 : un domaine provisoire (TLD réservé : .invalid, .test, .example, .localhost) dans config/site.yml
   est refusé (code 2). Le contact n'entre pas dans le bloc : un contact provisoire ne bloque pas le rendu (le build et
   check-dist le refusent au déploiement).
@@ -156,29 +252,39 @@ const USAGE = `Usage : node scripts/render-caddy.ts [--check] [--sortie <fichier
   ou config/site.yml sont invalides.
 `;
 
+type Cible = 'site' | 'essai';
+
+const SORTIES_PAR_DEFAUT: Record<Cible, string> = {
+  site: path.join('deploy', 'caddy', 'site.caddy'),
+  essai: path.join('deploy', 'caddy', 'essai.caddy'),
+};
+
 function usageError(message: string): never {
   process.stderr.write(`${message}\n\n${USAGE}`);
   process.exit(2);
 }
 
 function main(): void {
-  let values: { check?: boolean; sortie?: string };
+  let values: { check?: boolean; cible?: string; sortie?: string };
   try {
     ({ values } = parseArgs({
       args: process.argv.slice(2),
-      options: { check: { type: 'boolean' }, sortie: { type: 'string' } },
+      options: { check: { type: 'boolean' }, cible: { type: 'string' }, sortie: { type: 'string' } },
       strict: true,
       allowPositionals: false,
     }));
   } catch (e) {
     usageError(e instanceof Error ? e.message : String(e));
   }
+  if (values.cible !== undefined && values.cible !== 'site' && values.cible !== 'essai') {
+    usageError(`render-caddy : --cible « ${values.cible.slice(0, 40)} » inconnue (site ou essai)`);
+  }
 
+  // Ordre fixe : site puis essai. --sortie sans --cible garde le sens d'avant (bloc de production).
+  const cibles: Cible[] = values.cible !== undefined ? [values.cible] : values.sortie !== undefined ? ['site'] : ['site', 'essai'];
   const projectRoot = process.cwd();
-  const sortie = path.resolve(projectRoot, values.sortie ?? path.join('deploy', 'caddy', 'site.caddy'));
-  const rel = path.relative(projectRoot, sortie).split(path.sep).join('/');
 
-  let rendu: string;
+  const rendus: { cible: Cible; sortie: string; rel: string; rendu: string }[] = [];
   try {
     // Sous RTP_DEPLOIEMENT=1, seul le domaine compte (IN-05) : le contact n'est pas dans le bloc. Lecture avec un env
     // vide, puis garde explicite, comme check-dist ; une valeur invalide de RTP_DEPLOIEMENT reste refusée (code 2).
@@ -187,30 +293,40 @@ function main(): void {
     if (deploiement && domaineProvisoire) {
       throw new Error(`render-caddy : domaine provisoire « ${domaine} » refusé quand RTP_DEPLOIEMENT=1 : renseigner le vrai domaine dans config/site.yml`);
     }
-    rendu = renderCaddy({
-      domaine,
-      empreintesScripts: scriptsEnLigne(projectRoot).map((s) => s.empreinte),
-      racine: RACINE_SERVEUR,
-      journal: JOURNAL,
-    });
+    const empreintesScripts = scriptsEnLigne(projectRoot).map((s) => s.empreinte);
+    for (const cible of cibles) {
+      const sortie = path.resolve(projectRoot, values.sortie ?? SORTIES_PAR_DEFAUT[cible]);
+      const rendu =
+        cible === 'site'
+          ? renderCaddy({ domaine, empreintesScripts, racine: RACINE_SERVEUR, journal: JOURNAL })
+          : renderCaddyEssai({ domaine, empreintesScripts, racine: RACINE_ESSAI, journal: JOURNAL_ESSAI });
+      rendus.push({ cible, sortie, rel: path.relative(projectRoot, sortie).split(path.sep).join('/'), rendu });
+    }
   } catch (e) {
     process.stderr.write(`${e instanceof Error ? e.message : String(e)}\n`);
     process.exit(2);
   }
 
   if (values.check === true) {
-    const actuel = fs.existsSync(sortie) ? fs.readFileSync(sortie, 'utf8') : undefined;
-    if (actuel !== rendu) {
-      const etat = actuel === undefined ? 'absent' : 'pas à jour';
-      process.stderr.write(`render-caddy : ${rel} ${etat} (config/site.yml ou src/scripts/*.js a changé) : lancer node scripts/render-caddy.ts\n`);
-      process.exit(1);
+    let perimes = 0;
+    for (const { sortie, rel, rendu } of rendus) {
+      const actuel = fs.existsSync(sortie) ? fs.readFileSync(sortie, 'utf8') : undefined;
+      if (actuel !== rendu) {
+        const etat = actuel === undefined ? 'absent' : 'pas à jour';
+        process.stderr.write(`render-caddy : ${rel} ${etat} (config/site.yml ou src/scripts/*.js a changé) : lancer node scripts/render-caddy.ts\n`);
+        perimes += 1;
+      } else {
+        console.log(`render-caddy : ${rel} à jour`);
+      }
     }
-    console.log(`render-caddy : ${rel} à jour`);
+    if (perimes > 0) process.exit(1);
     return;
   }
-  fs.mkdirSync(path.dirname(sortie), { recursive: true });
-  fs.writeFileSync(sortie, rendu);
-  console.log(`render-caddy : ${rel} écrit`);
+  for (const { sortie, rel, rendu } of rendus) {
+    fs.mkdirSync(path.dirname(sortie), { recursive: true });
+    fs.writeFileSync(sortie, rendu);
+    console.log(`render-caddy : ${rel} écrit`);
+  }
 }
 
 // Ligne de commande seulement : l'import par les tests n'exécute rien.

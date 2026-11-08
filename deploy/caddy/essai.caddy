@@ -1,0 +1,73 @@
+# Généré par scripts/render-caddy.ts depuis config/site.yml et src/scripts/*.js : ne pas modifier à la main.
+# Régénérer avec « node scripts/render-caddy.ts » ; tests/repo/caddy.test.ts échoue si ce fichier dérive.
+#
+# Hôte technique des déploiements d'essai, protégé par mot de passe et jamais indexé ; retiré à l'ouverture
+# (Phase 9). Copié sous reveletonprog-essai.caddy dans le dossier sites.d monté dans le conteneur, importé par le
+# Caddyfile après « caddy validate ». Chemins vus depuis le conteneur, comme pour le bloc de production.
+#
+# Empreintes bcrypt : variables RTP_ESSAI_HASH et RTP_SONDE_HASH du conteneur, posées par le fichier
+# d'environnement du compose (lisible par root seul), jamais dans le dépôt. Caddy les lit au démarrage : changer
+# une empreinte demande de recréer le conteneur, un simple rechargement ne suffit pas. Deux identifiants pour que
+# celui de la sonde change sans toucher celui de l'éditeur.
+# Valeur par défaut factice, aucun mot de passe ne lui correspond : une variable absente laisse le Caddyfile
+# valide (personne ne peut se connecter) au lieu de faire échouer tous les sites du serveur.
+essai.domaine-a-definir.invalid {
+	# Version d'essai : essai/releases/<sha>/ pointée par le lien relatif « current » de essai/.
+	root * /srv/reveletonprog/essai/current
+	encode zstd gzip
+	file_server
+
+	header {
+		-Server
+		# HSTS court la première semaine, à relever (max-age=31536000) une fois le domaine stable (Phase 8).
+		Strict-Transport-Security "max-age=300"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		Cross-Origin-Opener-Policy "same-origin"
+		# En-tête CSP : script-src n'admet que les empreintes des scripts du site. Il couvre dès le premier octet
+		# le script d'ordre, placé avant le meta CSP de la page, que ce meta ne gouverne donc pas.
+		# frame-ancestors n'a d'effet que dans un en-tête (un meta ne peut pas le porter).
+		# Pas de default-src ici : les deux politiques s'appliquent ensemble, style-src retomberait sur
+		# default-src et les <style> hachés par le meta de chaque page seraient bloqués.
+		Content-Security-Policy "script-src 'sha256-AYs4WPCOK1iv8F8YssNb0FP3cVW+t8v6c4gxRGOOavM=' 'sha256-jsohJdXbGW/JSZOPFWOjpPmSNtRFaOK28ICX4nW6i18='; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; object-src 'none'"
+		# Pages revalidées à chaque visite ; plus de fichier haché séparé depuis l'inlining, donc pas de cache long.
+		Cache-Control "no-cache"
+		# Hôte technique : aucune page ne doit être indexée, réponse 401 comprise.
+		X-Robots-Tag "noindex, nofollow"
+	}
+
+	# Mot de passe partout sauf sur /robots.txt : robots.txt reste lisible sans mot de passe, pour que les robots
+	# lisent « Disallow: / ».
+	@protege not path /robots.txt
+	basic_auth @protege {
+		essai {$RTP_ESSAI_HASH:$2a$14$factice..............................................} # gitleaks:allow
+		sonde {$RTP_SONDE_HASH:$2a$14$factice..............................................} # gitleaks:allow
+	}
+	respond /robots.txt <<TXT
+		User-agent: *
+		Disallow: /
+		TXT 200
+
+	# Journal d'accès : rotation chaque jour à 00:00 UTC (roll_at, Caddy 2.11 ou plus) ou dès 10MiB,
+	# 12 fichiers tournés gardés au plus (roll_keep, et roll_keep_for 288h) plus le fichier du jour.
+	# Une entrée y reste donc moins de 13 jours, 14 jours au plus si une rotation de minuit est manquée
+	# (Caddy arrêté à minuit). Adresse IP tronquée (/24 en IPv4, /48 en IPv6), en-têtes de requête supprimés,
+	# détails TLS supprimés. Ces règles ne couvrent que le journal d'accès : journaux d'erreurs et par défaut,
+	# voir RUNBOOK « Bloc Caddy (Phase 8) ». Syntaxe (roll_at, filtres) acceptée par Caddy 2.11.2 (Phase 8).
+	log {
+		output file /var/log/caddy/essai.log {
+			roll_size 10MiB
+			roll_at 00:00
+			roll_keep 12
+			roll_keep_for 288h
+		}
+		format filter {
+			request>remote_ip ip_mask 24 48
+			request>client_ip ip_mask 24 48
+			request>headers delete
+			request>tls delete
+			wrap json
+		}
+	}
+}

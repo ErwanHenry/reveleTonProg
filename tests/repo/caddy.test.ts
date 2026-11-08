@@ -2,7 +2,8 @@
 // une fonction pure (scripts/render-caddy.ts). Ce test fige sa politique : en-tête CSP limité aux deux empreintes
 // de scripts plus frame-ancestors (jamais de default-src : l'intersection avec le meta de chaque page bloquerait
 // les <style> hachés), journal d'accès tourné chaque jour et gardé 14 jours au plus (CR-01), IP masquée et en-têtes
-// de requête supprimés.
+// de requête supprimés. Le bloc de l'hôte technique (08-01, D-07 révisée, HEB-14) sort du même rendu : basic_auth
+// avec une empreinte factice par défaut, noindex, robots.txt fermé, mêmes en-têtes et même journal masqué.
 // Domaine synthétique : exemple.test ; le domaine du dépôt n'est jamais écrit ici (garde 07-06), il est lu.
 import { after, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -13,13 +14,19 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   cspEnTete,
+  FICHIER_SITES_D_ESSAI,
   FICHIERS_TOURNES_GARDES,
+  HASH_FACTICE,
   JOURNAL,
+  JOURNAL_ESSAI,
+  RACINE_ESSAI,
   RACINE_SERVEUR,
   RETENTION_MAX_JOURS,
   ROTATION_JOURNAL,
   TAILLE_JOURNAL,
+  VARIABLES_HASH,
   renderCaddy,
+  renderCaddyEssai,
 } from '../../scripts/render-caddy.ts';
 import { scriptsEnLigne } from '../../src/lib/csp-empreintes.ts';
 import { loadSiteConfig } from '../../src/lib/site-config.ts';
@@ -27,6 +34,7 @@ import { loadSiteConfig } from '../../src/lib/site-config.ts';
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const CLI = path.join(REPO, 'scripts', 'render-caddy.ts');
 const BLOC = path.join(REPO, 'deploy', 'caddy', 'site.caddy');
+const BLOC_ESSAI = path.join(REPO, 'deploy', 'caddy', 'essai.caddy');
 
 const SYNTHETIQUE = {
   domaine: 'exemple.test',
@@ -99,6 +107,11 @@ describe('renderCaddy : adresse du site et redirection www', () => {
       assert.doesNotMatch(ligne, /[ \t]$/, `ligne ${i + 1} : blanc en fin de ligne`);
     }
     assert.ok(!bloc.includes('\r'));
+  });
+
+  it('commentaires des faits confirmés en Phase 8 : lien relatif « current » vers releases/<sha>/, plus rien « à confirmer »', () => {
+    assert.match(bloc, /^\t# Version en ligne : releases\/<sha>\/ pointée par le lien relatif « current » \(disposition retenue en Phase 8\)\.$/m);
+    assert.doesNotMatch(bloc, /à confirmer/);
   });
 
   it('constantes du serveur : racine de la version courante et journal sous /var/log/caddy', () => {
@@ -176,7 +189,8 @@ describe('renderCaddy : journal d’accès', () => {
   it('le commentaire du bloc dit la borne exacte et ne promet plus « 14 jours au plus » sans condition', () => {
     assert.match(bloc, /rotation chaque jour à 00:00 UTC/);
     assert.match(bloc, /moins de 13 jours, 14 jours au plus si une rotation de minuit est manquée/);
-    assert.match(bloc, /Syntaxe \(roll_at, filtres\) à confirmer par « caddy validate »/);
+    assert.match(bloc, /Syntaxe \(roll_at, filtres\) acceptée par Caddy 2\.11\.2/);
+    assert.doesNotMatch(bloc, /à confirmer/);
     assert.doesNotMatch(bloc, /Journal d'accès : 14 jours au plus/);
   });
 
@@ -217,6 +231,186 @@ describe('renderCaddy : entrées refusées', () => {
     for (const chemin of ['srv/x', '/srv/x y', '/srv/{x}', '/srv/"x"', '']) {
       assert.throws(() => renderCaddy({ ...SYNTHETIQUE, racine: chemin }), /racine/, chemin);
       assert.throws(() => renderCaddy({ ...SYNTHETIQUE, journal: chemin }), /journal/, chemin);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Hôte technique (D-07 révisée, HEB-14) : essai.<domaine>, protégé par basic_auth, jamais indexé.
+// ---------------------------------------------------------------------------
+
+const SYNTHETIQUE_ESSAI = {
+  domaine: 'exemple.test',
+  empreintesScripts: ['sha256-AAA=', 'sha256-BBB='],
+  racine: '/srv/x/essai/current',
+  journal: '/var/log/caddy/x-essai.log',
+} as const;
+
+/** Contenu d'un sous-bloc `\t<ouverture> {` … `\t}` (première occurrence). */
+function sousBloc(bloc: string, ouverture: RegExp): string {
+  const m = new RegExp(`^\\t${ouverture.source} \\{\\n([\\s\\S]*?)^\\t\\}$`, 'm').exec(bloc);
+  assert.ok(m, `sous-bloc ${ouverture.source} absent`);
+  return m[1]!;
+}
+
+/** Lignes utiles d'un sous-bloc : sans les lignes de commentaire ni les commentaires de fin de ligne. */
+const lignesUtiles = (contenu: string): string[] =>
+  contenu
+    .split('\n')
+    .filter((l) => l.trim() !== '' && !/^\s*#/.test(l))
+    .map((l) => l.replace(/\s+#.*$/, ''));
+
+/** Bloc sans le corps du robots.txt (« User-agent: * » y est obligatoire, il ne vient pas d'une requête). */
+const sansCorpsRobots = (bloc: string): string => bloc.replace(/<<TXT\n[\s\S]*?\n\t\tTXT/, '<<TXT TXT');
+
+describe('renderCaddyEssai : adresse, racine et protection', () => {
+  const bloc = renderCaddyEssai(SYNTHETIQUE_ESSAI);
+
+  it('première ligne : fichier généré par scripts/render-caddy.ts depuis config/site.yml, à ne pas modifier à la main', () => {
+    const premiere = bloc.split('\n')[0]!;
+    assert.match(premiere, /^# /);
+    assert.match(premiere, /scripts\/render-caddy\.ts/);
+    assert.match(premiere, /config\/site\.yml/);
+    assert.match(premiere, /ne pas modifier à la main/);
+  });
+
+  it('une seule adresse : essai.<domaine> ; ni www. ni bloc apex ; racine, compression et file_server', () => {
+    const adresses = bloc.split('\n').filter((l) => /^\S.*\{$/.test(l));
+    assert.deepEqual(adresses, ['essai.exemple.test {']);
+    assert.doesNotMatch(bloc, /^www\./m);
+    assert.doesNotMatch(bloc, /^exemple\.test \{$/m);
+    assert.match(bloc, /^\troot \* \/srv\/x\/essai\/current$/m);
+    assert.match(bloc, /^\tencode zstd gzip$/m);
+    assert.match(bloc, /^\tfile_server$/m);
+    assert.ok(bloc.endsWith('}\n'));
+  });
+
+  it('basic_auth sur tout chemin sauf /robots.txt, deux identifiants : essai et sonde', () => {
+    assert.match(bloc, /^\t@protege not path \/robots\.txt$/m);
+    assert.equal([...bloc.matchAll(/^\tbasic_auth @protege \{$/gm)].length, 1);
+    assert.equal([...sansCommentaires(bloc).matchAll(/basic_auth/g)].length, 1, 'un seul basic_auth');
+    assert.ok(bloc.indexOf('\t@protege not path') < bloc.indexOf('\tbasic_auth @protege'));
+    assert.deepEqual(lignesUtiles(sousBloc(bloc, /basic_auth @protege/)), [
+      `\t\tessai {$RTP_ESSAI_HASH:${HASH_FACTICE}}`,
+      `\t\tsonde {$RTP_SONDE_HASH:${HASH_FACTICE}}`,
+    ]);
+    assert.deepEqual(VARIABLES_HASH, { essai: 'RTP_ESSAI_HASH', sonde: 'RTP_SONDE_HASH' });
+  });
+
+  it('T-08-01 : toute variable {$…} du bloc porte une valeur par défaut (une variable vide ferait tomber tout le Caddyfile)', () => {
+    const variables = [...bloc.matchAll(/\{\$([A-Za-z0-9_]+)(:[^}]*)?\}/g)];
+    assert.equal(variables.length, 2);
+    for (const v of variables) assert.ok(v[2] !== undefined && v[2].length > 1, `variable ${v[1]} sans valeur par défaut`);
+    assert.doesNotMatch(bloc, /\{\$RTP_ESSAI_HASH\}|\{\$RTP_SONDE_HASH\}/);
+  });
+
+  it('T-08-03 : empreinte factice au format bcrypt, peu d’entropie, visiblement fausse, et dite telle dans le bloc', () => {
+    assert.match(HASH_FACTICE, /^\$2a\$14\$[./A-Za-z0-9]{53}$/);
+    assert.match(HASH_FACTICE, /factice/i);
+    assert.ok(new Set(HASH_FACTICE.slice(7)).size <= 10, 'empreinte factice trop variée pour être visiblement fausse');
+    assert.match(bloc, /aucun mot de passe ne lui correspond/);
+  });
+
+  it('T-08-02 : /robots.txt répond 200 « User-agent: * » puis « Disallow: / » (heredoc), sans mot de passe', () => {
+    const m = /^\trespond \/robots\.txt <<TXT\n([\s\S]*?)\n\t\tTXT 200$/m.exec(bloc);
+    assert.ok(m, 'respond /robots.txt en heredoc absent');
+    assert.deepEqual(m[1]!.split('\n'), ['\t\tUser-agent: *', '\t\tDisallow: /']);
+    assert.equal([...bloc.matchAll(/^\trespond /gm)].length, 1);
+  });
+
+  it('en-têtes : ceux du bloc de production, plus X-Robots-Tag "noindex, nofollow"', () => {
+    const production = renderCaddy({ ...SYNTHETIQUE, empreintesScripts: SYNTHETIQUE_ESSAI.empreintesScripts });
+    assert.deepEqual(lignesUtiles(sousBloc(bloc, /header/)), [...lignesUtiles(sousBloc(production, /header/)), '\t\tX-Robots-Tag "noindex, nofollow"']);
+    assert.equal([...bloc.matchAll(/X-Robots-Tag/g)].length, 1);
+    assert.equal(valeurCsp(bloc), cspEnTete(SYNTHETIQUE_ESSAI.empreintesScripts));
+    assert.match(bloc, /^\t\tCache-Control "no-cache"$/m);
+  });
+
+  it('journal : le même bloc log que la production, seul le fichier change ; pas de User-Agent ni de Referer', () => {
+    const production = renderCaddy({ ...SYNTHETIQUE, journal: SYNTHETIQUE_ESSAI.journal });
+    assert.equal(blocJournal(bloc), blocJournal(production));
+    assert.match(blocJournal(bloc), /^\t\toutput file \/var\/log\/caddy\/x-essai\.log \{$/m);
+    assert.doesNotMatch(sansCorpsRobots(bloc), /user-agent/i);
+    assert.doesNotMatch(bloc, /referer/i);
+  });
+
+  it('commentaires : hôte retiré à l’ouverture, empreintes hors dépôt, recréation du conteneur, robots.txt lisible', () => {
+    assert.match(bloc, /Phase 9/);
+    assert.match(bloc, /jamais dans le dépôt/);
+    assert.match(bloc, /recréer le conteneur/);
+    assert.match(bloc, /robots\.txt reste lisible sans mot de passe/);
+    assert.ok(bloc.includes(FICHIER_SITES_D_ESSAI));
+    assert.doesNotMatch(bloc, /[–—]/);
+  });
+
+  it('déterministe, tabulations, pas de blanc en fin de ligne ; un autre domaine ne change que ses occurrences', () => {
+    assert.equal(renderCaddyEssai({ ...SYNTHETIQUE_ESSAI, empreintesScripts: [...SYNTHETIQUE_ESSAI.empreintesScripts] }), bloc);
+    for (const [i, ligne] of bloc.split('\n').entries()) {
+      assert.doesNotMatch(ligne, /^ /, `ligne ${i + 1} indentée par des espaces`);
+      assert.doesNotMatch(ligne, /[ \t]$/, `ligne ${i + 1} : blanc en fin de ligne`);
+    }
+    assert.ok(!bloc.includes('\r'));
+    const autre = renderCaddyEssai({ ...SYNTHETIQUE_ESSAI, domaine: 'autre-exemple.test' });
+    assert.match(autre, /^essai\.autre-exemple\.test \{$/m);
+    assert.equal(autre.replaceAll('autre-exemple.test', 'exemple.test'), bloc);
+    const { domaine } = loadSiteConfig(REPO, {});
+    assert.ok(!bloc.includes(domaine), 'le domaine du dépôt fuit dans un rendu synthétique');
+  });
+
+  it('entrées refusées comme renderCaddy : domaine, empreintes, chemins', () => {
+    for (const domaine of ['Exemple.test', 'https://exemple.test', 'www.exemple.test', '', 'exemple']) {
+      assert.throws(() => renderCaddyEssai({ ...SYNTHETIQUE_ESSAI, domaine }), /domaine/, domaine);
+    }
+    for (const empreintesScripts of [[], ['sha256-'], ["'sha256-AAA='"], ['sha256-AAA=', 'sha256-AAA=']]) {
+      assert.throws(() => renderCaddyEssai({ ...SYNTHETIQUE_ESSAI, empreintesScripts }), /empreinte/, JSON.stringify(empreintesScripts));
+    }
+    for (const chemin of ['srv/x', '/srv/x y', '/srv/{x}', '']) {
+      assert.throws(() => renderCaddyEssai({ ...SYNTHETIQUE_ESSAI, racine: chemin }), /racine/, chemin);
+      assert.throws(() => renderCaddyEssai({ ...SYNTHETIQUE_ESSAI, journal: chemin }), /journal/, chemin);
+    }
+  });
+});
+
+/** Rendu attendu de l'hôte technique pour le dépôt. */
+function renduEssaiDuDepot(): string {
+  return renderCaddyEssai({
+    domaine: loadSiteConfig(REPO, {}).domaine,
+    empreintesScripts: scriptsEnLigne(REPO).map((s) => s.empreinte),
+    racine: RACINE_ESSAI,
+    journal: JOURNAL_ESSAI,
+  });
+}
+
+describe('deploy/caddy/essai.caddy : dérive', () => {
+  it('le fichier versionné est égal à un rendu neuf', () => {
+    assert.ok(fs.existsSync(BLOC_ESSAI), 'deploy/caddy/essai.caddy absent : lancer node scripts/render-caddy.ts');
+    const versionne = fs.readFileSync(BLOC_ESSAI, 'utf8');
+    assert.ok(versionne === renduEssaiDuDepot(), 'deploy/caddy/essai.caddy a dérivé de config/site.yml ou de src/scripts/*.js : lancer node scripts/render-caddy.ts');
+  });
+
+  it('constantes : racine et journal propres à l’hôte technique, nom du fichier dans sites.d', () => {
+    assert.equal(RACINE_ESSAI, '/srv/reveletonprog/essai/current');
+    assert.equal(JOURNAL_ESSAI, '/var/log/caddy/essai.log');
+    assert.equal(FICHIER_SITES_D_ESSAI, 'reveletonprog-essai.caddy');
+    assert.notEqual(RACINE_ESSAI, RACINE_SERVEUR);
+    assert.notEqual(JOURNAL_ESSAI, JOURNAL);
+  });
+
+  it('le bloc versionné sert essai.<domaine de config/site.yml>', () => {
+    const { domaine } = loadSiteConfig(REPO, {});
+    assert.ok(fs.readFileSync(BLOC_ESSAI, 'utf8').includes(`\nessai.${domaine} {\n`));
+  });
+
+  it('le bloc de production n’a ni mot de passe ni noindex', () => {
+    const production = sansCommentaires(fs.readFileSync(BLOC, 'utf8'));
+    assert.doesNotMatch(production, /basic_auth/);
+    assert.doesNotMatch(production, /X-Robots-Tag/);
+  });
+
+  it('.gitattributes impose LF sur deploy/caddy/*.caddy et sur les fichiers serveur de la Phase 8', () => {
+    const lignes = fs.readFileSync(path.join(REPO, '.gitattributes'), 'utf8').split('\n').map((l) => l.trim());
+    for (const l of ['deploy/caddy/*.caddy text eol=lf', 'ops/*.sh text eol=lf', 'deploy/compose/*.yml text eol=lf', 'deploy/cron/* text eol=lf']) {
+      assert.ok(lignes.includes(l), `ligne « ${l} » absente de .gitattributes`);
     }
   });
 });
@@ -316,6 +510,57 @@ describe('CLI scripts/render-caddy.ts', () => {
     const r = spawnSync(process.execPath, [CLI, ...args], { cwd, env: { ...propre, ...env }, encoding: 'utf8' });
     return { status: r.status, out: r.stdout ?? '', err: r.stderr ?? '' };
   };
+
+  it('sans option : écrit les deux blocs (site puis essai) dans deploy/caddy/', () => {
+    const racine = projetAvec('example.org', 'bonjour@example.org');
+    const r = lancerDans(racine, [], {});
+    assert.equal(r.status, 0, r.out + r.err);
+    assert.ok(r.out.indexOf('deploy/caddy/site.caddy') < r.out.indexOf('deploy/caddy/essai.caddy'), r.out);
+    const empreintesScripts = scriptsEnLigne(racine).map((s) => s.empreinte);
+    assert.equal(fs.readFileSync(path.join(racine, 'deploy', 'caddy', 'site.caddy'), 'utf8'), renderCaddy({ domaine: 'example.org', empreintesScripts, racine: RACINE_SERVEUR, journal: JOURNAL }));
+    assert.equal(fs.readFileSync(path.join(racine, 'deploy', 'caddy', 'essai.caddy'), 'utf8'), renderCaddyEssai({ domaine: 'example.org', empreintesScripts, racine: RACINE_ESSAI, journal: JOURNAL_ESSAI }));
+    assert.equal(lancerDans(racine, ['--check'], {}).status, 0);
+  });
+
+  it('--check vérifie les deux blocs : code 1 qui nomme le seul fichier périmé', () => {
+    const racine = projetAvec('example.org', 'bonjour@example.org');
+    assert.equal(lancerDans(racine, [], {}).status, 0);
+    fs.appendFileSync(path.join(racine, 'deploy', 'caddy', 'essai.caddy'), '\n');
+    const r = lancerDans(racine, ['--check'], {});
+    assert.equal(r.status, 1, r.out + r.err);
+    assert.match(r.err, /deploy\/caddy\/essai\.caddy pas à jour/);
+    assert.doesNotMatch(r.err, /site\.caddy/);
+    assert.match(r.err, /lancer node scripts\/render-caddy\.ts/);
+  });
+
+  it('--cible essai sans --sortie : n’écrit que deploy/caddy/essai.caddy', () => {
+    const racine = projetAvec('example.org', 'bonjour@example.org');
+    const r = lancerDans(racine, ['--cible', 'essai'], {});
+    assert.equal(r.status, 0, r.out + r.err);
+    assert.ok(fs.existsSync(path.join(racine, 'deploy', 'caddy', 'essai.caddy')));
+    assert.ok(!fs.existsSync(path.join(racine, 'deploy', 'caddy', 'site.caddy')));
+  });
+
+  it('--cible essai --sortie <fichier> écrit le rendu de l’hôte technique ; --cible site le bloc de production', () => {
+    const essai = path.join(tmp, 'cible', 'essai.caddy');
+    let r = lancer(['--cible', 'essai', '--sortie', essai]);
+    assert.equal(r.status, 0, r.out + r.err);
+    assert.equal(fs.readFileSync(essai, 'utf8'), renduEssaiDuDepot());
+    const site = path.join(tmp, 'cible', 'site.caddy');
+    r = lancer(['--cible', 'site', '--sortie', site]);
+    assert.equal(r.status, 0, r.out + r.err);
+    assert.equal(fs.readFileSync(site, 'utf8'), renduDuDepot());
+    r = lancer(['--check', '--cible', 'essai', '--sortie', site]);
+    assert.equal(r.status, 1, r.out + r.err);
+  });
+
+  it('--cible inconnue ou sans valeur : code 2 et usage', () => {
+    for (const args of [['--cible', 'autre'], ['--cible'], ['--cible', '']]) {
+      const r = lancer(args);
+      assert.equal(r.status, 2, `${args.join(' ')} : ${r.out}${r.err}`);
+      assert.match(r.err, /Usage : node scripts\/render-caddy\.ts/);
+    }
+  });
 
   it('IN-05 : RTP_DEPLOIEMENT=1 avec un vrai domaine et un contact provisoire : rendu accepté (le contact n’est pas dans le bloc)', () => {
     const racine = projetAvec('example.org', 'contact@exemple.invalid');
