@@ -153,8 +153,29 @@ function distPropre(surcharges: Record<string, string | Buffer | null> = {}, opt
   return base;
 }
 
+/** Commit factice du version.json des dists du CLI (40 hexadécimaux : valable aussi sous RTP_DEPLOIEMENT=1). */
+const COMMIT_CLI = '0123456789abcdef0123456789abcdef01234567';
+
+/**
+ * Adapte un dist synthétique au CLI, qui active toujours VERSION_* et TYPE_FICHIER_INATTENDU (08-04) : retire la
+ * feuille et le script liés (le dist réel n'a que html, txt, xml et json depuis l'intégration de la Phase 7) et
+ * ajoute un version.json valide, sauf si le dist en a déjà un.
+ */
+function pourCli(fichiers: Fichiers): Fichiers {
+  const out: Fichiers = {};
+  for (const [rel, contenu] of Object.entries(fichiers)) {
+    if (rel.startsWith('_astro/')) continue;
+    out[rel] =
+      typeof contenu === 'string' && rel.endsWith('.html')
+        ? contenu.replace('<link rel="stylesheet" href="/_astro/a.css">', '').replace('<script src="/_astro/n.js"></script>', '')
+        : contenu;
+  }
+  if (!('version.json' in out)) out['version.json'] = `${JSON.stringify({ commit: COMMIT_CLI, date: '2026-11-08T20:30:00.000Z' })}\n`;
+  return out;
+}
+
 /** Dist propre pour le CLI, qui lit toujours le domaine de config/site.yml. */
-const distCli = (surcharges: Record<string, string | Buffer | null> = {}): Fichiers => distPropre(surcharges, { domaine: SITE.domaine });
+const distCli = (surcharges: Record<string, string | Buffer | null> = {}): Fichiers => pourCli(distPropre(surcharges, { domaine: SITE.domaine }));
 
 interface Resultat {
   codes: string[];
@@ -760,6 +781,87 @@ describe('checkDist : domaine, URL canoniques, sitemap et robots (HEB-05, HEB-06
   });
 });
 
+describe('checkDist : version.json (HEB-07, D-12) et types de fichiers du dist (HEB-08)', () => {
+  const SHA = '0123456789abcdef0123456789abcdef01234567';
+  const DATE = '2026-11-08T20:30:00.000Z';
+  const versionJson = (v: unknown): string => `${JSON.stringify(v)}\n`;
+  const avecVersion = (contenu: string | null, extra: Partial<OptionsCheckDist>): Resultat =>
+    verifier(distPropre(contenu === null ? {} : { 'version.json': contenu }), 'production', { logement: 2 }, extra);
+
+  it('sans l’option version, un dist sans version.json ne donne rien (règle opt-in, cas existants inchangés)', () => {
+    assert.deepEqual(verifier(distPropre()).codes, []);
+  });
+
+  it('version: {} sans version.json : une seule erreur VERSION_ABSENTE sur version.json', () => {
+    const dist = ecrireDist(distPropre());
+    const constats = checkDist(dist, { mode: 'production', cellulesParTheme: { logement: 2 }, version: {} });
+    assert.equal(constats.length, 1, JSON.stringify(constats));
+    assert.equal(constats[0]?.code, 'VERSION_ABSENTE');
+    assert.equal(constats[0]?.fichier, 'version.json');
+    assert.equal(constats[0]?.severite, 'erreur');
+  });
+
+  it('version.json valide (commit de 40 hexadécimaux ou dev, date ISO UTC) : aucun constat', () => {
+    assert.deepEqual(avecVersion(versionJson({ commit: SHA, date: DATE }), { version: {} }).codes, []);
+    assert.deepEqual(avecVersion(versionJson({ commit: 'dev', date: DATE }), { version: {} }).codes, []);
+    assert.deepEqual(avecVersion(versionJson({ date: '2026-11-08T20:30:00Z', commit: SHA }), { version: {} }).codes, []);
+  });
+
+  it('JSON invalide, clés en trop ou manquantes, commit ou date malformés : VERSION_INVALIDE', () => {
+    const fautifs: Array<[string, string]> = [
+      ['JSON invalide', '{"commit": "dev",'],
+      ['tableau', versionJson([SHA, DATE])],
+      ['null', 'null\n'],
+      ['clé en trop', versionJson({ commit: SHA, date: DATE, hote: 'build-01' })],
+      ['date manquante', versionJson({ commit: SHA })],
+      ['commit manquant', versionJson({ date: DATE })],
+      ['commit court', versionJson({ commit: SHA.slice(0, 7), date: DATE })],
+      ['commit en majuscules', versionJson({ commit: SHA.toUpperCase(), date: DATE })],
+      ['commit vide', versionJson({ commit: '', date: DATE })],
+      ['commit numérique', versionJson({ commit: 1234, date: DATE })],
+      ['date sans heure', versionJson({ commit: SHA, date: '2026-11-08' })],
+      ['date non UTC', versionJson({ commit: SHA, date: '2026-11-08T21:30:00.000+01:00' })],
+      ['date impossible', versionJson({ commit: SHA, date: '2026-13-40T25:00:00.000Z' })],
+      ['date libre', versionJson({ commit: SHA, date: 'hier soir' })],
+    ];
+    for (const [nom, contenu] of fautifs) {
+      const r = avecVersion(contenu, { version: {} });
+      assert.deepEqual(r.codes, ['VERSION_INVALIDE'], `${nom} : ${r.messages.join(' | ')}`);
+      assert.deepEqual(r.fichiers, ['version.json'], nom);
+    }
+  });
+
+  it('commitAttendu : un autre commit donne VERSION_INVALIDE qui nomme les deux, le même ne donne rien', () => {
+    const autre = 'f'.repeat(40);
+    const r = avecVersion(versionJson({ commit: SHA, date: DATE }), { version: { commitAttendu: autre } });
+    assert.deepEqual(r.codes, ['VERSION_INVALIDE']);
+    assert.ok(r.messages[0]?.includes(SHA) && r.messages[0]?.includes(autre), r.messages.join(' | '));
+    assert.deepEqual(avecVersion(versionJson({ commit: SHA, date: DATE }), { version: { commitAttendu: SHA } }).codes, []);
+    assert.deepEqual(avecVersion(versionJson({ commit: 'dev', date: DATE }), { version: { commitAttendu: SHA } }).codes, ['VERSION_INVALIDE']);
+  });
+
+  it('commit dev : erreur VERSION_INVALIDE sous deploiement, rien sans', () => {
+    const dev = versionJson({ commit: 'dev', date: DATE });
+    const r = avecVersion(dev, { version: {}, deploiement: true });
+    assert.deepEqual(r.codes, ['VERSION_INVALIDE']);
+    assert.match(r.messages[0] ?? '', /RTP_DEPLOIEMENT=1/);
+    assert.deepEqual(avecVersion(dev, { version: {}, deploiement: false }).codes, []);
+    assert.deepEqual(avecVersion(versionJson({ commit: SHA, date: DATE }), { version: {}, deploiement: true }).codes, []);
+  });
+
+  it('typesAutorises : une erreur TYPE_FICHIER_INATTENDU par fichier d’un autre type ; sans l’option, rien', () => {
+    const TYPES = ['.html', '.txt', '.xml', '.json'] as const;
+    const r = verifier(distPropre(), 'production', { logement: 2 }, { typesAutorises: TYPES });
+    assert.deepEqual(r.codes, ['TYPE_FICHIER_INATTENDU']);
+    assert.deepEqual(r.fichiers, ['_astro/a.css', '_astro/n.js']);
+    assert.match(r.messages[0] ?? '', /cache long/);
+    assert.match(r.messages[0] ?? '', /Caddy/);
+    const sansExtension = verifier({ ...distPropre(), CNAME: 'x' }, 'production', { logement: 2 }, { typesAutorises: ['.html', '.txt', '.xml', '.json', '.css', '.js'] });
+    assert.deepEqual(sansExtension.fichiers, ['CNAME']);
+    assert.deepEqual(verifier(distPropre()).codes, []);
+  });
+});
+
 describe('cellulesAttendues', () => {
   it('corpus-valide en production : le thème publié « logement » attend 2 cellules', () => {
     assert.deepEqual(cellulesAttendues(CORPUS, REPO_ROOT, 'production'), new Map([['logement', 2]]));
@@ -772,6 +874,8 @@ describe('CLI scripts/check-dist.ts', () => {
     delete propre.RTP_MODE;
     delete propre.RTP_CONTENT_ROOT;
     delete propre.RTP_DEPLOIEMENT;
+    // En CI, GITHUB_SHA est défini : le CLI l'exigerait dans version.json. Chaque cas le pose explicitement.
+    delete propre.GITHUB_SHA;
     const r = spawnSync(process.execPath, [CLI, ...args], { cwd: REPO_ROOT, env: { ...propre, ...env }, encoding: 'utf8' });
     return { status: r.status, out: r.stdout ?? '', err: r.stderr ?? '' };
   };
@@ -792,7 +896,7 @@ describe('CLI scripts/check-dist.ts', () => {
   });
 
   it('HEB-05 : le CLI passe le domaine de config/site.yml (URL canonique d’un autre domaine : CANONIQUE_INCORRECT)', () => {
-    const autre = ecrireDist(distPropre({}, { domaine: DOMAINE_TEST }));
+    const autre = ecrireDist(pourCli(distPropre({}, { domaine: DOMAINE_TEST })));
     const r = lancer(['--dist', autre, '--root', CORPUS, '--mode', 'production']);
     assert.equal(r.status, 1, r.out + r.err);
     assert.match(r.out, /^CANONIQUE_INCORRECT index\.html : /m);
@@ -860,6 +964,35 @@ describe('CLI scripts/check-dist.ts', () => {
     assert.match(invalide.err, /RTP_DEPLOIEMENT doit valoir 1/);
     assert.equal(lancer(['--dist', dist, '--root', CORPUS, '--mode', 'production'], { RTP_DEPLOIEMENT: '0' }).status, 0);
     assert.equal(lancer(['--dist', dist, '--root', CORPUS, '--mode', 'production'], { RTP_DEPLOIEMENT: '1' }).status, 1);
+  });
+
+  it('HEB-07 : GITHUB_SHA de 40 hexadécimaux est exigé dans version.json (autre commit : code 1, VERSION_INVALIDE)', () => {
+    const dist = ecrireDist(distCli());
+    const args = ['--dist', dist, '--root', CORPUS, '--mode', 'production'];
+    const autre = lancer(args, { GITHUB_SHA: 'b'.repeat(40) });
+    assert.equal(autre.status, 1, autre.out + autre.err);
+    assert.match(autre.out, new RegExp(`^VERSION_INVALIDE version\\.json : .*${COMMIT_CLI}.*${'b'.repeat(40)}`, 'm'));
+    assert.equal(lancer(args, { GITHUB_SHA: COMMIT_CLI }).status, 0);
+    // une valeur qui n'est pas un commit complet n'est pas une attente (le build écrit alors dev)
+    assert.equal(lancer(args, { GITHUB_SHA: 'main' }).status, 0);
+  });
+
+  it('HEB-07 : version.json absent (VERSION_ABSENTE) ou commit dev sous RTP_DEPLOIEMENT=1 (VERSION_INVALIDE) : code 1', () => {
+    const sans = lancer(['--dist', ecrireDist(distCli({ 'version.json': null })), '--root', CORPUS, '--mode', 'production']);
+    assert.equal(sans.status, 1, sans.out + sans.err);
+    assert.match(sans.out, /^VERSION_ABSENTE version\.json : /m);
+    const dev = ecrireDist(distCli({ 'version.json': `${JSON.stringify({ commit: 'dev', date: '2026-11-08T20:30:00.000Z' })}\n` }));
+    assert.equal(lancer(['--dist', dev, '--root', CORPUS, '--mode', 'production']).status, 0);
+    const deploiement = lancer(['--dist', dev, '--root', CORPUS, '--mode', 'production'], { RTP_DEPLOIEMENT: '1' });
+    assert.equal(deploiement.status, 1, deploiement.out + deploiement.err);
+    assert.match(deploiement.out, /^VERSION_INVALIDE version\.json : /m);
+  });
+
+  it('HEB-08 : un fichier hors html, txt, xml, json donne TYPE_FICHIER_INATTENDU (code 1)', () => {
+    const dist = ecrireDist({ ...distCli(), 'police.woff2': Buffer.from([0, 1, 2]) });
+    const r = lancer(['--dist', dist, '--root', CORPUS, '--mode', 'production']);
+    assert.equal(r.status, 1, r.out + r.err);
+    assert.match(r.out, /^TYPE_FICHIER_INATTENDU police\.woff2 : /m);
   });
 
   it('dist introuvable : code 2', () => {
