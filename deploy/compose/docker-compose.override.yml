@@ -1,0 +1,28 @@
+# Surcharge du service caddy pour reveleTonProg (Phase 8, D-04, D-06, D-07). Aucun secret dans ce fichier.
+#
+# Copiée dans /opt/vaultwarden, à côté du fichier de composition d'origine (laissé intact), par le script
+# d'installation du serveur (ops/installer-serveur.sh, étape montages). docker compose la fusionne
+# automatiquement quand il est lancé dans ce dossier sans option -f. Attention : une commande avec
+# « -f docker-compose.yml » seul l'ignore et recréerait caddy sans les montages ni les variables ci-dessous.
+#
+# Les deux empreintes bcrypt de l'hôte technique (basic_auth) sont lues dans le fichier .env voisin, lisible par
+# root seul (0600), entre apostrophes. La forme « variable obligatoire » ci-dessous fait échouer docker compose
+# avant toute recréation si une empreinte manque : une variable vide ferait échouer tout le Caddyfile, donc
+# tous les sites du serveur.
+#
+# Ajouts seulement : la racine du site et le dossier des blocs importés en lecture seule, le dossier des journaux
+# d'accès, et le plafond des journaux du conteneur (stderr) en taille et en nombre de fichiers.
+services:
+  caddy:
+    volumes:
+      - /srv/reveletonprog:/srv/reveletonprog:ro
+      - /var/log/caddy:/var/log/caddy
+      - /opt/vaultwarden/sites.d:/etc/caddy/sites.d:ro
+    environment:
+      RTP_ESSAI_HASH: "${RTP_ESSAI_HASH:?RTP_ESSAI_HASH manquant dans /opt/vaultwarden/.env}"
+      RTP_SONDE_HASH: "${RTP_SONDE_HASH:?RTP_SONDE_HASH manquant dans /opt/vaultwarden/.env}"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

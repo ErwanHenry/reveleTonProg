@@ -1,0 +1,6 @@
+# Test de restauration mensuel de reveleTonProg (Phase 8, D-15) : le 1er du mois à 11:00 UTC.
+# Installé en /etc/cron.d/rtp-restauration (root, 0644) par ops/installer-serveur.sh, étape restauration-mensuelle.
+# Heures en UTC (fuseau du serveur). Adresse de ping dans /etc/rtp/restauration.env (0600), jamais ici.
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+0 11 1 * * root /usr/local/sbin/rtp-tester-restauration 2>&1 | logger -t rtp-restauration

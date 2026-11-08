@@ -1,0 +1,6 @@
+# Battement de cœur de reveleTonProg (Phase 8, D-14) : site, disque et certificat, toutes les 5 minutes.
+# Installé en /etc/cron.d/rtp-battement (root, 0644) par ops/installer-serveur.sh, étape battement.
+# Heures en UTC (fuseau du serveur). Adresses de ping dans /etc/rtp/battement.env (0600), jamais ici.
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+*/5 * * * * root /usr/local/sbin/rtp-battement 2>&1 | logger -t rtp-battement

@@ -1,0 +1,7 @@
+# Sauvegarde quotidienne de la configuration serveur de reveleTonProg (Phase 8, D-15), à 02:45 UTC, avant la
+# sauvegarde existante de 03:30.
+# Installé en /etc/cron.d/rtp-sauvegarde (root, 0644) par ops/installer-serveur.sh, étape sauvegarde.
+# Heures en UTC (fuseau du serveur).
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+45 2 * * * root /usr/local/sbin/rtp-sauvegarder 2>&1 | logger -t rtp-sauvegarde
