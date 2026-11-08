@@ -978,7 +978,8 @@ describe('CLI scripts/check-dist.ts', () => {
   });
 
   it('HEB-07 : version.json absent (VERSION_ABSENTE) ou commit dev sous RTP_DEPLOIEMENT=1 (VERSION_INVALIDE) : code 1', () => {
-    const sans = lancer(['--dist', ecrireDist(distCli({ 'version.json': null })), '--root', CORPUS, '--mode', 'production']);
+    const { 'version.json': _retire, ...sansVersion } = distCli();
+    const sans = lancer(['--dist', ecrireDist(sansVersion), '--root', CORPUS, '--mode', 'production']);
     assert.equal(sans.status, 1, sans.out + sans.err);
     assert.match(sans.out, /^VERSION_ABSENTE version\.json : /m);
     const dev = ecrireDist(distCli({ 'version.json': `${JSON.stringify({ commit: 'dev', date: '2026-11-08T20:30:00.000Z' })}\n` }));

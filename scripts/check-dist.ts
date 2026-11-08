@@ -20,6 +20,8 @@ const USAGE = `Usage : node scripts/check-dist.ts [--dist <dossier>] [--root <do
   RTP_DEPLOIEMENT=1 (job de déploiement) : un contact provisoire, un hébergeur seulement prévu et un domaine
   provisoire (TLD réservé : .invalid, .test, .example, .localhost) deviennent des erreurs au lieu d'avertissements.
   RTP_DEPLOIEMENT n'accepte que 1, 0 ou vide ; toute autre valeur est refusée (code 2).
+  version.json doit exister et donner exactement commit et date ; GITHUB_SHA (40 hexadécimaux, en CI) impose son
+  commit, et le commit « dev » est refusé sous RTP_DEPLOIEMENT=1. Le dist ne contient que html, txt, xml et json.
   Code de sortie : 0 sans erreur, 1 si au moins une erreur, 2 si les arguments, le mode ou config/site.yml sont invalides.
 `;
 
@@ -73,7 +75,12 @@ try {
   process.stderr.write(`${e instanceof Error ? e.message : String(e)}\n`);
   process.exit(2);
 }
-const constats = checkDist(dist, { mode, cellulesParTheme: attendues, deploiement, domaine });
+// Version servie (HEB-07) : GITHUB_SHA (CI) est le commit attendu dans version.json quand il compte 40 hexadécimaux,
+// comme dans src/pages/version.json.ts. Types de fichiers (HEB-08) : html, txt, xml et json seulement.
+const sha = process.env.GITHUB_SHA ?? '';
+const version = /^[0-9a-f]{40}$/.test(sha) ? { commitAttendu: sha } : {};
+const typesAutorises = ['.html', '.txt', '.xml', '.json'] as const;
+const constats = checkDist(dist, { mode, cellulesParTheme: attendues, deploiement, domaine, version, typesAutorises });
 
 for (const c of constats) console.log(`${c.code} ${safe(c.fichier)} : ${safe(c.message)}`);
 if (format === 'github') {

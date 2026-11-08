@@ -64,7 +64,13 @@ export const CODES_CHECK_DIST = [
   'SITEMAP_INCOHERENT',
   'ROBOTS_SANS_SITEMAP',
   'DOMAINE_PROVISOIRE',
+  'VERSION_ABSENTE',
+  'VERSION_INVALIDE',
+  'TYPE_FICHIER_INATTENDU',
 ] as const;
+
+/** Commit écrit dans version.json : 40 hexadécimaux minuscules (GITHUB_SHA), ou « dev » hors CI. */
+export const COMMIT_VERSION = /^(?:[0-9a-f]{40}|dev)$/;
 export type CodeCheckDist = (typeof CODES_CHECK_DIST)[number];
 
 export interface Constat {
@@ -97,6 +103,20 @@ export interface OptionsCheckDist {
    * sauf DOMAINE_PROVISOIRE sur une page de production dont l'URL canonique vise un hôte provisoire.
    */
   domaine?: string;
+  /**
+   * Version servie (HEB-07, D-12). Avec elle, `version.json` doit exister à la racine du dist (VERSION_ABSENTE) et
+   * contenir exactement `commit` (40 hexadécimaux ou « dev ») et `date` (horodatage ISO UTC) ; `commitAttendu`
+   * (GITHUB_SHA en CI) impose ce commit, et « dev » est refusé sous `deploiement` (VERSION_INVALIDE). Le CLI la passe
+   * toujours ; sans elle, ces règles sont inactives.
+   */
+  version?: { commitAttendu?: string };
+  /**
+   * Extensions permises dans le dist (ex. `['.html', '.txt', '.xml', '.json']`), point compris. Tout autre fichier,
+   * y compris sans extension, donne TYPE_FICHIER_INATTENDU (HEB-08 : un fichier séparé demanderait une règle de cache
+   * long dans le bloc Caddy, qui n'en a aucune depuis l'intégration de la Phase 7). Le CLI la passe toujours ; sans
+   * elle, la règle est inactive.
+   */
+  typesAutorises?: readonly string[];
 }
 
 /** Racine du dépôt, déduite de l'emplacement de ce module (scripts/lib/). */
@@ -666,5 +686,64 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
     }
   }
 
+  // version.json (HEB-07, D-12) : commit et date de la build servie
+  if (opts.version !== undefined) {
+    const brut = lireSiPresent('version.json');
+    if (brut === undefined) {
+      signaler('VERSION_ABSENTE', 'version.json', 'version.json absent du dist (src/pages/version.json.ts : commit et date de build)');
+    } else {
+      for (const message of ecartsVersion(brut, opts.version.commitAttendu, opts.deploiement === true)) signaler('VERSION_INVALIDE', 'version.json', message);
+    }
+  }
+
+  // types de fichiers (HEB-08) : aucun fichier qui demanderait une règle de cache long
+  if (opts.typesAutorises !== undefined) {
+    const permis = new Set(opts.typesAutorises);
+    for (const f of fichiers) {
+      if (permis.has(path.posix.extname(f))) continue;
+      signaler(
+        'TYPE_FICHIER_INATTENDU',
+        f,
+        `type de fichier non prévu (permis : ${[...permis].join(', ')}) : un fichier séparé demanderait une règle de cache long dans le bloc Caddy (HEB-08), et le bloc n'en rend aucune depuis l'intégration du CSS et des scripts dans la page (Phase 7)`,
+      );
+    }
+  }
+
   return constats.sort((a, b) => a.fichier.localeCompare(b.fichier) || a.code.localeCompare(b.code) || a.message.localeCompare(b.message));
+}
+
+/** Horodatage ISO 8601 en UTC (`Z`), millisecondes facultatives, date et heure réelles. */
+function estHorodatageUtc(texte: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(texte)) return false;
+  const d = new Date(texte);
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 19) === texte.slice(0, 19);
+}
+
+/** Écarts de version.json : forme exacte { commit, date }, commit attendu, « dev » refusé avant déploiement. */
+function ecartsVersion(brut: string, commitAttendu: string | undefined, deploiement: boolean): string[] {
+  let v: unknown;
+  try {
+    v = JSON.parse(brut);
+  } catch {
+    return ['version.json n\'est pas un JSON valide'];
+  }
+  if (typeof v !== 'object' || v === null || Array.isArray(v)) return ['version.json doit être un objet { "commit", "date" }'];
+  const cles = Object.keys(v).sort();
+  if (cles.join(',') !== 'commit,date') {
+    return [`version.json doit avoir exactement les clés commit et date (vu : ${cles.map((c) => c.slice(0, 20)).join(', ') || 'aucune'})`];
+  }
+  const { commit, date } = v as { commit: unknown; date: unknown };
+  const out: string[] = [];
+  const commitTexte = typeof commit === 'string' ? commit.slice(0, 60) : JSON.stringify(commit)?.slice(0, 60);
+  if (typeof commit !== 'string' || !COMMIT_VERSION.test(commit)) {
+    out.push(`commit « ${commitTexte} » invalide (attendu : 40 hexadécimaux minuscules, ou dev hors CI)`);
+  } else if (commitAttendu !== undefined && commit !== commitAttendu) {
+    out.push(`commit « ${commit} » différent du commit construit « ${commitAttendu} » (GITHUB_SHA)`);
+  } else if (commit === 'dev' && deploiement) {
+    out.push('commit « dev » refusé quand RTP_DEPLOIEMENT=1 : construire en CI, où GITHUB_SHA donne le commit');
+  }
+  if (typeof date !== 'string' || !estHorodatageUtc(date)) {
+    out.push(`date « ${typeof date === 'string' ? date.slice(0, 40) : JSON.stringify(date)?.slice(0, 40)} » invalide (attendu : horodatage ISO UTC, ex. 2026-11-08T20:30:00.000Z)`);
+  }
+  return out;
 }
