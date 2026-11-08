@@ -43,7 +43,7 @@ function codeDe(fichier: string): string {
 }
 
 function redirections(code: string): string[] {
-  return code.match(/\d?>>?\s*[^\s&|)]+/g) ?? [];
+  return code.match(/\d?>>?\s*[^\s&|);]+/g) ?? [];
 }
 
 // ---------------------------------------------------------------------------------------------------------------
