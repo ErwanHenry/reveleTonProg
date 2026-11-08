@@ -42,6 +42,12 @@ function codeDe(fichier: string): string {
     .join('\n');
 }
 
+/** Valeur présente (accès indexé sous noUncheckedIndexedAccess). */
+function defini<T>(x: T | undefined, quoi = 'valeur'): T {
+  assert.ok(x !== undefined, `${quoi} attendue`);
+  return x;
+}
+
 function redirections(code: string): string[] {
   return code.match(/\d?>>?\s*[^\s&|);]+/g) ?? [];
 }
@@ -144,7 +150,7 @@ const validations = (b: BancValider): Appel[] => appels(b).filter((a) => a.argv.
 function montage(a: Appel, cible: string): string {
   const i = a.argv.findIndex((x, k) => k > 0 && a.argv[k - 1] === '-v' && x.endsWith(`:${cible}:ro`));
   assert.ok(i > 0, `montage ${cible}:ro attendu dans ${a.argv.join(' ')}`);
-  return a.argv[i].slice(0, -`:${cible}:ro`.length);
+  return defini(a.argv[i]).slice(0, -`:${cible}:ro`.length);
 }
 
 describe('ops/valider-caddy.sh : code en lecture seule', () => {
@@ -205,9 +211,9 @@ describe('ops/valider-caddy.sh : exécution avec un docker factice', () => {
       assert.equal(montage(a, '/etc/caddy/Caddyfile'), b.caddyfile, 'Caddyfile en service monté tel quel');
       assert.equal(montage(a, '/etc/caddy/sites.d'), b.sitesD, 'sites.d en service monté tel quel');
     }
-    assert.ok(v[0].argv.includes(`RTP_ESSAI_HASH=${HASH_FACTICE}`));
-    assert.ok(v[0].argv.includes(`RTP_SONDE_HASH=${HASH_FACTICE}`));
-    assert.ok(!v[1].argv.some((x) => x.startsWith('RTP_ESSAI_HASH') || x.startsWith('RTP_SONDE_HASH')), 'second passage sans variables');
+    assert.ok(defini(v[0]).argv.includes(`RTP_ESSAI_HASH=${HASH_FACTICE}`));
+    assert.ok(defini(v[0]).argv.includes(`RTP_SONDE_HASH=${HASH_FACTICE}`));
+    assert.ok(!defini(v[1]).argv.some((x) => x.startsWith('RTP_ESSAI_HASH') || x.startsWith('RTP_SONDE_HASH')), 'second passage sans variables');
     assert.deepEqual(fs.readdirSync(b.tmpdir), [], 'dossier temporaire retiré');
   });
 
@@ -235,7 +241,7 @@ describe('ops/valider-caddy.sh : exécution avec un docker factice', () => {
     const bloc = 'essai.exemple.test {\n\trespond "essai" 200\n}\n';
     const r = lancerValider(b, { RTP_BLOC_B64: Buffer.from(bloc).toString('base64') });
     assert.equal(r.status, 0, r.stderr);
-    const [a] = validations(b);
+    const a = defini(validations(b)[0]);
     assert.notEqual(montage(a, '/etc/caddy/sites.d'), b.sitesD);
     const copie = path.join(b.appels, `appel-${a.n}.sites`);
     assert.deepEqual(fs.readdirSync(copie), ['reveletonprog-essai.caddy']);
@@ -263,12 +269,12 @@ describe('ops/valider-caddy.sh : exécution avec un docker factice', () => {
   it('RTP_AJOUTER_IMPORT=1 : ajoute un retour à la ligne manquant et ne double pas une ligne déjà présente', () => {
     const sansFin = bancValider('a.exemple.test {\n}');
     assert.equal(lancerValider(sansFin, { RTP_AJOUTER_IMPORT: '1' }).status, 0);
-    const [a] = validations(sansFin);
+    const a = defini(validations(sansFin)[0]);
     assert.equal(fs.readFileSync(path.join(sansFin.appels, `appel-${a.n}.caddyfile`), 'utf8'), `a.exemple.test {\n}\n${IMPORT}\n`);
 
     const deja = bancValider(`${CADDYFILE_SYNTHETIQUE}${IMPORT}\n`);
     assert.equal(lancerValider(deja, { RTP_AJOUTER_IMPORT: '1' }).status, 0);
-    const [c] = validations(deja);
+    const c = defini(validations(deja)[0]);
     assert.equal(fs.readFileSync(path.join(deja.appels, `appel-${c.n}.caddyfile`), 'utf8'), `${CADDYFILE_SYNTHETIQUE}${IMPORT}\n`);
   });
 
@@ -277,7 +283,7 @@ describe('ops/valider-caddy.sh : exécution avec un docker factice', () => {
     const absent = path.join(b.dossier, 'pas-de-sites.d');
     const r = lancerValider(b, { RTP_SITES_D: absent });
     assert.equal(r.status, 0, r.stderr);
-    const [a] = validations(b);
+    const a = defini(validations(b)[0]);
     assert.notEqual(montage(a, '/etc/caddy/sites.d'), absent);
     assert.deepEqual(fs.readdirSync(path.join(b.appels, `appel-${a.n}.sites`)), []);
     assert.equal(fs.existsSync(absent), false);
@@ -444,11 +450,10 @@ describe('ops/verifier-sites.sh comparer', () => {
     fs.writeFileSync(p, lignes.map(([h, c]) => `${empreinte(h)}\t${c}\n`).join(''));
     return p;
   };
-  const base: [string, string][] = [
-    ['a.exemple.test', '200'],
-    ['b.exemple.test', '401'],
-    ['c.exemple.test', '000'],
-  ];
+  const A: [string, string] = ['a.exemple.test', '200'];
+  const B: [string, string] = ['b.exemple.test', '401'];
+  const C: [string, string] = ['c.exemple.test', '000'];
+  const base: [string, string][] = [A, B, C];
   const avant = ecrire('avant.tsv', base);
 
   it('identiques : code 0', () => {
@@ -458,7 +463,7 @@ describe('ops/verifier-sites.sh comparer', () => {
   });
 
   it('un code différent : code 1', () => {
-    const r = lancerVerifier(['comparer', avant, ecrire('diff.tsv', [['a.exemple.test', '502'], base[1], base[2]])]);
+    const r = lancerVerifier(['comparer', avant, ecrire('diff.tsv', [['a.exemple.test', '502'], B, C])]);
     assert.equal(r.status, 1);
     assert.equal(r.stdout, 'identiques 2, differents 1, nouveaux 0, disparus 0\n');
   });
@@ -470,7 +475,7 @@ describe('ops/verifier-sites.sh comparer', () => {
   });
 
   it('un hôte disparu : code 1', () => {
-    const r = lancerVerifier(['comparer', avant, ecrire('disparu.tsv', [base[0], base[1]])]);
+    const r = lancerVerifier(['comparer', avant, ecrire('disparu.tsv', [A, B])]);
     assert.equal(r.status, 1);
     assert.equal(r.stdout, 'identiques 2, differents 0, nouveaux 0, disparus 1\n');
   });

@@ -262,7 +262,7 @@ describe('ops/commande-deploiement.sh : activer', () => {
     assert.equal(fs.existsSync(path.join(b.base, 'incoming', 'essai', S)), false);
     const h = historique(b);
     assert.equal(h.length, 1);
-    assert.match(h[0], new RegExp(`^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z ${S}$`));
+    assert.match(String(h[0]), new RegExp(`^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z ${S}$`));
     assert.equal(r.stdout, `active cible=essai courant=${S} versions=1\n`);
   });
 
@@ -272,8 +272,9 @@ describe('ops/commande-deploiement.sh : activer', () => {
     activer(b, 'essai', S);
     const lignes = fs.readFileSync(b.sortieLogger, 'utf8').trimEnd().split('\n');
     assert.equal(lignes.length, 1);
-    assert.ok(lignes[0].startsWith('-t rtp-deploy '), lignes[0]);
-    assert.deepEqual(JSON.parse(lignes[0].slice('-t rtp-deploy '.length)), { verbe: 'activer', cible: 'essai', sha: S, code: 0 });
+    const ligne = String(lignes[0]);
+    assert.ok(ligne.startsWith('-t rtp-deploy '), ligne);
+    assert.deepEqual(JSON.parse(ligne.slice('-t rtp-deploy '.length)), { verbe: 'activer', cible: 'essai', sha: S, code: 0 });
   });
 
   it('production : racine RTP_BASE, sans toucher essai/', (t) => {
