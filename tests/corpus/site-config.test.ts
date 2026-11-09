@@ -142,11 +142,11 @@ describe('loadSiteConfig', () => {
     assert.equal(loadSiteConfig(projet(yml('elections.exemple-2027.fr', 'a@b.fr'))).domaine, 'elections.exemple-2027.fr');
   });
 
-  it('le config/site.yml du dépôt est valide, domaine et contact provisoires tant que le domaine n’est pas acheté', () => {
+  it('le config/site.yml du dépôt est valide : domaine réel (acheté le 2026-11-09), contact provisoire jusqu’à la mise en ligne', () => {
     const cfg = loadSiteConfig(REPO, {});
     assert.equal(cfg.depot, 'ErwanHenry/reveleTonProg');
-    assert.ok(cfg.domaine.endsWith('.invalid'), cfg.domaine);
-    assert.equal(cfg.domaineProvisoire, true);
+    assert.ok(!cfg.domaine.endsWith('.invalid'), cfg.domaine);
+    assert.equal(cfg.domaineProvisoire, false);
     assert.ok(cfg.contact.endsWith('.invalid'), cfg.contact);
     assert.equal(cfg.contactProvisoire, true);
     const texte = readFileSync(path.join(REPO, 'config', 'site.yml'), 'utf8');

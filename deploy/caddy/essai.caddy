@@ -11,7 +11,7 @@
 # celui de la sonde change sans toucher celui de l'éditeur.
 # Valeur par défaut factice, aucun mot de passe ne lui correspond : une variable absente laisse le Caddyfile
 # valide (personne ne peut se connecter) au lieu de faire échouer tous les sites du serveur.
-essai.domaine-a-definir.invalid {
+essai.reveletonprog.fr {
 	# Version d'essai : essai/releases/<sha>/ pointée par le lien relatif « current » de essai/.
 	root * /srv/reveletonprog/essai/current
 	encode zstd gzip
