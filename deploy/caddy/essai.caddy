@@ -33,9 +33,12 @@ essai.reveletonprog.fr {
 		Content-Security-Policy "script-src 'sha256-AYs4WPCOK1iv8F8YssNb0FP3cVW+t8v6c4gxRGOOavM=' 'sha256-jsohJdXbGW/JSZOPFWOjpPmSNtRFaOK28ICX4nW6i18='; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; object-src 'none'"
 		# Pages revalidées à chaque visite ; plus de fichier haché séparé depuis l'inlining, donc pas de cache long.
 		Cache-Control "no-cache"
-		# Hôte technique : aucune page ne doit être indexée, réponse 401 comprise.
-		X-Robots-Tag "noindex, nofollow"
 	}
+	# Hôte technique : aucune page ne doit être indexée, réponse 401 comprise. Directive à part, sans suppression,
+	# donc appliquée tout de suite : le sous-bloc ci-dessus est différé par « -Server » et Caddy ne l'applique pas
+	# au 401 de basic_auth. Pas de handle_errors : sur le serveur partagé, il ferait passer le journal des erreurs
+	# 5xx de tous les sites au niveau debug (Caddy 2.11.2).
+	header X-Robots-Tag "noindex, nofollow"
 
 	# Mot de passe partout sauf sur /robots.txt : robots.txt reste lisible sans mot de passe, pour que les robots
 	# lisent « Disallow: / ».
