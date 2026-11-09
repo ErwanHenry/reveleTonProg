@@ -380,3 +380,130 @@ describe('documentation (phase 7)', () => {
     }
   });
 });
+
+/** Texte d'une section du RUNBOOK : de son titre au titre suivant de même niveau ou plus haut. */
+function sectionRunbook(titre: string): string {
+  const echappe = titre.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const m = runbook.match(new RegExp(`^(#{2,3}) ${echappe}$`, 'm'));
+  assert.ok(m && m.index !== undefined, `section « ${titre} » absente du RUNBOOK`);
+  const niveau = m[1]?.length ?? 2;
+  const corps = runbook.slice(m.index + m[0].length);
+  const fin = corps.search(new RegExp(`^#{2,${niveau}} `, 'm'));
+  return m[0] + (fin < 0 ? corps : corps.slice(0, fin));
+}
+
+describe('documentation (phase 8) : RUNBOOK', () => {
+  const titres = [
+    '## Déploiement',
+    '### Retour arrière',
+    "### Gel des scrutins et retrait d'urgence",
+    '### Hôte technique (essai)',
+    '### Serveur : installer et vérifier',
+    '### Environments GitHub',
+    '### Bloc Caddy (Phase 8)',
+    '## Restauration',
+    '## Monitoring',
+  ];
+
+  it('a les titres de la chaîne de livraison, sans « (lot 3, à venir) »', () => {
+    for (const t of titres) {
+      const echappe = t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      assert.match(runbook, new RegExp(`^${echappe}$`, 'm'), `titre manquant : ${t}`);
+    }
+    assert.doesNotMatch(runbook, /lot 3, à venir/);
+  });
+
+  it('donne les commandes des scripts et workflows de la Phase 8', () => {
+    for (const needle of [
+      'rollback.yml',
+      'runuser -u deploy',
+      'deploy-production',
+      'DEPLOY_CIBLE',
+      'retrait_urgence',
+      'ops/installer-serveur.sh --verifier',
+      'ops/valider-caddy.sh',
+      'ops/verifier-sites.sh',
+      'rtp-tester-restauration',
+      'docker compose up -d --no-deps --force-recreate caddy',
+      'import /etc/caddy/sites.d/*.caddy',
+      'prevent self-review',
+    ]) {
+      assert.ok(runbook.includes(needle), `RUNBOOK doit contenir « ${needle} »`);
+    }
+  });
+
+  it('retour arrière : commandes, attente d\'approbation, repli sans GitHub', () => {
+    const s = sectionRunbook('Retour arrière');
+    for (const needle of [
+      'gh workflow run rollback.yml -f cible=essai',
+      '-f version=<sha>',
+      '/version.json',
+      'rejeter ou approuver d\'abord le déploiement en attente',
+      `ssh keel-vps 'SSH_ORIGINAL_COMMAND="retour essai" runuser -u deploy -- /usr/local/sbin/rtp-deploy-command'`,
+      '2 min',
+    ]) {
+      assert.ok(s.includes(needle), `Retour arrière doit contenir « ${needle} »`);
+    }
+  });
+
+  it('gel : fenêtres de Paris et retrait d\'urgence justifié', () => {
+    const s = sectionRunbook("Gel des scrutins et retrait d'urgence");
+    for (const needle of ['17 au 19 avril', '1er au 3 mai 2027', 'heure de Paris', '-f retrait_urgence=true', '-f justification=', '20 caractères']) {
+      assert.ok(s.includes(needle), `Gel doit contenir « ${needle} »`);
+    }
+  });
+
+  it('hôte technique : utilisateurs, noindex, et le point de la Phase 9 sur les Mentions légales', () => {
+    const s = sectionRunbook('Hôte technique (essai)');
+    for (const needle of ['essai', 'sonde', 'noindex', 'robots.txt', 'Phase 9', 'aucun serveur de l\'éditeur ne reçoit vos visites', 'prevu', 'actif']) {
+      assert.ok(s.includes(needle), `Hôte technique doit contenir « ${needle} »`);
+    }
+  });
+
+  it('serveur : règle D-01, étapes, procédure de recréation et piège du -f seul', () => {
+    const s = sectionRunbook('Serveur : installer et vérifier');
+    for (const needle of ['--appliquer', '--etape', '/opt/rtp/depot', 'rtp-deploy-command', 'docker-compose.override.yml', '-f docker-compose.yml']) {
+      assert.ok(s.includes(needle), `Serveur doit contenir « ${needle} »`);
+    }
+  });
+
+  it('Environments GitHub : production et sonde, noms des secrets et variables', () => {
+    const s = sectionRunbook('Environments GitHub');
+    for (const needle of ['production', 'sonde', 'DEPLOY_SSH_KEY', 'DEPLOY_KNOWN_HOSTS', 'DEPLOY_SMOKE_PASS', 'SONDE_PING_URL', 'SONDE_URL', 'main']) {
+      assert.ok(s.includes(needle), `Environments GitHub doit contenir « ${needle} »`);
+    }
+  });
+
+  it('bloc Caddy : faits du serveur réel, plus d\'hypothèses ni d\'Uptime Kuma', () => {
+    const s = sectionRunbook('Bloc Caddy (Phase 8)');
+    for (const needle of ['2.11.2', 'inode', 'HASH_FACTICE', 'Phase 9']) {
+      assert.ok(s.includes(needle), `Bloc Caddy doit contenir « ${needle} »`);
+    }
+    assert.doesNotMatch(runbook, /Uptime Kuma/);
+    assert.doesNotMatch(runbook, /rsync -az --delete/);
+    assert.doesNotMatch(s, /Hypothèses à confirmer/);
+  });
+
+  it('restauration et monitoring : archive, Vaultwarden, contrôles et alertes simulées', () => {
+    const r = sectionRunbook('Restauration');
+    for (const needle of ['rtp-sauvegarder', 'rtp-tester-restauration', 'Vaultwarden', 'Hetzner', 'ops/installer-serveur.sh']) {
+      assert.ok(r.includes(needle), `Restauration doit contenir « ${needle} »`);
+    }
+    const m = sectionRunbook('Monitoring');
+    for (const needle of ['Healthchecks', 'Telegram', 'vps-battement', 'vps-disque-85', 'vps-disque-92', 'vps-certificat', 'sonde-externe', 'restauration-mensuelle', 'RTP_SEUIL1', 'RTP_SEUIL2', 'RTP_CERT_JOURS', '60 jours']) {
+      assert.ok(m.includes(needle), `Monitoring doit contenir « ${needle} »`);
+    }
+  });
+
+  it('revue mensuelle : lancer le test de restauration et noter le résultat', () => {
+    const s = sectionRunbook("Revue mensuelle d'hygiène (15 min, notes dans RETROSPECTIVE.md)");
+    assert.ok(s.includes('rtp-tester-restauration'), 'la revue mensuelle doit lancer rtp-tester-restauration');
+    assert.ok(s.includes('RETROSPECTIVE.md'));
+  });
+
+  it('les sections nouvelles ou réécrites n\'ont ni tiret long ni demi-cadratin', () => {
+    for (const t of ['Déploiement', 'Restauration', 'Monitoring']) {
+      assert.doesNotMatch(sectionRunbook(t), /[–—]/, `tiret long ou demi-cadratin dans « ${t} »`);
+    }
+  });
+});
