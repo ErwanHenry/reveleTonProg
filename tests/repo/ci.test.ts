@@ -92,7 +92,7 @@ describe('ci.yml : actions épinglées', () => {
 
   it('checkout : persist-credentials false partout', () => {
     const checkouts = allSteps().filter((s) => s.uses?.startsWith('actions/checkout@'));
-    assert.equal(checkouts.length, 5);
+    assert.equal(checkouts.length, 6);
     for (const s of checkouts) {
       assert.equal(s.with?.['persist-credentials'], false);
     }
@@ -102,6 +102,14 @@ describe('ci.yml : actions épinglées', () => {
     const checkout = ci.jobs.verifier.steps.find((s) => s.uses?.startsWith('actions/checkout@'));
     assert.equal(checkout?.with?.['fetch-depth'], 0);
     assert.equal(checkout?.with?.['persist-credentials'], false);
+  });
+
+  it('les checkouts des jobs changements et deploy récupèrent tout l’historique (commit de base, tête de main)', () => {
+    for (const nom of ['changements', 'deploy']) {
+      const checkout = ci.jobs[nom]?.steps.find((s) => s.uses?.startsWith('actions/checkout@'));
+      assert.equal(checkout?.with?.['fetch-depth'], 0, nom);
+      assert.equal(checkout?.with?.['persist-credentials'], false, nom);
+    }
   });
 
   it('setup-node lit .nvmrc et met npm en cache', () => {

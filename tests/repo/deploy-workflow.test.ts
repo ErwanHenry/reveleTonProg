@@ -97,11 +97,20 @@ const indexEtape = (j: Job, predicat: (s: Step) => boolean, quoi: string): numbe
   return i;
 };
 
+/** Liste des chemins qui ne changent pas le site : définie une seule fois, dans l'env du workflow. */
+const CHEMINS_HORS_SITE = '.planning/ docs/ tests/ e2e/ audit/ ops/ deploy/ .github/ README.md LICENSE *.md .gitattributes .editorconfig';
+/** Condition commune à gel et deploy : push sur main qui touche le site, ou lancement à la main avec deployer (ou retrait_urgence). */
+const EXPR_DECLENCHEMENT =
+  "((github.event_name == 'push' && needs.changements.outputs.site == 'true') || (github.event_name == 'workflow_dispatch' && (inputs.deployer == true || inputs.retrait_urgence == true)))";
+const CLASSEMENT = 'bash ops/site-touche.sh';
+
 describe('ci.yml : déclencheurs du déploiement', () => {
-  it('workflow_dispatch avec retrait_urgence (booléen, faux) et justification (texte, vide)', () => {
+  it('workflow_dispatch avec deployer (booléen, faux), retrait_urgence (booléen, faux) et justification (texte, vide)', () => {
     const wd = ci.on.workflow_dispatch as { inputs: Record<string, { type: string; default: unknown }> };
     assert.ok(wd?.inputs, 'workflow_dispatch sans inputs');
-    assert.deepEqual(Object.keys(wd.inputs).sort(), ['justification', 'retrait_urgence']);
+    assert.deepEqual(Object.keys(wd.inputs).sort(), ['deployer', 'justification', 'retrait_urgence']);
+    assert.equal(wd.inputs.deployer?.type, 'boolean');
+    assert.equal(wd.inputs.deployer?.default, false);
     assert.equal(wd.inputs.retrait_urgence?.type, 'boolean');
     assert.equal(wd.inputs.retrait_urgence?.default, false);
     assert.equal(wd.inputs.justification?.type, 'string');
@@ -118,15 +127,63 @@ describe('ci.yml : déclencheurs du déploiement', () => {
   });
 });
 
+describe('ci.yml : liste des chemins hors site (définie une fois)', () => {
+  it('dans l’env du workflow, valeur exacte, jamais redéfinie dans un job ou une étape', () => {
+    const wf = ci as Workflow & { env: Record<string, string> };
+    assert.equal(wf.env.CHEMINS_HORS_SITE, CHEMINS_HORS_SITE);
+    assert.equal(ciRaw.split('CHEMINS_HORS_SITE:').length - 1, 1, 'une seule définition');
+    for (const [nom, j] of Object.entries(ci.jobs)) {
+      assert.ok(!(j.env && 'CHEMINS_HORS_SITE' in j.env), `redéfinie dans le job ${nom}`);
+      for (const s of j.steps) assert.ok(!(s.env && 'CHEMINS_HORS_SITE' in s.env), `redéfinie dans une étape de ${nom}`);
+    }
+  });
+
+  it('les deux usages (changements, deploy) passent par le même classement ops/site-touche.sh, renommages des deux côtés', () => {
+    const appels = Object.entries(ci.jobs).flatMap(([nom, j]) => runs(j).filter((r) => r.includes(CLASSEMENT)).map(() => nom));
+    assert.deepEqual(appels.sort(), ['changements', 'deploy']);
+    for (const nom of ['changements', 'deploy']) {
+      const run = runs(job(ci, nom)).find((r) => r.includes(CLASSEMENT)) ?? '';
+      assert.match(run, /git diff --no-renames --name-only -z "\$\w+" "\$\w+" \| bash ops\/site-touche\.sh/, nom);
+    }
+    assert.ok(fs.existsSync(path.join(ROOT, 'ops', 'site-touche.sh')));
+  });
+});
+
+describe('ci.yml : job changements (un push de documentation seule ne demande aucun déploiement)', () => {
+  const ch = job(ci, 'changements');
+
+  it('sur main (push ou dispatch), sans needs, sans Environment ni secret, 5 min, sortie site', () => {
+    assert.equal(ch.if, "(github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'");
+    assert.equal(ch.needs, undefined);
+    assert.equal(ch.environment, undefined);
+    assert.equal(ch['timeout-minutes'], 5);
+    assert.ok(!JSON.stringify(ch).includes('secrets.'));
+    assert.deepEqual(ch.outputs, { site: '${{ steps.classer.outputs.site }}' });
+    assert.deepEqual(ch.steps.map((x) => x.uses?.split('@')[0] ?? 'run'), ['actions/checkout', 'run']);
+    assert.equal(ch.steps[0]?.with?.['fetch-depth'], 0);
+    assert.equal(ch.steps[0]?.with?.['persist-credentials'], false);
+  });
+
+  it('valeurs d’événement par env, site=true par prudence (40 zéros, base introuvable, pas un ancêtre, dispatch)', () => {
+    const etape = ch.steps.find((x) => x.id === 'classer');
+    assert.deepEqual(etape?.env, { EVENT_NAME: '${{ github.event_name }}', AVANT: '${{ github.event.before }}', APRES: '${{ github.sha }}' });
+    const run = etape?.run ?? '';
+    assert.match(run, /pipefail/);
+    assert.match(run, /^\s*SITE=true$/m, 'true par défaut');
+    assert.ok(run.includes('"0000000000000000000000000000000000000000"'));
+    assert.ok(run.includes('git cat-file -e "${AVANT}^{commit}"'));
+    assert.ok(run.includes('git merge-base --is-ancestor "$AVANT" "$APRES"'));
+    assert.ok(run.includes('echo "site=$SITE" >> "$GITHUB_OUTPUT"'));
+    assert.match(run, /true\|false\) ;;/, 'verdict contrôlé avant d’être écrit');
+  });
+});
+
 describe('ci.yml : job gel (HEB-13)', () => {
   const gel = job(ci, 'gel');
 
-  it('après les trois jobs, seulement sur main (push ou dispatch) et quand DEPLOY_CIBLE est posée', () => {
-    assert.deepEqual(gel.needs, ['verifier', 'e2e', 'secrets']);
-    assert.equal(
-      gel.if,
-      "(github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' && vars.DEPLOY_CIBLE != ''",
-    );
+  it('après les trois jobs et changements, sur main, DEPLOY_CIBLE posée, push qui touche le site ou dispatch avec deployer', () => {
+    assert.deepEqual(gel.needs, ['verifier', 'e2e', 'secrets', 'changements']);
+    assert.equal(gel.if, `github.ref == 'refs/heads/main' && vars.DEPLOY_CIBLE != '' && ${EXPR_DECLENCHEMENT}`);
     assert.equal(gel['timeout-minutes'], 5);
     assert.match(gel.name ?? '', /^Garde/);
     assert.equal(gel.environment, undefined);
@@ -153,8 +210,10 @@ describe('ci.yml : job deploy (HEB-02, HEB-12, HEB-14)', () => {
   const s = dep.steps;
 
   it('après les trois jobs et la garde, Environment production, concurrence sans annulation, 15 min', () => {
-    assert.deepEqual(dep.needs, ['verifier', 'e2e', 'secrets', 'gel']);
-    assert.equal(dep.if, "needs.gel.outputs.ok == 'true'");
+    assert.deepEqual(dep.needs, ['verifier', 'e2e', 'secrets', 'changements', 'gel']);
+    assert.equal(dep.if, `needs.gel.outputs.ok == 'true' && ${EXPR_DECLENCHEMENT}`);
+    assert.ok(EXPR_DECLENCHEMENT.includes("github.event_name == 'push' && needs.changements.outputs.site == 'true'"));
+    assert.ok(EXPR_DECLENCHEMENT.includes("github.event_name == 'workflow_dispatch' && (inputs.deployer == true"));
     assert.equal(dep.environment, 'production');
     assert.deepEqual(dep.concurrency, { group: 'deploy-production', 'cancel-in-progress': false });
     assert.equal(dep['timeout-minutes'], 15);
@@ -192,17 +251,33 @@ describe('ci.yml : job deploy (HEB-02, HEB-12, HEB-14)', () => {
     for (let i = 1; i < ordre.length; i++) assert.ok((ordre[i - 1] as number) < (ordre[i] as number), `ordre rompu à l’étape ${i}`);
     assert.equal(ordre.at(-1), s.length - 1, 'le nettoyage est la dernière étape');
     assert.equal(s[0]?.with?.['persist-credentials'], false);
+    assert.equal(s[0]?.with?.['fetch-depth'], 0);
   });
 
-  it('cible essai ou production, et approbation périmée refusée (le commit doit être la tête de main)', () => {
+  it('cible essai ou production ; tête plus récente admise seulement si elle descend du commit et ne change pas le site', () => {
     const run = s.find((x) => x.run?.includes('git ls-remote'))?.run ?? '';
     assert.match(run, /case "\$CIBLE" in/);
     assert.match(run, /essai\|production\)/);
-    assert.ok(run.includes('git ls-remote "https://github.com/$REPO" refs/heads/main'));
-    assert.match(run, /"\$TETE" != "\$SHA"/);
-    assert.match(run, /::error::/);
-    assert.match(run, /exit 1/);
     assert.match(run, /pipefail/);
+    const pos = (motif: string): number => {
+      const i = run.indexOf(motif);
+      assert.ok(i >= 0, `absent : ${motif}`);
+      return i;
+    };
+    const ordre = [
+      pos('git ls-remote "https://github.com/$REPO" refs/heads/main'),
+      pos('git fetch --quiet --no-tags "https://github.com/$REPO" refs/heads/main'),
+      pos('if [ "$TETE" = "$SHA" ]; then'),
+      pos('if ! git merge-base --is-ancestor "$SHA" "$TETE"; then'),
+      pos('SITE=$(git diff --no-renames --name-only -z "$SHA" "$TETE" | bash ops/site-touche.sh)'),
+      pos('if [ "$SITE" != "false" ]; then'),
+      pos('tête plus récente sans changement du site : déploiement autorisé'),
+    ];
+    for (let i = 1; i < ordre.length; i++) assert.ok((ordre[i - 1] as number) < (ordre[i] as number), `ordre rompu à ${i}`);
+    // Les deux refus (pas un ancêtre, changements du site) sont des erreurs qui arrêtent le job.
+    assert.match(run, /--is-ancestor "\$SHA" "\$TETE"; then\n\s*echo "::error::[^\n]*"\n\s*exit 1/);
+    assert.match(run, /"\$SITE" != "false" \]; then\n\s*echo "::error::[^\n]*changements du site[^\n]*"\n\s*exit 1/);
+    assert.ok(!run.includes('|| true'), 'aucun échec avalé');
   });
 
   it('build et check-dist : corpus réel, expression RTP_DEPLOIEMENT exacte sur les deux étapes (HEB-14)', () => {
@@ -308,8 +383,8 @@ describe('ci.yml : propriétés de sécurité (HEB-10, D-11)', () => {
     for (const j of Object.values(ci.jobs)) for (const r of runs(j)) assert.ok(!r.includes('--delete'));
   });
 
-  it('RTP_MODE absent des jobs gel et deploy (aucune build preview livrée)', () => {
-    for (const nom of ['gel', 'deploy']) assert.ok(!JSON.stringify(job(ci, nom)).includes('RTP_MODE'), nom);
+  it('RTP_MODE absent des jobs changements, gel et deploy (aucune build preview livrée)', () => {
+    for (const nom of ['changements', 'gel', 'deploy']) assert.ok(!JSON.stringify(job(ci, nom)).includes('RTP_MODE'), nom);
   });
 
   it('secrets seulement dans les env d’étapes du job deploy', () => {
@@ -323,8 +398,8 @@ describe('ci.yml : propriétés de sécurité (HEB-10, D-11)', () => {
     }
   });
 
-  it('verifier, e2e et secrets n’utilisent aucun Environment', () => {
-    for (const nom of ['verifier', 'e2e', 'secrets']) assert.equal(job(ci, nom).environment, undefined, nom);
+  it('verifier, e2e, secrets et changements n’utilisent aucun Environment', () => {
+    for (const nom of ['verifier', 'e2e', 'secrets', 'changements']) assert.equal(job(ci, nom).environment, undefined, nom);
   });
 
   it('aucune interpolation ${{ }} dans un corps de script', () => {

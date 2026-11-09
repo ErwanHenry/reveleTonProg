@@ -4,10 +4,15 @@ on:
   push:
     branches: [main]
   pull_request:
-  # Lancement à la main (onglet Actions, branche main) : redéploie la tête de main, ou retire un contenu pendant un
-  # gel des scrutins avec retrait_urgence coché et une justification écrite (D-10, scripts/garde-gel.ts).
+  # Lancement à la main (onglet Actions, branche main) : relance les vérifications ; deployer coché redéploie la
+  # tête de main (même approbation), et retrait_urgence coché avec une justification écrite retire un contenu pendant
+  # un gel des scrutins (D-10, scripts/garde-gel.ts) et déploie aussi.
   workflow_dispatch:
     inputs:
+      deployer:
+        description: "Déployer la tête de main (après approbation), même si elle ne change que la documentation"
+        type: boolean
+        default: false
       retrait_urgence:
         description: "Retrait d'urgence pendant un gel des scrutins (justification obligatoire)"
         type: boolean
@@ -32,6 +37,11 @@ concurrency:
 env:
   TZ: Europe/Paris
   ASTRO_TELEMETRY_DISABLED: "1"
+  # Chemins qui ne changent pas le site servi, définis une seule fois ici et lus par ops/site-touche.sh dans les jobs
+  # changements (un push qui ne touche qu'eux ne demande aucun déploiement) et deploy (une tête de main plus récente
+  # qui ne touche qu'eux n'invalide pas l'approbation). « dossier/ » : dossier de la racine ; autre motif : fichier
+  # de la racine seulement (« *.md » ne couvre pas src/x.md). Liste prudente : tout chemin absent compte comme le site.
+  CHEMINS_HORS_SITE: ".planning/ docs/ tests/ e2e/ audit/ ops/ deploy/ .github/ README.md LICENSE *.md .gitattributes .editorconfig"
 
 jobs:
   verifier:
@@ -192,11 +202,58 @@ jobs:
       - name: Analyser l'historique git
         run: '"$RUNNER_TEMP/gitleaks/gitleaks" git --no-banner --redact -v .'
 
+  # Le site est-il touché par ce push ? Aucun secret, aucun Environment. site=true si un fichier changé entre
+  # github.event.before et github.sha est hors de CHEMINS_HORS_SITE, et par prudence quand le commit de base manque,
+  # vaut 40 zéros ou n'est pas un ancêtre (création de branche, push forcé) ; toujours true pour un lancement à la
+  # main (seule l'entrée deployer ou retrait_urgence décide alors). Les renommages comptent des deux côtés.
+  changements:
+    name: Changements du site (le push touche-t-il le site servi ?)
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      site: ${{ steps.classer.outputs.site }}
+    steps:
+      - name: Récupérer le dépôt (historique complet, pour comparer au commit de base du push)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Classer les fichiers changés (site ou hors site)
+        id: classer
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          AVANT: ${{ github.event.before }}
+          APRES: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          SITE=true
+          if [ "$EVENT_NAME" != "push" ]; then
+            echo "Lancement à la main : site=true (l'entrée deployer ou retrait_urgence décide du déploiement)."
+          elif [ -z "$AVANT" ] || [ "$AVANT" = "0000000000000000000000000000000000000000" ]; then
+            echo "Pas de commit de base (création de branche) : site=true par prudence."
+          elif ! git cat-file -e "${AVANT}^{commit}" 2>/dev/null; then
+            echo "Commit de base $AVANT introuvable (historique réécrit ?) : site=true par prudence."
+          elif ! git merge-base --is-ancestor "$AVANT" "$APRES"; then
+            echo "Commit de base $AVANT hors de l'historique de $APRES (push forcé) : site=true par prudence."
+          else
+            SITE=$(git diff --no-renames --name-only -z "$AVANT" "$APRES" | bash ops/site-touche.sh)
+            git diff --no-renames --name-only "$AVANT" "$APRES"
+          fi
+          case "$SITE" in
+            true|false) ;;
+            *) echo "::error::Verdict inattendu de ops/site-touche.sh : $SITE"; exit 1 ;;
+          esac
+          echo "site=$SITE" >> "$GITHUB_OUTPUT"
+          echo "- Site touché par ce push : $SITE" >> "$GITHUB_STEP_SUMMARY"
+
   gel:
     name: Garde de gel des scrutins (17-19 avril, 1-3 mai 2027)
-    needs: [verifier, e2e, secrets]
+    needs: [verifier, e2e, secrets, changements]
     # En sommeil tant que la variable de dépôt DEPLOY_CIBLE n'existe pas : le job est sauté, la CI reste verte.
-    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' && vars.DEPLOY_CIBLE != ''
+    # Seulement pour un push sur main qui touche le site, ou un lancement à la main avec deployer (ou retrait_urgence)
+    # coché : un push de documentation seule saute gel et deploy, donc ne demande aucune approbation.
+    if: github.ref == 'refs/heads/main' && vars.DEPLOY_CIBLE != '' && ((github.event_name == 'push' && needs.changements.outputs.site == 'true') || (github.event_name == 'workflow_dispatch' && (inputs.deployer == true || inputs.retrait_urgence == true)))
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
@@ -223,12 +280,14 @@ jobs:
   # DEPLOY_CIBLE=essai : build de production construite sans RTP_DEPLOIEMENT (hôte privé sous basic_auth, D-07 révisée).
   # DEPLOY_CIBLE=production : toujours RTP_DEPLOIEMENT=1, donc toutes les gardes de déploiement public (HEB-14).
   # Erwan approuve chaque run dans l'Environment production (seul relecteur, « prevent self-review » désactivé).
-  # Une approbation donnée après que main a avancé est refusée par le contrôle de la tête de main : seul le dernier
-  # commit de main part en ligne. Aucun artefact n'est téléchargé : la build est refaite ici, depuis le commit du run.
+  # Une approbation donnée après que main a avancé avec des changements du site est refusée par le contrôle de la
+  # tête de main : une tête plus récente n'est admise que si elle descend du commit du run et ne change que des
+  # chemins de CHEMINS_HORS_SITE (même classement que le job changements). Seul le site de la tête part en ligne.
+  # Aucun artefact n'est téléchargé : la build est refaite ici, depuis le commit du run.
   deploy:
     name: Déployer (cible DEPLOY_CIBLE, après approbation)
-    needs: [verifier, e2e, secrets, gel]
-    if: needs.gel.outputs.ok == 'true'
+    needs: [verifier, e2e, secrets, changements, gel]
+    if: needs.gel.outputs.ok == 'true' && ((github.event_name == 'push' && needs.changements.outputs.site == 'true') || (github.event_name == 'workflow_dispatch' && (inputs.deployer == true || inputs.retrait_urgence == true)))
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     environment: production
@@ -243,9 +302,10 @@ jobs:
       DEPLOY_USER: ${{ vars.DEPLOY_USER }}
       DEPLOY_URL: ${{ vars.DEPLOY_URL }}
     steps:
-      - name: Récupérer le dépôt
+      - name: Récupérer le dépôt (historique complet, pour comparer le commit du run à la tête de main)
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
       - name: Installer Node (version de .nvmrc)
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -256,7 +316,7 @@ jobs:
         run: npm ci
       - name: Vérifier les signatures des paquets
         run: npm audit signatures
-      - name: Vérifier la cible et que le commit est encore la tête de main (approbation périmée refusée)
+      - name: Vérifier la cible et que le commit est encore la tête de main, ou que la tête ne change pas le site (approbation périmée refusée)
         run: |
           set -euo pipefail
           case "$CIBLE" in
@@ -265,10 +325,26 @@ jobs:
           esac
           TETE=$(git ls-remote "https://github.com/$REPO" refs/heads/main | cut -f1)
           if [ "$TETE" != "$SHA" ]; then
-            echo "::error::main a avancé (tête ${TETE:-introuvable}) depuis le commit $SHA : approbation périmée, rien n'est déployé. Le run du dernier commit de main déploiera."
+            # main a avancé : la tête est récupérée (dépôt public, sans identifiants) puis comparée au commit du run.
+            git fetch --quiet --no-tags "https://github.com/$REPO" refs/heads/main
+            TETE=$(git rev-parse FETCH_HEAD)
+          fi
+          if [ "$TETE" = "$SHA" ]; then
+            echo "- Cible : $CIBLE ; commit $SHA, encore la tête de main" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          if ! git merge-base --is-ancestor "$SHA" "$TETE"; then
+            echo "::error::La tête de main ($TETE) ne descend pas du commit $SHA (historique réécrit) : approbation périmée, rien n'est déployé."
             exit 1
           fi
-          echo "- Cible : $CIBLE ; commit $SHA, encore la tête de main" >> "$GITHUB_STEP_SUMMARY"
+          SITE=$(git diff --no-renames --name-only -z "$SHA" "$TETE" | bash ops/site-touche.sh)
+          if [ "$SITE" != "false" ]; then
+            echo "::error::main a avancé (tête $TETE) avec des changements du site depuis le commit $SHA : approbation périmée, rien n'est déployé. Le run du dernier commit de main qui change le site déploiera (ou gh workflow run ci.yml --ref main -f deployer=true)."
+            exit 1
+          fi
+          git diff --no-renames --name-only "$SHA" "$TETE"
+          echo "tête plus récente sans changement du site : déploiement autorisé (tête $TETE, commit $SHA)"
+          echo "- Cible : $CIBLE ; commit $SHA ; tête de main $TETE plus récente sans changement du site : déploiement autorisé" >> "$GITHUB_STEP_SUMMARY"
       - name: Construire le site (corpus réel ; RTP_DEPLOIEMENT=1 pour la production, 0 pour essai)
         run: npm run build
         env:
