@@ -11,10 +11,10 @@ import {
 import { ecartAnnonce, loadDatasetDatagouv } from '../lib/dataset-datagouv.ts';
 import { loadHebergeurConfig } from '../lib/hebergeur-config.ts';
 import { TOURS } from '../lib/dates-tours.ts';
-import { PROFILS_4G } from '../lib/profil-4g.ts';
+import { MESURE_SERVEUR_4G, PROFILS_4G } from '../lib/profil-4g.ts';
 
 // Date de dernière révision de cette page (à mettre à jour à chaque modification du texte).
-const REVISION = '2026-11-04';
+const REVISION = '2026-11-09';
 
 // Fail closed : une couverture illisible ne produit pas une page Méthode approximative.
 const lue = lireCouverture(couvertureBrute);
@@ -32,6 +32,13 @@ const fr = (n: number): string => n.toLocaleString('fr-FR');
 const motsInterdits = MOTS_INTERDITS.flatMap((m) => m.exemples).join(', ');
 const niveaux = (Object.keys(LONGUEURS) as (keyof typeof LONGUEURS)[]).map((cle) => ({ cle, libelle: LIBELLES_NIVEAUX[cle], borne: LONGUEURS[cle] as { min?: number; max: number } }));
 const tailleArchive = fr(ARCHIVE_TAILLE_MAX / (1024 * 1024));
+// PERF-02 (08-14) : mesure derrière le serveur réel, chiffres et phrases lus dans la constante.
+const mesure = MESURE_SERVEUR_4G;
+const mesuresServeur = mesure.profils.map((m) => {
+  const profil = PROFILS_4G.find((p) => p.id === m.id);
+  if (!profil) throw new Error(`MESURE_SERVEUR_4G : profil inconnu ${m.id}`);
+  return { id: m.id, nom: profil.nom, pire: Math.max(...m.mesuresMs) };
+});
 
 // Types de source acceptés : la liste vient du schéma, seuls les libellés lisibles sont écrits ici.
 const LIBELLES_TYPE_SOURCE: Record<string, string> = {
@@ -148,6 +155,9 @@ const SEV: Record<string, string> = { erreur: 'erreur', avertissement: 'avertiss
     <h2>Comment le site est testé</h2>
     <p>
       Les pages sont vérifiées automatiquement : fonctionnement sans JavaScript, usage au clavier seul, audit d'accessibilité WCAG 2.2 niveau AA par l'outil axe (le test bloque sur les défauts que l'outil classe graves ou critiques ; les défauts mineurs ou modérés ne le bloquent pas), lecture avec un texte agrandi à 160 %, respect de la demande de réduction des animations, contraste des dix couleurs de thèmes. Le temps de chargement de la page la plus lourde du site est mesuré à froid, sur un serveur local qui compresse les pages, avec ces connexions mobiles lentes simulées : {PROFILS_4G.map((p, i) => (<>{i > 0 ? ' ; ' : ''}<span data-profil-4g={p.id}>moins de {fr(p.budgetMs / 1000)} s avec {p.libelle}</span></>))}. Une lecture croisée simulée a aussi été menée : le journal est dans le dépôt du site.
+    </p>
+    <p data-mesure-serveur>
+      Mesure derrière le serveur réel, le <time datetime={mesure.date}>{formatDate(mesure.date)}</time>, sur l'adresse de test protégée du site, avec trois chargements à froid par profil : la page <code>{mesure.page}</code> ({fr(mesure.octetsGzip)} octets compressés en gzip, servie compressée en {mesure.encodage}) se charge en {mesuresServeur.map((m, i) => (<>{i > 0 ? ' et en ' : ''}<span data-mesure-profil={m.id}>{fr(m.pire)} ms au plus avec {m.nom}</span></>))}. {mesure.perimetre} Lighthouse {mesure.lighthouse.version}, profil mobile avec son Slow 4G simulé, médiane de trois passages : premier affichage (FCP) en {fr(mesure.lighthouse.fcpMs)} ms, plus grand élément affiché (LCP) en {fr(mesure.lighthouse.lcpMs)} ms, indice de vitesse (Speed Index) de {fr(mesure.lighthouse.speedIndexMs)} ms. {mesure.ecart}
     </p>
 
     <h2>Limites connues</h2>

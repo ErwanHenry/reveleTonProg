@@ -50,7 +50,7 @@ describe('constantes publiques', () => {
   });
 
   it('MESURE_SERVEUR_4G (PERF-02, D-13, 08-14) : mesure derrière le serveur réel, chaque mesure sous le budget de son profil', () => {
-    // Valeurs relevées le 2026-11-09 sur https://essai.reveletonprog.fr (commit servi 0949633), voir 08-14-SUMMARY.md.
+    // Valeurs relevées le 2026-11-09 sur l'hôte technique essai (commit servi 0949633), voir 08-14-SUMMARY.md.
     // Ne pas relever un budget pour faire passer ce test : une nouvelle mesure au-dessus de 1 s se signale.
     assert.equal(MESURE_SERVEUR_4G.date, '2026-11-09');
     assert.equal(MESURE_SERVEUR_4G.page, '/methode/');

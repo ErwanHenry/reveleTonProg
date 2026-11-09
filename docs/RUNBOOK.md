@@ -165,7 +165,22 @@ GITHUB_SHA=<commit servi> RTP_CONTENT_ROOT=. npm run build -- --outDir dist-mesu
   E2E_BASE_URL=https://essai.<domaine> E2E_USER=sonde E2E_DIST=dist-mesure npx playwright test --project=4g )
 ```
 
-Forme générale : `E2E_BASE_URL=https://essai.<domaine> E2E_USER=sonde E2E_PASS=… E2E_DIST=<dist du même commit> npx playwright test --project=4g`. `E2E_BASE_URL` doit être une origine `https://` seule, sans identifiants ni chemin, sinon la configuration s'arrête avec un message en français. Une mesure réelle à la main avec `lighthouse` (installé sur le Mac, hors des dépendances du projet) est consignée ici avec son écart aux mesures Playwright (relevé en 08-14). Le rapport `playwright-report/` reste ignoré par Git.
+Forme générale : `E2E_BASE_URL=https://essai.<domaine> E2E_USER=sonde E2E_PASS=… E2E_DIST=<dist du même commit> npx playwright test --project=4g`. `E2E_BASE_URL` doit être une origine `https://` seule, sans identifiants ni chemin, sinon la configuration s'arrête avec un message en français. Le rapport `playwright-report/` reste ignoré par Git.
+
+La mesure de référence à la main se fait avec `lighthouse` (installé sur le Mac, hors des dépendances du projet ; profil mobile par défaut, Slow 4G simulé par l'outil : 150 ms d'aller-retour, 1,6 Mbit/s, processeur ralenti 4 fois), trois passages, médiane retenue. L'en-tête Basic est écrit dans un fichier 0600 d'un dossier temporaire, construit sans que le mot de passe passe sur une ligne de commande, et le dossier est effacé à la fin. Le rapport JSON de Lighthouse recopie cet en-tête (`configSettings.extraHeaders`) : le garder dans le dossier temporaire, ou retirer ce champ avant de le conserver.
+
+```bash
+umask 077; T=$(mktemp -d); trap 'rm -rf "$T"' EXIT
+( B64="$(printf 'sonde:%s' "$(cat ~/.config/rtp/sonde-pass)" | base64)"
+  printf '{"Authorization":"Basic %s"}\n' "$B64" > "$T/entetes.json" )
+lighthouse https://essai.<domaine>/methode/ --only-categories=performance --output=json --output-path="$T/lh.json" \
+  --extra-headers="$T/entetes.json" --quiet --chrome-flags="--headless=new"
+jq '{fcp: .audits["first-contentful-paint"].numericValue, lcp: .audits["largest-contentful-paint"].numericValue, si: .audits["speed-index"].numericValue}' "$T/lh.json"
+```
+
+Pour lire `/version.json` avant et après la mesure sans mettre le mot de passe sur la ligne de commande : `( printf 'user = "sonde:%s"\n' "$(cat ~/.config/rtp/sonde-pass)" | curl -sS -K - https://essai.<domaine>/version.json )`.
+
+Relevé du 2026-11-09 (08-14, commit servi `0949633`, identique avant et après ; page la plus lourde servie `/methode/`, 11 917 octets gzip, servie en zstd, HTML servi identique octet pour octet au dist local ; aucune page thème n'est encore publiée sur essai, les pages thème en préparation restent mesurées sur le serveur local) : 345 / 300 / 304 ms à 150 ms de latence par requête et 716 / 722 / 723 ms, soit 723 ms au plus en « Slow 4G simulé », aucune réponse 401 ; Lighthouse 13.0.3 (mobile, simulé, médiane de trois passages) : FCP 791 ms, LCP 791 ms, Speed Index 812 ms (passages : Speed Index 1 671, 812 et 770 ms), document de 13 125 octets transférés en HTTP/2. Écart : Lighthouse recalcule le chargement à partir d'une trace sans ralentissement, compte 150 ms par aller-retour, y compris l'ouverture de la connexion chiffrée, ralentit le processeur 4 fois et mesure l'affichage ; le test du site ajoute 562,5 ms par requête sans ralentir le processeur et mesure la fin de l'événement `load`. Chiffres publiés sur la page Méthode depuis `MESURE_SERVEUR_4G` (`src/lib/profil-4g.ts`) ; une nouvelle mesure remplace la constante, ce paragraphe et la phrase du README, sans changer un budget.
 
 ### URL de test
 

@@ -185,7 +185,7 @@ export default function methode(ctx: ContexteSite): void {
       const M = MESURE_SERVEUR_4G;
       const el = unique(a, 'data-mesure-serveur');
       const t = txt(el);
-      const fr = (n: number): string => n.toLocaleString('fr-FR');
+      const fr = (n: number): string => norm(n.toLocaleString('fr-FR'));
       // Date en français dans un <time> à la date ISO de la constante.
       assert.ok(trouver(el, (n) => n.tag === 'time' && n.attrs.datetime === M.date && txt(n) === formatDate(M.date)).length === 1, t);
       assert.ok(t.includes('« Slow 4G simulé »'), t);
@@ -206,7 +206,10 @@ export default function methode(ctx: ContexteSite): void {
       assert.ok(src.includes('MESURE_SERVEUR_4G'));
       const nombres = [M.octetsGzip, ...M.profils.flatMap((m) => m.mesuresMs), M.lighthouse.fcpMs, M.lighthouse.lcpMs, M.lighthouse.speedIndexMs];
       for (const n of nombres) assert.doesNotMatch(src, new RegExp(`\\b${n}\\b`), `${n} écrit en dur dans methode.astro`);
-      assert.ok(!src.includes(M.date) && !src.includes(M.lighthouse.version), 'date ou version écrite en dur');
+      // La date de révision de la page peut être celle de la mesure : la date et la version sont cherchées dans le paragraphe.
+      const paragraphe = /<p data-mesure-serveur>[\s\S]*?<\/p>/.exec(src)?.[0] ?? '';
+      assert.ok(paragraphe.length > 0, 'paragraphe data-mesure-serveur absent de la source');
+      assert.ok(!paragraphe.includes(M.date) && !paragraphe.includes(M.lighthouse.version), 'date ou version écrite en dur');
     });
 
     it('lien Méthode dans le pied de page de chaque page', () => {

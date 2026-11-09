@@ -69,6 +69,8 @@ npm run e2e -- --jeu m1 -- e2e/axe.spec.ts   # un seul jeu de données, un seul 
 
 Les tests navigateur (sans JS, clavier, WCAG 2.2 AA avec axe, bloquant sur les violations `serious` et `critical`, 160 %, sans animation, chargement à froid sur deux connexions lentes simulées, vie privée ; profils et budgets dans `src/lib/profil-4g.ts` : moins de 1 s à 150 ms de latence par requête, moins de 1 s aussi avec le profil « Slow 4G simulé » (équivalent DevTools du Slow 4G de Lighthouse)) ne font **pas** partie de `npm test`. Ne jamais lancer `npm test` et `npm run e2e` en même temps dans le même dossier : les deux exécutent `astro build` et partagent le cache `.astro`. La CI les exécute dans un job séparé (`e2e`).
 
+Mesure derrière le serveur réel (2026-11-09, adresse de test protégée, page `/methode/` servie en zstd, la plus lourde publiée à cette date) : 345 ms au plus à 150 ms de latence par requête et 723 ms au plus en « Slow 4G simulé », trois chargements à froid par profil ; Lighthouse 13.0.3 (profil mobile simulé, médiane de trois passages) : FCP 791 ms, LCP 791 ms. Chiffres et écart publiés sur la page Méthode depuis `MESURE_SERVEUR_4G` (`src/lib/profil-4g.ts`), procédure dans le RUNBOOK.
+
 ### URL de test (livrable du lot 2)
 
 Rien n'est hébergé avant le lot 3. La build de test est l'artefact de la CI :
