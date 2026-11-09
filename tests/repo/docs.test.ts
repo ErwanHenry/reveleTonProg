@@ -328,10 +328,9 @@ function sectionAdr(numero: string): string {
 }
 
 describe('documentation (phase 7)', () => {
-  it('ARCHITECTURE : ADR-053 et ADR-056 seulement (054, 055, 057 et 058 réservés aux phases 6 et 8)', () => {
+  it('ARCHITECTURE : ADR-053 et ADR-056 de la phase 7 (054, 055, 057 et 058 consignés par la phase 8)', () => {
     assert.match(architecture, /^### ADR-053 : domaine déclaré une seule fois/m);
     assert.match(architecture, /^### ADR-056 : CSS et scripts dans la page, CSP à empreintes/m);
-    assert.doesNotMatch(architecture, /^### ADR-05[4578] : /m);
   });
 
   it('ARCHITECTURE : l\'ADR-037 est marqué remplacé par l\'ADR-056 et garde son début de titre', () => {
@@ -505,5 +504,52 @@ describe('documentation (phase 8) : RUNBOOK', () => {
     for (const t of ['Déploiement', 'Restauration', 'Monitoring']) {
       assert.doesNotMatch(sectionRunbook(t), /[–—]/, `tiret long ou demi-cadratin dans « ${t} »`);
     }
+  });
+});
+
+describe('documentation (phase 8) : ADR et README', () => {
+  it('ARCHITECTURE : ADR-054, 055, 057 et 058, dans l\'ordre numérique autour de l\'ADR-056', () => {
+    const position = (n: string): number => architecture.search(new RegExp(`^### ADR-${n} : `, 'm'));
+    for (const n of ['054', '055', '057', '058']) assert.ok(position(n) >= 0, `ADR-${n} absent`);
+    const ordre = ['053', '054', '055', '056', '057', '058'].map(position);
+    assert.deepEqual([...ordre].sort((a, b) => a - b), ordre, 'ADR-053 à 058 hors de l\'ordre numérique');
+    assert.equal((architecture.match(/^### ADR-05[4578] : /gm) ?? []).length, 4);
+  });
+
+  it('ARCHITECTURE : chaque ADR de la phase 8 a Contexte, Décision, Conséquences et ses mots clés', () => {
+    const attendus: Record<string, string[]> = {
+      '054': ['releases/<sha>', 'mv -T', 'ids.lock'],
+      '055': ['environment', 'RTP_DEPLOIEMENT=1', 'essai', 'DEPLOY_CIBLE'],
+      '057': ['caddy validate', 'docker-compose.override.yml', 'sites.d', 'cache long'],
+      '058': ['Healthchecks', 'Telegram', 'rtp-tester-restauration'],
+    };
+    for (const [n, needles] of Object.entries(attendus)) {
+      const adr = sectionAdr(n);
+      for (const rubrique of ['**Contexte**', '**Décision**', '**Conséquence']) {
+        assert.ok(adr.includes(rubrique), `ADR-${n} sans ${rubrique}`);
+      }
+      for (const needle of needles) assert.ok(adr.includes(needle), `ADR-${n} doit contenir « ${needle} »`);
+      assert.doesNotMatch(adr, /[–—]/, `tiret long ou demi-cadratin dans l\'ADR-${n}`);
+    }
+  });
+
+  it('README : où sont les secrets de la phase 8, sans valeur', () => {
+    const s = readme.split('## Où sont les secrets\n')[1]?.split('\n## ')[0] ?? '';
+    for (const needle of [
+      'production',
+      'sonde',
+      'DEPLOY_SSH_KEY',
+      'DEPLOY_SMOKE_PASS',
+      'SONDE_PING_URL',
+      '/opt/vaultwarden/.env',
+      '/etc/rtp/battement.env',
+      '/etc/rtp/restauration.env',
+      'Vaultwarden',
+    ]) {
+      assert.ok(s.includes(needle), `README (secrets) doit contenir « ${needle} »`);
+    }
+    assert.doesNotMatch(s, /Aucun secret pour l'instant/);
+    assert.doesNotMatch(s, /\$2[aby]\$|hc-ping\.com\/[0-9a-f-]{8}|BEGIN OPENSSH/);
+    assert.doesNotMatch(s, /[–—]/);
   });
 });
