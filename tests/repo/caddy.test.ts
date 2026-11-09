@@ -318,10 +318,18 @@ describe('renderCaddyEssai : adresse, racine et protection', () => {
     assert.equal([...bloc.matchAll(/^\trespond /gm)].length, 1);
   });
 
-  it('en-têtes : ceux du bloc de production, plus X-Robots-Tag "noindex, nofollow"', () => {
+  it('en-têtes : ceux du bloc de production, plus X-Robots-Tag "noindex, nofollow" posé à part, sans différé (réponse 401 comprise)', () => {
     const production = renderCaddy({ ...SYNTHETIQUE, empreintesScripts: SYNTHETIQUE_ESSAI.empreintesScripts });
-    assert.deepEqual(lignesUtiles(sousBloc(bloc, /header/)), [...lignesUtiles(sousBloc(production, /header/)), '\t\tX-Robots-Tag "noindex, nofollow"']);
-    assert.equal([...bloc.matchAll(/X-Robots-Tag/g)].length, 1);
+    // Le sous-bloc header est différé par « -Server » : Caddy l'applique à l'écriture de la réponse, donc pas sur le
+    // 401 de basic_auth (constaté en 08-12). Une directive header sans suppression s'applique tout de suite, avant
+    // basic_auth (headers.go, Caddy 2.11.2), et reste sur la réponse d'erreur.
+    assert.deepEqual(lignesUtiles(sousBloc(bloc, /header/)), lignesUtiles(sousBloc(production, /header/)));
+    assert.equal([...sansCommentaires(bloc).matchAll(/X-Robots-Tag/g)].length, 1);
+    assert.equal([...bloc.matchAll(/^\theader X-Robots-Tag "noindex, nofollow"$/gm)].length, 1);
+    assert.doesNotMatch(bloc, /^\t+defer$/m);
+    // Pas de handle_errors : sur le serveur partagé, il ferait passer en niveau debug le journal des erreurs 5xx de
+    // tous les sites (server.go, Caddy 2.11.2).
+    assert.doesNotMatch(sansCommentaires(bloc), /handle_errors/);
     assert.equal(valeurCsp(bloc), cspEnTete(SYNTHETIQUE_ESSAI.empreintesScripts));
     assert.match(bloc, /^\t\tCache-Control "no-cache"$/m);
   });
