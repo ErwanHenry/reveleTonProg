@@ -12,11 +12,11 @@ import {
   CATALOGUE, HYPOTHESES, KANDEL_MOLES, LONGUEURS, MOTS_INTERDITS, PERIMETRE_EQUITE, PHRASE_ENFANT_MAX,
   SEUIL_KANDEL_MOLES, VERBES_CONNOTES,
 } from '../../../src/lib/content-core/rules/config.ts';
-import { ETAT_VIDE_TEXTES, LIBELLES_STATUT } from '../../../src/lib/corpus/vue.ts';
+import { ETAT_VIDE_TEXTES, formatDate, LIBELLES_STATUT } from '../../../src/lib/corpus/vue.ts';
 import { loadDatasetDatagouv } from '../../../src/lib/dataset-datagouv.ts';
 import { loadHebergeurConfig } from '../../../src/lib/hebergeur-config.ts';
 import { TOURS } from '../../../src/lib/dates-tours.ts';
-import { PROFILS_4G } from '../../../src/lib/profil-4g.ts';
+import { MESURE_SERVEUR_4G, PROFILS_4G } from '../../../src/lib/profil-4g.ts';
 import { materialiserCorpusM1 } from '../../helpers/corpus-m1.ts';
 import type { ContexteSite } from '../contexte.ts';
 
@@ -178,6 +178,35 @@ export default function methode(ctx: ContexteSite): void {
       // IN-04 : le seuil d'axe publié est celui de e2e/axe.spec.ts (serious, critical).
       assert.ok(t.includes("le test bloque sur les défauts que l'outil classe graves ou critiques"), 'seuil axe absent');
       for (const e of Object.values(ETAT_VIDE_TEXTES)) assert.ok(t.includes(norm(e.avant)), e.avant);
+    });
+
+    it('PERF-02 (D-13, 08-14) : mesure derrière le serveur réel, lue dans MESURE_SERVEUR_4G', () => {
+      const a = page();
+      const M = MESURE_SERVEUR_4G;
+      const el = unique(a, 'data-mesure-serveur');
+      const t = txt(el);
+      const fr = (n: number): string => n.toLocaleString('fr-FR');
+      // Date en français dans un <time> à la date ISO de la constante.
+      assert.ok(trouver(el, (n) => n.tag === 'time' && n.attrs.datetime === M.date && txt(n) === formatDate(M.date)).length === 1, t);
+      assert.ok(t.includes('« Slow 4G simulé »'), t);
+      assert.ok(t.includes(M.page) && t.includes(`${fr(M.octetsGzip)} octets`) && t.includes(M.encodage), t);
+      // Pire mesure de chaque profil, avec le nom court du profil.
+      for (const m of M.profils) {
+        const profil = PROFILS_4G.find((p) => p.id === m.id)!;
+        const span = txt(unique(el, 'data-mesure-profil', m.id));
+        assert.ok(span.includes(`${fr(Math.max(...m.mesuresMs))} ms`) && span.includes(profil.nom), span);
+      }
+      for (const v of [M.lighthouse.version, `${fr(M.lighthouse.fcpMs)} ms`, `${fr(M.lighthouse.lcpMs)} ms`, `${fr(M.lighthouse.speedIndexMs)} ms`]) {
+        assert.ok(t.includes(v), `« ${v} » absent de « ${t} »`);
+      }
+      assert.ok(t.includes(norm(M.perimetre)) && t.includes(norm(M.ecart)), t);
+      assert.doesNotMatch(t, /[\u2013\u2014]/, 'tiret long ou demi-cadratin');
+      // Les nombres viennent de la constante : aucun n'est écrit dans la page.
+      const src = fs.readFileSync(path.join(ctx.repoRoot, 'src/pages/methode.astro'), 'utf8');
+      assert.ok(src.includes('MESURE_SERVEUR_4G'));
+      const nombres = [M.octetsGzip, ...M.profils.flatMap((m) => m.mesuresMs), M.lighthouse.fcpMs, M.lighthouse.lcpMs, M.lighthouse.speedIndexMs];
+      for (const n of nombres) assert.doesNotMatch(src, new RegExp(`\\b${n}\\b`), `${n} écrit en dur dans methode.astro`);
+      assert.ok(!src.includes(M.date) && !src.includes(M.lighthouse.version), 'date ou version écrite en dur');
     });
 
     it('lien Méthode dans le pied de page de chaque page', () => {

@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CATALOGUE, HYPOTHESES } from '../../src/lib/content-core/rules/config.ts';
 import { CODES_CHECK_DIST } from '../../scripts/lib/check-dist.ts';
+import { MESURE_SERVEUR_4G } from '../../src/lib/profil-4g.ts';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const read = (f: string): string => fs.readFileSync(path.join(ROOT, f), 'utf8');
@@ -552,4 +553,26 @@ describe('documentation (phase 8) : ADR et README', () => {
     assert.doesNotMatch(s, /\$2[aby]\$|hc-ping\.com\/[0-9a-f-]{8}|BEGIN OPENSSH/);
     assert.doesNotMatch(s, /[–—]/);
   });
+});
+
+describe('documentation (phase 8) : mesure 4G derrière le serveur réel (PERF-02, 08-14)', () => {
+  const M = MESURE_SERVEUR_4G;
+  const pire = (id: string): number => Math.max(...(M.profils.find((p) => p.id === id)?.mesuresMs ?? [Number.NaN]));
+  const attendus = [
+    M.date,
+    `${pire('slow-4g-lighthouse')} ms au plus en « Slow 4G simulé »`,
+    `FCP ${M.lighthouse.fcpMs} ms`,
+    `LCP ${M.lighthouse.lcpMs} ms`,
+    `Lighthouse ${M.lighthouse.version}`,
+    'MESURE_SERVEUR_4G',
+  ];
+  for (const [nom, doc] of [['README', readme], ['RUNBOOK', runbook]] as const) {
+    it(`${nom} : une phrase reprend la date, le pire chiffre « Slow 4G simulé » et Lighthouse (FCP, LCP)`, () => {
+      const lignes = doc.split('\n').filter((l) => l.includes(M.date) && l.includes('« Slow 4G simulé »'));
+      assert.equal(lignes.length, 1, `${nom} : ${lignes.length} ligne(s) avec ${M.date} et « Slow 4G simulé »`);
+      const ligne = lignes[0] as string;
+      for (const needle of attendus) assert.ok(ligne.includes(needle), `${nom} doit contenir « ${needle} » dans la phrase de mesure`);
+      assert.doesNotMatch(ligne, /[–—]/, `tiret long ou demi-cadratin dans la phrase de mesure du ${nom}`);
+    });
+  }
 });
