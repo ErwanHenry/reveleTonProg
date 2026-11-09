@@ -108,7 +108,14 @@ Les commandes lisent le contenu dans la racine indiquée par la variable `RTP_CO
 
 ## Où sont les secrets
 
-Aucun secret pour l'instant. Au lot 3, la clé SSH de déploiement vivra dans **GitHub Secrets** (`DEPLOY_SSH_KEY`, `DEPLOY_HOST`) et en copie dans **Vaultwarden** (coffre `reveleTonProg`). Rien dans le dépôt : `.env` est ignoré par Git, `.env.example` ne contient que des noms de variables.
+Aucun secret dans le dépôt : `.env` est ignoré par Git, `.env.example` ne contient que des noms de variables, et gitleaks parcourt tout l'historique à chaque CI. Les secrets de la mise en ligne (Phase 8) vivent aux endroits suivants, et leur valeur n'est écrite nulle part ailleurs :
+
+- **GitHub, Environment `production`** (approbation d'Erwan à chaque run, branche `main` seulement) : secrets `DEPLOY_SSH_KEY` (clé de déploiement, limitée à une commande forcée sur le serveur), `DEPLOY_SMOKE_USER` et `DEPLOY_SMOKE_PASS` (identifiants du test de fumée). Variables non secrètes : `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_KNOWN_HOSTS` (empreinte épinglée du serveur) et `DEPLOY_URL`.
+- **GitHub, Environment `sonde`** (sans relecteur, branche `main` seulement) : secrets `SONDE_USER` et `SONDE_PASS` (identifiants de la sonde) et `SONDE_PING_URL` (adresse de ping Healthchecks). Les variables de dépôt `DEPLOY_CIBLE` et `SONDE_URL` ne sont pas secrètes.
+- **Serveur, fichiers lisibles par root seul (0600)** : `/opt/vaultwarden/.env` (les deux empreintes bcrypt de l'hôte d'essai), `/etc/rtp/battement.env` et `/etc/rtp/restauration.env` (adresses de ping Healthchecks, identifiants de la sonde pour le battement).
+- **Vaultwarden** (coffre `reveleTonProg`) : mots de passe en clair des utilisateurs `essai` et `sonde`, clé privée de déploiement, copies des trois fichiers du serveur et des adresses de ping. Copies de travail sur le Mac dans `~/.config/rtp/` (0600), hors de tout dépôt.
+
+Procédures : `docs/RUNBOOK.md`, sections « Environments GitHub » et « Restauration ».
 
 ## Réglages GitHub à activer (action utilisateur)
 
