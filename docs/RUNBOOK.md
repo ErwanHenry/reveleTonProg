@@ -2,7 +2,7 @@
 
 ## Accès
 
-- **VPS** : `ubuntu-4gb-nbg1-2` (Hetzner), accès SSH avec la clé d'Erwan ; clé de déploiement CI dans GitHub Secrets (lot 3).
+- **VPS** : `ubuntu-4gb-nbg1-2` (Hetzner), accès SSH avec la clé d'Erwan ; clé de déploiement dans l'Environment `production` (voir « Environments GitHub »).
 - **Repo** : https://github.com/ErwanHenry/reveleTonProg
 - **Archives binaires** : dépôt privé `reveleTonProg-archives`.
 
@@ -322,9 +322,23 @@ Wayback est une corroboration, jamais un blocage : un échec (429 = plafond quot
 
 Faux positif de gitleaks sur un extrait (longue chaîne hexadécimale ou URL dans un programme) : ne jamais désactiver une règle. Créer `.gitleaks.toml` à la racine avec `[extend]` `useDefault = true` et une section `[allowlist]` dont `paths` ne liste que les fichiers exacts concernés (`archives/<candidat>/<sha12>.txt`, jamais tout `archives/`), faire relire, expliquer dans la pull request. Un vrai secret : ne pas committer l'extrait, écarter le document. Contrôle d'un lot : `gitleaks dir --no-banner --redact -v archives/` (gitleaks 8.30.1, binaire vérifié par somme de contrôle, hors du dépôt).
 
-## Déploiement (lot 3, à venir)
+## Déploiement
 
-GitHub Actions → `rsync -az --delete dist/ $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH`. Rollback : re-lancer le workflow sur le commit précédent.
+La chaîne de livraison (Phase 8, ADR-054 et ADR-055) part d'un push sur `main` et finit par un test de fumée HTTPS. Elle dort tant que la variable de dépôt `DEPLOY_CIBLE` n'existe pas : les jobs `gel` et `deploy` de `.github/workflows/ci.yml` sont alors sautés et la CI reste verte.
+
+1. Push sur `main` : les jobs `verifier`, `e2e` et `secrets` tournent comme pour toute modification.
+2. Job `gel` (push ou lancement à la main, sur `main`, `DEPLOY_CIBLE` posée) : `node scripts/garde-gel.ts` lit la date de Paris. Pendant un gel, `deploy` est sauté (voir « Gel des scrutins et retrait d'urgence »).
+3. Job `deploy` (`needs` sur `verifier`, `e2e`, `secrets` et `gel`, Environment `production`) : il attend l'approbation d'Erwan, bouton « Review deployments » de la page du run.
+4. Après l'approbation, contrôle de la cible (`essai` ou `production`) et de la tête de `main` (`git ls-remote`) : si `main` a avancé depuis le commit du run, l'approbation est périmée, rien n'est déployé, le run du dernier commit déploiera.
+5. La build du corpus réel est refaite dans le job, depuis le commit du run (aucun artefact téléchargé, jamais la build preview), puis contrôlée par `check-dist` en mode production (le commit de `version.json` doit être celui du run). Cible `essai` : build construite sans `RTP_DEPLOIEMENT` (valeur `0`), car le domaine, le contact et l'hébergeur restent provisoires sur cet hôte privé. Cible `production` : toujours `RTP_DEPLOIEMENT=1`, donc toutes les gardes de déploiement public.
+6. Envoi : `rsync -rlt --chmod=D755,F644 --stats` vers `<cible>/<sha>/`, que la commande forcée du serveur range dans `/srv/reveletonprog/incoming/<cible>/<sha>/` (jamais de suppression, jamais l'arbre servi). Clé : secret `DEPLOY_SSH_KEY` ; empreinte du serveur épinglée par `DEPLOY_KNOWN_HOSTS` (`StrictHostKeyChecking=yes`, aucun scan de clé d'hôte).
+7. `activer <cible> <sha>` : la commande forcée vérifie l'envoi (`index.html`, commit de `version.json`), le range dans `releases/<sha>/`, bascule le lien relatif `current` de façon atomique (`ln -s` puis `mv -T`) et garde les 5 dernières versions (plus la courante et la précédente). L'étape suivante exige que `etat <cible>` réponde `courant=<sha>`.
+8. Test de fumée HTTPS sur `DEPLOY_URL`, avec les identifiants de la sonde passés par `curl --config -` : `/version.json` sert le commit du run, la page d'accueil envoie `Strict-Transport-Security` et `Content-Security-Policy`. `DEPLOY_URL` vide : test sauté, `etat` fait foi.
+9. Si une étape échoue après l'activation, le job lance `retour <cible>` puis `etat` : la version précédente revient en ligne d'elle-même. Le run reste rouge ; lire l'étape en échec avant de relancer.
+
+Redéployer la tête de `main` sans nouveau commit : `gh workflow run ci.yml --ref main` (même approbation).
+
+**Un run attend l'approbation : approuver ou rejeter tout de suite, ne jamais le laisser en attente.** Le job attend dans le groupe de concurrence `deploy-production`, que partagent les retours arrière : un run oublié bloque un retour arrière, et une approbation tardive est refusée dès que `main` a avancé. Rejeter un run ne touche pas au serveur.
 
 Étapes juridiques à faire avant la mise en ligne publique :
 
@@ -336,28 +350,153 @@ GitHub Actions → `rsync -az --delete dist/ $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_P
 6. Remplacer le domaine provisoire de `config/site.yml` (le build échoue sous `RTP_DEPLOIEMENT=1` tant qu'il finit par un TLD réservé : `.invalid`, `.test`, `.example`, `.localhost`), puis régénérer le bloc Caddy (« Changer de domaine »).
 7. Remplacer l'adresse de contact provisoire de `config/site.yml`.
 8. Vérifier que le dépôt `ErwanHenry/reveleTonProg` est toujours public (il l'est depuis le 2026-11-04) et le garder public : les liens du site vers le dépôt (Qui sommes-nous, « Signaler une erreur (GitHub) », « Extrait archivé ») en dépendent et renverraient une erreur 404 s'il redevenait privé. Contrôle : `gh repo view ErwanHenry/reveleTonProg --json visibility` doit répondre `PUBLIC`.
-9. Vérifier au premier run que `actions/upload-artifact` fonctionne avec `permissions: contents: read` (hypothèse A4).
+9. Hypothèse A4 confirmée : `actions/upload-artifact` fonctionne avec `permissions: contents: read` (artefact `site-preview` publié à chaque run de `main`, par exemple le run 42525804302 du 2026-11-08). Rien à faire au premier déploiement.
+
+### Retour arrière
+
+Workflow `.github/workflows/rollback.yml` (« Retour arrière »), lancé à la main sur `main`, approuvé par Erwan dans l'Environment `production`, arrêté au bout de 5 min :
+
+```bash
+gh workflow run rollback.yml -f cible=essai
+gh workflow run rollback.yml -f cible=essai -f version=<sha>
+gh run list --workflow rollback.yml --limit 1
+gh run watch <id> --exit-status
+```
+
+- Sans `version` : le verbe `retour` remet la version précédente de l'historique (`.historique`). Un second retour remet la version qu'on vient de quitter : deux lancements font un aller-retour.
+- Avec `-f version=<sha>` (commit complet, 40 hexadécimaux) : le commit doit encore être dans `releases/` (5 versions gardées, plus la courante et la précédente), sinon la commande forcée répond code 66 et rien ne change.
+- Le job lit ensuite `etat` (nouveau `courant`, égal à `version` quand elle est donnée) et, quand `cible` est la cible de `DEPLOY_URL` (`DEPLOY_CIBLE`), vérifie que `/version.json` sert ce commit. Le résumé du job donne l'heure UTC de début et de fin.
+- Objectif : moins de 2 min entre le lancement et le commit servi, l'attente de l'approbation comptée à part (elle dépend de la réaction d'Erwan, pas du mécanisme). La bascule seule prend moins d'une demi-seconde : 288 ms et 329 ms en boucle locale sur le serveur, poignée de main SSH comprise (08-10). Le chronométrage de bout en bout par GitHub est noté par 08-13.
+- Vérifier à la main le commit servi, mot de passe de la sonde lu dans le fichier local par `printf` (interne au shell, jamais dans la ligne de commande) : `printf 'user = "sonde:%s"\n' "$(cat ~/.config/rtp/sonde-pass)" | curl -s --config - https://essai.<domaine>/version.json`. Charger aussi une page HTML.
+- Si un déploiement attend son approbation : **rejeter ou approuver d'abord le déploiement en attente**, puis lancer le retour arrière. Les deux partagent le groupe de concurrence `deploy-production` : le retour attendrait derrière lui.
+- La garde de gel s'applique aussi aux retours arrière (section suivante).
+
+**Repli en cas d'incident** (GitHub indisponible, approbation impossible). L'accès root d'Erwan lance la même commande forcée sous l'utilisateur `deploy`, avec le même verrou et la même bascule atomique, sans approbation GitHub ni garde de gel :
+
+```bash
+ssh keel-vps 'SSH_ORIGINAL_COMMAND="retour essai" runuser -u deploy -- /usr/local/sbin/rtp-deploy-command'
+ssh keel-vps 'SSH_ORIGINAL_COMMAND="etat essai" runuser -u deploy -- /usr/local/sbin/rtp-deploy-command'
+```
+
+`retour production` pour la cible publique, `retour essai <sha>` pour un commit précis. Aucun run GitHub ne trace ce geste : le noter ensuite à côté de l'historique des runs, dans une issue datée (heure UTC, raison, version remise). Le journal `rtp-deploy` du serveur (`journalctl -t rtp-deploy`) et le fichier `.historique` le gardent aussi.
+
+### Gel des scrutins et retrait d'urgence
+
+- Fenêtres : du 17 au 19 avril 2027 et du 1er au 3 mai 2027, dates civiles en heure de Paris (veille et lendemain de chaque tour, tirées de `TOURS` dans `src/lib/dates-tours.ts` : déplacer un tour déplace le gel). Le runner est en UTC ; la garde convertit.
+- Pendant un gel, un push sur `main` passe la CI mais `deploy` est sauté, avec l'avertissement « déploiement refusé » dans le résumé du job `gel`. Un retour arrière est refusé de la même façon.
+- Retrait d'urgence pendant un gel (par exemple une mesure publiée sans source) : commiter le retrait (mesure repassée en `brouillon`), pousser sur `main`, puis relancer avec la case cochée et une justification écrite d'au moins 20 caractères :
+
+```bash
+gh workflow run ci.yml --ref main -f retrait_urgence=true -f justification="Retrait de la mesure X publiée sans source"
+gh workflow run rollback.yml -f cible=production -f retrait_urgence=true -f justification="Retour à la version d'hier, page cassée"
+```
+
+- La justification est nettoyée (caractères de contrôle remplacés, coupée à 300 caractères) et gardée dans le résumé du run. Le déploiement passe ensuite par la même approbation.
+- Une case cochée sans justification valable fait échouer le job `gel` (code 1), même hors gel : jamais de passage silencieux.
+- Essai à blanc sur le Mac : `node scripts/garde-gel.ts --urgence '' --justification '' --date 2027-04-18T12:00:00+02:00` (refus, avertissement, code 0).
+
+### Hôte technique (essai)
+
+- `essai.<domaine>` est un hôte privé : bloc `deploy/caddy/essai.caddy`, généré par `node scripts/render-caddy.ts`, installé en `sites.d/reveletonprog-essai.caddy` par l'étape `site-essai` de l'installateur (refusée tant que le domaine est réservé). Racine `/srv/reveletonprog/essai/current`.
+- `basic_auth` sur tous les chemins sauf `/robots.txt`, deux utilisateurs : `essai` (relecture par Erwan) et `sonde` (sonde externe, battement HTTPS, test de fumée, mesures 4G). Mots de passe en clair dans Vaultwarden, copie locale dans `~/.config/rtp/` (0600). Empreintes bcrypt dans `/opt/vaultwarden/.env` (root, 0600), passées au conteneur par `RTP_ESSAI_HASH` et `RTP_SONDE_HASH`.
+- Changer un mot de passe : nouvelle empreinte bcrypt calculée hors du dépôt (jamais affichée), `ops/installer-serveur.sh --appliquer --etape env-caddy` avec la ligne `RTP_ESSAI_HASH=…` ou `RTP_SONDE_HASH=…` sur l'entrée standard, puis recréation du conteneur (procédure de la section suivante) : la variable d'un conteneur ne change qu'à sa recréation, un `caddy reload` garde l'ancienne. Pour `sonde`, mettre aussi à jour Vaultwarden, `~/.config/rtp/sonde-pass`, les secrets `DEPLOY_SMOKE_PASS` et `SONDE_PASS`, et `RTP_SONDE_PASS` dans `/etc/rtp/battement.env` (étape `battement`).
+- Non indexé : `X-Robots-Tag: noindex, nofollow` sur toutes les réponses (401 compris) et `robots.txt` fermé (`Disallow: /`). Mêmes en-têtes et même journal masqué que la production.
+- Construit sans `RTP_DEPLOIEMENT` (ADR-055). Retiré à l'ouverture en Phase 9 : bloc ôté de `sites.d`, `caddy reload`, sonde et test de fumée réorientés vers l'hôte public.
+- **Point de la Phase 9 (Mentions légales).** La build d'essai a l'hébergeur `prevu` : ses Mentions légales disent « aucun serveur de l'éditeur ne reçoit vos visites », alors que l'hôte d'essai est un serveur. Il est privé, protégé par mot de passe et visité seulement par Erwan et la sonde. La phrase redevient vraie quand l'hôte d'essai est retiré, et la build publique passe à `actif`.
+
+### Serveur : installer et vérifier
+
+Règle D-01 : sur le VPS, la lecture est libre (diagnostic, `caddy validate` dans un conteneur jetable, instantanés HTTP) ; toute écriture est montrée à Erwan (commande, effet, retour arrière) et lancée seulement après son accord, depuis la session principale (les agents n'écrivent jamais sur le serveur). La configuration du site ne s'écrit que par `ops/installer-serveur.sh`, une liste d'étapes approuvée à la fois ; recréation, rechargement de Caddy et cron restent des commandes séparées.
+
+- Vérifier sans rien écrire, depuis une copie éphémère du dépôt (retirée à la fin, pas d'accord nécessaire) :
+
+```bash
+tar -C . -cz ops deploy | ssh keel-vps 'd=$(mktemp -d) && tar -xz -C "$d" && bash "$d/ops/installer-serveur.sh" --verifier --etape montages,env-caddy,import-caddy,utilisateur,commande; r=$?; rm -rf "$d"; exit $r'
+```
+
+  Chaque ligne dit `[ok]` ou `[a faire]` ; une configuration conforme n'a aucun `[a faire]`. Ajouter à la liste les étapes déjà installées (`battement`, `sauvegarde`, `restauration-mensuelle`, `site-essai`). Le script n'affiche jamais un contenu ni un secret.
+- Appliquer (écriture, après accord) : rafraîchir la copie du dépôt sur le serveur, puis lancer les étapes approuvées depuis elle. Sans secret à fournir, `</dev/null` ; avec secret, le fichier local sur l'entrée standard :
+
+```bash
+tar -C . -cz ops deploy | ssh keel-vps 'mkdir -p /opt/rtp/depot && tar -xz -C /opt/rtp/depot'
+ssh keel-vps 'bash /opt/rtp/depot/ops/installer-serveur.sh --appliquer --etape commande </dev/null'
+ssh keel-vps 'bash /opt/rtp/depot/ops/installer-serveur.sh --appliquer --etape env-caddy' < ~/.config/rtp/hashes-caddy.env
+```
+
+  Étapes, toujours exécutées dans cet ordre : `sauvegarde-caddy` (copies `.bak-<AAAAMMJJhhmm>`, jamais écrasées), `montages`, `env-caddy`, `import-caddy` (ajout sur place, inode comparé), `utilisateur` (`--cle-publique <fichier>`), `commande`, `battement`, `sauvegarde`, `restauration-mensuelle`, `site-essai`, `depot`. Codes : 0 succès, 1 échec ou application incomplète, 2 usage, 3 `--appliquer` sans root, 4 entrée refusée, 5 inode du Caddyfile changé, 6 bloc d'essai refusé. Une seconde application ne fait plus rien.
+- `ops/valider-caddy.sh` (lecture seule) : `caddy validate` dans un conteneur jetable de la même image, sans réseau ; `RTP_AJOUTER_IMPORT=1` valide une copie terminée par la ligne d'import, `RTP_BLOC_B64` un bloc candidat, `RTP_AVEC_SANS_VARIABLES=1` les deux cas de variables d'empreinte :
+
+```bash
+ssh keel-vps 'RTP_AVEC_SANS_VARIABLES=1 bash -s' < ops/valider-caddy.sh
+ssh keel-vps "RTP_BLOC_B64=$(base64 < deploy/caddy/essai.caddy | tr -d '\n') bash -s" < ops/valider-caddy.sh
+```
+
+- `ops/verifier-sites.sh` (lecture seule) : instantané HTTP de chaque site servi, une ligne par hôte sous forme d'empreinte (aucun nom), puis comparaison. Les relevés restent sur le Mac (`~/.config/rtp/`, 0600), jamais dans le dépôt :
+
+```bash
+ssh keel-vps 'bash -s -- instantane' < ops/verifier-sites.sh > ~/.config/rtp/sites-avant.tsv
+ssh keel-vps 'bash -s -- instantane' < ops/verifier-sites.sh > ~/.config/rtp/sites-apres.tsv
+bash ops/verifier-sites.sh comparer ~/.config/rtp/sites-avant.tsv ~/.config/rtp/sites-apres.tsv
+```
+
+  Attendu : `differents 0` et `disparus 0` (un nouvel hôte, l'hôte technique, est permis). Code 1 sinon.
+- Commande forcée `/usr/local/sbin/rtp-deploy-command` (copie de `ops/commande-deploiement.sh`, seule commande de la clé `deploy`, dont le `authorized_keys` appartient à root) :
+
+| Verbe | Effet | Sortie |
+|-------|-------|--------|
+| `rsync --server <options> . <cible>/<sha>/` | envoi dans `incoming/<cible>/<sha>/` par `rrsync -wo -no-del` | celle de rsync |
+| `activer <cible> <sha>` | vérifie l'envoi, le range dans `releases/<sha>/`, bascule `current` | `active cible=… courant=… versions=…` |
+| `retour <cible> [<sha>]` | rebascule `current` sur la précédente (ou sur `<sha>`) | `retour cible=… courant=… precedent=…` |
+| `etat <cible>` | version courante, nombre de versions, espace libre | `etat cible=… courant=… versions=… libre_mio=…` |
+
+  Codes : 0 succès, 64 refusé (caractères, verbe, jeton, nombre d'arguments), 65 envoi invalide, 66 version introuvable, 75 espace disque insuffisant (moins de 1024 Mio libres ou 92 % utilisés), 1 autre échec (verrou, bascule). Chaque appel écrit une ligne JSON dans le journal (`journalctl -t rtp-deploy`).
+
+**Recréer le conteneur Caddy** (seulement pour changer ses montages ou ses variables ; chaque écriture est approuvée à part). Faite une fois le 2026-11-09 : conteneur prêt en moins de 2 s, tous les autres sites identiques avant et après.
+
+1. Lecture : instantané `avant` par `ops/verifier-sites.sh`.
+2. Écriture : `--appliquer --etape sauvegarde-caddy --horodatage <AAAAMMJJhhmm>` (copies du Caddyfile et du fichier de composition).
+3. Écriture : l'étape qui change la configuration (`montages`, `env-caddy`).
+4. Lecture : `ssh keel-vps 'cd /opt/vaultwarden && docker compose config -q'` (surcharge fusionnée ; une empreinte manquante fait échouer la commande).
+5. Lecture : `ops/valider-caddy.sh` avec `RTP_AVEC_SANS_VARIABLES=1`.
+6. Message à Erwan : coupure de quelques secondes de tous les sites du serveur dans une minute.
+7. Écriture : `ssh keel-vps 'cd /opt/vaultwarden && docker compose up -d --no-deps --force-recreate caddy'`. Jamais de `pull` (l'image locale est en 2.11.2) ; `--no-deps` laisse le service voisin intact.
+8. Lecture : `docker inspect caddy` (montages et droits, noms des variables seulement, `LogConfig` à 10m et 3, politique de redémarrage), inode du Caddyfile identique sur l'hôte et dans le conteneur, `docker exec caddy caddy version`, instantané `apres` et `comparer`.
+9. Retour arrière si un site a changé : remettre le Caddyfile sur place (`cat Caddyfile.bak-<…> > Caddyfile`), déplacer la surcharge dans `/root/rtp-retrait/`, recréer avec la même commande, reprendre un instantané et comparer.
+
+**Attention :** `docker compose -f docker-compose.yml …` seul ignore `docker-compose.override.yml` et recréerait `caddy` sans les montages ni les variables. Toujours lancer `docker compose` dans `/opt/vaultwarden` sans option `-f`.
+
+### Environments GitHub
+
+| Environment | Protection | Variables | Secrets |
+|-------------|------------|-----------|---------|
+| `production` | Erwan seul relecteur requis, `prevent self-review` désactivé (sinon personne ne peut approuver ses propres push), branches de déploiement : `main` seulement | `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_KNOWN_HOSTS`, `DEPLOY_URL` | `DEPLOY_SSH_KEY`, `DEPLOY_SMOKE_USER`, `DEPLOY_SMOKE_PASS` |
+| `sonde` | aucun relecteur (la sonde tourne toutes les 10 min), `main` seulement | aucune | `SONDE_USER`, `SONDE_PASS`, `SONDE_PING_URL` |
+
+Variables de dépôt : `DEPLOY_CIBLE` (`essai`, puis `production` en Phase 9 ; absente = chaîne de livraison en sommeil) et `SONDE_URL` (`https://essai.<domaine>`, posée par 08-15 ; absente = sonde en sommeil). Les relecteurs requis d'un Environment ne fonctionnent sur le plan gratuit que parce que le dépôt est public.
+
+- Poser une valeur sans l'afficher, depuis le fichier local : `gh secret set DEPLOY_SSH_KEY --env production < ~/.config/rtp/rtp-deploy-github` (même forme pour `gh variable set … --env production`). La clé privée ne reste ensuite que dans l'Environment et dans Vaultwarden.
+- Contrôler (noms seulement) : `gh secret list --env production`, `gh variable list --env production`, `gh variable list`, et `gh api repos/ErwanHenry/reveleTonProg/environments/production --jq '.protection_rules'`.
 
 ### Bloc Caddy (Phase 8)
 
-`deploy/caddy/site.caddy` est généré (`node scripts/render-caddy.ts`, ne pas l'éditer à la main) : bloc du domaine (`root`, `encode zstd gzip`, `file_server`, en-têtes, journal) et redirection permanente de `www.` vers le domaine. Son en-tête `Content-Security-Policy` porte les empreintes des deux scripts et `frame-ancestors 'none'` : c'est lui qui couvre le script d'ordre, placé avant la meta CSP de la page (ADR-056). Le journal d'accès tourne chaque jour à 00:00 UTC (`roll_at 00:00`, ou dès 10 Mio) et Caddy ne garde que 12 fichiers tournés (`roll_keep 12`, `roll_keep_for 288h`) plus le fichier du jour : une entrée y reste moins de 13 jours, et **14 jours au plus** si une rotation de minuit est manquée (Caddy arrêté à minuit). Adresses IP tronquées (/24 et /48), en-têtes de requête supprimés. C'est cette borne de 14 jours que reprennent les Mentions légales (étape 4 ci-dessus) ; `tests/repo/caddy.test.ts` la recalcule depuis le bloc rendu.
+`deploy/caddy/site.caddy` est généré (`node scripts/render-caddy.ts`, ne pas l'éditer à la main) : bloc du domaine (`root`, `encode zstd gzip`, `file_server`, en-têtes, journal) et redirection permanente de `www.` vers le domaine. Son en-tête `Content-Security-Policy` porte les empreintes des deux scripts et `frame-ancestors 'none'` : c'est lui qui couvre le script d'ordre, placé avant la meta CSP de la page (ADR-056). Le journal d'accès tourne chaque jour à 00:00 UTC (`roll_at 00:00`, ou dès 10 Mio) et Caddy ne garde que 12 fichiers tournés (`roll_keep 12`, `roll_keep_for 288h`) plus le fichier du jour : une entrée y reste moins de 13 jours, et **14 jours au plus** si une rotation de minuit est manquée (Caddy arrêté à minuit). Adresses IP tronquées (/24 et /48), en-têtes de requête supprimés. C'est cette borne de 14 jours que reprennent les Mentions légales (étape 4 ci-dessus) ; `tests/repo/caddy.test.ts` la recalcule depuis le bloc rendu. `deploy/caddy/essai.caddy` suit les mêmes règles (voir « Hôte technique (essai) »).
 
-Hypothèses à confirmer en Phase 8 (constat de la Phase 6 : Caddy tourne dans un conteneur `caddy:2-alpine`, un seul Caddyfile monté avec une quinzaine de blocs, sans `import`, aucun dossier de site statique monté) :
+Faits du serveur, constatés en 08-09 (ADR-057) :
 
-- `root * /srv/reveletonprog/current` est un chemin **dans le conteneur** : monter en lecture seule le dossier des versions de l'hôte sur `/srv/reveletonprog` (versions dans `releases/<sha>/`, lien `current`), ce qui recrée le conteneur une fois.
-- Le lien `current` est résolu **dans le conteneur** : il doit être **relatif** (`cd <dossier des versions> && ln -sfn releases/<sha> current`). Un lien absolu vers un chemin de l'hôte (`current -> /home/.../releases/<sha>`) n'existe pas dans le conteneur et le site répond 404, sauf si l'hôte et le conteneur montent le dossier au même chemin. Contrôle : `readlink current` affiche `releases/<sha>`, et `docker exec <conteneur> ls /srv/reveletonprog/current/index.html` réussit.
-- Créer l'enregistrement DNS de `www.<domaine>` (A/AAAA ou CNAME vers l'apex) **avant** d'appliquer le bloc : sans lui, Caddy retente sans fin d'obtenir un certificat ACME pour `www.<domaine>` (journal rempli d'échecs, risque de limite de débit Let's Encrypt). Contrôle : `dig +short www.<domaine>` répond l'adresse du VPS.
-- `output file /var/log/caddy/reveletonprog.log` est aussi dans le conteneur : monter un dossier de l'hôte **en écriture** sur `/var/log/caddy`, sinon le journal disparaît à chaque recréation. Pour un autre chemin, changer la constante `JOURNAL` de `scripts/render-caddy.ts` et régénérer.
-- Coller le bloc dans le Caddyfile monté (ou ajouter une ligne `import`), puis `docker exec <conteneur> caddy validate --config <Caddyfile monté>` avant tout rechargement. À vérifier au même moment : la forme `request>headers delete`, `ip_mask 24 48` et la prise en charge de `request>client_ip` par la version de Caddy de l'image.
-- `roll_at` n'existe que depuis Caddy 2.11 (rotation par timberjack) : vérifier `docker exec <conteneur> caddy version` (2.11 ou plus) et que `caddy validate` accepte `roll_at 00:00`. Si l'image est plus ancienne, la mettre à jour avant d'appliquer le bloc : avec la seule rotation à la taille, des entrées resteraient des mois.
-- Après un redémarrage de Caddy, le minuteur de rotation ne repart qu'à la première requête : la sonde de supervision (Uptime Kuma) doit interroger le site au moins une fois par jour. Contrôle au bout de deux jours : `ls -l /var/log/caddy/` sur l'hôte montre des fichiers `reveletonprog-<date>-time.log.gz` datés de minuit UTC, et jamais plus de 12.
-- La politique du bloc (IP tronquées, en-têtes supprimés, 14 jours) ne vaut que pour le **journal d'accès**. Le journal d'erreurs (`http.log.error`, réponses 5xx) et le journal par défaut de Caddy (TLS, ACME) vont sur la sortie d'erreur du conteneur, que le pilote Docker `json-file` garde sans limite par défaut, avec l'adresse complète et les en-têtes (User-Agent, référent). Avant d'appliquer le bloc : plafonner les journaux du conteneur (`logging: options: max-size: "10m"`, `max-file: "3"` dans le compose, ou `--log-opt max-size=10m --log-opt max-file=3`), et soit passer le journal par défaut au niveau WARN, soit faire passer `http.log.error` par le même `format filter` (bloc `log` global avec `include http.log.error`). Contrôle : `docker inspect --format '{{.HostConfig.LogConfig}}' <conteneur>` montre `max-size` et `max-file`, et `docker logs <conteneur> 2>&1 | grep -E '"remote_ip":"[0-9]+\.[0-9]+\.[0-9]+\.[1-9]'` ne trouve aucune adresse IPv4 entière (dernier octet non nul).
-- Ne pas appliquer le bloc tant que le domaine finit par `.invalid`.
+- Caddy 2.11.2 dans le conteneur `caddy` (`caddy:2-alpine`), défini par `/opt/vaultwarden/docker-compose.yml`, qui n'est jamais modifié. Nos ajouts sont dans `/opt/vaultwarden/docker-compose.override.yml` (copie de `deploy/compose/docker-compose.override.yml`) : `/srv/reveletonprog` en lecture seule, `/var/log/caddy` en écriture, `/opt/vaultwarden/sites.d` sur `/etc/caddy/sites.d` en lecture seule, variables `RTP_ESSAI_HASH` et `RTP_SONDE_HASH`, journaux du conteneur plafonnés à 10 Mio x 3. `roll_at`, `ip_mask` et la suppression des en-têtes de requête sont acceptés par cette version.
+- `/opt/vaultwarden/Caddyfile` se termine par `import /etc/caddy/sites.d/*.caddy`. Nos blocs vivent dans `sites.d/`, un fichier par hôte ; ce dossier est monté entier, un fichier y est donc remplacé sans risque par fichier temporaire et renommage.
+- Règle d'inode : le Caddyfile est un montage d'un seul fichier. Ne jamais l'éditer par renommage (`sed -i`, éditeur qui remplace le fichier) : le conteneur garderait l'ancien inode et un `caddy reload` « réussirait » avec l'ancienne configuration. Écrire sur place (`>>` ou `cat > fichier`) puis comparer `stat -c %i /opt/vaultwarden/Caddyfile` à `docker exec caddy stat -c %i /etc/caddy/Caddyfile`.
+- Changer la configuration : `ops/valider-caddy.sh` d'abord, puis `docker exec caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile` et, seulement si c'est valide, `docker exec caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile`. Jamais de redémarrage ni de recréation pour un changement de configuration : un rechargement refusé garde l'ancienne configuration, un redémarrage sur une configuration invalide coupe tous les sites du serveur.
+- Variable d'empreinte vide : `{$RTP_ESSAI_HASH}` est remplacée avant l'analyse ; vide, tout le Caddyfile devient invalide, donc tous les sites au prochain démarrage. Trois parades : le bloc rendu porte une valeur par défaut factice (`HASH_FACTICE` de `scripts/render-caddy.ts`, forme bcrypt valide qu'aucun mot de passe ne produit), la surcharge exige les deux variables (`docker compose` refuse de recréer sans elles), et `ops/valider-caddy.sh` valide avec et sans elles (`RTP_AVEC_SANS_VARIABLES=1`).
+- Lien `current` relatif (`releases/<sha>`), résolu dans le conteneur. Contrôle : `docker exec caddy ls /srv/reveletonprog/essai/current/index.html`.
+- Un bloc n'entre dans `sites.d` qu'avec un vrai domaine dont le DNS répond (`dig +short essai.<domaine>`), jamais en `.invalid` (Caddy demanderait un certificat sans fin). Le bloc public (`site.caddy`, domaine et `www.`) attend la Phase 9 et l'enregistrement DNS de `www.<domaine>`. Avec un enregistrement AAAA publié, vérifier d'abord `curl -6 -I https://essai.<domaine>` depuis l'extérieur.
+- Après un redémarrage de Caddy, le minuteur de rotation ne repart qu'à la première requête. Une fois le DNS posé, la sonde externe (toutes les 10 min) et le battement en HTTPS (toutes les 5 min) touchent le site bien plus d'une fois par jour (D-14) : la rotation de minuit tient tant que la supervision tourne. Contrôle au bout de deux jours : `ls -l /var/log/caddy/` montre des fichiers datés de minuit UTC, jamais plus de 12 par journal.
+- La politique du bloc (IP tronquées, en-têtes supprimés, 14 jours) ne vaut que pour le **journal d'accès**. Le journal d'erreurs (`http.log.error`, réponses 5xx) et le journal par défaut de Caddy (TLS, ACME) vont sur la sortie d'erreur du conteneur, avec l'adresse complète : depuis la recréation, ils sont plafonnés en taille (pilote `json-file`, 10 Mio x 3), pas en durée. Contrôle : `docker inspect --format '{{.HostConfig.LogConfig}}' caddy` montre `max-size` et `max-file`. **Point juridique de la Phase 9** : les Mentions légales doivent le dire tel quel, ou ce flux doit passer par le même filtre (bloc `log` global avec `include http.log.error`).
 
 ## Incidents fréquents
 
 ### Une mesure publiée sans source
-Retirer dans l'heure (passer en `brouillon`), tracer au journal, redéployer.
+Retirer dans l'heure (passer en `brouillon`), tracer au journal, redéployer. Pendant un gel des scrutins : « Gel des scrutins et retrait d'urgence ».
 
 ### Build CI en échec
 Ouvrir l'exécution du workflow `CI`. Trois jobs tournent en parallèle :
@@ -378,13 +517,49 @@ Tant que l'adresse de contact est la valeur provisoire en `.invalid`, aucune dem
 
 ## Restauration
 
+Contenu du site :
+
 - Le contenu est sauvegardé par Git (dépôt GitHub distant) : cloner le dépôt suffit.
 - Les binaires d'archives sont dans le dépôt privé `reveleTonProg-archives` (à cloner à côté si besoin).
-- Le site se reconstruit entièrement avec `npm ci && npm run build`.
+- Le site se reconstruit entièrement avec `npm ci && npm run build` ; une version en ligne se remet par « Retour arrière » ou par un nouveau déploiement.
+
+Configuration du serveur (ADR-058) :
+
+- `rtp-sauvegarder` (copie de `ops/sauvegarder-config.sh`, cron `/etc/cron.d/rtp-sauvegarde` chaque jour à 02:45 UTC) écrit `/root/rtp-sauvegardes/<AAAA-MM-JJ>.tar.gz` (root, 0600, dossier 0700, les 6 dernières gardées). L'archive contient le Caddyfile, le fichier de composition et sa surcharge, `.env`, `sites.d/`, `/etc/cron.d/rtp-*`, `/etc/rtp/`, le `authorized_keys` de `deploy`, `/usr/local/sbin/rtp-*`, les clés d'hôte publiques (jamais les privées) et les deux `.historique`, plus `MANIFESTE.txt` (sha256 de chaque fichier) et `liens.txt` (cible des liens `current`). Ni le contenu du site (reconstruit depuis Git) ni les certificats (Caddy les redemande).
+- Copie sur le Mac (modèle tiré : le serveur ne détient aucun identifiant sortant), dans un dossier 0700 hors de tout dépôt : `scp keel-vps:/root/rtp-sauvegardes/<AAAA-MM-JJ>.tar.gz ~/Sauvegardes/reveletonprog/`.
+- Les deux fichiers secrets que le dépôt ne peut pas recréer, `/opt/vaultwarden/.env` (empreintes bcrypt) et `/etc/rtp/*.env` (adresses de ping), sont aussi dans Vaultwarden, avec les mots de passe en clair.
+- Test de restauration : `ssh keel-vps /usr/local/sbin/rtp-tester-restauration` (aussi lancé par le cron `/etc/cron.d/rtp-restauration` le 1er du mois à 11:00 UTC). Sur des copies jetables, il extrait la dernière archive, vérifie les sha256 du manifeste, compare chaque fichier à celui en service, lance `ops/installer-serveur.sh --verifier` sur l'arbre restauré (aucun `[a faire]` permis) et `ops/valider-caddy.sh` (avec et sans variables), puis pingue `restauration-mensuelle`. Sortie : une ligne JSON (`"resultat":"echec"` et l'étape en cause en cas d'échec, sans ping). Rafraîchir `/opt/rtp/depot` avant (étape `depot`), sinon l'installateur du test est celui d'une ancienne version.
+- Remettre un fichier : extraire l'archive dans un dossier jetable, puis le réinstaller par l'installateur (fichiers venus du dépôt) ou l'écrire sur place (Caddyfile, `.env` : `cat <copie> > <fichier>`, jamais `mv`, règle d'inode).
+- Sauvegardes automatiques Hetzner : réponse d'Erwan notée dans le résumé de 08-11 (D-15 accepte la reconstruction par le dépôt plus le test mensuel). Un instantané manuel existe depuis le 2026-11-08.
+
+Reconstruire le serveur depuis le dépôt (machine neuve ou configuration perdue), chaque écriture approuvée, dans cet ordre :
+
+1. Copie du dépôt : `tar -C . -cz ops deploy | ssh keel-vps 'mkdir -p /opt/rtp/depot && tar -xz -C /opt/rtp/depot'`.
+2. `--appliquer --etape sauvegarde-caddy`, puis `montages`, puis `env-caddy` avec les deux empreintes de Vaultwarden sur l'entrée standard.
+3. Lecture : `docker compose config -q` dans `/opt/vaultwarden`, puis `ops/valider-caddy.sh` avec `RTP_AJOUTER_IMPORT=1 RTP_AVEC_SANS_VARIABLES=1`.
+4. `--etape import-caddy`, puis la recréation du conteneur (« Serveur : installer et vérifier »).
+5. `--etape utilisateur,commande --cle-publique <clé publique de déploiement>`.
+6. `--etape battement` (fichier `battement.env` de Vaultwarden sur l'entrée standard), `--etape sauvegarde`, `--etape restauration-mensuelle` (ligne `HC_RESTAURATION=…`).
+7. `--etape site-essai`, puis `caddy validate` et `caddy reload` dans le conteneur.
+8. Vérifier : `--verifier` sur toutes ces étapes (aucun `[a faire]`), `rtp-tester-restauration`, puis un déploiement approuvé. Si la clé d'hôte SSH du serveur a changé, remplacer `DEPLOY_KNOWN_HOSTS` dans l'Environment `production`, ligne lue par le canal SSH de confiance, jamais par un scan.
 
 ## Monitoring
 
-Pas de service à surveiller avant l'hébergement : le monitoring (Uptime Kuma ou Healthchecks.io, alerte Telegram) démarre avec le lot 3.
+Healthchecks.io (compte d'Erwan) reçoit des pings et alerte quand un contrôle reçoit `/fail` ou ne reçoit plus rien ; il ne sonde aucune URL (ADR-058). L'intégration Telegram native (HealthchecksBot) est branchée sur chaque contrôle : un message de panne, puis un message de rétablissement au premier ping de succès suivant. Les adresses de ping sont des secrets : `/etc/rtp/battement.env`, `/etc/rtp/restauration.env`, secret `SONDE_PING_URL` de l'Environment `sonde`, copies dans Vaultwarden.
+
+| Contrôle | Alimenté par | Période | Grâce | Alerte quand | Première commande |
+|----------|--------------|---------|-------|--------------|-------------------|
+| `vps-battement` | `rtp-battement`, cron toutes les 5 min | 5 min | 10 min | plus aucun ping : machine tombée, conteneur Caddy arrêté, cron mort ou contenu cassé | `ssh keel-vps 'docker ps --filter name=caddy; journalctl -t rtp-battement -n 5 --no-pager'` |
+| `vps-disque-85` | `rtp-battement` | 5 min | 10 min | `/fail` : disque le plus plein à 85 % ou plus | `ssh keel-vps 'df -h; docker system df'` |
+| `vps-disque-92` | `rtp-battement` | 5 min | 10 min | `/fail` à 92 % (le déploiement refuse déjà au-delà, code 75) | même commande, puis libérer de la place sans toucher aux autres sites |
+| `vps-certificat` | `rtp-battement`, une fois `RTP_HOTE` posé | 5 min | 10 min | `/fail` : certificat servi qui expire dans moins de 14 jours | `ssh keel-vps 'docker logs --since 24h caddy 2>&1 \| grep -ci acme'` puis lire les messages ACME |
+| `sonde-externe` | `.github/workflows/sonde.yml`, toutes les 10 min | 10 min | 20 min | environ 3 sondes manquées : page d'accueil sans le marqueur, `/version.json` illisible, hôte injoignable | `gh run list --workflow sonde.yml --limit 3`, puis `gh run view <id> --log-failed` |
+| `restauration-mensuelle` | `rtp-tester-restauration`, le 1er du mois | planning `0 11 1 * *` UTC | 3 jours | test du mois manqué ou en échec | `ssh keel-vps 'journalctl -t rtp-restauration -n 20 --no-pager'` |
+
+- La sonde ne pingue qu'en cas de succès ; en cas d'échec elle envoie seulement la raison au journal du contrôle (`/log`). Le battement fait tous ses contrôles, puis envoie un ping par contrôle dans un ordre fixe ; sa ligne JSON (journal `rtp-battement`) ne contient ni adresse ni identifiant.
+- Alertes simulées, sans remplir le disque ni toucher au certificat (elles envoient de vraies alertes : à faire approuver comme une écriture) : `ssh keel-vps 'RTP_SEUIL1=1 /usr/local/sbin/rtp-battement'`, puis `RTP_SEUIL2=1`, puis `RTP_CERT_JOURS=9999` (une fois `RTP_HOTE` posé), et un passage normal pour le rétablissement. `RTP_HC_SIMULATION=1` affiche le signal prévu pour chaque contrôle sans rien envoyer.
+- GitHub peut retarder une exécution planifiée de quelques minutes, et suspend la planification après 60 jours sans activité dans le dépôt : `sonde-externe` passe alors en panne (interrupteur de l'homme mort). Relancer avec `gh workflow enable sonde.yml`, puis `gh workflow run sonde.yml`.
+- Avant le DNS, `vps-battement` lit la version d'essai sur le disque (`/srv/reveletonprog/essai/current/version.json`) et `vps-certificat` ne reçoit rien. Après le DNS (08-15), `RTP_HOTE` et les identifiants de la sonde dans `battement.env` font passer le battement en HTTPS à travers Caddy.
 
 ## Réglages de sécurité GitHub (action utilisateur, une fois)
 
@@ -403,6 +578,7 @@ Les mises à jour de versions de Dependabot n'ont besoin d'aucun réglage : `.gi
 - Relire les pull requests Dependabot (cooldown de 7 jours, 14 pour les versions majeures) et le groupe `astro`.
 - Revérifier les SHA des actions épinglées (un commentaire `# vX` à côté de chaque `uses:`).
 - Tester une restauration (cloner le dépôt, `npm ci && npm run build`) le 1er du mois.
+- Lancer `rtp-tester-restauration` (`ssh keel-vps /usr/local/sbin/rtp-tester-restauration`) et noter le résultat dans RETROSPECTIVE.md (ligne JSON, contrôle `restauration-mensuelle` vert) ; tirer la dernière archive de configuration sur le Mac (« Restauration »).
 
 ## Contacts
 
