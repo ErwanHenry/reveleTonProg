@@ -4,6 +4,7 @@
 // PATH :
 // - id : « id -u » répond 0 (ou STUB_ID_U) ; root et deploy ont l'uid et le gid du test, pour que la vérification
 //   des propriétaires voie les fichiers du test comme conformes ; deploy n'existe qu'après useradd (fichier marque) ;
+//   STUB_UID_ROOT donne à root un autre uid : les fichiers du test passent alors pour ceux de deploy ;
 // - useradd, chown : consignent leurs arguments, ne changent rien ;
 // - usermod, docker, caddy, systemctl, service, crontab, ufw, reboot : consignent un appel interdit (le test échoue) ;
 // - ls (un seul cas) : simule un changement d'inode du Caddyfile.
@@ -119,7 +120,7 @@ function banc(options: { adresseEssai?: string } = {}): Banc {
     '#!/bin/sh',
     'case "$*" in',
     '  "-u") echo "${STUB_ID_U:-0}" ;;',
-    '  "-u root") echo "$STUB_UID" ;;',
+    '  "-u root") echo "${STUB_UID_ROOT:-$STUB_UID}" ;;',
     '  "-g root") echo "$STUB_GID" ;;',
     '  "-u deploy"|"deploy") [ -f "$STUB_JOURNAL/deploy-existe" ] || exit 1; echo "$STUB_UID" ;;',
     '  "-g deploy") [ -f "$STUB_JOURNAL/deploy-existe" ] || exit 1; echo "$STUB_GID" ;;',
@@ -335,6 +336,14 @@ describe('ops/installer-serveur.sh : application de toutes les étapes', () => {
     assert.equal(lireJournal(b, 'interdits'), '');
   });
 
+  it('dossier personnel /home/deploy à root en 0755 (WR-03 : deploy ne peut pas renommer .ssh)', () => {
+    const home = R('home/deploy');
+    assert.equal(mode(home), 0o755);
+    const chown = lireJournal(b, 'chown').split('\n');
+    assert.ok(chown.includes(`root:root ${home}`), '/home/deploy doit appartenir à root');
+    assert.ok(!chown.some((l) => l.startsWith('deploy') && l.includes('home/deploy')), 'deploy ne possède rien chez lui');
+  });
+
   it('installe les scripts en 0755 et les crons en 0644, copies exactes de la source', () => {
     const paires: [string, string, number][] = [
       ['ops/commande-deploiement.sh', 'usr/local/sbin/rtp-deploy-command', 0o755],
@@ -488,6 +497,44 @@ describe('ops/installer-serveur.sh : refus', () => {
     const r = lancer(b, ['--appliquer', '--etape', 'sauvegarde-caddy', '--horodatage', HORODATAGE]);
     assert.equal(r.status, 0, r.stdout + r.stderr);
     assert.equal(fs.readFileSync(bak, 'utf8'), 'ancienne copie\n');
+  });
+
+  it('vérification : signale un /home/deploy qui appartient à deploy, en 0750, et ses fichiers du squelette (WR-03)', () => {
+    const b = banc();
+    fs.writeFileSync(path.join(b.journal, 'deploy-existe'), '');
+    const home = path.join(b.racine, 'home/deploy');
+    fs.mkdirSync(path.join(home, '.ssh'), { recursive: true });
+    fs.chmodSync(home, 0o750);
+    ecrire(path.join(home, '.bashrc'), '# squelette\n');
+    const avant = instantane(path.dirname(b.racine));
+    // root a un autre uid que les fichiers du test : ils passent pour ceux de deploy.
+    const r = lancer(b, ['--verifier', '--etape', 'utilisateur', '--cle-publique', b.cle], { env: { STUB_UID_ROOT: '424242' } });
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    const lignes = afaire(r);
+    assert.ok(lignes.includes('[a faire] /home/deploy : mode 755'), lignes.join('\n'));
+    assert.ok(lignes.includes('[a faire] /home/deploy : propriétaire root:root'), lignes.join('\n'));
+    assert.ok(lignes.some((l) => l.startsWith('[a faire] /home/deploy/.bashrc : propriétaire root:root')), lignes.join('\n'));
+    assert.deepEqual(instantane(path.dirname(b.racine)), avant, 'la vérification n’écrit rien');
+    assert.equal(lireJournal(b, 'chown'), '');
+  });
+
+  it('application : /home/deploy repasse à root en 0755, fichiers du squelette par chown -hR sans suivre de lien (WR-03)', () => {
+    const b = banc();
+    fs.writeFileSync(path.join(b.journal, 'deploy-existe'), '');
+    const home = path.join(b.racine, 'home/deploy');
+    fs.mkdirSync(path.join(home, '.ssh'), { recursive: true });
+    fs.chmodSync(home, 0o750);
+    ecrire(path.join(home, '.bashrc'), '# squelette\n');
+    fs.symlinkSync('/etc/hostname', path.join(home, '.profile'));
+    const r = lancer(b, ['--appliquer', '--etape', 'utilisateur', '--cle-publique', b.cle], { env: { STUB_UID_ROOT: '424242' } });
+    assert.match(r.stdout, /\[fait\] \/home\/deploy : mode 755/);
+    assert.equal(mode(home), 0o755);
+    const chown = lireJournal(b, 'chown').split('\n');
+    assert.ok(chown.includes(`root:root ${home}`), chown.join('\n'));
+    assert.ok(chown.includes(`-hR root:root -- ${path.join(home, '.bashrc')}`), chown.join('\n'));
+    assert.ok(chown.includes(`-hR root:root -- ${path.join(home, '.profile')}`), chown.join('\n'));
+    assert.ok(!chown.some((l) => l.includes('.ssh/') && !l.startsWith('root:root')), 'rien dans .ssh pour deploy');
+    assert.equal(lireJournal(b, 'interdits'), '');
   });
 
   it('refuse de continuer si deploy appartient à un groupe privilégié (code 1)', () => {

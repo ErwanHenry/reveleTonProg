@@ -28,7 +28,8 @@
 #   import-caddy            ajoute « import /etc/caddy/sites.d/*.caddy » à la fin du Caddyfile, sur place (>>) :
 #                           c'est un montage d'un seul fichier, un renommage laisserait le conteneur sur l'ancien
 #                           inode ; inode comparé avant et après
-#   utilisateur             utilisateur deploy (sans sudo ni groupe d'administration ou de conteneurs), .ssh
+#   utilisateur             utilisateur deploy (sans sudo ni groupe d'administration ou de conteneurs), dossier
+#                           personnel /home/deploy root:root 0755 et tout ce qu'il contient à root, .ssh
 #                           root:root 0755, authorized_keys root:root 0644 avec une seule ligne
 #                           restrict,command=<commande forcée> <clé> ; /srv/reveletonprog et ses dossiers à deploy
 #   commande                ops/commande-deploiement.sh en /usr/local/sbin/rtp-deploy-command (root, 0755)
@@ -171,7 +172,8 @@ ETC_RTP="$R/etc/rtp"
 CRON_D="$R/etc/cron.d"
 DEPOT_PARENT="$R/opt/rtp"
 DEPOT="$DEPOT_PARENT/depot"
-SSH_DEPLOY="$R/home/deploy/.ssh"
+HOME_DEPLOY="$R/home/deploy"
+SSH_DEPLOY="$HOME_DEPLOY/.ssh"
 CLES_AUTORISEES="$SSH_DEPLOY/authorized_keys"
 BLOC_ESSAI="$SITES_D/reveletonprog-essai.caddy"
 
@@ -575,6 +577,27 @@ etape_utilisateur() {
         ;;
     esac
     dire ok "deploy : aucun groupe privilégié"
+  fi
+
+  # Dossier personnel à root (revue de code WR-03) : un renommage ne demande que le droit d'écriture sur le dossier
+  # parent, donc un /home/deploy à deploy lui permettrait de remplacer .ssh (mv ~/.ssh ~/.x && mkdir ~/.ssh) et de
+  # poser une clé sans restriction. deploy n'a besoin d'écrire nulle part chez lui (rrsync verrouille incoming/, son
+  # journal rrsync.log n'est écrit que s'il existe déjà). Les fichiers du squelette (.bashrc, .profile... : bash lit
+  # .bashrc avant la commande forcée quand sshd le lance) passent aussi à root, sans suivre de lien (chown -h).
+  assurer_dossier "$HOME_DEPLOY" 755 root
+  if [ -d "$HOME_DEPLOY" ]; then
+    local e attendu_root
+    attendu_root=$(ids_de root) || attendu_root=''
+    while IFS= read -r -d '' e; do
+      if [ -n "$attendu_root" ] && [ "$(proprietaire "$e")" = "$attendu_root" ]; then
+        dire ok "$(affiche "$e") : propriétaire root:root"
+      elif verification; then
+        dire 'a faire' "$(affiche "$e") : propriétaire root:root (deploy ne doit rien posséder dans son dossier personnel)"
+      else
+        chown -hR root:root -- "$e"
+        dire fait "$(affiche "$e") : propriétaire root:root"
+      fi
+    done < <(find "$HOME_DEPLOY" -mindepth 1 -maxdepth 1 ! -name .ssh -print0)
   fi
 
   # .ssh et authorized_keys à root : deploy ne peut pas réécrire sa propre restriction.

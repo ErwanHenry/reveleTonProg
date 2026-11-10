@@ -457,7 +457,7 @@ bash ops/verifier-sites.sh comparer ~/.config/rtp/sites-avant.tsv ~/.config/rtp/
 ```
 
   Attendu : `differents 0` et `disparus 0` (un nouvel hôte, l'hôte technique, est permis). Code 1 sinon.
-- Commande forcée `/usr/local/sbin/rtp-deploy-command` (copie de `ops/commande-deploiement.sh`, seule commande de la clé `deploy`, dont le `authorized_keys` appartient à root) :
+- Commande forcée `/usr/local/sbin/rtp-deploy-command` (copie de `ops/commande-deploiement.sh`, seule commande de la clé `deploy`, dont le `authorized_keys` appartient à root, comme `.ssh` et le dossier personnel `/home/deploy` lui-même, root:root 0755 avec tout son contenu : sinon `deploy` pourrait renommer `.ssh` et poser une clé sans restriction, revue de code WR-03 ; contrôle `ssh keel-vps 'bash /opt/rtp/depot/ops/installer-serveur.sh --verifier --etape utilisateur </dev/null'`) :
 
 | Verbe | Effet | Sortie |
 |-------|-------|--------|
