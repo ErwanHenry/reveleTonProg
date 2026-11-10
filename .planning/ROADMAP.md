@@ -141,7 +141,7 @@ Plans:
 
 - [ ] 09-01-PLAN.md — Relecture ouverte (pilote.relecture_ouverte), éditeur par positions de nœuds YAML, registre, commandes liste, marquer, note (vague 1)
 - [ ] 09-02-PLAN.md — Liste blanche config/publication.yml, règle PUBLICATION_*, filtre des pages, codes check-dist (vague 1)
-- [ ] 09-03-PLAN.md — W9 : exception Wayback motivée, adoption d'un instantané existant, sources Batho et Rohou (vague 1, validation d'Erwan)
+- [x] 09-03-PLAN.md — W9 : exception Wayback motivée, adoption d'un instantané existant, sources Batho et Rohou (vague 1, validation d'Erwan)
 - [ ] 09-04-PLAN.md — Mentions légales finales (régime II), contact réel, phrase du journal d'erreurs, note de risques R1 à R9 (vague 1)
 - [ ] 09-05-PLAN.md — Page de relecture locale sur 127.0.0.1 avec jeton CSRF, jamais dans le dist (vague 2)
 - [ ] 09-06-PLAN.md — Commandes publier (relu vers publie, thème entier) et retirer (retrait d'urgence avec case de couverture) (vague 2)
