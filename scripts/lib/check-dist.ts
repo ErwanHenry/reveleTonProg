@@ -67,6 +67,7 @@ export const CODES_CHECK_DIST = [
   'VERSION_ABSENTE',
   'VERSION_INVALIDE',
   'TYPE_FICHIER_INATTENDU',
+  'FICHIER_NON_REGULIER',
 ] as const;
 
 /** Commit écrit dans version.json : 40 hexadécimaux minuscules (GITHUB_SHA), ou « dev » hors CI. */
@@ -137,12 +138,32 @@ const estAbsolue = (v: string): boolean => SCHEMA.test(nettoyerUrl(v));
 
 const posix = (p: string): string => p.split(path.sep).join('/');
 
-function lister(dir: string, base = dir): string[] {
+/** Entrée du dist qui n'est ni un fichier ordinaire ni un dossier (revue de code WR-06). */
+interface EntreeSpeciale {
+  rel: string;
+  type: string;
+}
+
+function typeEntree(e: fs.Dirent): string {
+  if (e.isSymbolicLink()) return 'lien symbolique';
+  if (e.isFIFO()) return 'tube nommé';
+  if (e.isSocket()) return 'socket';
+  if (e.isBlockDevice() || e.isCharacterDevice()) return 'périphérique';
+  return 'type inconnu';
+}
+
+/**
+ * Fichiers ordinaires du dist (chemins relatifs « / », triés). Tout le reste (lien symbolique, même vers un dossier,
+ * tube, socket, périphérique) va dans `speciaux` sans être suivi ni lu : un lien serait servi par Caddy, qui le
+ * suivrait dans son propre conteneur, et échapperait à toutes les règles de page.
+ */
+function lister(dir: string, speciaux: EntreeSpeciale[], base = dir): string[] {
   const out: string[] = [];
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
     const p = path.join(dir, e.name);
-    if (e.isDirectory()) out.push(...lister(p, base));
+    if (e.isDirectory()) out.push(...lister(p, speciaux, base));
     else if (e.isFile()) out.push(posix(path.relative(base, p)));
+    else speciaux.push({ rel: posix(path.relative(base, p)), type: typeEntree(e) });
   }
   return out.sort();
 }
@@ -266,7 +287,16 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
     constats.push({ code, severite, fichier, message });
   };
 
-  const fichiers = lister(racineDist);
+  const speciaux: EntreeSpeciale[] = [];
+  const fichiers = lister(racineDist, speciaux);
+  // Erreur dans tous les modes, sans option : rien d'autre qu'un fichier ordinaire ou un dossier ne part en ligne.
+  for (const s of speciaux) {
+    signaler(
+      'FICHIER_NON_REGULIER',
+      s.rel,
+      `${s.type} dans le dist : seuls des fichiers ordinaires et des dossiers sont publiés (Caddy suivrait un lien dans son propre conteneur, et le serveur refuse l'envoi)`,
+    );
+  }
   const cachePages = new Map<string, Page>();
   const lirePage = (rel: string): Page => {
     let p = cachePages.get(rel);

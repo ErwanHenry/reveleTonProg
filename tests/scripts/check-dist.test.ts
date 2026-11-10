@@ -862,6 +862,55 @@ describe('checkDist : version.json (HEB-07, D-12) et types de fichiers du dist (
   });
 });
 
+describe('FICHIER_NON_REGULIER (WR-06) : lien symbolique ou fichier spécial dans le dist', () => {
+  const avec = (preparer: (dist: string) => void, mode: Mode = 'production'): Resultat & { constats: ReturnType<typeof checkDist> } => {
+    const dist = ecrireDist(distPropre());
+    preparer(dist);
+    const constats = checkDist(dist, { mode, cellulesParTheme: new Map([['logement', 2]]) });
+    return {
+      constats,
+      codes: [...new Set(constats.map((c) => c.code))].sort(),
+      fichiers: constats.map((c) => c.fichier),
+      messages: constats.map((c) => c.message),
+    };
+  };
+
+  it('lien symbolique vers un fichier hors du dist : erreur, jamais suivi', () => {
+    const r = avec((d) => fs.symlinkSync('/etc/hosts', path.join(d, 'x.txt')));
+    assert.deepEqual(r.codes, ['FICHIER_NON_REGULIER']);
+    assert.deepEqual(r.fichiers, ['x.txt']);
+    assert.equal(r.constats[0]?.severite, 'erreur');
+    assert.match(r.messages[0] ?? '', /lien symbolique/);
+  });
+
+  it('page .html en lien symbolique, et lien vers un dossier : signalés, non lus ni parcourus', () => {
+    const r = avec((d) => {
+      fs.mkdirSync(path.join(d, 'sous'), { recursive: true });
+      fs.symlinkSync(path.join(d, 'index.html'), path.join(d, 'sous', 'copie.html'));
+      fs.symlinkSync('/etc', path.join(d, 'etc'));
+    });
+    assert.deepEqual(r.codes, ['FICHIER_NON_REGULIER']);
+    assert.deepEqual([...r.fichiers].sort(), ['etc', 'sous/copie.html']);
+  });
+
+  it('lien symbolique cassé : signalé', () => {
+    const r = avec((d) => fs.symlinkSync('/nulle/part', path.join(d, 'casse.json')));
+    assert.deepEqual(r.fichiers, ['casse.json']);
+  });
+
+  it('tube nommé (fifo) : signalé, en preview aussi', () => {
+    for (const mode of ['production', 'preview'] as const) {
+      const r = avec((d) => {
+        const m = spawnSync('mkfifo', [path.join(d, 'tube')], { encoding: 'utf8' });
+        assert.equal(m.status, 0, m.stderr);
+      }, mode);
+      assert.ok(r.codes.includes('FICHIER_NON_REGULIER'), mode);
+      assert.ok(r.fichiers.includes('tube'), mode);
+      assert.match(r.messages[r.fichiers.indexOf('tube')] ?? '', /tube nommé/);
+    }
+  });
+});
+
 describe('cellulesAttendues', () => {
   it('corpus-valide en production : le thème publié « logement » attend 2 cellules', () => {
     assert.deepEqual(cellulesAttendues(CORPUS, REPO_ROOT, 'production'), new Map([['logement', 2]]));
@@ -994,6 +1043,14 @@ describe('CLI scripts/check-dist.ts', () => {
     const r = lancer(['--dist', dist, '--root', CORPUS, '--mode', 'production']);
     assert.equal(r.status, 1, r.out + r.err);
     assert.match(r.out, /^TYPE_FICHIER_INATTENDU police\.woff2 : /m);
+  });
+
+  it('WR-06 : un lien symbolique dans le dist donne FICHIER_NON_REGULIER (code 1)', () => {
+    const dist = ecrireDist(distCli());
+    fs.symlinkSync('/etc/hosts', path.join(dist, 'hosts.txt'));
+    const r = lancer(['--dist', dist, '--root', CORPUS, '--mode', 'production']);
+    assert.equal(r.status, 1, r.out + r.err);
+    assert.match(r.out, /^FICHIER_NON_REGULIER hosts\.txt : /m);
   });
 
   it('dist introuvable : code 2', () => {
