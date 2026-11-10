@@ -280,6 +280,8 @@ jobs:
   # DEPLOY_CIBLE=essai : build de production construite sans RTP_DEPLOIEMENT (hôte privé sous basic_auth, D-07 révisée).
   # DEPLOY_CIBLE=production : toujours RTP_DEPLOIEMENT=1, donc toutes les gardes de déploiement public (HEB-14).
   # Erwan approuve chaque run dans l'Environment production (seul relecteur, « prevent self-review » désactivé).
+  # La garde de gel est appliquée deux fois : par le job gel (un push pendant le gel ne demande même pas d'approbation)
+  # et en première étape de deploy, après l'approbation (une approbation donnée pendant le gel est refusée).
   # Une approbation donnée après que main a avancé avec des changements du site est refusée par le contrôle de la
   # tête de main : une tête plus récente n'est admise que si elle descend du commit du run et ne change que des
   # chemins de CHEMINS_HORS_SITE (même classement que le job changements). Seul le site de la tête part en ligne.
@@ -312,6 +314,20 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
+      # La garde est rejouée ici, après l'approbation (CR-02) : le job gel l'évalue avant l'attente de l'Environment,
+      # qui peut durer jusqu'à 30 jours. Un run approuvé pendant un gel est refusé, sauf retrait d'urgence justifié.
+      # Aucune dépendance npm requise (scripts/garde-gel.ts n'importe que node: et src/lib/dates-tours.ts).
+      - name: Rejouer la garde de gel au moment de l'approbation (dates de Paris, retrait d'urgence justifié)
+        id: gel
+        env:
+          URGENCE: ${{ inputs.retrait_urgence }}
+          JUSTIFICATION: ${{ inputs.justification }}
+        run: node scripts/garde-gel.ts --urgence "$URGENCE" --justification "$JUSTIFICATION"
+      - name: Refuser le déploiement approuvé pendant le gel
+        if: steps.gel.outputs.ok != 'true'
+        run: |
+          echo "::error::Déploiement refusé par la garde de gel au moment de l'approbation (voir le résumé). Retrait d'urgence : relancer avec retrait_urgence coché et une justification écrite."
+          exit 1
       - name: Installer les dépendances (npm ci)
         run: npm ci
       - name: Vérifier les signatures des paquets

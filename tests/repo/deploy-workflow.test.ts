@@ -231,6 +231,29 @@ describe('ci.yml : job deploy (HEB-02, HEB-12, HEB-14)', () => {
     });
   });
 
+  it('garde de gel rejouée après l’approbation (CR-02) : première étape après node, avant npm ci et la clé', () => {
+    const iNode = indexEtape(dep, (x) => x.uses?.startsWith('actions/setup-node@') === true, 'setup-node');
+    const iGel = indexEtape(dep, (x) => x.id === 'gel', 'garde de gel');
+    const gel = s[iGel] as Step;
+    assert.equal(iGel, iNode + 1, 'la garde suit immédiatement setup-node');
+    assert.equal(gel.run?.trim(), 'node scripts/garde-gel.ts --urgence "$URGENCE" --justification "$JUSTIFICATION"');
+    assert.deepEqual(gel.env, { URGENCE: '${{ inputs.retrait_urgence }}', JUSTIFICATION: '${{ inputs.justification }}' });
+    assert.equal(gel.if, undefined);
+    const refus = s[iGel + 1] as Step;
+    assert.equal(refus.if, "steps.gel.outputs.ok != 'true'");
+    assert.match(refus.run ?? '', /::error::[^\n]*\n\s*exit 1/);
+    const iCle = indexEtape(dep, (x) => x.run?.includes('umask 077') === true, 'clé');
+    for (const [quoi, predicat] of [
+      ['npm ci', (x: Step) => /\bnpm ci\b/.test(x.run ?? '')],
+      ['rsync', (x: Step) => (x.run ?? '').includes('rsync ')],
+      ['activer', (x: Step) => x.id === 'activer'],
+    ] as [string, (x: Step) => boolean][]) {
+      const i = s.findIndex(predicat);
+      if (i >= 0) assert.ok(iGel + 1 < i, `la garde précède ${quoi}`);
+    }
+    assert.ok(iGel + 1 < iCle, 'la garde précède l’écriture de la clé');
+  });
+
   it('étapes dans l’ordre : checkout, node, npm ci, signatures, tête de main, build, check-dist, clé, rsync, activer, état, fumée, retour, nettoyage', () => {
     const ordre = [
       indexEtape(dep, (x) => x.uses?.startsWith('actions/checkout@') === true, 'checkout'),
