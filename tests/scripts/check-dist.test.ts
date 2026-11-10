@@ -600,6 +600,37 @@ describe('checkDist : cellules par thème', () => {
   });
 });
 
+describe('checkDist : liste blanche de publication', () => {
+  const sev = (fichiers: Fichiers, extra: Partial<OptionsCheckDist>, mode: Mode = 'production'): Array<[string, string]> => {
+    const dist = ecrireDist(fichiers);
+    return checkDist(dist, { mode, cellulesParTheme: new Map([['logement', 2]]), ...extra }).map((c): [string, string] => [c.code, c.severite]);
+  };
+
+  it('THEME_HORS_LISTE_BLANCHE : page de thème hors liste, erreur en production', () => {
+    const r = sev(distPropre(), { themesOuverts: ['climat'] });
+    assert.deepEqual(r.filter(([c]) => c === 'THEME_HORS_LISTE_BLANCHE'), [['THEME_HORS_LISTE_BLANCHE', 'erreur']]);
+  });
+
+  it('thème listé et présent : aucun constat de publication', () => {
+    assert.deepEqual(sev(distPropre(), { themesOuverts: ['logement'] }), []);
+  });
+
+  it('THEME_OUVERT_ABSENT : listé sans page, avertissement seulement', () => {
+    assert.deepEqual(sev(distPropre(), { themesOuverts: ['logement', 'climat'] }), [['THEME_OUVERT_ABSENT', 'avertissement']]);
+  });
+
+  it('PUBLICATION_VIDE : dist sans aucun thème, avertissement seulement (retrait d\'urgence)', () => {
+    const fichiers = distPropre({ 'themes/logement/index.html': null, 'index.html': page({ corps: '<a href="mailto:contact@x.exemple.fr?subject=Signaler%20une%20erreur">Signaler une erreur</a>' }) });
+    const r = sev(fichiers, { themesOuverts: [] });
+    assert.deepEqual(r, [['PUBLICATION_VIDE', 'avertissement']]);
+  });
+
+  it('sans l\'option, les trois codes sont inactifs ; en preview aussi', () => {
+    assert.deepEqual(sev(distPropre(), {}), []);
+    assert.deepEqual(sev(distPropre({}, { preview: true }), { themesOuverts: [] }, 'preview'), []);
+  });
+});
+
 describe('checkDist : brouillons et indexation', () => {
   it('BROUILLON_EN_PRODUCTION : mesure sans statut publié, sans attribut, badge ou bandeau de preview', () => {
     exactement('BROUILLON_EN_PRODUCTION', { 'themes/logement/index.html': theme('logement', 2, { mesure: () => mesure({ statut: 'brouillon' }) }) });

@@ -1,7 +1,8 @@
 // Adaptateur Astro du corpus : les pages et composants passent ici (getCorpus), jamais par
 // getCollection directement. C'est le SEUL endroit où une page apprend le mode (RTP_MODE).
 import { getCollection } from 'astro:content';
-import { resolveMode } from '../content-core/root.ts';
+import { resolveContentRoot, resolveMode } from '../content-core/root.ts';
+import { loadPublicationConfig } from '../publication-config.ts';
 import type { Candidat, Couverture, EntreeGlossaire, Mesure, Source, Theme } from './types.ts';
 import { construireCorpus } from './vue.ts';
 import type { Brut, Corpus } from './vue.ts';
@@ -28,7 +29,9 @@ async function charger(): Promise<Corpus> {
     couverture: couverture.map((e) => e.data as unknown as Couverture),
     glossaire: glossaire.map((e) => e.data as unknown as EntreeGlossaire),
   };
-  return construireCorpus(brut, resolveMode(undefined, process.env));
+  // Liste blanche de publication (D-07), lue à la racine de contenu comme le loader : toujours passée, jamais optionnelle ici.
+  const themesOuverts = new Set(loadPublicationConfig(resolveContentRoot(process.cwd())).themesOuverts);
+  return construireCorpus(brut, resolveMode(undefined, process.env), themesOuverts);
 }
 
 /** Corpus tel que le visiteur le voit dans le mode du build (production par défaut, fail-closed). */

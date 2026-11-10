@@ -65,7 +65,4 @@ export function loadPublicationConfig(contentRoot: string): PublicationConfig {
   return { themesOuverts, fichier, present: true };
 }
 
-/** Vrai si le thème est dans la liste. Seule définition de l'ouverture, partagée par le validateur, le view-model et check-dist. */
-export function estOuvert(themesOuverts: ReadonlySet<string> | readonly string[], id: string): boolean {
-  return Array.isArray(themesOuverts) ? themesOuverts.includes(id) : (themesOuverts as ReadonlySet<string>).has(id);
-}
+export { estOuvert } from './publication-ouverture.ts';

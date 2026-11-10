@@ -2,6 +2,7 @@
 // Module PUR : ni `astro:content` ni `node:` (testable seul, importable par toute page ou composant).
 // Le mode est un paramètre : seul `index.ts` lit l'environnement. Aucune horloge : toutes les dates
 // viennent des données.
+import { estOuvert } from '../publication-ouverture.ts';
 import { dansPerimetre, statutLePlusRecent, statutRetenu } from '../content-core/rules/equite.ts';
 import type {
   Candidat,
@@ -256,11 +257,16 @@ function badgeDe(statut: StatutRelecture): string | null {
 // Construction
 // ---------------------------------------------------------------------------
 
-export function construireCorpus(brut: Brut, mode: Mode): Corpus {
+/**
+ * `themesOuverts` : liste blanche de publication (D-07). En production, quand elle est donnée, un thème n'est visible
+ * que s'il est `publie` ET listé ; la liste ne peut que restreindre ce que `publie` montre. La preview l'ignore, et
+ * sans l'argument le comportement est inchangé (tests de fonction pure). L'adaptateur Astro la passe toujours.
+ */
+export function construireCorpus(brut: Brut, mode: Mode, themesOuverts?: ReadonlySet<string> | readonly string[]): Corpus {
   const production = mode === 'production';
 
   const themesVisibles = brut.themes
-    .filter((t) => !production || t.statut_relecture === 'publie')
+    .filter((t) => !production || (t.statut_relecture === 'publie' && (themesOuverts === undefined || estOuvert(themesOuverts, t.id))))
     .sort((a, b) => a.ordre - b.ordre || collator.compare(a.id, b.id));
   const idsThemesVisibles = new Set(themesVisibles.map((t) => t.id));
 

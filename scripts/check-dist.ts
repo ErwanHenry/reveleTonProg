@@ -6,6 +6,7 @@ import { parseArgs } from 'node:util';
 import { escapeData, escapeProperty, safe } from '../src/lib/content-core/diagnostics.ts';
 import { ModeInvalideError, resolveContentRoot, resolveMode } from '../src/lib/content-core/root.ts';
 import { DeploiementInvalideError, estDeploiement } from '../src/lib/deploiement.ts';
+import { loadPublicationConfig } from '../src/lib/publication-config.ts';
 import { loadSiteConfig } from '../src/lib/site-config.ts';
 import { cellulesAttendues, checkDist } from './lib/check-dist.ts';
 
@@ -15,6 +16,8 @@ const USAGE = `Usage : node scripts/check-dist.ts [--dist <dossier>] [--root <do
   --root <dossier>        racine du contenu, pour le nombre de cellules attendu (défaut : RTP_CONTENT_ROOT, sinon le vrai corpus « . »)
   --mode preview|production  mode du build contrôlé (défaut : RTP_MODE, sinon production)
   --format text|github    text (défaut) ou annotations GitHub Actions en plus
+  Liste blanche : config/publication.yml de la racine de contenu (themes_ouverts) ; en production, une page de thème
+  hors liste est une erreur (THEME_HORS_LISTE_BLANCHE), un thème listé sans page ou un dist sans thème un avertissement.
   Le domaine du site est lu dans config/site.yml (racine du projet) : en production, URL canonique de chaque page,
   sitemap.xml et ligne Sitemap de robots.txt doivent le suivre ; en preview, aucun des trois n'est permis.
   RTP_DEPLOIEMENT=1 (job de déploiement) : un contact provisoire, un hébergeur seulement prévu et un domaine
@@ -22,7 +25,7 @@ const USAGE = `Usage : node scripts/check-dist.ts [--dist <dossier>] [--root <do
   RTP_DEPLOIEMENT n'accepte que 1, 0 ou vide ; toute autre valeur est refusée (code 2).
   version.json doit exister et donner exactement commit et date ; GITHUB_SHA (40 hexadécimaux, en CI) impose son
   commit, et le commit « dev » est refusé sous RTP_DEPLOIEMENT=1. Le dist ne contient que html, txt, xml et json.
-  Code de sortie : 0 sans erreur, 1 si au moins une erreur, 2 si les arguments, le mode ou config/site.yml sont invalides.
+  Code de sortie : 0 sans erreur, 1 si au moins une erreur, 2 si les arguments, le mode, config/site.yml ou config/publication.yml sont invalides.
 `;
 
 function usageError(message: string): never {
@@ -58,7 +61,14 @@ const dist = path.resolve(projectRoot, values.dist ?? 'dist');
 if (!fs.existsSync(dist) || !fs.statSync(dist).isDirectory()) usageError(`Dossier introuvable : ${dist} (lancer « astro build » avant, ou passer --dist)`);
 const contentRoot = values.root !== undefined ? path.resolve(projectRoot, values.root) : resolveContentRoot(projectRoot, process.env);
 
-const attendues = cellulesAttendues(contentRoot, projectRoot, mode);
+let themesOuverts: string[];
+try {
+  ({ themesOuverts } = loadPublicationConfig(contentRoot));
+} catch (e) {
+  process.stderr.write(`${e instanceof Error ? e.message : String(e)}\n`);
+  process.exit(2);
+}
+const attendues = cellulesAttendues(contentRoot, projectRoot, mode, themesOuverts);
 let deploiement = false;
 try {
   deploiement = estDeploiement(process.env);
@@ -80,7 +90,7 @@ try {
 const sha = process.env.GITHUB_SHA ?? '';
 const version = /^[0-9a-f]{40}$/.test(sha) ? { commitAttendu: sha } : {};
 const typesAutorises = ['.html', '.txt', '.xml', '.json'] as const;
-const constats = checkDist(dist, { mode, cellulesParTheme: attendues, deploiement, domaine, version, typesAutorises });
+const constats = checkDist(dist, { mode, cellulesParTheme: attendues, themesOuverts, deploiement, domaine, version, typesAutorises });
 
 for (const c of constats) console.log(`${c.code} ${safe(c.fichier)} : ${safe(c.message)}`);
 if (format === 'github') {
@@ -96,5 +106,5 @@ if (format === 'github') {
 const erreurs = constats.filter((c) => c.severite === 'erreur').length;
 const avertissements = constats.length - erreurs;
 const rel = path.relative(projectRoot, dist).split(path.sep).join('/') || '.';
-console.log(`check-dist : ${erreurs} erreur(s), ${avertissements} avertissement(s) — dist ${rel}, mode ${mode}, ${attendues.size} thème(s) attendu(s)`);
+console.log(`check-dist : ${erreurs} erreur(s), ${avertissements} avertissement(s) — dist ${rel}, mode ${mode}, ${attendues.size} thème(s) attendu(s), ${themesOuverts.length} thème(s) ouvert(s)`);
 process.exit(erreurs > 0 ? 1 : 0);

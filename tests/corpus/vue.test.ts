@@ -2,6 +2,8 @@
 // Le corpus vient de la surcouche fictive corpus-m1 (plan 04-01), chargée par content-core.
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { loadAll } from '../../src/lib/content-core/load.ts';
 import type { Brut } from '../../src/lib/corpus/vue.ts';
 import {
@@ -19,7 +21,7 @@ import {
 } from '../../src/lib/corpus/vue.ts';
 import type { Candidat } from '../../src/lib/corpus/types.ts';
 import { TRAPPE_BROUILLON, materialiserCorpusM1, nettoyerCorpusM1 } from '../helpers/corpus-m1.ts';
-import { SCHEMAS_DIR } from '../helpers/validate-yaml.ts';
+import { REPO_ROOT, SCHEMAS_DIR } from '../helpers/validate-yaml.ts';
 
 let brut: Brut;
 
@@ -94,6 +96,39 @@ describe('vue : candidats et périmètre', () => {
     const ancien = { ...structuredClone(elise.statuts[0]!), code: 'pressenti' as const, date: '2026-01-01' };
     elise.statuts = [elise.statuts[0]!, ancien];
     assert.equal(construireCorpus(b, 'preview').candidat('elise-erard').perimetre, true);
+  });
+});
+
+describe('vue : liste blanche de publication (D-07)', () => {
+  it("production : un thème publié hors de la liste disparaît avec ses mesures", () => {
+    const c = construireCorpus(brut, 'production', new Set(['logement']));
+    assert.deepEqual(c.themes.map((t) => t.theme.id), ['logement']);
+    assert.throws(() => c.theme('climat'));
+    assert.ok(construireCorpus(brut, 'production').themes.some((t) => t.theme.id === 'climat'), 'sans liste, climat est visible');
+    assert.ok(c.mesures.every((m) => m.mesure.theme === 'logement'));
+  });
+
+  it('production : une liste vide ne montre aucun thème, même publié', () => {
+    const c = construireCorpus(brut, 'production', new Set());
+    assert.deepEqual(c.themes, []);
+    assert.deepEqual(c.mesures, []);
+  });
+
+  it("production : la liste ne peut pas élargir (thème listé mais relu ou brouillon reste caché)", () => {
+    const c = construireCorpus(brut, 'production', ['logement', 'climat', 'ecole']);
+    assert.deepEqual(c.themes.map((t) => t.theme.id), ['logement', 'climat']);
+  });
+
+  it('preview ignore la liste ; sans argument rien ne change', () => {
+    const tous = construireCorpus(brut, 'preview').themes.map((t) => t.theme.id);
+    assert.deepEqual(construireCorpus(brut, 'preview', new Set()).themes.map((t) => t.theme.id), tous);
+    assert.deepEqual(construireCorpus(brut, 'production').themes.map((t) => t.theme.id), ['logement', 'climat']);
+  });
+
+  it("l'adaptateur Astro passe toujours la liste (trois arguments)", () => {
+    const src = readFileSync(path.join(REPO_ROOT, 'src', 'lib', 'corpus', 'index.ts'), 'utf8');
+    assert.match(src, /construireCorpus\(brut, resolveMode\(undefined, process\.env\), themesOuverts\)/);
+    assert.match(src, /loadPublicationConfig\(resolveContentRoot\(process\.cwd\(\)\)\)/);
   });
 });
 

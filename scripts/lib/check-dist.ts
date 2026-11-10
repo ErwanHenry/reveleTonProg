@@ -13,6 +13,7 @@ import { motsInterdits } from '../../src/lib/content-core/rules/text/forbidden.t
 import type { Mode } from '../../src/lib/content-core/rules/types.ts';
 import { schemasDirOf } from '../../src/lib/content-core/root.ts';
 import { empreinteCsp, scriptsEnLigne } from '../../src/lib/csp-empreintes.ts';
+import { estOuvert } from '../../src/lib/publication-config.ts';
 import { estHoteProvisoire } from '../../src/lib/site-config.ts';
 import { aClasse, analyserHtml, trouver } from './html.ts';
 
@@ -44,6 +45,9 @@ export const CODES_CHECK_DIST = [
   'MESURE_SANS_SOURCE_DATEE',
   'CELLULES_INCOHERENTES',
   'THEME_INATTENDU',
+  'THEME_HORS_LISTE_BLANCHE',
+  'THEME_OUVERT_ABSENT',
+  'PUBLICATION_VIDE',
   'BROUILLON_EN_PRODUCTION',
   'PREVIEW_INDEXABLE',
   'LIEN_INTERNE_CASSE',
@@ -86,6 +90,12 @@ export interface OptionsCheckDist {
   mode: Mode;
   /** Nombre de cellules attendu par thème visible (sans elle, CELLULES_INCOHERENTES et THEME_INATTENDU sont inactifs). */
   cellulesParTheme?: ReadonlyMap<string, number> | Readonly<Record<string, number>>;
+  /**
+   * Liste blanche de publication (config/publication.yml de la racine de contenu, D-07). Donnée, elle active en
+   * production THEME_HORS_LISTE_BLANCHE (erreur : une page de thème hors liste), THEME_OUVERT_ABSENT et PUBLICATION_VIDE
+   * (avertissements : un thème listé sans page, un dist sans aucun thème). Sans elle, ces trois codes sont inactifs.
+   */
+  themesOuverts?: readonly string[];
   /**
    * Vrai pour un contrôle avant déploiement (RTP_DEPLOIEMENT=1) : un contact provisoire (CONTACT_PROVISOIRE, TLD réservé) et
    * une page qui annonce un hébergeur seulement prévu (HEBERGEUR_PREVU) deviennent des erreurs, sinon des avertissements.
@@ -250,7 +260,7 @@ const extraitListe = (xs: readonly string[]): string => `${xs.slice(0, 3).join('
  * (tous en preview) montre une cellule par candidat du périmètre d'équité (statut retenu, ADR-041 :
  * `declare` ou `primaire`). Calculé depuis le contenu brut, indépendamment du view-model des pages.
  */
-export function cellulesAttendues(contentRoot: string, projectRoot: string, mode: Mode): Map<string, number> {
+export function cellulesAttendues(contentRoot: string, projectRoot: string, mode: Mode, themesOuverts?: readonly string[]): Map<string, number> {
   const { entries } = loadAll(contentRoot, { schemasDir: schemasDirOf(projectRoot), mode });
   const perimetre = entries.filter(
     (e) =>
@@ -261,6 +271,8 @@ export function cellulesAttendues(contentRoot: string, projectRoot: string, mode
   for (const e of entries) {
     if (e.collection !== 'themes') continue;
     if (mode === 'production' && e.data.statut_relecture !== 'publie') continue;
+    // Même intersection que le view-model (D-07) : la liste blanche ne peut que restreindre ce que `publie` montre.
+    if (mode === 'production' && themesOuverts !== undefined && !estOuvert(themesOuverts, e.id)) continue;
     out.set(e.id, perimetre);
   }
   return out;
@@ -297,6 +309,7 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
       `${s.type} dans le dist : seuls des fichiers ordinaires et des dossiers sont publiés (Caddy suivrait un lien dans son propre conteneur, et le serveur refuse l'envoi)`,
     );
   }
+  const themesVus = new Set<string>();
   const cachePages = new Map<string, Page>();
   const lirePage = (rel: string): Page => {
     let p = cachePages.get(rel);
@@ -667,6 +680,17 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
       if (noindex.length === 0) signaler('PREVIEW_INDEXABLE', rel, 'page de preview sans <meta name="robots" content="noindex">');
     }
 
+    // liste blanche de publication
+    if (opts.mode === 'production' && opts.themesOuverts !== undefined) {
+      for (const main of trouver(racine, (n) => n.tag === 'main' && n.attrs['data-theme'] !== undefined)) {
+        const id = main.attrs['data-theme'] ?? '';
+        themesVus.add(id);
+        if (!estOuvert(opts.themesOuverts, id)) {
+          signaler('THEME_HORS_LISTE_BLANCHE', rel, `page du thème « ${id} » alors qu'il ne figure pas dans themes_ouverts de config/publication.yml`);
+        }
+      }
+    }
+
     // cellules par thème
     if (cellules !== undefined) {
       for (const main of trouver(racine, (n) => n.tag === 'main' && n.attrs['data-theme'] !== undefined)) {
@@ -680,6 +704,14 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
         if (vues !== attendu) signaler('CELLULES_INCOHERENTES', rel, `${vues} cellule(s) pour le thème « ${id} », ${attendu} attendue(s) d'après le contenu`);
       }
     }
+  }
+
+  if (opts.mode === 'production' && opts.themesOuverts !== undefined) {
+    // Sens sûr : un retrait d'urgence d'un thème entier (brouillon) ou d'un site vide doit pouvoir se déployer.
+    for (const id of opts.themesOuverts) {
+      if (!themesVus.has(id)) signaler('THEME_OUVERT_ABSENT', `themes/${id}/index.html`, `le thème « ${id} » est listé dans themes_ouverts mais n'a pas de page dans le dist`, 'avertissement');
+    }
+    if (themesVus.size === 0) signaler('PUBLICATION_VIDE', 'index.html', 'le dist ne contient aucune page de thème : aucun thème n\'est ouvert au public', 'avertissement');
   }
 
   // robots.txt et sitemap.xml

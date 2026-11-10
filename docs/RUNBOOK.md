@@ -217,6 +217,9 @@ En local : `RTP_MODE=preview npm run build -- --outDir dist-preview`, puis la m�
 | `MESURE_SANS_SOURCE_DATEE` | mesure affichée sans source datée | compléter la source |
 | `CELLULES_INCOHERENTES` | nombre de cellules différent du attendu pour le thème | vérifier la couverture et les candidats |
 | `THEME_INATTENDU` | page de thème absente du corpus publié | retirer la page ou publier le thème |
+| `THEME_HORS_LISTE_BLANCHE` | page de thème dont l'identifiant n'est pas dans `themes_ouverts` de `config/publication.yml` (erreur en production) | ajouter le thème à la liste dans un commit dédié relu par Erwan, ou le repasser en brouillon |
+| `THEME_OUVERT_ABSENT` | thème listé dans `themes_ouverts` sans page dans le dist (avertissement en production) | normal après un retrait d'urgence ; sinon vérifier le statut du thème |
+| `PUBLICATION_VIDE` | aucune page de thème dans le dist de production (avertissement) | normal si tout est retiré ; sinon vérifier `themes_ouverts` et les statuts |
 | `BROUILLON_EN_PRODUCTION` | trace de brouillon dans un build de production | vérifier `RTP_MODE` et le statut de la mesure |
 | `PREVIEW_INDEXABLE` | build preview indexable : page sans `noindex`, `robots.txt` sans `Disallow: /`, `<link rel="canonical">` dans une page, `sitemap.xml` présent ou ligne `Sitemap:` dans `robots.txt` | vérifier le mode du build (`RTP_MODE=preview`) ; la preview n'a pas d'URL publique |
 | `LIEN_INTERNE_CASSE` | lien interne vers une page ou une ancre absente | corriger le lien |
