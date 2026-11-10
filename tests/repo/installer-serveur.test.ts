@@ -199,6 +199,8 @@ function instantane(dossier: string): string[] {
       if (st.isDirectory()) {
         lignes.push(`${rel}/ ${(st.mode & 0o777).toString(8)}`);
         parcourir(f);
+      } else if (st.isSymbolicLink()) {
+        lignes.push(`${rel} -> ${fs.readlinkSync(f)}`);
       } else {
         const h = crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex');
         lignes.push(`${rel} ${(st.mode & 0o777).toString(8)} ${h}`);

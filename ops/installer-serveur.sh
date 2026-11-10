@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Installation idempotente de la configuration serveur de reveleTonProg (Phase 8, D-01, D-04, D-05, D-15 ;
-# HEB-01, HEB-10, OPS-03).
+# HEB-01, HEB-10, OPS-03 ; Phase 9, D-09, PUB-02 : bloc public et retrait de l'hôte technique).
 #
 # Seule voie par laquelle les plans serveur écrivent sur la machine, une liste d'étapes approuvée à la fois (D-01).
 # Toute la configuration du site est reconstructible depuis le dépôt par ce script, sauf deux secrets fournis sur
@@ -40,7 +40,13 @@
 #                           /etc/cron.d/rtp-restauration (0644)
 #   site-essai              deploy/caddy/essai.caddy en sites.d/reveletonprog-essai.caddy, par fichier temporaire et
 #                           renommage (dossier monté : le renommage y est sûr) ; refusé tant que le domaine est
-#                           réservé (.invalid, .test, .example, .localhost)
+#                           réservé (.invalid, .test, .example, .localhost). Une fois l'hôte technique retiré
+#                           (marqueur /opt/rtp/essai-retire présent, posé par la commande de retrait approuvée, jamais
+#                           par ce script), l'étape ne fait plus rien et le dit par une ligne « [ok: retiré] », même
+#                           dans la liste complète ; supprimer le marqueur est la seule façon de la rétablir
+#   site-public             deploy/caddy/site.caddy (nom nu et www) en sites.d/reveletonprog.caddy, de la même façon ;
+#                           chaque adresse de premier niveau est vérifiée (domaine réservé refusé, code 6) et l'étape
+#                           est refusée (code 7) tant que /srv/reveletonprog/current n'existe pas (lien ou dossier)
 #   depot                   copie ops/ et deploy/ de la source dans /opt/rtp/depot
 #
 # Entrée standard (--appliquer seulement, jamais affichée) : lignes CLE=valeur, réparties par clé.
@@ -57,7 +63,8 @@
 # (fichier du serveur ou source absent, deploy dans un groupe privilégié, action restée à faire) ; 2 usage
 # (option, étape, racine, source ou horodatage invalide) ; 3 --appliquer sur la racine / sans être root ;
 # 4 entrée refusée (empreinte, adresse de ping, clé publique, ligne inconnue ou en double) ; 5 inode du Caddyfile
-# changé pendant l'ajout ; 6 bloc d'essai refusé (domaine réservé ou adresse introuvable).
+# changé pendant l'ajout ; 6 bloc d'essai ou public refusé (domaine réservé ou adresse introuvable) ;
+# 7 bloc public refusé : /srv/reveletonprog/current absent (déployer d'abord la cible production).
 set -euo pipefail
 export LC_ALL=C
 umask 022
@@ -69,7 +76,7 @@ RE_CLE='^ssh-ed25519 [A-Za-z0-9+/=]+( [A-Za-z0-9._@-]+)?$'
 # Même motif que ops/battement.sh et ops/tester-restauration.sh (port facultatif ; test de dérive, IN-03).
 RE_URL_PING='^https://[A-Za-z0-9.-]+(:[0-9]+)?(/[A-Za-z0-9._~/-]*)?$'
 RE_HORODATAGE='^[0-9]{12}$'
-ORDRE_ETAPES='sauvegarde-caddy montages env-caddy import-caddy utilisateur commande battement sauvegarde restauration-mensuelle site-essai depot'
+ORDRE_ETAPES='sauvegarde-caddy montages env-caddy import-caddy utilisateur commande battement sauvegarde restauration-mensuelle site-essai site-public depot'
 # Noms écrits en deux morceaux : le test statique refuse ce mot hors commentaires, pour prouver qu'aucune commande
 # de conteneur n'est lancée par ce script.
 FICHIER_COMPOSE='dock''er-compose.yml'
@@ -81,7 +88,7 @@ usage() {
 Usage : installer-serveur.sh [--verifier|--appliquer] --etape <liste> [--racine <dir>] [--source <dir>]
                              [--cle-publique <fichier>] [--horodatage <AAAAMMJJhhmm>]
 Étapes : sauvegarde-caddy, montages, env-caddy, import-caddy, utilisateur, commande, battement, sauvegarde,
-         restauration-mensuelle, site-essai, depot
+         restauration-mensuelle, site-essai, site-public, depot
 FIN
 }
 
@@ -177,6 +184,10 @@ HOME_DEPLOY="$R/home/deploy"
 SSH_DEPLOY="$HOME_DEPLOY/.ssh"
 CLES_AUTORISEES="$SSH_DEPLOY/authorized_keys"
 BLOC_ESSAI="$SITES_D/reveletonprog-essai.caddy"
+BLOC_PUBLIC="$SITES_D/reveletonprog.caddy"
+# Présent une fois l'hôte technique retiré (commande de retrait approuvée) : site-essai ne réinstalle plus son bloc.
+MARQUEUR_ESSAI_RETIRE="$DEPOT_PARENT/essai-retire"
+essai_retire() { [ -e "$MARQUEUR_ESSAI_RETIRE" ] || [ -L "$MARQUEUR_ESSAI_RETIRE" ]; }
 
 # Chemin affiché : vu depuis le serveur (sans le préfixe de --racine).
 affiche() { printf '%s' "${1#"$R"}"; }
@@ -211,7 +222,8 @@ if demandee sauvegarde; then
   exiger_source deploy/cron/rtp-sauvegarde
 fi
 if demandee restauration-mensuelle; then exiger_source deploy/cron/rtp-restauration; fi
-if demandee site-essai; then exiger_source deploy/caddy/essai.caddy; fi
+if demandee site-essai && ! essai_retire; then exiger_source deploy/caddy/essai.caddy; fi
+if demandee site-public; then exiger_source deploy/caddy/site.caddy; fi
 if demandee depot; then exiger_source ops; exiger_source deploy; fi
 
 for e in sauvegarde-caddy montages env-caddy import-caddy; do
@@ -237,39 +249,57 @@ if [ -n "$CLE_FICHIER" ]; then
   [[ "$CLE" =~ $RE_CLE ]] || echec 4 "--cle-publique : ligne « ssh-ed25519 <clé> [commentaire] » attendue"
 fi
 
-# Bloc d'essai : refusé tant que son adresse est un domaine réservé (le certificat ne pourrait pas être obtenu et
+# Blocs du site : refusés tant qu'une adresse est un domaine réservé (le certificat ne pourrait pas être obtenu et
 # Caddy relancerait ACME en boucle).
-adresse_bloc() { # fichier : première ligne de code, sans l'accolade ouvrante
-  local ligne
+adresses_bloc() { # fichier : une ligne par bloc de premier niveau (texte avant son accolade ouvrante)
+  # Échoue si une ligne de code de premier niveau n'ouvre pas un bloc ou si les accolades ne se referment pas.
+  local ligne profondeur=0 ouvrantes fermantes trouve=0
   while IFS= read -r ligne || [ -n "$ligne" ]; do
     ligne=${ligne%%#*}
     ligne=$(printf '%s' "$ligne" | tr -d '\r' | awk '{$1=$1; print}')
     [ -n "$ligne" ] || continue
-    case "$ligne" in
-      *'{') printf '%s' "${ligne%'{'}"; return 0 ;;
-      *) return 1 ;;
-    esac
+    if [ "$profondeur" -eq 0 ]; then
+      case "$ligne" in
+        *'{') printf '%s\n' "${ligne%'{'}"; trouve=1 ;;
+        *) return 1 ;;
+      esac
+    fi
+    ouvrantes=${ligne//[!\{]/}
+    fermantes=${ligne//[!\}]/}
+    profondeur=$((profondeur + ${#ouvrantes} - ${#fermantes}))
+    [ "$profondeur" -ge 0 ] || return 1
   done <"$1"
-  return 1
+  [ "$profondeur" -eq 0 ] && [ "$trouve" = 1 ]
 }
-if demandee site-essai; then
-  adresses=$(adresse_bloc "$SOURCE/deploy/caddy/essai.caddy") || echec 6 "bloc d'essai : adresse introuvable"
+verifier_adresses() { # fichier libellé conseil
+  local adresses a hote nb=0
+  local -a liste
+  adresses=$(adresses_bloc "$1") || echec 6 "$2 : adresse introuvable"
   # Découpage sans expansion de motif : une adresse joker (*.exemple.fr) ne doit pas lister le dossier courant.
-  read -r -a liste_adresses <<<"$(printf '%s' "$adresses" | tr ',' ' ')"
-  nb_adresses=0
-  for a in ${liste_adresses[@]+"${liste_adresses[@]}"}; do
+  read -r -a liste <<<"$(printf '%s' "$adresses" | tr ',\n' '  ')"
+  for a in ${liste[@]+"${liste[@]}"}; do
     hote=${a#*://}
     hote=${hote%%/*}
     hote=${hote%%:*}
     hote=$(printf '%s' "${hote%.}" | tr '[:upper:]' '[:lower:]')
     case "$hote" in
       '' | localhost | *.localhost | invalid | *.invalid | test | *.test | example | *.example)
-        echec 6 "bloc d'essai : domaine réservé (.${hote##*.}), à remplacer par le vrai domaine avant l'import"
+        echec 6 "$2 : domaine réservé (.${hote##*.}), $3"
         ;;
     esac
-    nb_adresses=$((nb_adresses + 1))
+    nb=$((nb + 1))
   done
-  [ "$nb_adresses" -gt 0 ] || echec 6 "bloc d'essai : adresse introuvable"
+  [ "$nb" -gt 0 ] || echec 6 "$2 : adresse introuvable"
+}
+if demandee site-essai && ! essai_retire; then
+  verifier_adresses "$SOURCE/deploy/caddy/essai.caddy" "bloc d'essai" "à remplacer par le vrai domaine avant l'import"
+fi
+if demandee site-public; then
+  verifier_adresses "$SOURCE/deploy/caddy/site.caddy" 'bloc public' "à remplacer par le vrai domaine dans config/site.yml"
+  # Le bloc servirait une racine absente : chaque visiteur aurait une 404 (lien current posé par le verbe activer).
+  if [ ! -L "$SITE/current" ] && [ ! -d "$SITE/current" ]; then
+    echec 7 "$(affiche "$SITE/current") absent : déployer d'abord la cible production : le bloc public servirait une racine absente"
+  fi
 fi
 
 # Entrée standard : lue une fois, en application seulement, si une étape en a besoin. Valeurs jamais affichées.
@@ -676,18 +706,18 @@ etape_restauration_mensuelle() {
   assurer_fichier "$SOURCE/deploy/cron/rtp-restauration" "$CRON_D/rtp-restauration" 644 root
 }
 
-etape_site_essai() {
-  local src="$SOURCE/deploy/caddy/essai.caddy" nom
-  nom=$(affiche "$BLOC_ESSAI")
+installer_bloc() { # source cible : bloc Caddy dans le dossier monté, par fichier temporaire et renommage
+  local src=$1 dst=$2 nom
+  nom=$(affiche "$dst")
   if [ ! -d "$SITES_D" ]; then
     dire 'a faire' "$nom : installer après l'étape montages ($(affiche "$SITES_D") absent)"
-  elif comparer_fichier "$src" "$BLOC_ESSAI"; then
-    if mode_est "$BLOC_ESSAI" 644; then
+  elif comparer_fichier "$src" "$dst"; then
+    if mode_est "$dst" 644; then
       dire ok "$nom : à jour (644)"
     elif verification; then
       dire 'a faire' "$nom : mode 644"
     else
-      chmod 644 "$BLOC_ESSAI"
+      chmod 644 "$dst"
       dire fait "$nom : mode 644"
     fi
   elif verification; then
@@ -697,9 +727,25 @@ etape_site_essai() {
     cp "$src" "$TMP_CREE"
     chmod 644 "$TMP_CREE"
     chown root:root "$TMP_CREE"
-    mv -f "$TMP_CREE" "$BLOC_ESSAI"
+    mv -f "$TMP_CREE" "$dst"
     dire fait "$nom : installé (644) par renommage"
   fi
+}
+
+etape_site_essai() {
+  local quand
+  if essai_retire; then
+    quand=$(date -u -r "$MARQUEUR_ESSAI_RETIRE" +%Y-%m-%d 2>/dev/null) || quand='date inconnue'
+    [ -n "$quand" ] || quand='date inconnue'
+    N_OK=$((N_OK + 1))
+    printf '[ok: retiré] %s : hôte technique retiré le %s (marqueur présent), rien à installer\n' "${BLOC_ESSAI##*/}" "$quand"
+    return 0
+  fi
+  installer_bloc "$SOURCE/deploy/caddy/essai.caddy" "$BLOC_ESSAI"
+}
+
+etape_site_public() {
+  installer_bloc "$SOURCE/deploy/caddy/site.caddy" "$BLOC_PUBLIC"
 }
 
 etape_depot() {
@@ -746,6 +792,7 @@ for e in $ORDRE_ETAPES; do
       sauvegarde) etape_sauvegarde ;;
       restauration-mensuelle) etape_restauration_mensuelle ;;
       site-essai) etape_site_essai ;;
+      site-public) etape_site_public ;;
       depot) etape_depot ;;
     esac
   fi

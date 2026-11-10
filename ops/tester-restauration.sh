@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Test de restauration de la configuration serveur de reveleTonProg (Phase 8, D-15 ; OPS-03).
+# Test de restauration de la configuration serveur de reveleTonProg (Phase 8, D-15 ; OPS-03 ; Phase 9, PUB-02).
 #
 # Installé en /usr/local/sbin/rtp-tester-restauration (root, 0755) par ops/installer-serveur.sh, étape sauvegarde ;
 # lancé le 1er de chaque mois à 11:00 UTC par /etc/cron.d/rtp-restauration (étape restauration-mensuelle), et à la
@@ -11,15 +11,21 @@
 # Étapes :
 #   archive       la plus récente <destination>/<AAAA-MM-JJ>.tar.gz, extraite par « tar -xpzf » (modes gardés)
 #                 dans le dossier jetable ; puis le squelette que l'archive ne porte pas est recréé (0755) :
-#                 srv/reveletonprog/{incoming/essai,incoming/production,releases,essai/releases}, var/log/caddy
+#                 srv/reveletonprog/{incoming/essai,incoming/production,releases,essai/releases}, var/log/caddy,
+#                 et le lien srv/reveletonprog/current tel que liens.txt le donne (cible releases/<nom> seulement,
+#                 jamais suivie : elle reste absente du dossier jetable)
 #   1 hachages    chaque ligne de MANIFESTE.txt : fichier présent et sha256 identique, sinon échec
 #   2 comparaison chaque fichier restauré comparé au fichier en service sous --racine ; une différence est
 #                 signalée « modifié depuis la sauvegarde » et n'échoue que si l'archive est du jour ; les
 #                 historiques de déploiement (.historique) et les liens current changent à chaque déploiement :
 #                 signalés, jamais en échec
+#   blocs         blocs du site présents dans l'arbre restauré : site-essai si
+#                 opt/vaultwarden/sites.d/reveletonprog-essai.caddy y est, site-public si
+#                 opt/vaultwarden/sites.d/reveletonprog.caddy y est (avant, pendant et après l'ouverture) ;
+#                 aucun des deux : échec
 #   3 installateur  <source>/ops/installer-serveur.sh --verifier --etape
-#                 montages,import-caddy,commande,battement,sauvegarde,site-essai --racine <arbre restauré> : aucune
-#                 ligne « [a faire] » permise
+#                 montages,import-caddy,commande,battement,sauvegarde[,site-essai][,site-public]
+#                 --racine <arbre restauré> : aucune ligne « [a faire] » permise
 #   4 caddy       <source>/ops/valider-caddy.sh avec RTP_CADDYFILE et RTP_SITES_D sur la copie restaurée, avec et
 #                 sans les variables d'empreinte : valide exigé
 #   5 ping        succès seulement : ping du contrôle restauration-mensuelle (HC_RESTAURATION lu dans
@@ -46,7 +52,12 @@ export COPYFILE_DISABLE=1
 # etc/cron.d...) doivent être en 0755 comme sur le serveur.
 umask 022
 
-ETAPES_INSTALLATEUR='montages,import-caddy,commande,battement,sauvegarde,site-essai'
+# Partie fixe ; site-essai et site-public s'ajoutent selon les blocs présents dans l'arbre restauré (étape blocs).
+ETAPES_FIXES='montages,import-caddy,commande,battement,sauvegarde'
+BLOC_ESSAI='opt/vaultwarden/sites.d/reveletonprog-essai.caddy'
+BLOC_PUBLIC='opt/vaultwarden/sites.d/reveletonprog.caddy'
+LIEN_PRODUCTION='srv/reveletonprog/current'
+RE_CIBLE_LIEN='^releases/[A-Za-z0-9._-]+$'
 RE_DATE='^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
 RE_ARCHIVE='^([0-9]{4}-[0-9]{2}-[0-9]{2})\.tar\.gz$'
 RE_URL_PING='^https://[A-Za-z0-9.-]+(:[0-9]+)?(/[A-Za-z0-9._~/-]*)?$'
@@ -136,6 +147,19 @@ for d in "${SQUELETTE[@]}"; do
   mkdir -p "$EXTRAIT/$d"
   chmod 755 "$EXTRAIT/$d"
 done
+# Lien current de production, comme liens.txt le donne : l'installateur refuse le bloc public sans lui (code 7).
+# Seule une cible relative releases/<nom> est recréée ; elle n'existe pas dans le dossier jetable et n'est jamais lue.
+if [ -f "$EXTRAIT/liens.txt" ]; then
+  while IFS=' ' read -r lien cible || [ -n "$lien" ]; do
+    [ "$lien" = "$LIEN_PRODUCTION" ] || continue
+    [ "$cible" != absent ] || continue
+    if [[ $cible =~ $RE_CIBLE_LIEN ]] && [ ! -e "$EXTRAIT/$lien" ] && [ ! -L "$EXTRAIT/$lien" ]; then
+      ln -s "$cible" "$EXTRAIT/$lien"
+    else
+      diag "[info] lien /$lien non recréé (cible inattendue dans liens.txt)"
+    fi
+  done <"$EXTRAIT/liens.txt"
+fi
 
 # --- 1. Hachages --------------------------------------------------------------------------------------------------
 FICHIERS=0
@@ -186,6 +210,18 @@ if [ -f "$EXTRAIT/liens.txt" ]; then
   done <"$EXTRAIT/liens.txt"
 fi
 [ "$BLOQUANTS" -eq 0 ] || echec comparaison "$BLOQUANTS fichier(s) modifié(s) depuis une archive du jour : sauvegarde à refaire"
+
+# --- Blocs du site présents : la liste d'étapes suit l'ouverture et le retrait de l'hôte technique ---------------
+ETAPES_INSTALLATEUR=$ETAPES_FIXES
+BLOCS=0
+if [ -f "$EXTRAIT/$BLOC_ESSAI" ] && [ ! -L "$EXTRAIT/$BLOC_ESSAI" ]; then
+  ETAPES_INSTALLATEUR="$ETAPES_INSTALLATEUR,site-essai"; BLOCS=$((BLOCS + 1))
+fi
+if [ -f "$EXTRAIT/$BLOC_PUBLIC" ] && [ ! -L "$EXTRAIT/$BLOC_PUBLIC" ]; then
+  ETAPES_INSTALLATEUR="$ETAPES_INSTALLATEUR,site-public"; BLOCS=$((BLOCS + 1))
+fi
+[ "$BLOCS" -gt 0 ] || echec blocs "aucun bloc du site (/$BLOC_ESSAI ou /$BLOC_PUBLIC) dans $NOM_ARCHIVE"
+diag "[info] étapes de l'installateur : $ETAPES_INSTALLATEUR"
 
 # --- 3. Installateur en vérification sur l'arbre restauré ---------------------------------------------------------
 RC=0
