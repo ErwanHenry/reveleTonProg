@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-11-04)
 ## Current Position
 
 Phase: 9 of 10 (contenu relu, juridique et ouverture)
-Plan: 09-05 done (page de relecture locale) ; wave 2 continues with 09-06, 09-07 ; 09-08 is Erwan's track
+Plan: 09-05 and 09-08 done (page de relecture locale ; note de risques signée le 2026-11-11) ; wave 2 continues with 09-06, 09-07
 Status: Executing phase 9
 Last activity: 2026-11-11 (09-05 : `npm run relecture -- servir` sur 127.0.0.1:4327)
 
