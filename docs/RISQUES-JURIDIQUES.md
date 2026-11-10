@@ -4,7 +4,7 @@
 - Date : 2026-11-10
 - Auteur : l'orchestrateur du projet, un agent d'IA (Claude), à partir de la recherche de la Phase 9 (`.planning/phases/09-contenu-relu-juridique-et-ouverture/09-RESEARCH.md`, section 4)
 - Signataire : Erwan Henry, éditeur et directeur de la publication
-- Statut : à signer
+- Statut : risque accepté le 2026-11-11
 
 Cette note remplace, pour l'ouverture, la relecture des Mentions légales par un juriste (décision D-03). Elle reste dans le dépôt. Elle n'est pas liée depuis le site.
 
@@ -91,13 +91,13 @@ Autres points lus en résumé seulement : le montant de l'article 1-2, l'article
 
 J'ai lu cette note et j'accepte les risques résiduels décrits ci-dessus.
 
-- Signataire : à compléter
-- Date : à compléter
-- Mention : à compléter
-- Textes lus par le signataire sur Légifrance, date : à compléter
-- Relecture par un juriste : à compléter (après l'ouverture)
+- Signataire : Erwan Henry
+- Date : 2026-11-11
+- Mention : risque accepté
+- Textes lus par le signataire sur Légifrance, date : 2026-11-11
+- Relecture par un juriste : prévue après l'ouverture, pas encore faite
 
 Preuves (dates seulement, les preuves restent hors du dépôt) :
 
-- Identité transmise à l'hébergeur le 2026-11-10
+- Identité transmise à l'hébergeur le 2026-11-10, preuve conservée hors dépôt
 - Adresse de contact testée de bout en bout le 2026-11-10
