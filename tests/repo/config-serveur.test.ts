@@ -100,10 +100,12 @@ interface Cron {
   nom: string;
   horaire: string;
   commande: string;
+  /** Verrou flock -n placé devant la commande (WR-05) : un passage en cours fait sauter le suivant. */
+  verrou?: string;
 }
 
 const CRONS: Cron[] = [
-  { nom: 'rtp-battement', horaire: '*/5 * * * *', commande: '/usr/local/sbin/rtp-battement' },
+  { nom: 'rtp-battement', horaire: '*/5 * * * *', commande: '/usr/local/sbin/rtp-battement', verrou: '/run/rtp-battement.lock' },
   { nom: 'rtp-sauvegarde', horaire: 'QUOTIDIEN', commande: '/usr/local/sbin/rtp-sauvegarder' },
   { nom: 'rtp-restauration', horaire: '0 11 1 * *', commande: '/usr/local/sbin/rtp-tester-restauration' },
 ];
@@ -141,7 +143,12 @@ describe('deploy/cron/rtp-*', () => {
           assert.equal(horaire, c.horaire);
         }
         assert.equal(champs[5], 'root');
-        assert.equal(champs[6], c.commande);
+        if (c.verrou) {
+          assert.deepEqual(champs.slice(6, 9), ['flock', '-n', c.verrou], 'verrou non bloquant devant la commande');
+          assert.equal(champs[9], c.commande);
+        } else {
+          assert.equal(champs[6], c.commande);
+        }
         const tache = taches[0] ?? '';
         assert.match(tache, /\|\s*logger -t rtp-[a-z-]+\s*$/);
         assert.match(tache, /2>&1/);

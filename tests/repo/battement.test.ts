@@ -9,7 +9,9 @@
 // - curl : consigne ses arguments (et la configuration lue sur l'entrée standard avec --config -) ; une adresse
 //   hc.invalid est un ping (adresse et corps consignés), sinon il répond une version.json ou une page d'accueil
 //   factices selon le chemin, ou échoue (STUB_HTTP=ko) ;
-// - logger : consigne ses arguments.
+// - logger : consigne ses arguments ;
+// - timeout : consigne ses arguments puis lance la commande, ou simule son expiration (code 124, commande non lancée)
+//   quand le nom de la commande figure dans STUB_TIMEOUT_EXPIRE.
 // Aucune sortie ne doit contenir hc.invalid, l'utilisateur ou le mot de passe factices de la sonde.
 import { after, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -124,6 +126,14 @@ function banc(options: { avecHote?: boolean; sansCle?: string; lignesEnPlus?: st
     'esac',
   ]);
   stub(stubs, 'logger', ['#!/bin/sh', 'printf \'%s\\n\' "$*" >> "$STUB_JOURNAL/logger"']);
+  stub(stubs, 'timeout', [
+    '#!/bin/sh',
+    'printf \'%s\\n\' "$*" >> "$STUB_JOURNAL/timeout"',
+    'while [ $# -gt 0 ]; do case "$1" in -k) shift 2 ;; -*) shift ;; *) break ;; esac; done',
+    'shift',
+    'case " ${STUB_TIMEOUT_EXPIRE:-} " in *" $1 "*) exit 124 ;; esac',
+    'exec "$@"',
+  ]);
   return { base, env, stubs, journal };
 }
 
@@ -484,5 +494,53 @@ describe('ops/battement.sh : code', () => {
     for (const nom of ['vps-battement', 'vps-disque-85', 'vps-disque-92', 'vps-certificat']) assert.ok(script.includes(nom), nom);
     assert.doesNotMatch(script, /[–—]/);
     assert.ok(script.split('\n').length >= 80);
+  });
+});
+
+describe('ops/battement.sh : durées bornées (WR-05)', () => {
+  it('docker inspect, openssl s_client, les requêtes HTTPS et les pings passent tous par timeout -k 5', () => {
+    const b = banc({ avecHote: true });
+    const r = lancer(b, { STUB_COMMIT: COMMIT });
+    assert.equal(r.status, 0, r.stderr);
+    const appels = lire(b, 'timeout').split('\n').filter(Boolean);
+    assert.ok(appels.some((l) => /^-k 5 15 docker inspect /.test(l)), appels.join('\n'));
+    assert.ok(appels.some((l) => /^-k 5 15 openssl s_client /.test(l)), appels.join('\n'));
+    assert.equal(appels.filter((l) => /^-k 5 15 curl .*--resolve/.test(l)).length, 2, 'version.json et accueil');
+    assert.equal(appels.filter((l) => /^-k 5 60 curl /.test(l)).length, 4, 'quatre pings');
+    const curl = lire(b, 'curl').split('\n').filter(Boolean);
+    assert.equal(appels.filter((l) => / curl /.test(l)).length, curl.length, 'aucun curl hors de timeout');
+  });
+
+  it('docker bloqué (timeout expiré) : panne signalée, aucun battement, le passage se termine', () => {
+    const b = banc();
+    const r = lancer(b, { STUB_TIMEOUT_EXPIRE: 'docker' });
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(lire(b, 'docker'), '', 'docker jamais lancé');
+    const j = bilan(r);
+    assert.equal(j.site, 'ko');
+    assert.equal(j.pings['vps-battement'], 'aucun');
+    assert.ok(!pings(b).some((x) => x.controle === 'battement'));
+  });
+
+  it('openssl bloqué (timeout expiré) : certificat en /fail, le passage se termine', () => {
+    const b = banc({ avecHote: true });
+    const r = lancer(b, { STUB_COMMIT: COMMIT, STUB_TIMEOUT_EXPIRE: 'openssl' });
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(bilan(r).cert, 'fail');
+  });
+
+  it('chaque appel externe du script est précédé de timeout (lecture du code)', () => {
+    const code = fs
+      .readFileSync(SCRIPT, 'utf8')
+      .split('\n')
+      .filter((l) => !/^\s*#/.test(l))
+      .map((l) => l.replace(/\s#\s.*$/, ''))
+      .join('\n');
+    const appels = [...code.matchAll(/\b(curl|docker|openssl s_client)\b/g)];
+    assert.ok(appels.length >= 4, 'appels externes introuvables');
+    for (const m of appels) {
+      const avant = code.slice(Math.max(0, (m.index ?? 0) - 24), m.index);
+      assert.match(avant, /timeout -k \d+ \d+ $/, `appel sans timeout : …${avant}${m[0]}`);
+    }
   });
 });

@@ -3,4 +3,5 @@
 # Heures en UTC (fuseau du serveur). Adresses de ping dans /etc/rtp/battement.env (0600), jamais ici.
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-*/5 * * * * root /usr/local/sbin/rtp-battement 2>&1 | logger -t rtp-battement
+# flock -n : un passage encore en cours (dockerd ou Caddy bloqué) fait sauter le suivant au lieu de l'empiler.
+*/5 * * * * root flock -n /run/rtp-battement.lock /usr/local/sbin/rtp-battement 2>&1 | logger -t rtp-battement

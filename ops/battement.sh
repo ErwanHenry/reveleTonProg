@@ -53,6 +53,11 @@
 # identifiant. Elle part aussi dans le journal (logger -t rtp-battement) quand la sortie est un terminal ; sous
 # cron, la ligne de /etc/cron.d/rtp-battement la passe déjà à logger, une seule entrée par passage.
 #
+# Durées bornées (revue de code WR-05) : chaque appel externe passe par timeout (coreutils), qui envoie TERM puis
+# KILL 5 s plus tard ; docker inspect et openssl s_client 15 s, chaque requête HTTPS 15 s, chaque ping 60 s (curl
+# -m 10 --retry 3). Un dockerd ou un Caddy bloqué ne bloque donc pas le passage, et la ligne cron prend en plus un
+# verrou (flock -n) : un passage encore en cours fait sauter le suivant au lieu de l'empiler.
+#
 # Codes de sortie : 0 contrôles faits et pings envoyés (quel que soit l'état du site) ; 1 au moins un ping en
 # échec ; 2 configuration refusée (fichier absent, illisible ou trop ouvert, variable manquante, valeur invalide).
 # Compatible bash 3.2.
@@ -171,11 +176,11 @@ config_curl() { # identifiants de la sonde au format de configuration de curl (g
 }
 
 https_get() { # chemin -> corps de la réponse ; échec si HTTP en erreur
-  config_curl | curl -fsS -m 10 --max-filesize 2000000 --resolve "$RTP_HOTE:443:127.0.0.1" --config - \
+  config_curl | timeout -k 5 15 curl -fsS -m 10 --max-filesize 2000000 --resolve "$RTP_HOTE:443:127.0.0.1" --config - \
     "https://$RTP_HOTE$1" 2>/dev/null
 }
 
-ETAT_CONTENEUR=$(docker inspect -f '{{.State.Running}}' "$CONTENEUR" 2>/dev/null) || ETAT_CONTENEUR=''
+ETAT_CONTENEUR=$(timeout -k 5 15 docker inspect -f '{{.State.Running}}' "$CONTENEUR" 2>/dev/null) || ETAT_CONTENEUR=''
 if [ "$ETAT_CONTENEUR" != true ]; then panne "conteneur $CONTENEUR arrêté ou introuvable"; fi
 
 if [ "$SITE" = ok ]; then
@@ -232,7 +237,7 @@ if [ "$ILLISIBLE" = 1 ] || [ "$MAX" -ge "$SEUIL2" ]; then D92=fail; fi
 # --- Contrôle 3 : certificat (après DNS seulement) ----------------------------------------------------------------
 CERT=ignore
 if [ -n "$RTP_HOTE" ]; then
-  PEM=$(openssl s_client -connect 127.0.0.1:443 -servername "$RTP_HOTE" </dev/null 2>/dev/null) || true
+  PEM=$(timeout -k 5 15 openssl s_client -connect 127.0.0.1:443 -servername "$RTP_HOTE" </dev/null 2>/dev/null) || true
   if [ -n "$PEM" ] && printf '%s\n' "$PEM" | openssl x509 -noout -checkend "$((CERT_JOURS * 86400))" >/dev/null 2>&1; then
     CERT=ok
   else
@@ -247,7 +252,7 @@ envoyer() { # nom-du-contrôle url corps [suffixe] -> RESULTAT ok|echec|simulati
   local nom=$1 url=${2%/} corps=$3 suffixe=${4:-}
   if [ "$SIMULATION" = 1 ]; then
     RESULTAT=simulation
-  elif curl -fsS -m 10 --retry 3 -o /dev/null --data-raw "$corps" "$url$suffixe" 2>/dev/null; then
+  elif timeout -k 5 60 curl -fsS -m 10 --retry 3 -o /dev/null --data-raw "$corps" "$url$suffixe" 2>/dev/null; then
     RESULTAT=ok
   else
     RESULTAT=echec
