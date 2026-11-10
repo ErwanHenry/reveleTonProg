@@ -90,9 +90,11 @@ describe('tableau de couverture mesurée (données réelles)', () => {
     }
   });
 
-  it('garde la liste provisoire et l’état de relecture du plan 03-04', () => {
+  it('garde la liste provisoire et l’état de relecture (ouverte en phase 9, ne revient jamais à false)', () => {
     assert.deepEqual(data.pilote.provisoires, ['institutions', 'impots', 'retraites']);
-    assert.equal(data.pilote.relecture_ouverte, false);
+    // Ouverte au premier commit de la phase 9 (RUNBOOK « Ouvrir la relecture ») : la valeur ne repasse jamais à false
+    // une fois qu'un fichier est relu, sinon PILOTE_NON_BROUILLON bloquerait le corpus relu.
+    assert.equal(data.pilote.relecture_ouverte, true);
   });
 
   it('recalcule le choix : pilote.themes, s’il est renseigné, égale classer(...).choix sauf dérogation', () => {
