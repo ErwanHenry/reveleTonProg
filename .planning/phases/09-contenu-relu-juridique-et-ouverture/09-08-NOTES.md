@@ -13,7 +13,7 @@ Ligne à reporter dans `docs/RISQUES-JURIDIQUES.md` quand la note existera (plan
 
 - `contact@reveletonprog.fr` : redirection IONOS existante (constatée le 2026-11-10), MX et SPF vérifiés sur deux résolveurs.
 - Test de bout en bout, déclaré par Erwan le 2026-11-10 : envoi depuis une boîte extérieure fait, message reçu via la redirection, réponse envoyée et arrivée.
-- À préciser par Erwan : adresse d'expéditeur affichée par la réponse (`contact@` ou adresse personnelle) et résultats SPF, DKIM, DMARC lus dans l'original de la réponse.
+- Adresse d'expéditeur de la réponse : l'adresse Gmail personnelle d'Erwan (la redirection IONOS ne réécrit pas l'expéditeur). **Accepté par Erwan le 2026-11-10** : une personne qui écrit au contact verra cette adresse dans la réponse. À revoir si le site prend de l'audience (vraie boîte IONOS ou « envoyer en tant que »). Résultats SPF, DKIM, DMARC de la réponse : non relevés ; ils portent sur gmail.com, pas sur le domaine du site.
 
 ## Signature de la note de risques
 
