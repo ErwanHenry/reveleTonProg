@@ -61,12 +61,32 @@ export function checkExtract(texte: string, opts: { allowReplacement?: boolean }
   return { erreurs, avertissements, octets, caracteres };
 }
 
+export interface ExceptionWayback {
+  motif: string;
+  decide_par: string;
+  decide_le: string;
+}
+
 export interface ArchiveSource {
   extrait: string;
   sha256: string;
   capture_le: string;
   wayback_url?: string;
+  wayback_exception?: ExceptionWayback;
   binaire_sha256?: string;
+}
+
+/** Données d'une source telles que lues dans son YAML (schéma validé). */
+export interface DonneesSource {
+  id: string;
+  type: string;
+  auteur: string;
+  candidats: string[];
+  titre: string;
+  url: string;
+  date_publication: string;
+  date_consultation: string;
+  archive: ArchiveSource;
 }
 
 export interface ParamsSource {
@@ -83,14 +103,20 @@ export interface ParamsSource {
     sha256: string;
     captureLe: string;
     waybackUrl?: string;
+    /** Exception motivée (D-08) : jamais à côté de waybackUrl (le schéma le refuse). */
+    waybackException?: { motif: string; decidePar: string; decideLe: string };
     binaireSha256?: string;
   };
 }
 
 /** YAML d'une source, clés dans l'ordre fixe du contrat, sans commentaire. */
 export function buildSourceYaml(p: ParamsSource): string {
-  const archive: Record<string, string> = { extrait: p.archive.extrait, sha256: p.archive.sha256, capture_le: p.archive.captureLe };
+  const archive: Record<string, string | Record<string, string>> = { extrait: p.archive.extrait, sha256: p.archive.sha256, capture_le: p.archive.captureLe };
   if (p.archive.waybackUrl !== undefined) archive.wayback_url = p.archive.waybackUrl;
+  if (p.archive.waybackException !== undefined) {
+    const e = p.archive.waybackException;
+    archive.wayback_exception = { motif: e.motif, decide_par: e.decidePar, decide_le: e.decideLe };
+  }
   if (p.archive.binaireSha256 !== undefined) archive.binaire_sha256 = p.archive.binaireSha256;
   return stringify(
     {
@@ -107,6 +133,89 @@ export function buildSourceYaml(p: ParamsSource): string {
     },
     { lineWidth: 0, schema: 'core' },
   );
+}
+
+/** Paramètres d'écriture d'une source lue : `buildSourceYaml(paramsDeSource(d))` redonne le même fichier. */
+export function paramsDeSource(s: DonneesSource): ParamsSource {
+  const e = s.archive.wayback_exception;
+  return {
+    id: s.id,
+    type: s.type,
+    auteur: s.auteur,
+    candidats: s.candidats,
+    titre: s.titre,
+    url: s.url,
+    datePublication: s.date_publication,
+    dateConsultation: s.date_consultation,
+    archive: {
+      extrait: s.archive.extrait,
+      sha256: s.archive.sha256,
+      captureLe: s.archive.capture_le,
+      ...(s.archive.wayback_url === undefined ? {} : { waybackUrl: s.archive.wayback_url }),
+      ...(e === undefined ? {} : { waybackException: { motif: e.motif, decidePar: e.decide_par, decideLe: e.decide_le } }),
+      ...(s.archive.binaire_sha256 === undefined ? {} : { binaireSha256: s.archive.binaire_sha256 }),
+    },
+  };
+}
+
+/**
+ * Diff unifié ligne à ligne de deux petits textes (une source YAML : quelques dizaines de lignes),
+ * trois lignes de contexte, en-têtes `a/<nom>` et `b/<nom>`. Chaîne vide si les textes sont identiques.
+ */
+export function diffUnifie(avant: string, apres: string, nom: string): string {
+  if (avant === apres) return '';
+  const a = avant.split('\n');
+  const b = apres.split('\n');
+  if (a[a.length - 1] === '') a.pop();
+  if (b[b.length - 1] === '') b.pop();
+  // Plus longue sous-suite commune (programmation dynamique, suffixes).
+  const lcs: number[][] = Array.from({ length: a.length + 1 }, () => new Array<number>(b.length + 1).fill(0));
+  for (let i = a.length - 1; i >= 0; i--) {
+    for (let j = b.length - 1; j >= 0; j--) {
+      lcs[i]![j] = a[i] === b[j] ? lcs[i + 1]![j + 1]! + 1 : Math.max(lcs[i + 1]![j]!, lcs[i]![j + 1]!);
+    }
+  }
+  type Op = { t: ' ' | '-' | '+'; l: string; ia: number; ib: number };
+  const ops: Op[] = [];
+  let i = 0;
+  let j = 0;
+  while (i < a.length || j < b.length) {
+    if (i < a.length && j < b.length && a[i] === b[j]) ops.push({ t: ' ', l: a[i++]!, ia: i, ib: ++j });
+    else if (i < a.length && (j >= b.length || lcs[i + 1]![j]! >= lcs[i]![j + 1]!)) ops.push({ t: '-', l: a[i++]!, ia: i, ib: j });
+    else ops.push({ t: '+', l: b[j++]!, ia: i, ib: j });
+  }
+  const CONTEXTE = 3;
+  const sortie = [`--- a/${nom}`, `+++ b/${nom}`];
+  let k = 0;
+  while (k < ops.length) {
+    if (ops[k]!.t === ' ') {
+      k++;
+      continue;
+    }
+    const debut = Math.max(0, k - CONTEXTE);
+    let fin = k;
+    // Étend le bloc tant que deux changements sont séparés par au plus 2 × CONTEXTE lignes communes.
+    for (;;) {
+      while (fin < ops.length && ops[fin]!.t !== ' ') fin++;
+      let n = fin;
+      while (n < ops.length && ops[n]!.t === ' ') n++;
+      if (n < ops.length && n - fin <= 2 * CONTEXTE) fin = n;
+      else break;
+    }
+    const finBloc = Math.min(ops.length, fin + CONTEXTE);
+    const bloc = ops.slice(debut, finBloc);
+    const lignesA = bloc.filter((o) => o.t !== '+').length;
+    const lignesB = bloc.filter((o) => o.t !== '-').length;
+    const premierA = bloc.find((o) => o.t !== '+');
+    const premierB = bloc.find((o) => o.t !== '-');
+    const startA = lignesA === 0 ? (bloc[0]?.ia ?? 0) : (premierA?.ia ?? 1);
+    const startB = lignesB === 0 ? (bloc[0]?.ib ?? 0) : (premierB?.ib ?? 1);
+    const plage = (debutL: number, n: number): string => (n === 1 ? `${debutL}` : `${debutL},${n}`);
+    sortie.push(`@@ -${plage(startA, lignesA)} +${plage(startB, lignesB)} @@`);
+    for (const o of bloc) sortie.push(`${o.t}${o.l}`);
+    k = finBloc;
+  }
+  return `${sortie.join('\n')}\n`;
 }
 
 export type DecisionRafraichissement =

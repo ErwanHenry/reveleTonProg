@@ -1,5 +1,8 @@
 // Soumission à l'Internet Archive (Save Page Now anonyme). Module sans E/S propre : `fetch` et
 // l'horloge sont injectés. Un échec est un avertissement, jamais une erreur bloquante.
+import { normalizeExtract } from './archive.ts';
+import { FetchSafeError, fetchSafe, type Adresse } from './fetch-safe.ts';
+import { decodeHtml, htmlToText } from './html-text.ts';
 
 export const WAYBACK_USER_AGENT = 'reveleTonProg-archiver/0.1 (+https://github.com/ErwanHenry/reveleTonProg)';
 export const WAYBACK_TIMEOUT_MS = 150_000;
@@ -85,4 +88,88 @@ export async function submitWayback(url: string, opts: OptionsWayback): Promise<
     if (nom === 'TimeoutError' || nom === 'AbortError') return { ok: false, reason: `délai dépassé (${Math.round((opts.timeoutMs ?? WAYBACK_TIMEOUT_MS) / 1000)} s)` };
     return { ok: false, reason: `erreur réseau${nom === '' ? '' : ` (${nom})`}` };
   }
+}
+
+// ---------- adoption d'un instantané existant (plan 09-03, PUB-04) ----------
+// Lecture seule de web.archive.org : aucune soumission. Un instantané n'est adopté comme copie d'une
+// source que si chaque paragraphe de l'extrait archivé du dépôt figure dans son texte (menace T-09-12).
+
+const HORODATAGE = /^[0-9]{14}$/;
+
+function horodatageValide(h: string): boolean {
+  return HORODATAGE.test(h) && parseSnapshotLocation(`https://web.archive.org/web/${h}/https://x.invalid/`) !== null;
+}
+
+function urlHttps(url: string): boolean {
+  return URL.canParse(url) && new URL(url).protocol === 'https:';
+}
+
+/** Adresse publique d'un instantané (`web.archive.org/web/<14 chiffres>/<url>`), ou null si l'un des deux est invalide. */
+export function urlInstantane(horodatage: string, url: string): string | null {
+  return horodatageValide(horodatage) && urlHttps(url) ? `https://web.archive.org/web/${horodatage}/${url}` : null;
+}
+
+/** Adresse des octets d'origine de l'instantané (suffixe `id_` : sans la barre d'outils de la Wayback Machine). */
+export function urlInstantaneOriginal(horodatage: string, url: string): string | null {
+  return horodatageValide(horodatage) && urlHttps(url) ? `https://web.archive.org/web/${horodatage}id_/${url}` : null;
+}
+
+/** Pliage de comparaison : normalisation de l'extrait, puis accents, casse et blancs. */
+function plier(texte: string): string {
+  return normalizeExtract(texte)
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .toLocaleLowerCase('fr')
+    .replace(/\s+/gu, ' ')
+    .trim();
+}
+
+export interface ComparaisonExtrait {
+  trouves: number;
+  total: number;
+  /** 60 premiers caractères du premier paragraphe absent, ou null. */
+  premierManquant: string | null;
+}
+
+/** Combien de paragraphes non vides de l'extrait (séparés par une ligne vide) figurent dans le texte de l'instantané. */
+export function extraitDansInstantane(extrait: string, texteInstantane: string): ComparaisonExtrait {
+  const paragraphes = normalizeExtract(extrait)
+    .split(/\n[ \t\f]*\n/)
+    .map((p) => p.trim())
+    .filter((p) => p !== '');
+  const cible = plier(texteInstantane);
+  let trouves = 0;
+  let premierManquant: string | null = null;
+  for (const p of paragraphes) {
+    if (cible.includes(plier(p))) trouves++;
+    else premierManquant ??= [...p].slice(0, 60).join('');
+  }
+  return { trouves, total: paragraphes.length, premierManquant };
+}
+
+export type LectureInstantane = { ok: true; texte: string; urlLue: string } | { ok: false; raison: string };
+
+export interface OptionsLecture {
+  fetch?: typeof fetch;
+  lookup?: (hote: string) => Promise<Adresse[]>;
+}
+
+/**
+ * Lit (GET, sans soumission) les octets d'origine d'un instantané et les rend en texte avec la fonction
+ * HTML vers texte de la capture. Refuse une réponse dont l'URL finale n'est pas l'instantané demandé
+ * (la Wayback Machine redirige vers l'horodatage le plus proche quand le demandé n'existe pas).
+ */
+export async function lireInstantane(horodatage: string, url: string, opts: OptionsLecture = {}): Promise<LectureInstantane> {
+  const demandee = urlInstantaneOriginal(horodatage, url);
+  if (demandee === null) return { ok: false, raison: `horodatage (14 chiffres attendus) ou URL https invalide : « ${horodatage} », « ${url.slice(0, 200)} »` };
+  let r;
+  try {
+    r = await fetchSafe(demandee, { ...(opts.fetch === undefined ? {} : { fetch: opts.fetch }), ...(opts.lookup === undefined ? {} : { lookup: opts.lookup }) });
+  } catch (e) {
+    return { ok: false, raison: e instanceof FetchSafeError ? e.message : `erreur de lecture (${e instanceof Error ? e.name : String(e)})` };
+  }
+  if (r.finalUrl !== demandee) return { ok: false, raison: `URL finale ${r.finalUrl.slice(0, 200)} différente de l'instantané demandé ${demandee}` };
+  if (Buffer.from(r.bytes.subarray(0, 5)).toString('latin1') === '%PDF-') return { ok: false, raison: 'instantané PDF : non pris en charge par l’adoption' };
+  const { text } = htmlToText(decodeHtml(r.bytes, r.contentType));
+  return { ok: true, texte: normalizeExtract(text), urlLue: demandee };
 }

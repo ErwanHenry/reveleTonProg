@@ -12,6 +12,8 @@ export interface Archive {
   sha256: string;
   capture_le: string;
   wayback_url?: string;
+  /** Exception motivée à la copie Wayback (D-08) : jamais à côté de wayback_url. */
+  wayback_exception?: { motif: string; decide_par: string; decide_le: string };
   binaire_sha256?: string;
 }
 

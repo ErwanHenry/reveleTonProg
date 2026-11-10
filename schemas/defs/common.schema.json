@@ -22,7 +22,20 @@
         "sha256":         { "$ref": "#/$defs/sha256" },
         "capture_le":     { "$ref": "#/$defs/dateHeure" },
         "wayback_url":    { "type": "string", "format": "https-url", "pattern": "^https://web\\.archive\\.org/web/[0-9]{14}/" },
+        "wayback_exception": { "$ref": "#/$defs/waybackException" },
         "binaire_sha256": { "$ref": "#/$defs/sha256" }
+      },
+      "if":   { "properties": { "wayback_exception": { "type": "object" } }, "required": ["wayback_exception"] },
+      "then": { "properties": { "wayback_url": false } }
+    },
+    "waybackException": {
+      "type": "object",
+      "required": ["motif", "decide_par", "decide_le"],
+      "unevaluatedProperties": false,
+      "properties": {
+        "motif":      { "type": "string", "minLength": 20, "maxLength": 300 },
+        "decide_par": { "$ref": "#/$defs/texte" },
+        "decide_le":  { "$ref": "#/$defs/dateComplete" }
       }
     },
     "sourceStatut": {

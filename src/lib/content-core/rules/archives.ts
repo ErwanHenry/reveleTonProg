@@ -18,6 +18,7 @@ interface ArchiveSource {
   extrait: string;
   sha256: string;
   wayback_url?: string;
+  wayback_exception?: unknown;
 }
 
 const archiveDe = (source: LoadedEntry): ArchiveSource | undefined => {
@@ -96,7 +97,13 @@ export const regleArchives: CorpusRule = {
   },
 };
 
-/** Chaque mesure valide : source connue, source du bon candidat, copie Wayback une fois publiée. */
+/**
+ * Chaque mesure valide : source connue, source du bon candidat, copie Wayback une fois publiée. Une
+ * exception motivée `archive.wayback_exception` (D-08, plan 09-03) tient lieu de copie : le schéma en
+ * exige le motif, l'auteur et la date, et l'interdit à côté de `wayback_url` ; une exception mal formée
+ * fait sortir la source du corpus (erreur de schéma), jamais de passage silencieux. La liste des
+ * exceptions réelles est épinglée par tests/rules/sources-wayback.test.ts.
+ */
 export const regleSources: CorpusRule = {
   id: 'sources',
   run(ctx) {
@@ -126,12 +133,14 @@ export const regleSources: CorpusRule = {
       const source = ctx.corpus.entree('sources', sourceId);
       if (source === undefined) continue;
       const archive = archiveDe(source);
-      if (archive !== undefined && (typeof archive.wayback_url !== 'string' || archive.wayback_url === '')) {
+      if (archive === undefined) continue;
+      const exception = archive.wayback_exception !== null && typeof archive.wayback_exception === 'object';
+      if (!exception && (typeof archive.wayback_url !== 'string' || archive.wayback_url === '')) {
         out.push({
           code: 'ARCHIVE_WAYBACK_ABSENTE',
           pointer: '/archive',
           file: source.file,
-          message: `la source « ${sourceId} » est citée par une mesure publiée mais n'a pas de capture Wayback Machine (archive.wayback_url)`,
+          message: `la source « ${sourceId} » est citée par une mesure publiée : il lui faut une capture Wayback Machine (archive.wayback_url) ou une exception motivée (archive.wayback_exception)`,
         });
       }
     }

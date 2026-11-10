@@ -16,16 +16,19 @@ import {
   TAILLE_MAX_BINAIRE,
   buildSourceYaml,
   checkExtract,
+  diffUnifie,
   extractName,
   normalizeExtract,
+  paramsDeSource,
   refreshDecision,
   sha256Hex,
+  type DonneesSource,
   type ParamsSource,
 } from './lib/archive.ts';
-import { FetchSafeError, fetchSafe } from './lib/fetch-safe.ts';
+import { FetchSafeError, fetchSafe, type Adresse } from './lib/fetch-safe.ts';
 import { decodeHtml, htmlToText, looksClientRendered } from './lib/html-text.ts';
 import { DepotPriveError, readMeta, resolveArchivesDir, storeBinary, syncPrivate, type MetaBinaire } from './lib/private-store.ts';
-import { submitWayback } from './lib/wayback.ts';
+import { extraitDansInstantane, lireInstantane, parseSnapshotLocation, submitWayback, urlInstantane } from './lib/wayback.ts';
 
 const execFileAsync = promisify(execFile);
 const SCHEMAS_DIR = schemasDirOf(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'));
@@ -44,7 +47,13 @@ const USAGE = `Usage :
   archive-source.ts --refresh <source-id> [--file <fichier>] [--capture-le <ISO>] [--push] [--dry-run] [--root <dossier>]
   archive-source.ts --wayback-only <source-id>... [--root <dossier>]
   archive-source.ts --wayback-missing [--candidat <id>] [--root <dossier>]
+  archive-source.ts --wayback-adopter <source-id> --instantane <14 chiffres> [--nouvelle-url <https://…>] [--dry-run] [--root <dossier>]
   archive-source.ts --sync-private
+
+  --wayback-adopter : adopte un instantané Wayback déjà existant (lecture seule de web.archive.org, aucune
+                      soumission), seulement si chaque paragraphe de l'extrait archivé y figure ; --nouvelle-url
+                      corrige aussi l'adresse de la source. L'extrait, son sha256 et les dates ne changent pas.
+  Une source portant archive.wayback_exception (exception motivée) n'est jamais soumise ni adoptée.
 
   type    : ${TYPES.join(' | ')}
   auteur  : ${AUTEURS.join(' | ')}
@@ -53,7 +62,7 @@ const USAGE = `Usage :
   Codes de sortie : 0 ok, 1 contenu refusé, 2 usage ou configuration.
 `;
 
-class Sortie extends Error {
+export class Sortie extends Error {
   readonly code: 1 | 2;
   constructor(code: 1 | 2, message: string) {
     super(message);
@@ -62,7 +71,13 @@ class Sortie extends Error {
   }
 }
 
-type Mode = 'capture' | 'refresh' | 'wayback-only' | 'wayback-missing' | 'sync-private';
+type Mode = 'capture' | 'refresh' | 'wayback-only' | 'wayback-missing' | 'wayback-adopter' | 'sync-private';
+
+/** Dépendances réseau injectables (tests) ; par défaut, le `fetch` global et le DNS du système. */
+export interface Dependances {
+  fetch?: typeof fetch;
+  lookup?: (hote: string) => Promise<Adresse[]>;
+}
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 const avertir = (message: string): void => console.warn(`AVERTISSEMENT : ${message}`);
@@ -140,17 +155,7 @@ interface Contexte {
 interface SourceLue {
   fichier: string;
   rel: string;
-  data: {
-    id: string;
-    type: string;
-    auteur: string;
-    candidats: string[];
-    titre: string;
-    url: string;
-    date_publication: string;
-    date_consultation: string;
-    archive: { extrait: string; sha256: string; capture_le: string; wayback_url?: string; binaire_sha256?: string };
-  };
+  data: DonneesSource;
 }
 
 const relSource = (id: string): string => `src/content/sources/${id}.yaml`;
@@ -168,24 +173,13 @@ function lireSource(racine: string, id: string): SourceLue {
   return { fichier, rel, data: res.data as SourceLue['data'] };
 }
 
-function paramsDe(s: SourceLue['data']): ParamsSource {
-  return {
-    id: s.id,
-    type: s.type,
-    auteur: s.auteur,
-    candidats: s.candidats,
-    titre: s.titre,
-    url: s.url,
-    datePublication: s.date_publication,
-    dateConsultation: s.date_consultation,
-    archive: {
-      extrait: s.archive.extrait,
-      sha256: s.archive.sha256,
-      captureLe: s.archive.capture_le,
-      ...(s.archive.wayback_url === undefined ? {} : { waybackUrl: s.archive.wayback_url }),
-      ...(s.archive.binaire_sha256 === undefined ? {} : { binaireSha256: s.archive.binaire_sha256 }),
-    },
-  };
+const paramsDe = paramsDeSource;
+
+/** Une exception Wayback motivée (D-08) interdit toute soumission ou adoption d'instantané. */
+function refusSiException(src: SourceLue, action: string): void {
+  if (src.data.archive.wayback_exception !== undefined) {
+    throw new Sortie(1, `${src.data.id} porte une exception Wayback motivée (archive.wayback_exception, décidée par ${src.data.archive.wayback_exception.decide_par} le ${src.data.archive.wayback_exception.decide_le}) : ${action} refusée`);
+  }
 }
 
 /** Valide puis écrit la source (atomique) ; une erreur de schéma interdit l'écriture. */
@@ -384,6 +378,10 @@ async function enregistrer(ctx: Contexte, p: ParamsSource, analyse: Analyse, pri
 
 async function soumettre(ctx: Contexte, id: string): Promise<boolean> {
   const src = lireSource(ctx.racine, id);
+  if (src.data.archive.wayback_exception !== undefined) {
+    avertir(`${id} porte une exception Wayback motivée (archive.wayback_exception) : jamais soumise`);
+    return false;
+  }
   const r = await submitWayback(src.data.url, { fetch: globalThis.fetch, now: () => new Date() });
   if (!r.ok) {
     avertir(`Wayback pour ${id} : ${r.reason}. Reprise : node scripts/archive-source.ts --wayback-only ${id}`);
@@ -503,23 +501,26 @@ async function modeRefresh(ctx: Contexte, id: string, file: string | undefined, 
   resume(ctx, p, analyse, prise);
 }
 
-function sourcesSansWayback(racine: string, candidat: string | undefined): string[] {
+/** Sources sans wayback_url ; celles qui portent une exception motivée sont listées à part, jamais soumises. */
+function sourcesSansWayback(racine: string, candidat: string | undefined): { ids: string[]; exceptions: string[] } {
   const dossier = path.join(racine, 'src', 'content', 'sources');
-  if (!existsSync(dossier)) return [];
   const ids: string[] = [];
+  const exceptions: string[] = [];
+  if (!existsSync(dossier)) return { ids, exceptions };
   for (const nom of readdirSync(dossier).sort()) {
     if (!nom.endsWith('.yaml')) continue;
     const id = nom.slice(0, -5);
     try {
-      const doc = parseYamlText(readFileSync(path.join(dossier, nom), 'utf8'), { schema: 'core' }) as SourceLue['data'];
-      if (doc.archive?.wayback_url !== undefined) continue;
-      if (candidat !== undefined && !doc.candidats?.includes(candidat)) continue;
-      ids.push(id);
+      const doc = parseYamlText(readFileSync(path.join(dossier, nom), 'utf8'), { schema: 'core' }) as Partial<DonneesSource> | null;
+      if (doc?.archive?.wayback_url !== undefined) continue;
+      if (candidat !== undefined && !(doc?.candidats?.includes(candidat) ?? false)) continue;
+      if (doc?.archive?.wayback_exception !== undefined) exceptions.push(id);
+      else ids.push(id);
     } catch {
       avertir(`${nom} illisible : ignorée`);
     }
   }
-  return ids;
+  return { ids, exceptions };
 }
 
 async function passeWayback(ctx: Contexte, ids: string[], candidat: string | undefined): Promise<void> {
@@ -542,18 +543,83 @@ async function passeWayback(ctx: Contexte, ids: string[], candidat: string | und
       else throw e;
     }
   }
-  const restantes = sourcesSansWayback(ctx.racine, candidat);
-  console.log(restantes.length === 0 ? 'Toutes les sources ont une URL Wayback.' : `Sources encore sans wayback_url (${restantes.length}) : ${restantes.join(', ')}`);
+  const restantes = sourcesSansWayback(ctx.racine, candidat).ids;
+  console.log(restantes.length === 0 ? 'Toutes les sources ont une URL Wayback (hors exceptions motivées).' : `Sources encore sans wayback_url (${restantes.length}) : ${restantes.join(', ')}`);
+}
+
+function afficherExceptions(exceptions: string[]): void {
+  if (exceptions.length > 0) console.log(`Exceptions motivées (archive.wayback_exception, jamais soumises) : ${exceptions.join(', ')}`);
+}
+
+// ---------- adoption d'un instantané existant (plan 09-03) ----------
+
+interface ArgsAdoption {
+  id: string;
+  instantane: string;
+  nouvelleUrl: string | undefined;
+}
+
+/**
+ * Adopte un instantané Wayback déjà existant comme copie de la source : lecture seule de web.archive.org,
+ * accepté seulement si chaque paragraphe de l'extrait archivé figure dans le texte de l'instantané.
+ * N'écrit que le fichier de la source (url et wayback_url) ; jamais sous archives/.
+ */
+async function modeAdopter(ctx: Contexte, a: ArgsAdoption, deps: Dependances): Promise<void> {
+  const src = lireSource(ctx.racine, a.id);
+  refusSiException(src, 'adoption d’un instantané');
+  const url = a.nouvelleUrl ?? src.data.url;
+  const wayback = urlInstantane(a.instantane, url);
+  if (wayback === null) throw new Sortie(2, `--instantane doit compter 14 chiffres (AAAAMMJJhhmmss, date réelle) et l'URL être en https : « ${a.instantane} », « ${url.slice(0, 200)} »`);
+
+  const lu = readContained(ctx.racine, path.join(ctx.racine, src.data.archive.extrait));
+  if ('diagnostic' in lu) throw new Sortie(1, `extrait archivé ${src.data.archive.extrait} : ${lu.diagnostic.message}`);
+  if (sha256Hex(lu.text) !== src.data.archive.sha256) throw new Sortie(1, `l'extrait archivé ${src.data.archive.extrait} ne correspond plus à son sha256 : adoption refusée`);
+
+  const instantane = await lireInstantane(a.instantane, url, deps);
+  if (!instantane.ok) throw new Sortie(1, `instantané illisible : ${instantane.raison}`);
+  const c = extraitDansInstantane(lu.text, instantane.texte);
+  console.log(`Instantané lu : ${instantane.urlLue}`);
+  console.log(`Paragraphes trouvés : ${c.trouves}/${c.total}`);
+  if (c.total === 0 || c.trouves < c.total) {
+    throw new Sortie(1, `adoption refusée : ${c.trouves}/${c.total} paragraphes de l'extrait trouvés dans l'instantané${c.premierManquant === null ? '' : ` ; premier absent : « ${c.premierManquant} »`}`);
+  }
+
+  const instant = parseSnapshotLocation(wayback)?.instant;
+  if (instant !== undefined) {
+    const jours = Math.round(Math.abs(instant.getTime() - new Date(src.data.archive.capture_le).getTime()) / 86_400_000);
+    avertir(`écart entre la capture du dépôt (${src.data.archive.capture_le}) et l'instantané (${instant.toISOString()}) : ${jours} jour(s) ; contenu comparé paragraphe par paragraphe`);
+  }
+  if (src.data.archive.wayback_url !== undefined && src.data.archive.wayback_url !== wayback) {
+    avertir(`la source avait déjà wayback_url ${src.data.archive.wayback_url} : remplacée`);
+  }
+
+  const p = paramsDe(src.data);
+  p.url = url;
+  p.archive.waybackUrl = wayback;
+  const nouveau = buildSourceYaml(p);
+  validerSeulement(ctx, p);
+  const diff = diffUnifie(readFileSync(src.fichier, 'utf8'), nouveau, src.rel);
+  if (ctx.dryRun) {
+    console.log(diff === '' ? '[dry-run] aucun changement.' : `[dry-run] ${src.rel} n'est pas écrit ; diff proposé :\n${diff}`);
+    return;
+  }
+  if (diff === '') {
+    console.log(`${src.rel} : déjà à jour.`);
+    return;
+  }
+  ecrireSource(ctx, p);
+  console.log(`${src.rel} écrit :\n${diff}`);
 }
 
 // ---------- point d'entrée ----------
 
-function lireArguments(): {
+function lireArguments(argv: string[]): {
   mode: Mode;
   racine: string;
   ctx: Omit<Contexte, 'racine' | 'archivesDir'>;
   capture?: ArgsCapture;
   refresh?: string;
+  adoption?: ArgsAdoption;
   ids: string[];
   candidat: string | undefined;
   file: string | undefined;
@@ -562,7 +628,7 @@ function lireArguments(): {
   let parsed;
   try {
     parsed = parseArgs({
-      args: process.argv.slice(2),
+      args: argv,
       allowPositionals: true,
       strict: true,
       options: {
@@ -583,6 +649,9 @@ function lireArguments(): {
         'wayback-only': { type: 'boolean' },
         'wayback-missing': { type: 'boolean' },
         'sync-private': { type: 'boolean' },
+        'wayback-adopter': { type: 'string' },
+        instantane: { type: 'string' },
+        'nouvelle-url': { type: 'string' },
         help: { type: 'boolean' },
       },
     });
@@ -599,7 +668,8 @@ function lireArguments(): {
     v['wayback-only'] === true ? 'wayback-only' : undefined,
     v['wayback-missing'] === true ? 'wayback-missing' : undefined,
     v['sync-private'] === true ? 'sync-private' : undefined,
-  ].filter((m): m is 'refresh' | 'wayback-only' | 'wayback-missing' | 'sync-private' => m !== undefined);
+    v['wayback-adopter'] !== undefined ? 'wayback-adopter' : undefined,
+  ].filter((m): m is 'refresh' | 'wayback-only' | 'wayback-missing' | 'wayback-adopter' | 'sync-private' => m !== undefined);
   if (modes.length > 1) throw new Sortie(2, `modes incompatibles : ${modes.map((m) => `--${m}`).join(', ')}`);
   const mode: Mode = modes[0] ?? 'capture';
 
@@ -622,6 +692,19 @@ function lireArguments(): {
     if (positionals.length > 0) throw new Sortie(2, '--wayback-missing n’accepte pas d’identifiant (voir --wayback-only)');
     if ((v.candidat?.length ?? 0) > 1) throw new Sortie(2, '--wayback-missing accepte un seul --candidat');
     return base;
+  }
+  if ((v.instantane !== undefined || v['nouvelle-url'] !== undefined) && mode !== 'wayback-adopter') {
+    throw new Sortie(2, '--instantane et --nouvelle-url ne s’emploient qu’avec --wayback-adopter');
+  }
+  if (mode === 'wayback-adopter') {
+    if (positionals.length > 0) throw new Sortie(2, '--wayback-adopter <source-id> n’accepte pas d’autre argument');
+    if (v.instantane === undefined) throw new Sortie(2, '--wayback-adopter demande --instantane <14 chiffres>');
+    if (!/^[0-9]{14}$/.test(v.instantane)) throw new Sortie(2, `--instantane doit compter 14 chiffres (AAAAMMJJhhmmss), reçu « ${v.instantane.slice(0, 40)} »`);
+    const nouvelleUrl = v['nouvelle-url'];
+    if (nouvelleUrl !== undefined && (!URL.canParse(nouvelleUrl) || new URL(nouvelleUrl).protocol !== 'https:')) {
+      throw new Sortie(2, `--nouvelle-url doit être en https : « ${nouvelleUrl.slice(0, 200)} »`);
+    }
+    return { ...base, adoption: { id: v['wayback-adopter'] ?? '', instantane: v.instantane, nouvelleUrl } };
   }
   if (mode === 'refresh') {
     if (positionals.length > 0) throw new Sortie(2, '--refresh <source-id> n’accepte pas d’URL');
@@ -653,8 +736,9 @@ function lireArguments(): {
   return { ...base, capture: { url, candidats, sourceId, type, auteur, titre, datePublication, file: v.file, captureLe: v['capture-le'] } };
 }
 
-async function main(): Promise<void> {
-  const a = lireArguments();
+/** Point d'entrée testable : `argv` sans `node` ni le nom du script ; lève `Sortie` pour un refus. */
+export async function executer(argv: string[], deps: Dependances = {}): Promise<void> {
+  const a = lireArguments(argv);
   if (!existsSync(path.join(a.racine, 'src', 'content'))) {
     throw new Sortie(2, `racine de contenu invalide : ${a.racine} ne contient pas src/content (voir --root)`);
   }
@@ -679,13 +763,20 @@ async function main(): Promise<void> {
       await modeRefresh(ctx, a.refresh ?? '', a.file, a.captureLe);
       return;
     case 'wayback-only':
+      // Refus avant toute soumission : une exception motivée n'est jamais envoyée (T-09-15).
+      for (const id of a.ids) refusSiException(lireSource(ctx.racine, id), 'soumission à la Wayback Machine');
       await passeWayback(ctx, a.ids, undefined);
       return;
     case 'wayback-missing': {
-      const ids = sourcesSansWayback(ctx.racine, a.candidat);
+      const { ids, exceptions } = sourcesSansWayback(ctx.racine, a.candidat);
+      afficherExceptions(exceptions);
       await passeWayback(ctx, ids, a.candidat);
       return;
     }
+    case 'wayback-adopter':
+      if (a.adoption === undefined) throw new Sortie(2, 'arguments d’adoption manquants');
+      await modeAdopter(ctx, a.adoption, deps);
+      return;
     case 'sync-private': {
       if (archivesDir === undefined) throw new Sortie(2, 'dépôt privé reveleTonProg-archives non résolu');
       const r = await syncPrivate({ dossier: archivesDir, message: 'archive: synchronisation' });
@@ -695,15 +786,17 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((e: unknown) => {
-  if (e instanceof Sortie) {
-    console.error(e.message);
-    process.exitCode = e.code;
-  } else if (e instanceof DepotPriveError) {
-    console.error(e.message);
-    process.exitCode = 2;
-  } else {
-    console.error(e instanceof Error ? (e.stack ?? e.message) : String(e));
-    process.exitCode = 1;
-  }
-});
+if (import.meta.main) {
+  executer(process.argv.slice(2)).catch((e: unknown) => {
+    if (e instanceof Sortie) {
+      console.error(e.message);
+      process.exitCode = e.code;
+    } else if (e instanceof DepotPriveError) {
+      console.error(e.message);
+      process.exitCode = 2;
+    } else {
+      console.error(e instanceof Error ? (e.stack ?? e.message) : String(e));
+      process.exitCode = 1;
+    }
+  });
+}

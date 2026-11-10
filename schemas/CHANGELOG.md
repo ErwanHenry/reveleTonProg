@@ -9,6 +9,13 @@ Les schémas JSON de ce dossier sont la seule source de vérité du contrat de d
 
 `npm run migrate -- --check` échoue en CI si un fichier est en retard sur la version courante ; `npm run migrate -- --write` applique les migrations.
 
+## v1, ajout du 2026-11-10 : `archive.wayback_exception` (sans incrément)
+
+- Champ **optionnel** `archive.wayback_exception { motif, decide_par, decide_le }` dans `defs/common` : exception motivée à la copie Wayback Machine (décision D-08 révisée, plan 09-03, PUB-04). `motif` : 20 à 300 caractères ; `decide_par` : texte ; `decide_le` : date complète ; aucune autre clé.
+- Une archive qui porte à la fois `wayback_url` et `wayback_exception` est invalide (`SCHEMA_FALSE` sur `/archive/wayback_url`).
+- Ajout d'un champ optionnel : **pas d'incrément** de `version_schema` (règle ci-dessus), aucune migration ; les sources existantes restent valides.
+- Règle : une source citée par une mesure publiée qui porte une exception valide ne produit pas `ARCHIVE_WAYBACK_ABSENTE`. La liste des exceptions du corpus réel est épinglée par `tests/rules/sources-wayback.test.ts`.
+
 ## v1 (2026-11-03)
 
 Schémas :
