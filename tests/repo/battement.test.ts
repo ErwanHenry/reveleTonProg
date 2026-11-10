@@ -100,7 +100,8 @@ function banc(options: { avecHote?: boolean; sansCle?: string; lignesEnPlus?: st
     '#!/bin/sh',
     'printf \'%s\\n\' "$*" >> "$STUB_JOURNAL/openssl"',
     'case "$1" in',
-    '  s_client) cat > /dev/null; echo "-----BEGIN CERTIFICATE-----"; echo "Y2VydGlmaWNhdCBmYWN0aWNl"; echo "-----END CERTIFICATE-----" ;;',
+    // STUB_VERIFY=ko : poignée de main refusée par la vérification (le certificat est imprimé quand même, code 1).
+    '  s_client) cat > /dev/null; echo "-----BEGIN CERTIFICATE-----"; echo "Y2VydGlmaWNhdCBmYWN0aWNl"; echo "-----END CERTIFICATE-----"; [ "${STUB_VERIFY:-ok}" = ok ] || exit 1 ;;',
     '  x509) cat > /dev/null; exit "${STUB_CHECKEND:-0}" ;;',
     'esac',
   ]);
@@ -264,6 +265,11 @@ describe('ops/battement.sh : passage normal avec hôte (après DNS)', () => {
     const o = lire(b, 'openssl');
     assert.match(o, new RegExp(`s_client .*-connect 127\\.0\\.0\\.1:443 .*-servername ${HOTE}`));
     assert.match(o, /x509 -noout -checkend 1209600/);
+  });
+
+  it('vérifie la chaîne et le nom d’hôte du certificat (IN-02)', () => {
+    const o = lire(b, 'openssl');
+    assert.match(o, new RegExp(`s_client .*-verify_return_error -verify_hostname ${HOTE} -CAfile /etc/ssl/certs/ca-certificates\\.crt`));
   });
 
   it('pinge les quatre contrôles en succès, dans un ordre fixe', () => {
@@ -557,5 +563,17 @@ describe('ops/battement.sh : adresses de ping hors de argv (IN-01)', () => {
     const argv = lire(b, 'curl');
     assert.ok(!argv.includes('hc.invalid'), 'adresse de ping dans les arguments de curl');
     for (const u of Object.values(URLS)) assert.ok(lire(b, 'curl-config').includes(`url = "${u}`), 'adresse absente de la configuration');
+  });
+});
+
+describe('ops/battement.sh : certificat refusé par la vérification (IN-02)', () => {
+  it('chaîne ou nom d’hôte invalides : /fail au contrôle certificat, même avec une date valide', () => {
+    const b = banc({ avecHote: true });
+    const r = lancer(b, { STUB_COMMIT: COMMIT, STUB_VERIFY: 'ko' });
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(bilan(r).cert, 'fail');
+    const cert = pings(b).find((x) => x.controle === 'cert');
+    assert.ok(cert?.fail, 'ping /fail attendu');
+    assert.ok(!lire(b, 'openssl').includes('x509'), 'la sortie d’un s_client en échec n’est jamais lue');
   });
 });

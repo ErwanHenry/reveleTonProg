@@ -22,7 +22,8 @@
 #                              /version.json avec un commit valide et / avec le marqueur « reveleTonProg » ;
 #                              identifiants de la sonde passés par « curl --config - », jamais en argument
 #                              (les adresses de ping aussi) ;
-#                              certificat lu par openssl s_client sur 127.0.0.1:443 avec SNI
+#                              certificat lu par openssl s_client sur 127.0.0.1:443 avec SNI, chaîne et nom
+#                              d'hôte vérifiés (-verify_return_error -verify_hostname)
 # Tous les contrôles sont faits d'abord, les pings partent à la fin, dans un ordre fixe (battement, disque 85,
 # disque 92, certificat). Un ping en échec est signalé sans son adresse et n'empêche pas les suivants.
 #
@@ -47,6 +48,7 @@
 #   RTP_SEUIL1       seuil disque de la première alerte, en % (défaut 85)
 #   RTP_SEUIL2       seuil disque de la seconde alerte, en % (défaut 92)
 #   RTP_CERT_JOURS   délai d'expiration du certificat, en jours (défaut 14)
+#   RTP_CA           autorités de certification pour vérifier la chaîne (défaut /etc/ssl/certs/ca-certificates.crt)
 #   RTP_HC_SIMULATION=1  simulation : lignes « vps-battement: ping|aucun », « vps-disque-85: ok|fail »,
 #                    « vps-disque-92: ok|fail », « vps-certificat: ok|fail|ignore » ; aucun ping
 #
@@ -72,6 +74,7 @@ SEUIL1=${RTP_SEUIL1:-85}
 SEUIL2=${RTP_SEUIL2:-92}
 CERT_JOURS=${RTP_CERT_JOURS:-14}
 SIMULATION=${RTP_HC_SIMULATION:-0}
+CA_FICHIER=${RTP_CA:-/etc/ssl/certs/ca-certificates.crt}
 MARQUEUR=reveleTonProg
 RE_COMMIT='^[0-9a-f]{40}$'
 RE_CHAMP_COMMIT='"commit"[[:space:]]*:[[:space:]]*"([^"]*)"'
@@ -238,7 +241,13 @@ if [ "$ILLISIBLE" = 1 ] || [ "$MAX" -ge "$SEUIL2" ]; then D92=fail; fi
 # --- Contrôle 3 : certificat (après DNS seulement) ----------------------------------------------------------------
 CERT=ignore
 if [ -n "$RTP_HOTE" ]; then
-  PEM=$(timeout -k 5 15 openssl s_client -connect 127.0.0.1:443 -servername "$RTP_HOTE" </dev/null 2>/dev/null) || true
+  # Chaîne vérifiée contre les autorités du système et nom d'hôte contrôlé (IN-02) : un certificat autosigné, d'un
+  # autre site ou d'une chaîne invalide fait échouer la poignée de main, donc /fail, au lieu de passer sur sa seule
+  # date d'expiration. Sortie d'un s_client en échec jamais lue.
+  if ! PEM=$(timeout -k 5 15 openssl s_client -connect 127.0.0.1:443 -servername "$RTP_HOTE" \
+    -verify_return_error -verify_hostname "$RTP_HOTE" -CAfile "$CA_FICHIER" </dev/null 2>/dev/null); then
+    PEM=''
+  fi
   if [ -n "$PEM" ] && printf '%s\n' "$PEM" | openssl x509 -noout -checkend "$((CERT_JOURS * 86400))" >/dev/null 2>&1; then
     CERT=ok
   else
