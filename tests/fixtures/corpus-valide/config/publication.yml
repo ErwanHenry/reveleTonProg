@@ -1,0 +1,3 @@
+# Fixture fictive : liste blanche de publication du corpus de test (séquence en bloc, deux espaces).
+themes_ouverts:
+  - logement

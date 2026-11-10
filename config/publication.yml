@@ -1,0 +1,11 @@
+# Thèmes ouverts au public (liste blanche de publication, décision D-07 de la phase 9).
+# Un thème n'est visible en production que s'il figure dans cette liste ET que son fichier
+# est marqué `publie` : la liste ne peut que restreindre ce que `publie` montre, jamais l'élargir.
+# Modifier ce fichier est une décision éditoriale, relue par Erwan, et se fait dans un commit dédié.
+# Lue depuis la racine de contenu (le projet pour le vrai corpus) par src/lib/publication-config.ts.
+#
+# Style imposé pour une liste non vide : séquence en bloc, éléments indentés de deux espaces
+# sous la clé, jamais en séquence de flux. Exemple :
+#   themes_ouverts:
+#     - sante
+themes_ouverts: []

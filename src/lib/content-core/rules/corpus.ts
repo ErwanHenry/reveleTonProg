@@ -1,13 +1,14 @@
 import { regleArchives, regleSources } from './archives.ts';
 import { regleChamps } from './champs.ts';
 import { regleDatesCouverture, regleEquite } from './equite.ts';
+import { reglePublication } from './publication.ts';
 import { regleIdsVerrouilles, regleReferences } from './references.ts';
 import type { Famille } from './types.ts';
 
-// Famille « corpus » (REGLE-01, 07, 08, 12) : enregistrée par le plan 02-04.
+// Famille « corpus » (REGLE-01, 07, 08, 12, 13) : enregistrée par le plan 02-04.
 export const famille: Famille = {
   id: 'corpus',
   fichier: [regleChamps],
   entree: [],
-  corpus: [regleSources, regleArchives, regleReferences, regleIdsVerrouilles, regleEquite, regleDatesCouverture],
+  corpus: [regleSources, regleArchives, regleReferences, regleIdsVerrouilles, regleEquite, reglePublication, regleDatesCouverture],
 };

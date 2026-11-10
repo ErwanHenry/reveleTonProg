@@ -282,6 +282,11 @@ export const CATALOGUE: readonly EntreeCatalogue[] = [
   { code: 'SONDAGE_CANDIDAT_DOUBLON', regle: 'REGLE-09', severite: 'erreur', piege: null, libelle: 'Un même candidat apparaît deux fois dans une hypothèse.' },
   // REGLE-12 : champs non importables
   { code: 'CHAMP_NON_IMPORTABLE', regle: 'REGLE-12', severite: 'erreur', piege: null, libelle: 'Un champ du dataset data.gouv, interdit dans le contenu, est présent.' },
+  // REGLE-13 : liste blanche de publication
+  { code: 'PUBLICATION_THEME_NON_OUVERT', regle: 'REGLE-13', severite: 'selon_mode', piege: null, libelle: 'Un thème est publié sans figurer dans la liste blanche de publication.' },
+  { code: 'PUBLICATION_THEME_OUVERT_NON_PUBLIE', regle: 'REGLE-13', severite: 'avertissement', piege: null, libelle: 'Un thème de la liste blanche de publication n’est pas publié : il n’apparaît pas sur le site.' },
+  { code: 'PUBLICATION_THEME_INCONNU', regle: 'REGLE-13', severite: 'erreur', piege: null, libelle: 'La liste blanche de publication cite un thème qui n’existe pas.' },
+  { code: 'PUBLICATION_LISTE_INVALIDE', regle: 'REGLE-13', severite: 'erreur', piege: null, libelle: 'La liste blanche de publication est illisible ou mal formée.' },
   // Moteur
   { code: 'REGLE_ECHEC', regle: 'REGLE-11', severite: 'erreur', piege: null, libelle: 'Une règle a planté : la validation échoue plutôt que de passer en silence.' },
 ];

@@ -1,0 +1,4 @@
+# Fixture fictive : liste blanche de publication de la surcouche M1 (séquence en bloc, deux espaces).
+themes_ouverts:
+  - logement
+  - climat

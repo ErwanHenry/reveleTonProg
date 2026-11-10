@@ -9,8 +9,8 @@ import { REPO_ROOT } from './validate-yaml.ts';
 // phase 4 (périmètre, renoncement, « pressenti », états vides typés, glossaire, brouillon à ne
 // jamais publier). Le corpus est ENTIÈREMENT FICTIF : n'y ajoutez jamais de contenu réel.
 //
-// La surcouche ne remplace que deux chemins du corpus de base : `ids.lock` (sur-ensemble de 6 ids)
-// et `src/content/couverture/logement.yaml` (cases ajoutées). Tout autre fichier de la surcouche
+// La surcouche ne remplace que trois chemins du corpus de base : `ids.lock` (sur-ensemble de 6 ids),
+// `src/content/couverture/logement.yaml` (cases ajoutées) et `config/publication.yml` (liste blanche : logement et climat). Tout autre fichier de la surcouche
 // est nouveau ; `corpus-valide` lui-même n'est jamais modifié.
 //
 // Pour le parcourir à la main :
@@ -21,7 +21,7 @@ import { REPO_ROOT } from './validate-yaml.ts';
 export const CORPUS_M1 = path.join(REPO_ROOT, 'tests', 'fixtures', 'corpus-m1');
 
 /** Chemins du corpus de base que la surcouche a le droit de remplacer (POSIX, relatifs à la racine). */
-export const SURCHARGES_AUTORISEES: readonly string[] = ['ids.lock', 'src/content/couverture/logement.yaml'];
+export const SURCHARGES_AUTORISEES: readonly string[] = ['ids.lock', 'src/content/couverture/logement.yaml', 'config/publication.yml'];
 
 /** Phrase piège présente uniquement dans le titre de la mesure en brouillon : elle ne doit jamais sortir dans le HTML. */
 export const TRAPPE_BROUILLON = 'Guichet unique départemental';

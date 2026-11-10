@@ -97,6 +97,10 @@ Dans GitHub Actions, la sortie `--format github` produit des annotations sur les
 | `SONDAGE_FENETRE_BLOCAGE` | REGLE-09 | erreur | Ne pas publier pendant une fenêtre de blocage légal (du samedi 00h00 au dimanche 20h00, heure de Paris, veille et jour du scrutin) : corriger la date ou différer. |
 | `SONDAGE_CANDIDAT_DOUBLON` | REGLE-09 | erreur | Un même candidat apparaît deux fois dans une hypothèse : retirer le doublon. |
 | `CHAMP_NON_IMPORTABLE` | REGLE-12 | erreur | Retirer la clé `bloc`, `extdroite` ou `propositions` copiée du dataset data.gouv : elles n'entrent jamais dans `src/content/`. |
+| `PUBLICATION_THEME_NON_OUVERT` | REGLE-13 | erreur en production, avertissement en preview | Un thème est `publie` mais absent de `themes_ouverts` dans `config/publication.yml` : l'ajouter dans un commit dédié relu par Erwan, ou repasser le thème en brouillon. |
+| `PUBLICATION_THEME_OUVERT_NON_PUBLIE` | REGLE-13 | avertissement | Un thème listé dans `themes_ouverts` n'est pas `publie` : il n'apparaît pas sur le site. Normal après un retrait d'urgence ; retirer la ligne de la liste quand le retrait est définitif. |
+| `PUBLICATION_THEME_INCONNU` | REGLE-13 | erreur | `themes_ouverts` cite un identifiant qui n'est pas un thème du corpus : corriger la faute de frappe ou retirer la ligne. |
+| `PUBLICATION_LISTE_INVALIDE` | REGLE-13 | erreur | `config/publication.yml` est illisible ou mal formé (une seule clé `themes_ouverts`, séquence en bloc de deux espaces, identifiants en minuscules sans doublon) : corriger selon le message, qui nomme le fichier. |
 | `REGLE_ECHEC` | REGLE-11 | erreur | Une règle a planté et la validation échoue plutôt que de passer en silence : relever le message et ouvrir une issue avec le fichier fautif (voir « Faux positif d'une règle »). |
 
 La liste fait foi dans `src/lib/content-core/rules/config.ts` (`CATALOGUE`) ; `tests/repo/docs.test.ts` vérifie que ce tableau mentionne chaque code.
