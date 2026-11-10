@@ -8,7 +8,7 @@
 # filtre de caractères, découpage en jetons, contrôle de chaque jeton, puis exécution d'une commande fixe.
 #
 # Verbes acceptés, tout le reste est refusé (code 64) :
-#   rsync --server <options> . <cible>/<sha>/   envoi dans incoming/<cible>/<sha>/ par rrsync -wo -no-del
+#   rsync --server <options> . <cible>/<sha>/   envoi dans incoming/<cible>/<sha>/ par rrsync -wo -no-del -munge
 #   activer <cible> <sha>                       vérifie l'envoi, le range dans releases/<sha>/, bascule current
 #   retour <cible> [<sha>]                      rebascule current sur la version précédente (ou sur <sha>)
 #   etat <cible>                                version courante, nombre de versions, espace libre
@@ -30,7 +30,9 @@
 # jq, logger, mv sont pris dans PATH.
 #
 # Codes de sortie : 0 succès ; 64 refusé (caractères, verbe, jeton, nombre d'arguments) ; 65 envoi invalide
-# (absent, index.html absent, version.json absent ou commit différent) ; 66 version introuvable ; 75 espace disque
+# (absent, index.html absent, version.json absent ou commit différent, ou contenant autre chose que des fichiers
+# ordinaires et des dossiers : lien symbolique, tube, socket, périphérique, fichier à plusieurs liens physiques) ;
+# 66 version introuvable ; 75 espace disque
 # insuffisant (moins de 1024 Mio libres ou 92 % utilisés) ; 1 autre échec (verrou, bascule, df illisible).
 set -euo pipefail
 export LC_ALL=C
@@ -200,11 +202,14 @@ verbe_envoi() {
   mkdir -p "$BASE/incoming/$CIBLE"
   journal envoi "$CIBLE" "$SHA" 0
   # rrsync relit SSH_ORIGINAL_COMMAND et enferme l'écriture dans incoming/ (écriture seule, sans suppression).
-  exec "$RRSYNC" -wo -no-del "$BASE/incoming"
+  # -munge (rrsync de rsync 3.2.x) fait ajouter --munge-links côté serveur : un lien symbolique reçu est préfixé
+  # de /rsyncd-munged/ et ne pointe plus nulle part. Seconde barrière seulement : la garantie est le refus de tout
+  # lien ou fichier spécial dans activer (CR-01), qui ne dépend pas du comportement de rrsync.
+  exec "$RRSYNC" -wo -no-del -munge "$BASE/incoming"
 }
 
 verbe_activer() {
-  local arrivee=$BASE/incoming/$CIBLE/$SHA version=$RACINE/releases/$SHA
+  local arrivee=$BASE/incoming/$CIBLE/$SHA version=$RACINE/releases/$SHA special
   mkdir -p "$RACINE/releases"
   courant
   if [ -d "$version" ]; then
@@ -216,6 +221,14 @@ verbe_activer() {
     fi
   else
     if ! [ -d "$arrivee" ] || [ -L "$arrivee" ]; then echouer 65 "envoi absent : incoming/$CIBLE/$SHA"; fi
+    # Que des fichiers ordinaires et des dossiers (CR-01) : Caddy suit les liens symboliques dans son propre
+    # conteneur (certificats TLS de tous les sites, /proc), et un lien physique partagerait un inode avec un
+    # fichier hors de l'envoi. Contrôlé avant tout déplacement, sur tout l'arbre.
+    # Un parcours incomplet (find en échec) refuse aussi : jamais d'arbre non vérifié rangé dans releases/.
+    special=$(find "$arrivee" \( ! -type f ! -type d \) -print -quit) || echouer 65 "envoi illisible"
+    [ -z "$special" ] || echouer 65 "l'envoi contient un lien symbolique ou un fichier spécial (seuls fichiers et dossiers admis)"
+    special=$(find "$arrivee" -type f -links +1 -print -quit) || echouer 65 "envoi illisible"
+    [ -z "$special" ] || echouer 65 "l'envoi contient un fichier à plusieurs liens physiques"
     if ! [ -f "$arrivee/index.html" ] || [ -L "$arrivee/index.html" ]; then echouer 65 "index.html absent de l'envoi"; fi
     if ! [ -f "$arrivee/version.json" ] || [ -L "$arrivee/version.json" ]; then echouer 65 "version.json absent de l'envoi"; fi
     if ! jq -e --arg s "$SHA" '.commit == $s' "$arrivee/version.json" >/dev/null 2>&1; then

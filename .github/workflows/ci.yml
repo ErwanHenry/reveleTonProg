@@ -370,10 +370,11 @@ jobs:
           printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$RUNNER_TEMP/kh"
           test -s "$RUNNER_TEMP/cle"
           test -s "$RUNNER_TEMP/kh"
-      - name: Envoyer la build dans incoming/<cible>/<sha>/ (rsync sans suppression)
+      - name: Envoyer la build dans incoming/<cible>/<sha>/ (rsync sans suppression ni lien symbolique)
         run: |
           set -euo pipefail
-          rsync -rlt --chmod=D755,F644 --stats -e "ssh -i $RUNNER_TEMP/cle -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$RUNNER_TEMP/kh -o ConnectTimeout=15" dist/ "$DEPLOY_USER@$DEPLOY_HOST:$CIBLE/$SHA/"
+          # -rt sans -l : aucun lien symbolique envoyé (CR-01) ; le serveur refuse de toute façon un envoi qui en contient.
+          rsync -rt --chmod=D755,F644 --stats -e "ssh -i $RUNNER_TEMP/cle -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$RUNNER_TEMP/kh -o ConnectTimeout=15" dist/ "$DEPLOY_USER@$DEPLOY_HOST:$CIBLE/$SHA/"
       - name: Activer la version (bascule atomique de current)
         id: activer
         run: |

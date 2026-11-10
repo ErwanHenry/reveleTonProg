@@ -305,9 +305,10 @@ describe('ci.yml : job deploy (HEB-02, HEB-12, HEB-14)', () => {
     assert.match(run, /printf '%s\\n' "\$DEPLOY_SSH_KEY"/);
   });
 
-  it('rsync -rlt vers <cible>/<sha>/ (jamais -a ni --delete)', () => {
+  it('rsync -rt vers <cible>/<sha>/ (jamais -a, -l ni --delete : aucun lien symbolique envoyé, CR-01)', () => {
     const run = s.find((x) => x.run?.includes('rsync '))?.run ?? '';
-    assert.match(run, /rsync -rlt --chmod=D755,F644 --stats -e "ssh /);
+    assert.match(run, /rsync -rt --chmod=D755,F644 --stats -e "ssh /);
+    assert.doesNotMatch(run, /rsync\s+-\w*l|--links|--copy-links|-L\b/);
     assert.ok(run.includes('dist/ "$DEPLOY_USER@$DEPLOY_HOST:$CIBLE/$SHA/"'));
     assert.doesNotMatch(run, /rsync\s+(-\w*a|--archive)/);
   });

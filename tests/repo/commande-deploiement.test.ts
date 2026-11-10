@@ -202,13 +202,13 @@ describe('ops/commande-deploiement.sh : refus (code 64, rien d’écrit)', () =>
 });
 
 describe('ops/commande-deploiement.sh : envoi par rsync', () => {
-  it('lance rrsync -wo -no-del sur incoming/ avec la même commande', () => {
+  it('lance rrsync -wo -no-del -munge sur incoming/ avec la même commande', () => {
     const b = banc();
     const commande = `rsync --server -logDtpre.iLsfxC . essai/${S}/`;
     const r = lancer(b, commande);
     assert.equal(r.status, 0, r.stderr);
     const lignes = fs.readFileSync(b.sortieRrsync, 'utf8').trimEnd().split('\n');
-    assert.deepEqual(lignes, ['arg=-wo', 'arg=-no-del', `arg=${path.join(b.base, 'incoming')}`, `cmd=${commande}`]);
+    assert.deepEqual(lignes, ['arg=-wo', 'arg=-no-del', 'arg=-munge', `arg=${path.join(b.base, 'incoming')}`, `cmd=${commande}`]);
     assert.ok(fs.statSync(path.join(b.base, 'incoming', 'essai')).isDirectory());
     assert.equal(fs.existsSync(path.join(b.base, 'essai')), false, 'l’arbre servi n’est pas touché par l’envoi');
   });
@@ -322,6 +322,62 @@ describe('ops/commande-deploiement.sh : activer', () => {
     fs.writeFileSync(path.join(dossier, 'version.json'), 'pas du json');
     const r = lancer(b, `activer essai ${S}`);
     assert.equal(r.status, 65, r.stderr);
+  });
+
+  // CR-01 : Caddy suit les liens symboliques dans son propre conteneur (certificats TLS, /proc) ; un envoi qui
+  // contient autre chose que des fichiers ordinaires et des dossiers est refusé avant tout déplacement.
+  const piegesEnvoi: [string, (dossier: string) => void][] = [
+    ['un lien symbolique absolu à la racine', (d) => fs.symlinkSync('/etc/hostname', path.join(d, 'x.txt'))],
+    [
+      'un lien symbolique en profondeur',
+      (d) => {
+        fs.mkdirSync(path.join(d, 'a', 'b'), { recursive: true });
+        fs.symlinkSync('/etc/hostname', path.join(d, 'a', 'b', 'cle.key'));
+      },
+    ],
+    ['un lien symbolique relatif vers un dossier', (d) => fs.symlinkSync('../../..', path.join(d, 'remonte'))],
+    ['un lien symbolique cassé', (d) => fs.symlinkSync('/nulle/part', path.join(d, 'casse.html'))],
+    [
+      'un tube nommé (fifo)',
+      (d) => {
+        const r = spawnSync('mkfifo', [path.join(d, 'tube')], { encoding: 'utf8' });
+        assert.equal(r.status, 0, r.stderr);
+      },
+    ],
+    [
+      'un fichier à deux liens physiques',
+      (d) => {
+        const dehors = path.join(path.dirname(path.dirname(path.dirname(d))), `dehors-${path.basename(d)}.txt`);
+        fs.writeFileSync(dehors, 'hors de l’envoi');
+        fs.linkSync(dehors, path.join(d, 'partage.txt'));
+      },
+    ],
+  ];
+  for (const [nom, pieger] of piegesEnvoi) {
+    it(`refuse un envoi qui contient ${nom} (code 65, rien rangé, current inchangé)`, (t) => {
+      if (SANS_MV_T) return t.skip(RAISON_MV);
+      const b = banc();
+      activer(b, 'essai', sha(1));
+      const dossier = deposer(b, 'essai', sha(2));
+      pieger(dossier);
+      const r = lancer(b, `activer essai ${sha(2)}`);
+      assert.equal(r.status, 65, r.stderr);
+      assert.match(r.stderr, /lien symbolique|fichier spécial|liens physiques/);
+      assert.equal(lien(b), `releases/${sha(1)}`);
+      assert.deepEqual(versionsHex(b), [sha(1)]);
+      assert.equal(historique(b).length, 1);
+      assert.ok(fs.existsSync(dossier), 'l’envoi refusé reste dans incoming/ (nettoyé après un jour)');
+    });
+  }
+
+  it('refuse aussi un premier envoi piégé, sans current préalable (code 65)', () => {
+    const b = banc();
+    const dossier = deposer(b, 'essai', S);
+    fs.symlinkSync('/proc/self/environ', path.join(dossier, 'env.txt'));
+    const r = lancer(b, `activer essai ${S}`);
+    assert.equal(r.status, 65, r.stderr);
+    assert.equal(lien(b), null);
+    assert.deepEqual(versionsHex(b), []);
   });
 
   it('est idempotent pour un sha déjà présent : copie reçue écartée, current inchangé', (t) => {
@@ -479,8 +535,8 @@ describe('ops/commande-deploiement.sh : code', () => {
     assert.doesNotMatch(code, /\beval\b|bash -c|\bsudo\b|\bdocker\b|ln -sfn/);
   });
 
-  it('envoie par rrsync -wo -no-del et bascule par mv -T', () => {
-    assert.match(code, /exec "\$RRSYNC" -wo -no-del "\$BASE\/incoming"/);
+  it('envoie par rrsync -wo -no-del -munge et bascule par mv -T', () => {
+    assert.match(code, /exec "\$RRSYNC" -wo -no-del -munge "\$BASE\/incoming"/);
     assert.match(code, /ln -s "releases\/\$1" \.current\.tmp/);
     assert.match(code, /mv -T \.current\.tmp current/);
   });
