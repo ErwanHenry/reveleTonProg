@@ -81,6 +81,16 @@ export function nettoyerJustification(texte: string): string {
   return [...uneLigne].slice(0, JUSTIFICATION_MAX).join('').trim();
 }
 
+/**
+ * Texte en span de code Markdown (IN-05) : ni lien, ni image, ni balise HTML, ni emphase ne sont interprétés dans le
+ * résumé du job. Délimiteur plus long que toute suite d'accents graves du texte, espaces de bord (CommonMark).
+ */
+export function codeMarkdown(texte: string): string {
+  const plusLongue = Math.max(0, ...(texte.match(/`+/g) ?? []).map((s) => s.length));
+  const delim = '`'.repeat(plusLongue + 1);
+  return `${delim} ${texte} ${delim}`;
+}
+
 /** Décision de la garde pour un instant donné (fonction pure, horloge injectée). */
 export function evaluerGel(instant: Date, urgence: boolean, justification: string): DecisionGel {
   const date = dateParis(instant);
@@ -186,7 +196,7 @@ function main(): void {
       `- Fenêtres de gel : ${FENETRES_GEL.map((f) => `tour ${f.tour} du ${f.debut} au ${f.fin}`).join(', ')}`,
       `- Décision : ${d.ok ? 'autorisé' : 'refusé'} (${d.motif})`,
     ];
-    if (urgence) lignes.push(`- Justification du retrait d'urgence : ${justification || '(vide)'}`);
+    if (urgence) lignes.push(`- Justification du retrait d'urgence : ${justification ? codeMarkdown(justification) : '(vide)'}`);
     fs.appendFileSync(resume, `${lignes.join('\n')}\n\n`);
   }
 

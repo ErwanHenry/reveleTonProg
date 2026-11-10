@@ -8,7 +8,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { TOURS } from '../../src/lib/dates-tours.ts';
-import { dateParis, evaluerGel, FENETRES_GEL, nettoyerJustification } from '../../scripts/garde-gel.ts';
+import { codeMarkdown, dateParis, evaluerGel, FENETRES_GEL, nettoyerJustification } from '../../scripts/garde-gel.ts';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const CLI = path.join(ROOT, 'scripts', 'garde-gel.ts');
@@ -167,6 +167,20 @@ describe('garde-gel : CLI', () => {
     const notice = lignes.find((l) => l.startsWith('::notice::')) ?? '';
     assert.ok(!notice.includes('%0A'), 'le % est échappé dans le message d’annotation');
     assert.ok(notice.length < 600);
+  });
+
+  it('la justification est écrite dans le résumé en span de code : ni lien, ni image, ni HTML interprétés (IN-05)', () => {
+    const piege = `${JUSTIF} [clic](https://exemple.invalid) ![x](https://exemple.invalid/p.png) <img src=x> **gras** \`code\``;
+    const r = lancer(['--urgence', 'true', '--justification', piege, '--date', '2027-05-02T09:00:00Z']);
+    assert.equal(r.status, 0, r.out + r.err);
+    const ligne = r.resume.split('\n').find((l) => l.startsWith("- Justification du retrait d'urgence : ")) ?? '';
+    assert.equal(ligne, `- Justification du retrait d'urgence : \`\` ${piege} \`\``);
+  });
+
+  it('codeMarkdown : délimiteur plus long que toute suite d’accents graves du texte', () => {
+    assert.equal(codeMarkdown('abc'), '` abc `');
+    assert.equal(codeMarkdown('a`b'), '`` a`b ``');
+    assert.equal(codeMarkdown('a```b`'), '```` a```b` ````');
   });
 
   it('sans GITHUB_OUTPUT : décision affichée, code 0 (exemple de la fenêtre du premier tour)', () => {
