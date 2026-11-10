@@ -97,6 +97,11 @@ function apresLigne(texte: string, offset: number): number {
   return nl === -1 ? texte.length : nl + 1;
 }
 
+/** Chemin lisible pour les messages (« statuts[0] », « racine »). */
+function montrer(chemin: Chemin): string {
+  return chemin.length === 0 ? 'racine' : chemin.map((p) => (typeof p === 'number' ? `[${p}]` : `.${p}`)).join('').replace(/^\./, '');
+}
+
 function analyser(texte: string): Document.Parsed {
   const doc = parseDocument(texte, { ...PARSE_OPTIONS, keepSourceTokens: false });
   if (doc.errors.length > 0 || doc.warnings.length > 0) {
@@ -114,7 +119,7 @@ function versJS(texte: string): unknown {
 
 function carte(doc: Document.Parsed, chemin: Chemin): YAMLMap {
   const noeud = chemin.length === 0 ? doc.contents : doc.getIn(chemin, true);
-  if (!isMap(noeud)) throw new EditionRefusee(`chemin ${JSON.stringify(chemin)} : objet YAML introuvable`);
+  if (!isMap(noeud)) throw new EditionRefusee(`chemin ${montrer(chemin)} : objet YAML introuvable`);
   return noeud as YAMLMap;
 }
 
@@ -145,7 +150,7 @@ function definirUnChamp(texte: string, chemin: Chemin, champ: Champ, precedente:
   const eol = finDeLigne(texte);
   const doc = analyser(texte);
   const m = carte(doc, chemin);
-  if (m.flow) throw new EditionRefusee(`chemin ${JSON.stringify(chemin)} : objet en style flux, non modifiable`);
+  if (m.flow) throw new EditionRefusee(`chemin ${montrer(chemin)} : objet en style flux, non modifiable`);
   const p = paire(m, champ.cle);
   const premiere = m.items[0];
   if (!premiere || !isScalar(premiere.key) || !premiere.key.range) throw new EditionRefusee('objet vide : insertion impossible');
@@ -283,10 +288,10 @@ function retirerCles(js: unknown, chemin: Chemin, cles: readonly string[]): unkn
   const copie = structuredClone(js) as unknown;
   let noeud: unknown = copie;
   for (const pas of chemin) {
-    if (noeud === null || typeof noeud !== 'object') throw new EditionRefusee(`chemin ${JSON.stringify(chemin)} introuvable`);
+    if (noeud === null || typeof noeud !== 'object') throw new EditionRefusee(`chemin ${montrer(chemin)} introuvable`);
     noeud = (noeud as Record<string | number, unknown>)[pas];
   }
-  if (noeud === null || typeof noeud !== 'object' || Array.isArray(noeud)) throw new EditionRefusee(`chemin ${JSON.stringify(chemin)} : objet attendu`);
+  if (noeud === null || typeof noeud !== 'object' || Array.isArray(noeud)) throw new EditionRefusee(`chemin ${montrer(chemin)} : objet attendu`);
   for (const c of cles) delete (noeud as Record<string, unknown>)[c];
   return copie;
 }
