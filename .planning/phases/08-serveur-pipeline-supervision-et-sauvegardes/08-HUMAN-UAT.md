@@ -18,7 +18,7 @@ result: pending (capture du 2026-11-10 : encore 10 min / 20 min)
 
 ### 2. Approbation des déploiements par Erwan lui-même
 expected: avant l'ouverture, Erwan approuve au moins un déploiement depuis l'interface GitHub (en 08-15, l'orchestrateur a approuvé avec le jeton d'Erwan, à sa demande)
-result: pending
+result: passed (run 42904829430 approuvé par Erwan dans l'interface GitHub le 2026-11-10, déploiement réussi, essai sert e5a75b7)
 
 ### 3. Test de restauration après les correctifs de revue
 expected: `rtp-tester-restauration` relancé après la réapplication du 2026-11-10 ; fait à 19:23 UTC (résultat ok, 0 fichier modifié) ; le cron mensuel le rejoue le 2026-12-01
