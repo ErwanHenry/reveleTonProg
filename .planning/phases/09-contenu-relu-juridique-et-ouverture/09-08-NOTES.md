@@ -12,7 +12,8 @@ Ligne à reporter dans `docs/RISQUES-JURIDIQUES.md` quand la note existera (plan
 ## Étape B : adresse de contact
 
 - `contact@reveletonprog.fr` : redirection IONOS existante (constatée le 2026-11-10), MX et SPF vérifiés sur deux résolveurs.
-- Test de bout en bout (envoi depuis une boîte extérieure, réception, réponse, résultats SPF, DKIM, DMARC, adresse d'expéditeur de la réponse) : en attente.
+- Test de bout en bout, déclaré par Erwan le 2026-11-10 : envoi depuis une boîte extérieure fait, message reçu via la redirection, réponse envoyée et arrivée.
+- À préciser par Erwan : adresse d'expéditeur affichée par la réponse (`contact@` ou adresse personnelle) et résultats SPF, DKIM, DMARC lus dans l'original de la réponse.
 
 ## Signature de la note de risques
 
