@@ -438,7 +438,8 @@ describe('documentation (phase 8) : RUNBOOK', () => {
       'gh workflow run rollback.yml -f cible=essai',
       '-f version=<sha>',
       '/version.json',
-      'rejeter ou approuver d\'abord le déploiement en attente',
+      'retour-production',
+      'le **rejeter**',
       `ssh keel-vps 'SSH_ORIGINAL_COMMAND="retour essai" runuser -u deploy -- /usr/local/sbin/rtp-deploy-command'`,
       '2 min',
     ]) {

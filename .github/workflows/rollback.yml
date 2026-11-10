@@ -2,8 +2,14 @@
 # main) : rebascule current sur la version précédente (version vide) ou sur un commit encore présent dans releases/,
 # par le verbe « retour » de la commande forcée du serveur (ops/commande-deploiement.sh). Objectif : moins de 2 minutes,
 # mesuré par l'heure UTC de début et de fin écrite dans le résumé du job.
-# Même Environment production que le job deploy (Erwan approuve chaque run) et même groupe de concurrence
-# deploy-production : un retour arrière ne chevauche jamais un déploiement.
+# Même Environment production que le job deploy (Erwan approuve chaque run), mais groupe de concurrence propre,
+# retour-production, jamais annulé (revue de code WR-02). Partager deploy-production exposait un retour en attente à
+# l'annulation silencieuse : GitHub ne garde qu'un job en attente par groupe, et un push sur main l'aurait remplacé
+# par un déploiement. Ici, aucun déploiement ne peut annuler un retour, ni l'inverse. Un retour et un déploiement
+# peuvent tourner en même temps : le serveur les sérialise (flock -w 20 sur chaque verbe activer et retour de la
+# commande forcée), et le retour automatique du job deploy ne défait jamais un retour manuel (il ne rebascule que si
+# current pointe encore le commit qu'il a activé). Deux retours lancés coup sur coup : le plus récent en attente
+# remplace l'autre, ce qui suit la dernière intention d'Erwan.
 # La garde de gel s'applique aussi aux retours : remettre une version plus ancienne un jour de scrutin reste un
 # déploiement. Pendant le gel, seul un retrait d'urgence passe (retrait_urgence coché et justification écrite de
 # 20 caractères au moins, affichée dans le résumé).
@@ -44,7 +50,7 @@ jobs:
     timeout-minutes: 5
     environment: production
     concurrency:
-      group: deploy-production
+      group: retour-production
       cancel-in-progress: false
     env:
       CIBLE: ${{ inputs.cible }}

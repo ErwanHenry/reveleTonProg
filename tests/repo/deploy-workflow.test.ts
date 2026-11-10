@@ -504,13 +504,18 @@ describe('rollback.yml : retour arrière (HEB-11, HEB-12, HEB-13)', () => {
     assert.equal(inputs.justification?.type, 'string');
   });
 
-  it('un seul job retour : en sommeil sans DEPLOY_CIBLE, Environment production, même groupe que deploy, 5 min', () => {
+  it('un seul job retour : en sommeil sans DEPLOY_CIBLE, Environment production, groupe propre jamais annulé (WR-02), 5 min', () => {
     assert.deepEqual(Object.keys(wf.jobs), ['retour']);
     const j = retour();
     assert.equal(j.if, "vars.DEPLOY_CIBLE != ''");
     assert.equal(j.environment, 'production');
-    assert.deepEqual(j.concurrency, { group: 'deploy-production', 'cancel-in-progress': false });
-    assert.deepEqual(job(ci, 'deploy').concurrency, j.concurrency);
+    assert.deepEqual(j.concurrency, { group: 'retour-production', 'cancel-in-progress': false });
+    assert.deepEqual(job(ci, 'deploy').concurrency, { group: 'deploy-production', 'cancel-in-progress': false });
+    assert.equal(wf.concurrency, undefined, 'aucune concurrence de workflow qui pourrait annuler le retour');
+    for (const [nom, jb] of Object.entries(ci.jobs)) {
+      const g = (jb.concurrency as { group?: string } | undefined)?.group;
+      assert.notEqual(g, 'retour-production', `le job ${nom} de ci.yml ne doit pas partager le groupe des retours`);
+    }
     assert.equal(j['timeout-minutes'], 5);
   });
 
@@ -602,7 +607,7 @@ describe('rollback.yml : retour arrière (HEB-11, HEB-12, HEB-13)', () => {
 
   it('commentaire de tête : workflow_dispatch, gel appliqué aux retours, urgence', () => {
     const tete = raw.split('\n').filter((l) => l.startsWith('#')).join('\n');
-    for (const mot of ['workflow_dispatch', 'gel', 'urgence', 'deploy-production']) assert.ok(tete.includes(mot), mot);
+    for (const mot of ['workflow_dispatch', 'gel', 'urgence', 'retour-production', 'deploy-production', 'flock']) assert.ok(tete.includes(mot), mot);
   });
 });
 
@@ -690,7 +695,17 @@ describe('ci.yml : retour automatique vers la version exacte notée avant l’ac
       const appels = path.join(dossier, 'appels.txt');
       fs.writeFileSync(
         path.join(dossier, 'ssh'),
-        ['#!/bin/sh', 'for a in "$@"; do last="$a"; done', 'printf \'%s\\n\' "$last" >> "$APPELS"', 'case "$last" in etat*) printf \'%s\\n\' "$ETAT_SSH" ;; esac', ''].join('\n'),
+        [
+          '#!/bin/sh',
+          'for a in "$@"; do last="$a"; done',
+          'printf \'%s\\n\' "$last" >> "$APPELS"',
+          // Avant un retour : ETAT_SSH ; après : ETAT_APRES_RETOUR (défaut ETAT_SSH).
+          'case "$last" in',
+          '  retour*) : > "$APPELS.retour" ;;',
+          '  etat*) if [ -f "$APPELS.retour" ]; then printf \'%s\\n\' "${ETAT_APRES_RETOUR:-$ETAT_SSH}"; else printf \'%s\\n\' "$ETAT_SSH"; fi ;;',
+          'esac',
+          '',
+        ].join('\n'),
         { mode: 0o755 },
       );
       const genv = path.join(dossier, 'genv');
@@ -744,16 +759,25 @@ describe('ci.yml : retour automatique vers la version exacte notée avant l’ac
     assert.equal(r.genv, '');
   });
 
+  const etatSur = (s: string): string => `etat cible=production courant=${s} versions=3 libre_mio=9000`;
+
   it('rebascule sur la version exacte notée avant, puis contrôle etat', () => {
-    const r = jouer(retourAuto.run ?? '', { COURANT_AVANT: AVANT, URGENCE: 'false' }, `etat cible=production courant=${AVANT} versions=3 libre_mio=9000`);
+    const r = jouer(retourAuto.run ?? '', { COURANT_AVANT: AVANT, URGENCE: 'false', ETAT_APRES_RETOUR: etatSur(AVANT) }, etatSur(SHA));
     assert.equal(r.status, 0, r.sortie);
-    assert.deepEqual(r.appels, [`retour production ${AVANT}`, 'etat production']);
+    assert.deepEqual(r.appels, ['etat production', `retour production ${AVANT}`, 'etat production']);
     assert.match(r.resume, new RegExp(AVANT));
   });
 
   it('échoue si etat ne confirme pas la version visée après le retour', () => {
-    const r = jouer(retourAuto.run ?? '', { COURANT_AVANT: AVANT, URGENCE: 'false' }, `etat cible=production courant=${SHA} versions=3 libre_mio=9000`);
+    const r = jouer(retourAuto.run ?? '', { COURANT_AVANT: AVANT, URGENCE: 'false' }, etatSur(SHA));
     assert.equal(r.status, 1, r.sortie);
+  });
+
+  it('ne défait pas un retour manuel lancé entre-temps (current ne pointe plus le commit du run, WR-02)', () => {
+    const autre = 'c'.repeat(40);
+    const r = jouer(retourAuto.run ?? '', { COURANT_AVANT: AVANT, URGENCE: 'false' }, etatSur(autre));
+    assert.equal(r.status, 1, r.sortie);
+    assert.deepEqual(r.appels, ['etat production'], 'aucun retour lancé');
   });
 
   it('ne fait rien si ce run n’a pas changé current (sha déjà en ligne)', () => {

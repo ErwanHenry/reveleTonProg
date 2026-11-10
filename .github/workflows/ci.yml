@@ -293,6 +293,9 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     environment: production
+    # Groupe propre aux déploiements, jamais annulé. Les retours arrière (rollback.yml) ont le leur, retour-production
+    # (WR-02) : un push ne peut jamais annuler un retour en attente ; le verrou flock du serveur sérialise chaque verbe
+    # activer et retour (voir l'en-tête de rollback.yml).
     concurrency:
       group: deploy-production
       cancel-in-progress: false
@@ -483,6 +486,18 @@ jobs:
             echo "- Retour arrière automatique : rien à faire, current n'a pas changé ($SHA)" >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
+          # current a-t-il bougé depuis l'activation (retour arrière manuel lancé entre-temps par rollback.yml, qui a son
+          # propre groupe de concurrence) ? Alors ce run ne le défait pas.
+          ETAT=$(ssh -i "$RUNNER_TEMP/cle" -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/kh" -o ConnectTimeout=15 "$DEPLOY_USER@$DEPLOY_HOST" "etat $CIBLE")
+          echo "$ETAT"
+          case " $ETAT " in
+            *" courant=$SHA "*) ;;
+            *)
+              echo "::error::Une étape a échoué après l'activation, mais current ne pointe plus $SHA (retour arrière manuel entre-temps ?) : aucun retour automatique."
+              echo "- Retour arrière automatique : non lancé, current a changé depuis l'activation" >> "$GITHUB_STEP_SUMMARY"
+              exit 1
+              ;;
+          esac
           echo "::error::Une étape a échoué après l'activation : retour à la version en ligne avant ce run ($COURANT_AVANT)."
           ssh -i "$RUNNER_TEMP/cle" -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/kh" -o ConnectTimeout=15 "$DEPLOY_USER@$DEPLOY_HOST" "retour $CIBLE $COURANT_AVANT"
           ETAT=$(ssh -i "$RUNNER_TEMP/cle" -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/kh" -o ConnectTimeout=15 "$DEPLOY_USER@$DEPLOY_HOST" "etat $CIBLE")
