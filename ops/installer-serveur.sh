@@ -66,7 +66,8 @@ LIGNE_IMPORT='import /etc/caddy/sites.d/*.caddy'
 PREFIXE_CLE='restrict,command="/usr/local/sbin/rtp-deploy-command"'
 RE_BCRYPT='^\$2[aby]\$[0-9]{2}\$[./A-Za-z0-9]{53}$'
 RE_CLE='^ssh-ed25519 [A-Za-z0-9+/=]+( [A-Za-z0-9._@-]+)?$'
-RE_URL_PING='^https://[A-Za-z0-9.-]+(/[A-Za-z0-9._~/-]*)?$'
+# Même motif que ops/battement.sh et ops/tester-restauration.sh (port facultatif ; test de dérive, IN-03).
+RE_URL_PING='^https://[A-Za-z0-9.-]+(:[0-9]+)?(/[A-Za-z0-9._~/-]*)?$'
 RE_HORODATAGE='^[0-9]{12}$'
 ORDRE_ETAPES='sauvegarde-caddy montages env-caddy import-caddy utilisateur commande battement sauvegarde restauration-mensuelle site-essai depot'
 # Noms écrits en deux morceaux : le test statique refuse ce mot hors commentaires, pour prouver qu'aucune commande

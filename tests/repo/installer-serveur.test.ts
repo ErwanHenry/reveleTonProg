@@ -437,6 +437,24 @@ describe('ops/installer-serveur.sh : refus', () => {
     assert.deepEqual(instantane(path.dirname(b.racine)), avant);
   });
 
+  it('accepte une adresse de ping avec port, comme le battement et le test de restauration (IN-03)', () => {
+    const b = banc();
+    const r = lancer(b, ['--appliquer', '--etape', 'restauration-mensuelle'], { entree: 'HC_RESTAURATION=https://hc.exemple.fr:8443/ping/abc\n' });
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    assert.equal(fs.readFileSync(path.join(b.racine, 'etc/rtp/restauration.env'), 'utf8'), 'HC_RESTAURATION=https://hc.exemple.fr:8443/ping/abc\n');
+  });
+
+  it('un seul motif d’adresse de ping dans les trois scripts (IN-03)', () => {
+    const motif = (f: string): string => {
+      const m = /^RE_URL_PING='([^']*)'$/m.exec(fs.readFileSync(path.join(ROOT, f), 'utf8'));
+      assert.ok(m, `RE_URL_PING absent de ${f}`);
+      return m[1] as string;
+    };
+    const ref = motif('ops/installer-serveur.sh');
+    assert.equal(motif('ops/battement.sh'), ref);
+    assert.equal(motif('ops/tester-restauration.sh'), ref);
+  });
+
   it('refuse une clé publique qui n’est pas une seule ligne ssh-ed25519 (code 4)', () => {
     const b = banc();
     const avant = instantane(b.racine);
