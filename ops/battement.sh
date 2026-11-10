@@ -20,7 +20,8 @@
 #                              doit porter un commit de 40 caractères hexadécimaux
 #   avec RTP_HOTE              le site à travers Caddy en HTTPS (curl --resolve <hôte>:443:127.0.0.1) :
 #                              /version.json avec un commit valide et / avec le marqueur « reveleTonProg » ;
-#                              identifiants de la sonde passés par « curl --config - », jamais en argument ;
+#                              identifiants de la sonde passés par « curl --config - », jamais en argument
+#                              (les adresses de ping aussi) ;
 #                              certificat lu par openssl s_client sur 127.0.0.1:443 avec SNI
 # Tous les contrôles sont faits d'abord, les pings partent à la fin, dans un ordre fixe (battement, disque 85,
 # disque 92, certificat). Un ping en échec est signalé sans son adresse et n'empêche pas les suivants.
@@ -252,7 +253,9 @@ envoyer() { # nom-du-contrôle url corps [suffixe] -> RESULTAT ok|echec|simulati
   local nom=$1 url=${2%/} corps=$3 suffixe=${4:-}
   if [ "$SIMULATION" = 1 ]; then
     RESULTAT=simulation
-  elif timeout -k 5 60 curl -fsS -m 10 --retry 3 -o /dev/null --data-raw "$corps" "$url$suffixe" 2>/dev/null; then
+  # Adresse lue par curl sur son entrée standard (printf est interne au shell) : jamais dans /proc/<pid>/cmdline
+  # (IN-01). Elle a passé RE_URL_PING : ni guillemet ni barre oblique inverse à échapper.
+  elif printf 'url = "%s"\n' "$url$suffixe" | timeout -k 5 60 curl -fsS -m 10 --retry 3 -o /dev/null --data-raw "$corps" --config - 2>/dev/null; then
     RESULTAT=ok
   else
     RESULTAT=echec

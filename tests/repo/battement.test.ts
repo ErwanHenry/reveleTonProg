@@ -114,7 +114,10 @@ function banc(options: { avecHote?: boolean; sansCle?: string; lignesEnPlus?: st
     '  case "$a" in https://*) url=$a ;; esac',
     '  prec=$a',
     'done',
-    '[ "$config" = 1 ] && cat >> "$STUB_JOURNAL/curl-config"',
+    'if [ "$config" = 1 ]; then',
+    '  cfg=$(cat); printf \'%s\\n\' "$cfg" >> "$STUB_JOURNAL/curl-config"',
+    '  [ -n "$url" ] || url=$(printf \'%s\\n\' "$cfg" | sed -n \'s/^url = "\\(.*\\)"$/\\1/p\')',
+    'fi',
     'case "$url" in',
     '  https://hc.invalid/*) printf \'%s\\t%s\\n\' "$url" "$corps" >> "$STUB_JOURNAL/pings"; exit "${STUB_PING:-0}" ;;',
     'esac',
@@ -542,5 +545,17 @@ describe('ops/battement.sh : durées bornées (WR-05)', () => {
       const avant = code.slice(Math.max(0, (m.index ?? 0) - 24), m.index);
       assert.match(avant, /timeout -k \d+ \d+ $/, `appel sans timeout : …${avant}${m[0]}`);
     }
+  });
+});
+
+describe('ops/battement.sh : adresses de ping hors de argv (IN-01)', () => {
+  it('chaque ping lit son adresse sur l’entrée standard de curl (--config -), jamais en argument', () => {
+    const b = banc({ avecHote: true });
+    const r = lancer(b, { STUB_COMMIT: COMMIT });
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(pings(b).length, 4);
+    const argv = lire(b, 'curl');
+    assert.ok(!argv.includes('hc.invalid'), 'adresse de ping dans les arguments de curl');
+    for (const u of Object.values(URLS)) assert.ok(lire(b, 'curl-config').includes(`url = "${u}`), 'adresse absente de la configuration');
   });
 });

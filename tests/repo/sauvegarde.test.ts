@@ -151,12 +151,15 @@ function stubs(dossier: string): void {
   ]);
   stub(dossier, 'curl', [
     '#!/bin/sh',
-    'url=""; corps=""; prec=""',
+    'url=""; corps=""; prec=""; config=0',
+    'printf \'%s\\n\' "$*" >> "$STUB_JOURNAL/curl-argv"',
     'for a in "$@"; do',
     '  [ "$prec" = "--data-raw" ] && corps=$a',
+    '  [ "$prec" = "--config" ] && [ "$a" = "-" ] && config=1',
     '  case "$a" in https://*) url=$a ;; esac',
     '  prec=$a',
     'done',
+    'if [ "$config" = 1 ] && [ -z "$url" ]; then url=$(sed -n \'s/^url = "\\(.*\\)"$/\\1/p\'); fi',
     'printf \'%s\\t%s\\n\' "$url" "$corps" >> "$STUB_JOURNAL/pings"',
     'exit "${STUB_PING:-0}"',
   ]);
@@ -425,6 +428,12 @@ describe('ops/tester-restauration.sh : restauration réussie', () => {
     const p = lire(b, 'pings').split('\n').filter(Boolean);
     assert.equal(p.length, 1, p.join('\n'));
     assert.equal(p[0]?.split('\t')[0], PINGS.restauration);
+  });
+
+  it('passe l’adresse de ping par l’entrée standard de curl (--config -), jamais en argument (IN-01)', () => {
+    const argv = lire(b, 'curl-argv');
+    assert.match(argv, /--config -/);
+    assert.ok(!argv.includes('hc.invalid'), 'adresse de ping dans les arguments de curl');
   });
 
   it('valide le Caddyfile et le sites.d restaurés (pas ceux du serveur)', () => {

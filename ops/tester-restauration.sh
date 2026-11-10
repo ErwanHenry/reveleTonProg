@@ -228,7 +228,9 @@ elif ! [[ $URL =~ $RE_URL_PING ]]; then
   PING=invalide
   CODE=1
   diag "HC_RESTAURATION : adresse https attendue (valeur non affichée)"
-elif curl -fsS -m 10 --retry 3 -o /dev/null --data-raw "restauration $NOM_ARCHIVE ok, $FICHIERS fichiers" "${URL%/}" 2>/dev/null; then
+# Adresse lue par curl sur son entrée standard (printf est interne au shell), jamais dans argv (IN-01) ; elle a
+# passé RE_URL_PING : ni guillemet ni barre oblique inverse à échapper.
+elif printf 'url = "%s"\n' "${URL%/}" | curl -fsS -m 10 --retry 3 -o /dev/null --data-raw "restauration $NOM_ARCHIVE ok, $FICHIERS fichiers" --config - 2>/dev/null; then
   PING=ok
 else
   PING=echec
