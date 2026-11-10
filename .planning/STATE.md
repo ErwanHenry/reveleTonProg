@@ -5,7 +5,7 @@ milestone_name: "Lot 3 : hébergement et mise en ligne"
 status: planning
 stopped_at: Roadmap v1.1 créé
 last_updated: "2026-11-10T19:33:00.456Z"
-last_activity: 2026-11-10
+last_activity: 2026-11-11
 progress:
   total_phases: 5
   completed_phases: 2
@@ -27,9 +27,9 @@ See: .planning/PROJECT.md (updated 2026-11-04)
 ## Current Position
 
 Phase: 9 of 10 (contenu relu, juridique et ouverture)
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-11-10
+Plan: 09-05 done (page de relecture locale) ; wave 2 continues with 09-06, 09-07 ; 09-08 is Erwan's track
+Status: Executing phase 9
+Last activity: 2026-11-11 (09-05 : `npm run relecture -- servir` sur 127.0.0.1:4327)
 
 Progress v1.1: [..........] 0/5 phases, 0 plans
 
@@ -71,6 +71,7 @@ Recent decisions affecting current work:
 - [Roadmap v1.1]: critère 4G lu comme « Slow 4G simulé » (Lighthouse), mesure réelle consignée
 - [Roadmap v1.1]: déploiement par releases datées + lien `current`, job dans `ci.yml`, build de production reconstruite, jamais d'artefact preview
 - [Roadmap v1.1]: dépôt public depuis le 2026-11-04 : réviser l'ADR-051, la preview n'est jamais servie
+- [09-05]: page de relecture locale = node:http sur 127.0.0.1 seulement, Host exact, Origin, jeton par lancement ; « Valider » appelle le même `marquer` que la ligne de commande ; un refus répond 409 avec le message, jamais d'écriture
 
 ### Pending Todos
 
@@ -98,8 +99,8 @@ Items acknowledged and deferred at v1.0 close on 2026-11-04 (Erwan: « Fix, then
 
 ## Session Continuity
 
-Last session: 2026-11-06
-Stopped at: Roadmap v1.1 créé
+Last session: 2026-11-11
+Stopped at: Completed 09-05-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
