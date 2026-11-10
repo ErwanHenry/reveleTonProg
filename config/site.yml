@@ -2,16 +2,14 @@
 #
 # domaine : nom d'hôte du site, déclaré ici et nulle part ailleurs. Apex sans « www. », en minuscules,
 #   sans schéma (https://), port ni chemin. Valeur RÉELLE depuis le 2026-11-09 (domaine acheté par
-#   Erwan). Le contact ci-dessous reste provisoire jusqu'à la mise en ligne (Phase 9) : une build avec
-#   RTP_DEPLOIEMENT=1 refuse encore le contact provisoire et l'hébergeur prévu. Changer le domaine change
-#   les URL canoniques, le sitemap.xml, le robots.txt et les blocs Caddy (à régénérer par
-#   `node scripts/render-caddy.ts`).
-# contact : adresse publique affichée dans les liens « Signaler une erreur (courriel) ».
-#   Valeur PROVISOIRE (domaine réservé .invalid, qui ne reçoit jamais de courrier) : elle est
-#   remplacée au Lot 3, quand le nom de domaine sera acheté. Aucune adresse personnelle
-#   n'est jamais publiée ici.
+#   Erwan). Une build avec RTP_DEPLOIEMENT=1 refuse un domaine ou un contact provisoire (TLD réservé).
+#   Changer le domaine change les URL canoniques, le sitemap.xml, le robots.txt et les blocs Caddy
+#   (à régénérer par `node scripts/render-caddy.ts`).
+# contact : adresse publique des Mentions légales (contact, droit de réponse) et des liens « Signaler une
+#   erreur (courriel) ». Valeur RÉELLE depuis la Phase 9 (D-01) : redirection IONOS du domaine du site,
+#   MX et SPF vérifiés le 2026-11-10. Jamais une adresse personnelle.
 # depot : « propriétaire/dépôt » GitHub, pour les signalements (issues) et les liens vers
 #   les extraits archivés.
 domaine: reveletonprog.fr
-contact: contact@domaine-a-definir.invalid
+contact: contact@reveletonprog.fr
 depot: ErwanHenry/reveleTonProg

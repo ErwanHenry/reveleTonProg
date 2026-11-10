@@ -142,13 +142,15 @@ describe('loadSiteConfig', () => {
     assert.equal(loadSiteConfig(projet(yml('elections.exemple-2027.fr', 'a@b.fr'))).domaine, 'elections.exemple-2027.fr');
   });
 
-  it('le config/site.yml du dépôt est valide : domaine réel (acheté le 2026-11-09), contact provisoire jusqu’à la mise en ligne', () => {
+  it('le config/site.yml du dépôt est valide : domaine réel (acheté le 2026-11-09), contact réel du domaine (D-01, Phase 9)', () => {
     const cfg = loadSiteConfig(REPO, {});
     assert.equal(cfg.depot, 'ErwanHenry/reveleTonProg');
     assert.ok(!cfg.domaine.endsWith('.invalid'), cfg.domaine);
     assert.equal(cfg.domaineProvisoire, false);
-    assert.ok(cfg.contact.endsWith('.invalid'), cfg.contact);
-    assert.equal(cfg.contactProvisoire, true);
+    assert.equal(cfg.contact, `contact@${cfg.domaine}`);
+    assert.equal(cfg.contactProvisoire, false);
+    // la garde de déploiement ne refuse plus le contact
+    assert.doesNotThrow(() => loadSiteConfig(REPO, { RTP_DEPLOIEMENT: '1' }));
     const texte = readFileSync(path.join(REPO, 'config', 'site.yml'), 'utf8');
     assert.equal(texte.match(/^domaine: /gm)?.length, 1);
     assert.ok(texte.includes(`domaine: ${cfg.domaine}\n`));

@@ -2,12 +2,12 @@
 import Base from '../layouts/Base.astro';
 import { formatDate } from '../lib/corpus/index.ts';
 import { loadHebergeurConfig } from '../lib/hebergeur-config.ts';
-import { phraseJournalAcces } from '../lib/journal-acces.ts';
+import { phraseJournalAcces, phraseSortieErreur } from '../lib/journal-acces.ts';
 import { loadSiteConfig } from '../lib/site-config.ts';
 import { CLES_STOCKAGE } from '../lib/stockage-local.ts';
 
 // Date de dernière révision de cette page (à mettre à jour à chaque modification du texte).
-const REVISION = '2026-11-04';
+const REVISION = '2026-11-10';
 const heb = loadHebergeurConfig();
 const site = loadSiteConfig();
 ---
@@ -27,8 +27,12 @@ const site = loadSiteConfig();
 
     <h2>Éditeur</h2>
     <p>
-      Ce site est édité à titre non professionnel, au sens du II de l'article 1-1 de la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l'économie numérique, dans sa rédaction issue de la loi n° 2024-449 du 21 mai 2024.
+      Ce site est édité à titre non professionnel, au sens du II de l'article 1-1 de la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l'économie numérique, dans sa rédaction issue de la loi n° 2024-449 du 21 mai 2024 (<a href="https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000049568614" rel="noopener noreferrer">texte sur Légifrance</a>).
     </p>
+    {/* Rendu seulement sous « actif » : l'hébergeur passe à actif (09-11) après la transmission datée de l'identité (09-08). */}
+    {heb.statut === 'actif' && (
+      <p data-identite-hebergeur>Conformément à ce texte, l'éditeur a communiqué ses éléments d'identification à l'hébergeur nommé ci-dessous.</p>
+    )}
     <p>Éditeur et directeur de la publication : Erwan Henry.</p>
 
     <h2>Contact</h2>
@@ -50,6 +54,9 @@ const site = loadSiteConfig();
     <p>
       Toute personne nommée ou désignée sur ce site dispose d'un droit de réponse, prévu au III de l'article 1-1 de la loi du 21 juin 2004 (<a href="https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000049568614" rel="noopener noreferrer">texte sur Légifrance</a>). La demande est adressée par écrit au directeur de la publication, à l'adresse de contact ci-dessus, dans un délai de trois mois à compter de la mise à disposition du message concerné. La réponse est insérée dans un délai de trois jours à compter de sa réception.
     </p>
+    <p>
+      Selon le <a href="https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000428279" rel="noopener noreferrer">décret n° 2007-1527 du 24 octobre 2007</a>, la demande indique le message concerné, les passages contestés et le texte de la réponse demandée, qui tient en 200 lignes au plus.
+    </p>
 
     <h2>Supervision</h2>
     <p>
@@ -67,8 +74,8 @@ const site = loadSiteConfig();
       ) : (
         <>
           <li>Comme tout serveur web, le serveur qui héberge ce site reçoit l'adresse IP de votre appareil pour lui envoyer les pages demandées.</li>
-          {/* Seul le journal d'accès est décrit ici ; la sortie d'erreur du conteneur (plafonnée en taille, adresse complète) est rédigée avec la relecture juridique de la Phase 9 (08-RESEARCH, question O4). */}
           <li data-journal-acces>{phraseJournalAcces()}</li>
+          <li data-sortie-erreur>{phraseSortieErreur()}</li>
         </>
       )}
       <li>
@@ -84,12 +91,15 @@ const site = loadSiteConfig();
     <p>
       Ces réglages relèvent des traceurs de personnalisation de l'interface, exemptés de consentement par la CNIL lorsqu'ils sont un élément intrinsèque et attendu du service (<a href="https://www.cnil.fr/fr/cookies-et-autres-traceurs/regles/cookies/que-dit-la-loi" rel="noopener noreferrer">règles de la CNIL</a>).
     </p>
-
-    {heb.statut === 'prevu' && (
-      <>
-        <h2>Relecture</h2>
-        <p data-hebergeur="prevu">Ces mentions seront relues par un juriste avant la mise en ligne.</p>
-      </>
+    {heb.statut === 'actif' && (
+      <p data-rgpd>
+        Pour les deux journaux du serveur, le responsable du traitement est Erwan Henry. Leur finalité est le fonctionnement et la sécurité du serveur. Leur base légale est l'intérêt légitime de l'éditeur (article 6, paragraphe 1, f du RGPD). Leur durée de conservation est celle indiquée ci-dessus pour chacun d'eux. Vous pouvez exercer vos droits d'accès, d'effacement et d'opposition en écrivant à l'adresse de contact. Vous pouvez aussi adresser une réclamation à la CNIL (<a href="https://www.cnil.fr/fr/plaintes" rel="noopener noreferrer">déposer une plainte auprès de la CNIL</a>).
+      </p>
     )}
+
+    <section data-relecture-juridique aria-labelledby="relecture-juridique">
+      <h2 id="relecture-juridique">Relecture juridique</h2>
+      <p>Ces mentions n'ont pas été relues par un juriste. Aucune relecture par un juriste n'est prévue avant l'ouverture du site. Un juriste pourra les relire après l'ouverture.</p>
+    </section>
   </main>
 </Base>

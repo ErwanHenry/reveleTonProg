@@ -21,14 +21,34 @@ export const MASQUE_IPV4 = 24;
 export const MASQUE_IPV6 = 48;
 
 /**
+ * Plafond de la sortie d'erreur du conteneur Caddy (IN-06 de la revue de la phase 8) : le pilote json-file de
+ * deploy/compose/docker-compose.override.yml garde FICHIERS_SORTIE_ERREUR fichiers de TAILLE_SORTIE_ERREUR_MIO Mio
+ * (max-file, max-size ; tests/ui/journal-acces.test.ts compare ces valeurs au fichier). Ce flux (requêtes en échec,
+ * TLS, ACME) garde l'adresse IP complète et n'est borné qu'en taille, jamais en durée.
+ */
+export const TAILLE_SORTIE_ERREUR_MIO = 10;
+export const FICHIERS_SORTIE_ERREUR = 3;
+
+/**
  * Phrase des Mentions légales sur le journal d'accès, affichée quand l'hébergeur est actif. Elle ne parle que du
- * journal d'accès : la sortie d'erreur du conteneur (plafonnée en taille, adresse complète) est un autre journal,
- * dont le texte est arrêté avec la relecture juridique de la Phase 9 (08-RESEARCH, question O4).
+ * journal d'accès ; la sortie d'erreur du conteneur a sa propre phrase (phraseSortieErreur).
  */
 export function phraseJournalAcces(): string {
   return (
     `Le journal d'accès du serveur est gardé ${RETENTION_MAX_JOURS} jours au plus : l'adresse IP y est tronquée ` +
     `(/${MASQUE_IPV4} en IPv4, /${MASQUE_IPV6} en IPv6), les en-têtes de la requête n'y sont pas enregistrés ` +
     `(ni l'identification de votre navigateur, ni la page d'où vous venez), et il ne sert qu'au fonctionnement du serveur.`
+  );
+}
+
+/**
+ * Phrase des Mentions légales sur la sortie d'erreur du conteneur (D-11, IN-06), affichée quand l'hébergeur est actif,
+ * juste après celle du journal d'accès. La taille vient des constantes ci-dessus.
+ */
+export function phraseSortieErreur(): string {
+  return (
+    `La sortie d'erreur du serveur, qui enregistre les requêtes en échec et le fonctionnement propre du serveur ` +
+    `(certificats), garde l'adresse IP complète de ces requêtes : elle est plafonnée en taille ` +
+    `(${TAILLE_SORTIE_ERREUR_MIO * FICHIERS_SORTIE_ERREUR} Mio au plus) et non en durée, et ne sert qu'à diagnostiquer les pannes.`
   );
 }
