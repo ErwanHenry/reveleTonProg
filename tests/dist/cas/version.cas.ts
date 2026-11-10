@@ -1,15 +1,15 @@
 // Version servie (HEB-07, D-12) et types de fichiers du dist (HEB-08) sur de vraies builds du corpus-m1 :
 // /version.json porte exactement le commit (GITHUB_SHA s'il compte 40 hexadécimaux, sinon dev) et la date de
-// build, et le dist ne contient que html, txt, xml et json (aucun fichier haché qui demanderait une règle de
-// cache long dans le bloc Caddy, que le bloc n'a plus depuis l'intégration de la Phase 7).
+// build, et le dist ne contient que html, txt, xml et json, plus le seul favicon.ico à la racine (D-11, 09-07) :
+// aucun fichier haché qui demanderait une règle de cache long dans le bloc Caddy, que le bloc n'a plus depuis
+// l'intégration de la Phase 7. Liste des types : TYPES_AUTORISES de scripts/lib/check-dist.ts, comme le CLI.
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
-import { checkDist } from '../../../scripts/lib/check-dist.ts';
+import { TYPES_AUTORISES, checkDist } from '../../../scripts/lib/check-dist.ts';
 import { materialiserCorpusM1 } from '../../helpers/corpus-m1.ts';
 import type { ContexteSite } from '../contexte.ts';
 
-const TYPES_AUTORISES = ['.html', '.txt', '.xml', '.json'] as const;
 const SHA_FACTICE = 'a'.repeat(40);
 
 /** Commit attendu d'une build qui hérite de l'environnement du test (en CI, GITHUB_SHA est défini). */
@@ -56,13 +56,16 @@ export default function version(ctx: ContexteSite): void {
         assert.deepEqual(constats, []);
       });
 
-      it(`HEB-08 : ${mode}, chaque fichier du dist est en html, txt, xml ou json`, () => {
+      it(`HEB-08 : ${mode}, chaque fichier du dist est en html, txt, xml ou json, sauf favicon.ico à la racine`, () => {
         const { outDir } = build(cle, mode);
-        const autres = ctx
-          .fichiers(outDir)
-          .map((f) => path.relative(outDir, f).split(path.sep).join('/'))
-          .filter((rel) => !(TYPES_AUTORISES as readonly string[]).includes(path.posix.extname(rel)));
+        const rels = ctx.fichiers(outDir).map((f) => path.relative(outDir, f).split(path.sep).join('/'));
+        const autres = rels.filter((rel) => !(TYPES_AUTORISES as readonly string[]).includes(path.posix.extname(rel)));
         assert.deepEqual(autres, []);
+        assert.deepEqual(
+          rels.filter((rel) => path.posix.extname(rel) === '.ico'),
+          ['favicon.ico'],
+          'une seule icône, public/favicon.ico copiée à la racine',
+        );
       });
     });
   }

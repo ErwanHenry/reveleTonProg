@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { CODES_CHECK_DIST, LIMITES, cellulesAttendues, checkDist } from '../../scripts/lib/check-dist.ts';
+import { CODES_CHECK_DIST, LIMITES, TYPES_AUTORISES, cellulesAttendues, checkDist } from '../../scripts/lib/check-dist.ts';
 import type { OptionsCheckDist } from '../../scripts/lib/check-dist.ts';
 import { empreinteCsp } from '../../src/lib/csp-empreintes.ts';
 import { loadSiteConfig } from '../../src/lib/site-config.ts';
@@ -240,7 +240,7 @@ describe('checkDist : dist propre', () => {
   });
 
   it('expose les limites et la liste des codes', () => {
-    assert.deepEqual(LIMITES, { brut: 500_000, gzip: 100_000, script: 2048 });
+    assert.deepEqual(LIMITES, { brut: 500_000, gzip: 100_000, script: 2048, favicon: 4096 });
     for (const code of ['POIDS_BRUT', 'POIDS_GZIP', 'MOT_INTERDIT', 'BROUILLON_EN_PRODUCTION', 'CELLULES_INCOHERENTES']) {
       assert.ok((CODES_CHECK_DIST as readonly string[]).includes(code), `${code} absent de CODES_CHECK_DIST`);
     }
@@ -891,6 +891,46 @@ describe('checkDist : version.json (HEB-07, D-12) et types de fichiers du dist (
     assert.deepEqual(sansExtension.fichiers, ['CNAME']);
     assert.deepEqual(verifier(distPropre()).codes, []);
   });
+
+  it('TYPES_AUTORISES : html, txt, xml, json et ico (pour le seul favicon.ico)', () => {
+    assert.deepEqual([...TYPES_AUTORISES], ['.html', '.txt', '.xml', '.json', '.ico']);
+  });
+
+  describe('favicon.ico (D-11) : une seule icône, à la racine, 4 096 octets au plus', () => {
+    const icone = (n: number): Buffer => Buffer.alloc(n, 1);
+    const avecTypes = (fichiers: Record<string, string | Buffer | null>): Resultat =>
+      verifier(pourCli(distPropre(fichiers)), 'production', { logement: 2 }, { typesAutorises: TYPES_AUTORISES });
+
+    it('accepte favicon.ico à la racine, jusqu’à 4 096 octets', () => {
+      assert.deepEqual(avecTypes({ 'favicon.ico': icone(300) }).codes, []);
+      assert.deepEqual(avecTypes({ 'favicon.ico': icone(LIMITES.favicon) }).codes, []);
+    });
+
+    it('un dist sans favicon.ico reste valide', () => {
+      assert.deepEqual(avecTypes({}).codes, []);
+    });
+
+    it('refuse une icône ailleurs qu’à la racine ou d’un autre nom (TYPE_FICHIER_INATTENDU)', () => {
+      for (const rel of ['img/favicon.ico', 'autre.ico', 'Favicon.ico']) {
+        const r = avecTypes({ 'favicon.ico': icone(300), [rel]: icone(300) });
+        assert.deepEqual(r.codes, ['TYPE_FICHIER_INATTENDU'], rel);
+        assert.deepEqual(r.fichiers, [rel]);
+        assert.match(r.messages[0] ?? '', /seul favicon\.ico à la racine du dist/);
+      }
+    });
+
+    it('refuse une icône trop lourde (5 000 octets) en disant la limite', () => {
+      const r = avecTypes({ 'favicon.ico': icone(5000) });
+      assert.deepEqual(r.codes, ['TYPE_FICHIER_INATTENDU']);
+      assert.deepEqual(r.fichiers, ['favicon.ico']);
+      assert.match(r.messages[0] ?? '', /5000 octets \(limite 4096\)/);
+    });
+
+    it('sans .ico dans les types permis, favicon.ico reste un type inattendu', () => {
+      const r = verifier(pourCli(distPropre({ 'favicon.ico': icone(300) })), 'production', { logement: 2 }, { typesAutorises: ['.html', '.txt', '.xml', '.json'] });
+      assert.deepEqual(r.fichiers, ['favicon.ico']);
+    });
+  });
 });
 
 describe('FICHIER_NON_REGULIER (WR-06) : lien symbolique ou fichier spécial dans le dist', () => {
@@ -1074,6 +1114,14 @@ describe('CLI scripts/check-dist.ts', () => {
     const r = lancer(['--dist', dist, '--root', CORPUS, '--mode', 'production']);
     assert.equal(r.status, 1, r.out + r.err);
     assert.match(r.out, /^TYPE_FICHIER_INATTENDU police\.woff2 : /m);
+  });
+
+  it('D-11 : le CLI accepte favicon.ico à la racine et refuse img/favicon.ico (code 1)', () => {
+    const ok = lancer(['--dist', ecrireDist({ ...distCli(), 'favicon.ico': Buffer.alloc(300, 1) }), '--root', CORPUS, '--mode', 'production']);
+    assert.equal(ok.status, 0, ok.out + ok.err);
+    const ko = lancer(['--dist', ecrireDist({ ...distCli(), 'img/favicon.ico': Buffer.alloc(300, 1) }), '--root', CORPUS, '--mode', 'production']);
+    assert.equal(ko.status, 1, ko.out + ko.err);
+    assert.match(ko.out, /^TYPE_FICHIER_INATTENDU img\/favicon\.ico : /m);
   });
 
   it('WR-06 : un lien symbolique dans le dist donne FICHIER_NON_REGULIER (code 1)', () => {

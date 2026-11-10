@@ -20,6 +20,7 @@ describe('e2e/serveur.ts', () => {
   let serveur: ReturnType<typeof creerServeur>;
   const HTML = '<!doctype html><title>x</title><p>bonjour bonjour bonjour bonjour</p>';
   const VERSION = `${JSON.stringify({ commit: 'dev', date: '2026-11-08T20:30:00.000Z' })}\n`;
+  const ICONE = Buffer.from([0, 0, 1, 0, 1, 0, 32, 32, 0, 0, 1, 0, 32, 0]);
 
   // Requête HTTP brute : fetch normaliserait « /../ » et décompresserait le gzip.
   function get(chemin: string, headers: Record<string, string> = {}): Promise<Reponse> {
@@ -44,6 +45,7 @@ describe('e2e/serveur.ts', () => {
     writeFileSync(path.join(dist, 'a', 'index.html'), HTML);
     writeFileSync(path.join(dist, '_astro', 'x.css'), 'body{color:red}');
     writeFileSync(path.join(dist, 'version.json'), VERSION);
+    writeFileSync(path.join(dist, 'favicon.ico'), ICONE);
     writeFileSync(path.join(tmp, 'secret.txt'), 'SECRET');
     // WR-01 : liens symboliques vers l'extérieur du dist (fichier et dossier) et vers l'intérieur.
     symlinkSync(path.join(tmp, 'secret.txt'), path.join(dist, 'lien.txt'));
@@ -93,6 +95,13 @@ describe('e2e/serveur.ts', () => {
     assert.equal(brut.headers['content-type'], 'application/json; charset=utf-8');
     assert.equal(brut.headers['content-encoding'], undefined);
     assert.equal(brut.corps.toString('utf8'), VERSION);
+  });
+
+  it('D-11 : sert /favicon.ico en image/x-icon', async () => {
+    const r = await get('/favicon.ico', { 'accept-encoding': 'identity' });
+    assert.equal(r.status, 200);
+    assert.equal(r.headers['content-type'], 'image/x-icon');
+    assert.ok(r.corps.equals(ICONE));
   });
 
   for (const chemin of ['/%2e%2e/secret.txt', '/../secret.txt', '/..%2fsecret.txt']) {
