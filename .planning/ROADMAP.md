@@ -135,7 +135,23 @@ Plans:
   4. Les Mentions légales finales portent le régime d'éditeur validé, l'hébergeur `actif`, un contact réel testé de bout en bout, la politique de journal exacte et la base légale du droit de réponse vérifiée sur Légifrance ; une relecture juridique a eu lieu, ou Erwan a consigné par écrit le risque accepté.
   5. Le RUNBOOK décrit le retrait d'urgence d'une mesure en moins d'une heure et le calendrier de gel des scrutins de 2027 ; le journal d'audit et ses empreintes sont refaits sur la build déployée, puis le site est ouvert avec l'hôte technique retiré.
 
-**Plans**: TBD
+**Plans**: 13 plans (6 waves; 09-03 and 09-08 to 09-13 have checkpoints with Erwan; the review of the santé theme by Erwan, 23 November to 1 December, is the critical path)
+
+Plans:
+
+- [ ] 09-01-PLAN.md — Relecture ouverte (pilote.relecture_ouverte), éditeur par positions de nœuds YAML, registre, commandes liste, marquer, note (vague 1)
+- [ ] 09-02-PLAN.md — Liste blanche config/publication.yml, règle PUBLICATION_*, filtre des pages, codes check-dist, relecteur et date affichés (vague 1)
+- [ ] 09-03-PLAN.md — W9 : exception Wayback motivée, adoption d'un instantané existant, sources Batho et Rohou (vague 1, validation d'Erwan)
+- [ ] 09-04-PLAN.md — Mentions légales finales (régime II), contact réel, phrase du journal d'erreurs, note de risques R1 à R9 (vague 1)
+- [ ] 09-05-PLAN.md — Page de relecture locale sur 127.0.0.1 avec jeton CSRF, jamais dans le dist (vague 2)
+- [ ] 09-06-PLAN.md — Commandes publier (relu vers publie, thème entier) et retirer (retrait d'urgence avec case de couverture) (vague 2)
+- [ ] 09-07-PLAN.md — Installateur site-public, test de restauration conditionnel, favicon.ico et règle check-dist (vague 2)
+- [ ] 09-08-PLAN.md — Actes d'Erwan : identité transmise à Hetzner, contact testé de bout en bout, signature de la note de risques (vague 2)
+- [ ] 09-09-PLAN.md — RUNBOOK (retrait d'urgence, gel 2027, relecture, publication, ouverture), ADR-059 à 062, préparation du serveur (vague 3, accord d'Erwan)
+- [ ] 09-10-PLAN.md — Relecture du thème santé par Erwan : 47 mesures, 37 statuts, 37 cases (vague 3, du 23 novembre au 1er décembre)
+- [ ] 09-11-PLAN.md — Publication de santé sur l'hôte d'essai, hébergeur actif, exercice chronométré de retrait d'urgence (vague 4)
+- [ ] 09-12-PLAN.md — Ouverture : cible production, bloc Caddy public et certificats, supervision réorientée, hôte d'essai retiré (vague 5)
+- [ ] 09-13-PLAN.md — Journal d'audit refait sur la build en ligne (DETTE-04), 4G remesurée avec la page santé, confirmation d'Erwan (vague 6)
 
 ### Phase 10: Import de décembre
 
