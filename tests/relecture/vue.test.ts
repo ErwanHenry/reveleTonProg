@@ -27,6 +27,12 @@ describe('fenetreExtrait (localisation de la citation dans l’extrait archivé)
     assert.equal(f.avant + f.cite + f.apres, texte);
   });
 
+  it('apostrophe lettre modificative U+02BC dans l’archive (cas réel du corpus santé)', () => {
+    const f = fenetreExtrait('Tract.\nGarantir l\u02BCaccès aux soins sur l\u02BCensemble du territoire.', 'Garantir l\u02BCaccès aux soins sur l\u02BCensemble du territoire');
+    assert.equal(f.trouve, true);
+    assert.equal(f.cite, 'Garantir l\u02BCaccès aux soins sur l\u02BCensemble du territoire');
+  });
+
   it('fenêtre de 400 caractères de part et d’autre, coupée aux limites de mots', () => {
     const mots = (n: number, p: string): string => Array.from({ length: n }, (_, i) => `${p}${i}`).join(' ');
     const texte = `${mots(200, 'avant')} la phrase cherchée est ici ${mots(200, 'apres')}`;
