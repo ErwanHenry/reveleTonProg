@@ -41,7 +41,9 @@ describe('ops/site-touche.sh : classement des chemins changés', () => {
   const cas: [string, string[], 'true' | 'false'][] = [
     ['documentation et planification seules', ['docs/RUNBOOK.md', '.planning/STATE.md'], 'false'],
     ['tests, e2e, audit, ops, deploy, workflows', ['tests/repo/ci.test.ts', 'e2e/a.spec.ts', 'audit/x.md', 'ops/battement.sh', 'deploy/caddy/essai.caddy', '.github/workflows/ci.yml'], 'false'],
-    ['fichiers de la racine listés', ['README.md', 'LICENSE', 'CHANGELOG.md', '.gitattributes', '.editorconfig'], 'false'],
+    ['fichiers de la racine listés', ['README.md', 'LICENSE', 'CHANGELOG.md', '.editorconfig'], 'false'],
+    ['.gitattributes compte comme le site (eol, encodage, filtres : IN-04)', ['.gitattributes'], 'true'],
+    ['.gitattributes parmi de la documentation', ['README.md', '.gitattributes'], 'true'],
     ['aucun chemin', [], 'false'],
     ['une page du site', ['src/pages/index.astro'], 'true'],
     ['un .md hors de la racine (le motif *.md ne vaut qu’à la racine)', ['src/content/notes.md'], 'true'],

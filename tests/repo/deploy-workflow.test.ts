@@ -100,7 +100,7 @@ const indexEtape = (j: Job, predicat: (s: Step) => boolean, quoi: string): numbe
 };
 
 /** Liste des chemins qui ne changent pas le site : définie une seule fois, dans l'env du workflow. */
-const CHEMINS_HORS_SITE = '.planning/ docs/ tests/ e2e/ audit/ ops/ deploy/ .github/ README.md LICENSE *.md .gitattributes .editorconfig';
+const CHEMINS_HORS_SITE = '.planning/ docs/ tests/ e2e/ audit/ ops/ deploy/ .github/ README.md LICENSE *.md .editorconfig';
 /** Condition commune à gel et deploy : push sur main qui touche le site, ou lancement à la main avec deployer (ou retrait_urgence). */
 const EXPR_DECLENCHEMENT =
   "((github.event_name == 'push' && needs.changements.outputs.site == 'true') || (github.event_name == 'workflow_dispatch' && (inputs.deployer == true || inputs.retrait_urgence == true)))";

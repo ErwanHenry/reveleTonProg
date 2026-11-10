@@ -41,7 +41,8 @@ env:
   # changements (un push qui ne touche qu'eux ne demande aucun déploiement) et deploy (une tête de main plus récente
   # qui ne touche qu'eux n'invalide pas l'approbation). « dossier/ » : dossier de la racine ; autre motif : fichier
   # de la racine seulement (« *.md » ne couvre pas src/x.md). Liste prudente : tout chemin absent compte comme le site.
-  CHEMINS_HORS_SITE: ".planning/ docs/ tests/ e2e/ audit/ ops/ deploy/ .github/ README.md LICENSE *.md .gitattributes .editorconfig"
+  # .gitattributes n'y est pas (IN-04) : eol, encodage ou filtres changent les octets extraits de src/, donc le site.
+  CHEMINS_HORS_SITE: ".planning/ docs/ tests/ e2e/ audit/ ops/ deploy/ .github/ README.md LICENSE *.md .editorconfig"
 
 jobs:
   verifier:
