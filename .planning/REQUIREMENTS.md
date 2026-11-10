@@ -17,27 +17,27 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 
 - [x] **HEB-05**: Le domaine est déclaré une seule fois (`config/site.yml`) et alimente `site` Astro, l'URL canonique de chaque page, `sitemap.xml`, `robots.txt` et le bloc Caddy ; un test refuse tout nom d'hôte écrit en dur ailleurs
 - [x] **HEB-06**: Un domaine provisoire (`.invalid`) fait échouer la build sous `RTP_DEPLOIEMENT=1`, comme le contact provisoire
-- [ ] **HEB-07**: `/version.json` indique le commit et la date de la version servie
+- [x] **HEB-07**: `/version.json` indique le commit et la date de la version servie
 
 ### Serveur (Caddy, HTTPS)
 
-- [ ] **HEB-01**: Le site est servi en HTTPS sur le domaine par un bloc Caddy dédié, généré depuis la configuration et vérifié par un test de dérive, appliqué par `caddy validate` puis `reload` sans couper les autres sites du VPS
-- [ ] **HEB-08**: Les réponses portent des en-têtes de sécurité (CSP compatible avec la CSP par page, `frame-ancestors`, `X-Content-Type-Options`, `Referrer-Policy`), la compression, `no-cache` sur le HTML et un cache long sur les fichiers hachés
-- [ ] **HEB-09**: Le journal d'accès garde au plus 14 jours, avec IP masquée (/24 en IPv4, /48 en IPv6), sans User-Agent ni Referer, et les Mentions légales décrivent exactement cette politique
+- [x] **HEB-01**: Le site est servi en HTTPS sur le domaine par un bloc Caddy dédié, généré depuis la configuration et vérifié par un test de dérive, appliqué par `caddy validate` puis `reload` sans couper les autres sites du VPS
+- [x] **HEB-08**: Les réponses portent des en-têtes de sécurité (CSP compatible avec la CSP par page, `frame-ancestors`, `X-Content-Type-Options`, `Referrer-Policy`), la compression, `no-cache` sur le HTML et un cache long sur les fichiers hachés
+- [x] **HEB-09**: Le journal d'accès garde au plus 14 jours, avec IP masquée (/24 en IPv4, /48 en IPv6), sans User-Agent ni Referer, et les Mentions légales décrivent exactement cette politique
 
 ### Déploiement
 
-- [ ] **HEB-02**: Un push sur `main` dont les jobs de vérification, e2e et secrets sont verts déploie la build de production reconstruite sous `RTP_DEPLOIEMENT=1` vers `releases/<sha>/` puis bascule `current` de façon atomique, avec un test de fumée après bascule
-- [ ] **HEB-10**: La clé de déploiement est dédiée et restreinte (utilisateur sans sudo, commande forcée), l'empreinte du serveur est épinglée, les secrets vivent dans l'Environment `production` limité à `main`, et un test de dépôt refuse `pull_request_target`, `RTP_MODE` et le déploiement d'un artefact preview
-- [ ] **HEB-11**: Un retour à la version précédente se fait en moins de 2 minutes par bascule de lien (`workflow_dispatch`), testé lors d'un aller-retour chronométré
-- [ ] **HEB-12**: Chaque déploiement en production attend l'approbation d'Erwan dans GitHub (Environment `production`)
-- [ ] **HEB-13**: Le workflow refuse de déployer pendant les fenêtres électorales (17 au 19 avril et 1er au 3 mai 2027), sauf retrait d'urgence documenté
-- [ ] **HEB-14**: Un hôte technique protégé par mot de passe reçoit les déploiements d'essai avant l'ouverture ; il est retiré à l'ouverture et le job de production ne contourne jamais la garde
+- [x] **HEB-02**: Un push sur `main` dont les jobs de vérification, e2e et secrets sont verts déploie la build de production reconstruite sous `RTP_DEPLOIEMENT=1` vers `releases/<sha>/` puis bascule `current` de façon atomique, avec un test de fumée après bascule
+- [x] **HEB-10**: La clé de déploiement est dédiée et restreinte (utilisateur sans sudo, commande forcée), l'empreinte du serveur est épinglée, les secrets vivent dans l'Environment `production` limité à `main`, et un test de dépôt refuse `pull_request_target`, `RTP_MODE` et le déploiement d'un artefact preview
+- [x] **HEB-11**: Un retour à la version précédente se fait en moins de 2 minutes par bascule de lien (`workflow_dispatch`), testé lors d'un aller-retour chronométré
+- [x] **HEB-12**: Chaque déploiement en production attend l'approbation d'Erwan dans GitHub (Environment `production`)
+- [x] **HEB-13**: Le workflow refuse de déployer pendant les fenêtres électorales (17 au 19 avril et 1er au 3 mai 2027), sauf retrait d'urgence documenté
+- [x] **HEB-14**: Un hôte technique protégé par mot de passe reçoit les déploiements d'essai avant l'ouverture ; il est retiré à l'ouverture et le job de production ne contourne jamais la garde
 
 ### Performance (Slow 4G simulé)
 
 - [x] **PERF-01**: Le CSS et les scripts de niveau et d'ordre sont dans chaque page, couverts par une CSP à empreintes sha256 sans `unsafe-inline` sur les scripts ; check-dist vérifie que chaque script en ligne est identique octet pour octet à sa source et que son empreinte figure dans la CSP
-- [ ] **PERF-02**: Un chargement à froid de la page la plus lourde tient sous 1 s sur le profil « Slow 4G simulé » (Lighthouse), le site reste complet sans JS, et Méthode, README et RUNBOOK publient ce libellé ainsi qu'une mesure réelle consignée
+- [x] **PERF-02**: Un chargement à froid de la page la plus lourde tient sous 1 s sur le profil « Slow 4G simulé » (Lighthouse), le site reste complet sans JS, et Méthode, README et RUNBOOK publient ce libellé ainsi qu'une mesure réelle consignée
 
 ### Publication (contenu relu)
 
@@ -54,9 +54,9 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 
 ### Supervision et sauvegardes
 
-- [ ] **OPS-01**: Une sonde externe vérifie que le site répond avec son contenu attendu et alerte sur Telegram après 3 échecs consécutifs, avec message de rétablissement, testée par une panne simulée
-- [ ] **OPS-02**: Un battement de cœur depuis le VPS alerte si la machine tombe, si le disque dépasse 85 % puis 92 %, ou si le certificat expire dans moins de 14 jours
-- [ ] **OPS-03**: La configuration serveur (Caddy, cron, clés autorisées, script d'installation idempotent) est dans le dépôt ou sauvegardée, et une restauration réelle a été faite avant l'ouverture, puis chaque 1er du mois
+- [x] **OPS-01**: Une sonde externe vérifie que le site répond avec son contenu attendu et alerte sur Telegram après 3 échecs consécutifs, avec message de rétablissement, testée par une panne simulée
+- [x] **OPS-02**: Un battement de cœur depuis le VPS alerte si la machine tombe, si le disque dépasse 85 % puis 92 %, ou si le certificat expire dans moins de 14 jours
+- [x] **OPS-03**: La configuration serveur (Caddy, cron, clés autorisées, script d'installation idempotent) est dans le dépôt ou sauvegardée, et une restauration réelle a été faite avant l'ouverture, puis chaque 1er du mois
 
 ### Import de décembre
 
@@ -106,20 +106,20 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 | HEB-05 | Phase 7 | Complete |
 | HEB-06 | Phase 7 | Complete |
 | PERF-01 | Phase 7 | Complete |
-| HEB-01 | Phase 8 | Pending |
-| HEB-02 | Phase 8 | Pending |
-| HEB-07 | Phase 8 | Pending |
-| HEB-08 | Phase 8 | Pending |
-| HEB-09 | Phase 8 | Pending |
-| HEB-10 | Phase 8 | Pending |
-| HEB-11 | Phase 8 | Pending |
-| HEB-12 | Phase 8 | Pending |
-| HEB-13 | Phase 8 | Pending |
-| HEB-14 | Phase 8 | Pending |
-| OPS-01 | Phase 8 | Pending |
-| OPS-02 | Phase 8 | Pending |
-| OPS-03 | Phase 8 | Pending |
-| PERF-02 | Phase 8 | Pending |
+| HEB-01 | Phase 8 | Complete |
+| HEB-02 | Phase 8 | Complete |
+| HEB-07 | Phase 8 | Complete |
+| HEB-08 | Phase 8 | Complete |
+| HEB-09 | Phase 8 | Complete |
+| HEB-10 | Phase 8 | Complete |
+| HEB-11 | Phase 8 | Complete |
+| HEB-12 | Phase 8 | Complete |
+| HEB-13 | Phase 8 | Complete |
+| HEB-14 | Phase 8 | Complete |
+| OPS-01 | Phase 8 | Complete |
+| OPS-02 | Phase 8 | Complete |
+| OPS-03 | Phase 8 | Complete |
+| PERF-02 | Phase 8 | Complete |
 | DETTE-04 | Phase 9 | Pending |
 | LEG-01 | Phase 9 | Pending |
 | LEG-02 | Phase 9 | Pending |

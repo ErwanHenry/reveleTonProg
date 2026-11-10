@@ -4,14 +4,14 @@ milestone: v1.1
 milestone_name: "Lot 3 : hébergement et mise en ligne"
 status: planning
 stopped_at: Roadmap v1.1 créé
-last_updated: "2026-11-08T09:46:48.429Z"
-last_activity: 2026-11-08
+last_updated: "2026-11-10T19:33:00.456Z"
+last_activity: 2026-11-10
 progress:
   total_phases: 5
-  completed_phases: 1
-  total_plans: 8
-  completed_plans: 9
-  percent: 20
+  completed_phases: 2
+  total_plans: 23
+  completed_plans: 24
+  percent: 40
 ---
 
 # Project State
@@ -26,10 +26,10 @@ See: .planning/PROJECT.md (updated 2026-11-04)
 
 ## Current Position
 
-Phase: 07 of 10 (domaine param tr inlining et dette)
+Phase: 9 of 10 (contenu relu, juridique et ouverture)
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-11-08
+Last activity: 2026-11-10
 
 Progress v1.1: [..........] 0/5 phases, 0 plans
 
@@ -37,7 +37,7 @@ Progress v1.1: [..........] 0/5 phases, 0 plans
 
 **Velocity:**
 
-- Total plans completed: 49 (v1.0)
+- Total plans completed: 64 (v1.0)
 - v1.1 plans completed: 0
 
 **By Phase (v1.0):**
@@ -51,6 +51,7 @@ Progress v1.1: [..........] 0/5 phases, 0 plans
 | 05 | 8 | - | - |
 | 07 | 8 | - | - |
 | 06 | 1 | - | - |
+| 08 | 15 | - | - |
 
 *Updated after each plan completion*
 

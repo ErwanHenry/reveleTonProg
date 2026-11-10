@@ -24,7 +24,7 @@ Détail complet : [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) ; exi
 
 - [x] **Phase 6: Diagnostic du VPS et décision** : rapport chiffré en lecture seule, snapshot, décision écrite d'Erwan (completed 2026-11-08)
 - [x] **Phase 7: Domaine paramétré, inlining et dette** : domaine unique en configuration, CSS et scripts dans la page avec CSP à empreintes, dette W3, W4, W10, W7 (completed 2026-11-07)
-- [ ] **Phase 8: Serveur, pipeline, supervision et sauvegardes** : Caddy en HTTPS, déploiement atomique avec retour arrière, hôte technique protégé, alertes, restauration réelle
+- [x] **Phase 8: Serveur, pipeline, supervision et sauvegardes** : Caddy en HTTPS, déploiement atomique avec retour arrière, hôte technique protégé, alertes, restauration réelle (completed 2026-11-10)
 - [ ] **Phase 9: Contenu relu, juridique et ouverture** : un thème relu publié, Mentions légales finales, journal d'audit refait, ouverture publique vers le 5 décembre
 - [ ] **Phase 10: Import de décembre** : analyseur plafonné, cohérence de l'instantané, import des statuts en pull request relue (10 au 13 décembre, gel du 13 au 15)
 
@@ -106,21 +106,21 @@ Plans:
 
 Plans:
 
-- [ ] 08-01-PLAN.md — Bloc Caddy de l'hôte technique (basic_auth à valeur factice, noindex, robots fermé), politique du journal à source unique, phrase des Mentions légales (vague 1)
-- [ ] 08-02-PLAN.md — Commande forcée de déploiement (rrsync, bascule atomique, rotation, retour) et scripts de vérification Caddy en lecture seule (vague 1)
-- [ ] 08-03-PLAN.md — Installateur idempotent, fichier override compose, fichiers cron (vague 1)
-- [ ] 08-04-PLAN.md — /version.json, règles check-dist, mode 4G distant de Playwright, RUNBOOK (codes et libellé) (vague 1)
-- [ ] 08-05-PLAN.md — Profil « Slow 4G simulé » à 1 s, Méthode et README (vague 1)
-- [ ] 08-06-PLAN.md — Garde de gel, jobs gel et deploy en sommeil, rollback.yml, sonde.yml, tests de dépôt (vague 1)
-- [ ] 08-07-PLAN.md — Battement de cœur, sauvegarde de la configuration, test de restauration (vague 2)
-- [ ] 08-08-PLAN.md — RUNBOOK, ADR-054, 055, 057, 058, README des secrets (vague 3)
-- [ ] 08-09-PLAN.md — Serveur : validation jetable, montages, empreintes, ligne import, recréation du soir de Caddy (vague 2, accord d'Erwan)
-- [ ] 08-10-PLAN.md — Serveur : utilisateur deploy, commande forcée, preuve rrsync en boucle locale, aller-retour (vague 2, accord d'Erwan)
-- [ ] 08-11-PLAN.md — Serveur : Healthchecks et Telegram, cron du battement, alertes disque simulées, première archive (vague 3, accord d'Erwan)
-- [ ] 08-12-PLAN.md — Domaine réel, bloc essai importé, validate puis reload, HTTPS et en-têtes vérifiés (vague 3, attend le DNS)
-- [ ] 08-13-PLAN.md — Environments GitHub, déploiement approuvé par push, retour chronométré sous 2 min (vague 4)
-- [ ] 08-14-PLAN.md — PERF-02 derrière Caddy, Lighthouse, publication de la mesure (vague 5)
-- [ ] 08-15-PLAN.md — Sonde active, pannes simulées avec Telegram, restauration réelle et cron mensuel (vague 6)
+- [x] 08-01-PLAN.md — Bloc Caddy de l'hôte technique (basic_auth à valeur factice, noindex, robots fermé), politique du journal à source unique, phrase des Mentions légales (vague 1)
+- [x] 08-02-PLAN.md — Commande forcée de déploiement (rrsync, bascule atomique, rotation, retour) et scripts de vérification Caddy en lecture seule (vague 1)
+- [x] 08-03-PLAN.md — Installateur idempotent, fichier override compose, fichiers cron (vague 1)
+- [x] 08-04-PLAN.md — /version.json, règles check-dist, mode 4G distant de Playwright, RUNBOOK (codes et libellé) (vague 1)
+- [x] 08-05-PLAN.md — Profil « Slow 4G simulé » à 1 s, Méthode et README (vague 1)
+- [x] 08-06-PLAN.md — Garde de gel, jobs gel et deploy en sommeil, rollback.yml, sonde.yml, tests de dépôt (vague 1)
+- [x] 08-07-PLAN.md — Battement de cœur, sauvegarde de la configuration, test de restauration (vague 2)
+- [x] 08-08-PLAN.md — RUNBOOK, ADR-054, 055, 057, 058, README des secrets (vague 3)
+- [x] 08-09-PLAN.md — Serveur : validation jetable, montages, empreintes, ligne import, recréation du soir de Caddy (vague 2, accord d'Erwan)
+- [x] 08-10-PLAN.md — Serveur : utilisateur deploy, commande forcée, preuve rrsync en boucle locale, aller-retour (vague 2, accord d'Erwan)
+- [x] 08-11-PLAN.md — Serveur : Healthchecks et Telegram, cron du battement, alertes disque simulées, première archive (vague 3, accord d'Erwan)
+- [x] 08-12-PLAN.md — Domaine réel, bloc essai importé, validate puis reload, HTTPS et en-têtes vérifiés (vague 3, attend le DNS)
+- [x] 08-13-PLAN.md — Environments GitHub, déploiement approuvé par push, retour chronométré sous 2 min (vague 4)
+- [x] 08-14-PLAN.md — PERF-02 derrière Caddy, Lighthouse, publication de la mesure (vague 5)
+- [x] 08-15-PLAN.md — Sonde active, pannes simulées avec Telegram, restauration réelle et cron mensuel (vague 6)
 
 ### Phase 9: Contenu relu, juridique et ouverture
 
@@ -161,6 +161,6 @@ Plans:
 | 5. Pages institutionnelles, qualité et URL de test | v1.0 | 8/8 | Complete | 2026-11-04 |
 | 6. Diagnostic du VPS et décision | v1.1 | 1/0 | Complete    | 2026-11-08 |
 | 7. Domaine paramétré, inlining et dette | v1.1 | 8/8 | Complete    | 2026-11-07 |
-| 8. Serveur, pipeline, supervision et sauvegardes | v1.1 | 0/0 | Not started | - |
+| 8. Serveur, pipeline, supervision et sauvegardes | v1.1 | 15/15 | Complete    | 2026-11-10 |
 | 9. Contenu relu, juridique et ouverture | v1.1 | 0/0 | Not started | - |
 | 10. Import de décembre | v1.1 | 0/0 | Not started | - |
