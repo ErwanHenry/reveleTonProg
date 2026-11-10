@@ -212,7 +212,7 @@ describe('ci.yml : job deploy (HEB-02, HEB-12, HEB-14)', () => {
   const s = dep.steps;
 
   it('après les trois jobs et la garde, Environment production, concurrence sans annulation, 15 min', () => {
-    assert.deepEqual(dep.needs, ['verifier', 'e2e', 'secrets', 'changements', 'gel']);
+    assert.deepEqual(dep.needs, ['verifier', 'e2e', 'secrets', 'changements', 'gel', 'construire']);
     assert.equal(dep.if, `needs.gel.outputs.ok == 'true' && ${EXPR_DECLENCHEMENT}`);
     assert.ok(EXPR_DECLENCHEMENT.includes("github.event_name == 'push' && needs.changements.outputs.site == 'true'"));
     assert.ok(EXPR_DECLENCHEMENT.includes("github.event_name == 'workflow_dispatch' && (inputs.deployer == true"));
@@ -256,21 +256,20 @@ describe('ci.yml : job deploy (HEB-02, HEB-12, HEB-14)', () => {
     assert.ok(iGel + 1 < iCle, 'la garde précède l’écriture de la clé');
   });
 
-  it('étapes dans l’ordre : checkout, node, npm ci, signatures, tête de main, build, check-dist, clé, rsync, activer, état, fumée, retour, nettoyage', () => {
+  it('étapes dans l’ordre : checkout, node, gel, tête de main, artefact, vérification, clé, rsync, version avant, activer, état, fumée, retour, nettoyage', () => {
     const ordre = [
       indexEtape(dep, (x) => x.uses?.startsWith('actions/checkout@') === true, 'checkout'),
       indexEtape(dep, (x) => x.uses?.startsWith('actions/setup-node@') === true, 'setup-node'),
-      indexEtape(dep, (x) => x.run?.trim() === 'npm ci', 'npm ci'),
-      indexEtape(dep, (x) => x.run?.trim() === 'npm audit signatures', 'npm audit signatures'),
+      indexEtape(dep, (x) => x.id === 'gel', 'garde de gel'),
       indexEtape(dep, (x) => x.run?.includes('git ls-remote') === true, 'tête de main'),
-      indexEtape(dep, (x) => x.run?.trim() === 'npm run build', 'build'),
-      indexEtape(dep, (x) => x.run?.trim() === 'npm run check-dist -- --mode production', 'check-dist'),
+      indexEtape(dep, (x) => x.uses?.startsWith('actions/download-artifact@') === true, 'téléchargement'),
+      indexEtape(dep, (x) => x.run?.includes('empreinte_arbre dist') === true, 'vérification de la build'),
       indexEtape(dep, (x) => x.run?.includes('umask 077') === true, 'clé'),
       indexEtape(dep, (x) => x.run?.includes('rsync ') === true, 'rsync'),
       indexEtape(dep, (x) => x.run?.includes('COURANT_AVANT=$(') === true, 'version courante avant activation'),
       indexEtape(dep, (x) => x.id === 'activer', 'activer'),
       indexEtape(dep, (x) => x.run?.includes('*" courant=$SHA "*') === true, 'état'),
-      indexEtape(dep, (x) => x.run?.includes('/version.json') === true, 'fumée'),
+      indexEtape(dep, (x) => x.run?.includes('"$BASE/version.json"') === true, 'fumée'),
       indexEtape(dep, (x) => x.run?.includes('"retour $CIBLE $COURANT_AVANT"') === true, 'retour'),
       indexEtape(dep, (x) => x.if === 'always()', 'nettoyage'),
     ];
@@ -306,9 +305,10 @@ describe('ci.yml : job deploy (HEB-02, HEB-12, HEB-14)', () => {
     assert.ok(!run.includes('|| true'), 'aucun échec avalé');
   });
 
-  it('build et check-dist : corpus réel, expression RTP_DEPLOIEMENT exacte sur les deux étapes (HEB-14)', () => {
-    const build = s.find((x) => x.run?.trim() === 'npm run build');
-    const check = s.find((x) => x.run?.trim() === 'npm run check-dist -- --mode production');
+  it('build et check-dist dans construire : corpus réel, expression RTP_DEPLOIEMENT exacte sur les deux étapes (HEB-14)', () => {
+    const cs = job(ci, 'construire').steps;
+    const build = cs.find((x) => x.run?.trim() === 'npm run build');
+    const check = cs.find((x) => x.run?.trim() === 'npm run check-dist -- --mode production');
     for (const x of [build, check]) {
       assert.equal(x?.env?.RTP_CONTENT_ROOT, '.');
       assert.equal(x?.env?.RTP_DEPLOIEMENT, EXPR_DEPLOIEMENT);
@@ -349,7 +349,7 @@ describe('ci.yml : job deploy (HEB-02, HEB-12, HEB-14)', () => {
   });
 
   it('test de fumée HTTPS : version.json du commit, HSTS et CSP, identifiants par curl --config - et printf', () => {
-    const etape = s.find((x) => x.run?.includes('/version.json'));
+    const etape = s.find((x) => x.run?.includes('"$BASE/version.json"'));
     assert.deepEqual(etape?.env, {
       DEPLOY_SMOKE_USER: '${{ secrets.DEPLOY_SMOKE_USER }}',
       DEPLOY_SMOKE_PASS: '${{ secrets.DEPLOY_SMOKE_PASS }}',
@@ -402,19 +402,124 @@ describe('ci.yml : job deploy (HEB-02, HEB-12, HEB-14)', () => {
   });
 });
 
+describe('ci.yml : build sans secret dans construire, deploy sans code de dépendance (WR-04)', () => {
+  const co = job(ci, 'construire');
+  const dep = job(ci, 'deploy');
+
+  it('construire : mêmes conditions que deploy, sans Environment ni secret, sorties artefact, empreinte et cible', () => {
+    assert.deepEqual(co.needs, ['verifier', 'e2e', 'secrets', 'changements', 'gel']);
+    assert.equal(co.if, dep.if);
+    assert.equal(co.environment, undefined);
+    assert.equal(co.concurrency, undefined);
+    assert.ok(!JSON.stringify(co).includes('secrets.'));
+    assert.deepEqual(co.outputs, {
+      artefact: '${{ steps.empreinte.outputs.nom }}',
+      empreinte: '${{ steps.empreinte.outputs.empreinte }}',
+      cible: '${{ steps.empreinte.outputs.cible }}',
+    });
+  });
+
+  it('construire : npm ci --ignore-scripts, signatures, build, check-dist, empreinte, puis publication de dist/', () => {
+    const cs = co.steps;
+    const ordre = [
+      indexEtape(co, (x) => x.run?.trim() === 'npm ci --ignore-scripts', 'npm ci --ignore-scripts'),
+      indexEtape(co, (x) => x.run?.trim() === 'npm audit signatures', 'signatures'),
+      indexEtape(co, (x) => x.run?.trim() === 'npm run build', 'build'),
+      indexEtape(co, (x) => x.run?.trim() === 'npm run check-dist -- --mode production', 'check-dist'),
+      indexEtape(co, (x) => x.id === 'empreinte', 'empreinte'),
+      indexEtape(co, (x) => x.uses?.startsWith('actions/upload-artifact@') === true, 'publication'),
+    ];
+    for (let i = 1; i < ordre.length; i++) assert.ok((ordre[i - 1] as number) < (ordre[i] as number), `ordre rompu à ${i}`);
+    const up = cs.find((x) => x.uses?.startsWith('actions/upload-artifact@'));
+    assert.deepEqual(up?.with, {
+      name: '${{ steps.empreinte.outputs.nom }}',
+      path: 'dist',
+      'include-hidden-files': true,
+      'retention-days': 30,
+      'if-no-files-found': 'error',
+    });
+    const emp = cs.find((x) => x.id === 'empreinte');
+    assert.deepEqual(emp?.env, { CIBLE_BUILD: '${{ vars.DEPLOY_CIBLE }}' });
+    assert.ok(emp?.run?.includes('echo "nom=site-deploiement-$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"'));
+  });
+
+  it('deploy : aucun npm, aucune build, aucun script du paquet', () => {
+    for (const r of runs(dep)) {
+      assert.doesNotMatch(r, /\bnpm\b|\bnpx\b|astro|check-dist/, r.slice(0, 80));
+    }
+  });
+
+  it('même fonction d’empreinte dans construire et deploy ; deploy vérifie empreinte, cible et commit avant la clé', () => {
+    const def = (j: Job): string => {
+      const ligne = runs(j)
+        .flatMap((r) => r.split('\n'))
+        .map((l) => l.trim())
+        .find((l) => l.startsWith('empreinte_arbre() {'));
+      assert.ok(ligne, 'empreinte_arbre absente');
+      return ligne;
+    };
+    assert.equal(def(co), def(dep));
+    const verif = dep.steps.find((x) => x.run?.includes('empreinte_arbre dist'));
+    assert.deepEqual(verif?.env, {
+      ARTEFACT: '${{ needs.construire.outputs.artefact }}',
+      EMPREINTE: '${{ needs.construire.outputs.empreinte }}',
+      CIBLE_BUILD: '${{ needs.construire.outputs.cible }}',
+    });
+    const run = verif?.run ?? '';
+    for (const attendu of ['"$E" != "$EMPREINTE"', '"$CIBLE_BUILD" != "$CIBLE"', "jq -e --arg s \"$SHA\" '.commit == $s' dist/version.json", '! -type f ! -type d']) {
+      assert.ok(run.includes(attendu), `absent : ${attendu}`);
+    }
+  });
+
+  it('empreinte de l’arbre : jouée sur un dossier, stable, sensible au contenu et aux noms', () => {
+    const ligne = runs(co)
+      .flatMap((r) => r.split('\n'))
+      .map((l) => l.trim())
+      .find((l) => l.startsWith('empreinte_arbre() {')) as string;
+    if (spawnSync('sh', ['-c', 'command -v sha256sum'], { encoding: 'utf8' }).status !== 0) return;
+    const d = fs.mkdtempSync(path.join(os.tmpdir(), 'rtp-empreinte-'));
+    try {
+      fs.mkdirSync(path.join(d, 'a', 'b'), { recursive: true });
+      fs.writeFileSync(path.join(d, 'a', 'b', 'index.html'), 'x');
+      fs.writeFileSync(path.join(d, 'version.json'), '{}');
+      const calc = (): string => spawnSync('bash', ['-c', `set -euo pipefail; ${ligne}\nempreinte_arbre "$1"`, 'bash', d], { encoding: 'utf8' }).stdout.trim();
+      const e1 = calc();
+      assert.match(e1, /^[0-9a-f]{64}$/);
+      assert.equal(calc(), e1);
+      fs.writeFileSync(path.join(d, 'a', 'b', 'index.html'), 'y');
+      const e2 = calc();
+      assert.notEqual(e2, e1);
+      fs.renameSync(path.join(d, 'version.json'), path.join(d, 'version2.json'));
+      assert.notEqual(calc(), e2);
+    } finally {
+      fs.rmSync(d, { recursive: true, force: true });
+    }
+  });
+});
+
 describe('ci.yml : propriétés de sécurité (HEB-10, D-11)', () => {
-  it('ni pull_request_target, ni ssh-keyscan, ni StrictHostKeyChecking=no, ni download-artifact', () => {
-    for (const interdit of ['pull_request_target', 'ssh-keyscan', 'StrictHostKeyChecking=no', 'download-artifact']) {
+  it('ni pull_request_target, ni ssh-keyscan, ni StrictHostKeyChecking=no', () => {
+    for (const interdit of ['pull_request_target', 'ssh-keyscan', 'StrictHostKeyChecking=no']) {
       assert.ok(!ciRaw.includes(interdit), interdit);
     }
+  });
+
+  it('un seul download-artifact, dans deploy, sur l’artefact du job construire (jamais site-preview)', () => {
+    const tous = Object.entries(ci.jobs).flatMap(([nom, j]) => j.steps.filter((x) => x.uses?.startsWith('actions/download-artifact@')).map((x) => [nom, x] as const));
+    assert.equal(tous.length, 1);
+    const [nom, etape] = tous[0] as readonly [string, Step];
+    assert.equal(nom, 'deploy');
+    assert.match(etape.uses ?? '', /^actions\/download-artifact@[0-9a-f]{40}$/);
+    assert.deepEqual(etape.with, { name: '${{ needs.construire.outputs.artefact }}', path: 'dist', 'digest-mismatch': 'error' });
+    assert.ok(!JSON.stringify(job(ci, 'deploy')).includes('site-preview'));
   });
 
   it('aucun --delete dans les scripts', () => {
     for (const j of Object.values(ci.jobs)) for (const r of runs(j)) assert.ok(!r.includes('--delete'));
   });
 
-  it('RTP_MODE absent des jobs changements, gel et deploy (aucune build preview livrée)', () => {
-    for (const nom of ['changements', 'gel', 'deploy']) assert.ok(!JSON.stringify(job(ci, nom)).includes('RTP_MODE'), nom);
+  it('RTP_MODE absent des jobs changements, gel, construire et deploy (aucune build preview livrée)', () => {
+    for (const nom of ['changements', 'gel', 'construire', 'deploy']) assert.ok(!JSON.stringify(job(ci, nom)).includes('RTP_MODE'), nom);
   });
 
   it('secrets seulement dans les env d’étapes du job deploy', () => {

@@ -92,7 +92,7 @@ describe('ci.yml : actions épinglées', () => {
 
   it('checkout : persist-credentials false partout', () => {
     const checkouts = allSteps().filter((s) => s.uses?.startsWith('actions/checkout@'));
-    assert.equal(checkouts.length, 6);
+    assert.equal(checkouts.length, 7);
     for (const s of checkouts) {
       assert.equal(s.with?.['persist-credentials'], false);
     }
@@ -114,7 +114,7 @@ describe('ci.yml : actions épinglées', () => {
 
   it('setup-node lit .nvmrc et met npm en cache', () => {
     const node = allSteps().filter((s) => s.uses?.startsWith('actions/setup-node@'));
-    assert.equal(node.length, 4);
+    assert.equal(node.length, 5);
     for (const n of node) {
       assert.equal(n.with?.['node-version-file'], '.nvmrc');
       assert.equal(n.with?.cache, 'npm');

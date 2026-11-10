@@ -275,6 +275,70 @@ jobs:
           JUSTIFICATION: ${{ inputs.justification }}
         run: node scripts/garde-gel.ts --urgence "$URGENCE" --justification "$JUSTIFICATION"
 
+  # Build de déploiement (revue de code WR-04) : construite et contrôlée dans un job sans secret ni Environment, qui
+  # seul exécute du code de dépendances (npm ci --ignore-scripts, Astro, Vite). Le job deploy, qui reçoit la clé SSH,
+  # ne lance ni npm ni la build : il télécharge cet artefact (nom propre à la tentative, jamais site-preview),
+  # vérifie l'empreinte de l'arbre publiée ici et la cible, puis l'envoie. Conservé 30 jours, durée maximale
+  # d'attente d'une approbation.
+  construire:
+    name: Construire la build de déploiement (sans secret ni Environment)
+    needs: [verifier, e2e, secrets, changements, gel]
+    if: needs.gel.outputs.ok == 'true' && ((github.event_name == 'push' && needs.changements.outputs.site == 'true') || (github.event_name == 'workflow_dispatch' && (inputs.deployer == true || inputs.retrait_urgence == true)))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    outputs:
+      artefact: ${{ steps.empreinte.outputs.nom }}
+      empreinte: ${{ steps.empreinte.outputs.empreinte }}
+      cible: ${{ steps.empreinte.outputs.cible }}
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Installer Node (version de .nvmrc)
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Installer les dépendances (npm ci, sans script de cycle de vie)
+        run: npm ci --ignore-scripts
+      - name: Vérifier les signatures des paquets
+        run: npm audit signatures
+      - name: Construire le site (corpus réel ; RTP_DEPLOIEMENT=1 pour la production, 0 pour essai)
+        run: npm run build
+        env:
+          RTP_CONTENT_ROOT: "."
+          RTP_DEPLOIEMENT: ${{ vars.DEPLOY_CIBLE == 'production' && '1' || '0' }}
+      - name: Contrôler le site construit (mode production, version.json du commit)
+        run: npm run check-dist -- --mode production
+        env:
+          RTP_CONTENT_ROOT: "."
+          RTP_DEPLOIEMENT: ${{ vars.DEPLOY_CIBLE == 'production' && '1' || '0' }}
+      - name: Empreinte de l'arbre construit, nom de l'artefact et cible de la build
+        id: empreinte
+        env:
+          CIBLE_BUILD: ${{ vars.DEPLOY_CIBLE }}
+        run: |
+          set -euo pipefail
+          empreinte_arbre() { (cd "$1" && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum) | sha256sum | cut -d' ' -f1; }
+          if [ -n "$(find dist ! -type f ! -type d -print -quit)" ]; then
+            echo "::error::dist/ contient un lien symbolique ou un fichier spécial."
+            exit 1
+          fi
+          E=$(empreinte_arbre dist)
+          echo "empreinte=$E" >> "$GITHUB_OUTPUT"
+          echo "nom=site-deploiement-$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
+          echo "cible=$CIBLE_BUILD" >> "$GITHUB_OUTPUT"
+          echo "- Build de déploiement : cible $CIBLE_BUILD, empreinte de l'arbre $E" >> "$GITHUB_STEP_SUMMARY"
+      - name: Publier la build de déploiement (artefact propre à la tentative)
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ steps.empreinte.outputs.nom }}
+          path: dist
+          include-hidden-files: true
+          retention-days: 30
+          if-no-files-found: error
+
   # Livraison (HEB-02, D-08). En sommeil tant que la variable de dépôt DEPLOY_CIBLE n'existe pas : gel puis deploy sont
   # sautés et la CI reste verte. Erwan la pose après avoir créé l'Environment production (08-13).
   # DEPLOY_CIBLE=essai : build de production construite sans RTP_DEPLOIEMENT (hôte privé sous basic_auth, D-07 révisée).
@@ -285,10 +349,10 @@ jobs:
   # Une approbation donnée après que main a avancé avec des changements du site est refusée par le contrôle de la
   # tête de main : une tête plus récente n'est admise que si elle descend du commit du run et ne change que des
   # chemins de CHEMINS_HORS_SITE (même classement que le job changements). Seul le site de la tête part en ligne.
-  # Aucun artefact n'est téléchargé : la build est refaite ici, depuis le commit du run.
+  # La build vient du job construire (même commit, sans secret) : deploy n'exécute aucun code de dépendance (WR-04).
   deploy:
     name: Déployer (cible DEPLOY_CIBLE, après approbation)
-    needs: [verifier, e2e, secrets, changements, gel]
+    needs: [verifier, e2e, secrets, changements, gel, construire]
     if: needs.gel.outputs.ok == 'true' && ((github.event_name == 'push' && needs.changements.outputs.site == 'true') || (github.event_name == 'workflow_dispatch' && (inputs.deployer == true || inputs.retrait_urgence == true)))
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -331,10 +395,6 @@ jobs:
         run: |
           echo "::error::Déploiement refusé par la garde de gel au moment de l'approbation (voir le résumé). Retrait d'urgence : relancer avec retrait_urgence coché et une justification écrite."
           exit 1
-      - name: Installer les dépendances (npm ci)
-        run: npm ci
-      - name: Vérifier les signatures des paquets
-        run: npm audit signatures
       - name: Vérifier la cible et que le commit est encore la tête de main, ou que la tête ne change pas le site (approbation périmée refusée)
         run: |
           set -euo pipefail
@@ -364,16 +424,47 @@ jobs:
           git diff --no-renames --name-only "$SHA" "$TETE"
           echo "tête plus récente sans changement du site : déploiement autorisé (tête $TETE, commit $SHA)"
           echo "- Cible : $CIBLE ; commit $SHA ; tête de main $TETE plus récente sans changement du site : déploiement autorisé" >> "$GITHUB_STEP_SUMMARY"
-      - name: Construire le site (corpus réel ; RTP_DEPLOIEMENT=1 pour la production, 0 pour essai)
-        run: npm run build
+      - name: Télécharger la build du job construire (jamais la build preview)
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ${{ needs.construire.outputs.artefact }}
+          path: dist
+          digest-mismatch: error
+      - name: Vérifier la build téléchargée (empreinte de l'arbre, cible, commit de version.json, aucun lien)
         env:
-          RTP_CONTENT_ROOT: "."
-          RTP_DEPLOIEMENT: ${{ vars.DEPLOY_CIBLE == 'production' && '1' || '0' }}
-      - name: Contrôler le site construit (mode production, version.json du commit)
-        run: npm run check-dist -- --mode production
-        env:
-          RTP_CONTENT_ROOT: "."
-          RTP_DEPLOIEMENT: ${{ vars.DEPLOY_CIBLE == 'production' && '1' || '0' }}
+          ARTEFACT: ${{ needs.construire.outputs.artefact }}
+          EMPREINTE: ${{ needs.construire.outputs.empreinte }}
+          CIBLE_BUILD: ${{ needs.construire.outputs.cible }}
+        run: |
+          set -euo pipefail
+          empreinte_arbre() { (cd "$1" && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum) | sha256sum | cut -d' ' -f1; }
+          case "$ARTEFACT" in
+            site-deploiement-[0-9]*) ;;
+            *) echo "::error::artefact inattendu : $ARTEFACT (seule la build du job construire est déployée)."; exit 1 ;;
+          esac
+          if ! [[ "$EMPREINTE" =~ ^[0-9a-f]{64}$ ]]; then
+            echo "::error::empreinte de la build absente ou invalide."
+            exit 1
+          fi
+          # La cible est relue à l'approbation : une build faite pour essai (sans RTP_DEPLOIEMENT) ne part jamais en production.
+          if [ "$CIBLE_BUILD" != "$CIBLE" ]; then
+            echo "::error::build construite pour la cible « $CIBLE_BUILD », DEPLOY_CIBLE vaut « $CIBLE » : relancer le run."
+            exit 1
+          fi
+          if [ -n "$(find dist ! -type f ! -type d -print -quit)" ]; then
+            echo "::error::la build téléchargée contient un lien symbolique ou un fichier spécial."
+            exit 1
+          fi
+          E=$(empreinte_arbre dist)
+          if [ "$E" != "$EMPREINTE" ]; then
+            echo "::error::empreinte de la build téléchargée ($E) différente de celle du job construire ($EMPREINTE)."
+            exit 1
+          fi
+          if ! jq -e --arg s "$SHA" '.commit == $s' dist/version.json > /dev/null; then
+            echo "::error::dist/version.json ne porte pas le commit $SHA."
+            exit 1
+          fi
+          echo "- Build vérifiée : $ARTEFACT, empreinte $E, cible $CIBLE" >> "$GITHUB_STEP_SUMMARY"
       - name: Écrire la clé de déploiement et l'empreinte épinglée du serveur (jamais de scan de clé d'hôte)
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
