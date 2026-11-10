@@ -2,7 +2,9 @@
 // jobs gel et deploy de ci.yml. Les workflows sont lus avec le paquet yaml, comme le reste des tests de dépôt.
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'yaml';
@@ -265,10 +267,11 @@ describe('ci.yml : job deploy (HEB-02, HEB-12, HEB-14)', () => {
       indexEtape(dep, (x) => x.run?.trim() === 'npm run check-dist -- --mode production', 'check-dist'),
       indexEtape(dep, (x) => x.run?.includes('umask 077') === true, 'clé'),
       indexEtape(dep, (x) => x.run?.includes('rsync ') === true, 'rsync'),
+      indexEtape(dep, (x) => x.run?.includes('COURANT_AVANT=$(') === true, 'version courante avant activation'),
       indexEtape(dep, (x) => x.id === 'activer', 'activer'),
-      indexEtape(dep, (x) => x.run?.includes('"etat $CIBLE"') === true, 'état'),
+      indexEtape(dep, (x) => x.run?.includes('*" courant=$SHA "*') === true, 'état'),
       indexEtape(dep, (x) => x.run?.includes('/version.json') === true, 'fumée'),
-      indexEtape(dep, (x) => x.run?.includes('"retour $CIBLE"') === true, 'retour'),
+      indexEtape(dep, (x) => x.run?.includes('"retour $CIBLE $COURANT_AVANT"') === true, 'retour'),
       indexEtape(dep, (x) => x.if === 'always()', 'nettoyage'),
     ];
     for (let i = 1; i < ordre.length; i++) assert.ok((ordre[i - 1] as number) < (ordre[i] as number), `ordre rompu à l’étape ${i}`);
@@ -339,7 +342,8 @@ describe('ci.yml : job deploy (HEB-02, HEB-12, HEB-14)', () => {
   it('activer puis état : current doit valoir le commit du run', () => {
     const activer = s.find((x) => x.id === 'activer')?.run ?? '';
     assert.ok(activer.includes('"activer $CIBLE $SHA"'));
-    const etat = s.find((x) => x.run?.includes('"etat $CIBLE"'))?.run ?? '';
+    const etat = s.find((x) => x.run?.includes('*" courant=$SHA "*'))?.run ?? '';
+    assert.ok(etat.includes('"etat $CIBLE"'));
     assert.ok(etat.includes('courant=$SHA'));
     assert.match(etat, /::error::/);
   });
@@ -360,9 +364,11 @@ describe('ci.yml : job deploy (HEB-02, HEB-12, HEB-14)', () => {
     assert.match(run, /https:\/\/\*\)/, 'DEPLOY_URL doit être en https');
   });
 
-  it('retour arrière automatique si une étape échoue après une activation réussie', () => {
-    const etape = s.find((x) => x.run?.includes('"retour $CIBLE"'));
+  it('retour arrière automatique si une étape échoue après une activation réussie, vers la version notée avant (WR-01)', () => {
+    const etape = s.find((x) => x.run?.includes('"retour $CIBLE $COURANT_AVANT"'));
     assert.equal(etape?.if, "failure() && steps.activer.outcome == 'success'");
+    assert.deepEqual(etape?.env, { URGENCE: '${{ inputs.retrait_urgence }}' });
+    for (const r of runs(dep)) assert.ok(!r.includes('"retour $CIBLE"'), 'jamais de retour sans sha explicite dans deploy');
   });
 
   it('nettoyage always() : clé et known_hosts supprimés', () => {
@@ -667,5 +673,106 @@ describe('sonde.yml : sonde externe de contenu (OPS-01, D-14)', () => {
   it('commentaire de tête : succès seul pingué, 3 échecs (période et délai de grâce), planification retardée ou désactivée', () => {
     const tete = raw.split('\n').filter((l) => l.startsWith('#')).join('\n');
     for (const mot of ['succès', '3 échecs', '60 jours', 'sonde']) assert.ok(tete.includes(mot), mot);
+  });
+});
+
+// WR-01 : les deux étapes (version notée avant l'activation, retour automatique) jouées avec un ssh remplaçant.
+describe('ci.yml : retour automatique vers la version exacte notée avant l’activation (WR-01)', () => {
+  const dep = job(ci, 'deploy');
+  const noter = dep.steps.find((x) => x.run?.includes('COURANT_AVANT=$(')) as Step;
+  const retourAuto = dep.steps.find((x) => x.run?.includes('"retour $CIBLE $COURANT_AVANT"')) as Step;
+  const SHA = 'a'.repeat(40);
+  const AVANT = 'b'.repeat(40);
+
+  function jouer(run: string, env: Record<string, string>, etat: string): { status: number | null; appels: string[]; genv: string; resume: string; sortie: string } {
+    const dossier = fs.mkdtempSync(path.join(os.tmpdir(), 'rtp-retour-auto-'));
+    try {
+      const appels = path.join(dossier, 'appels.txt');
+      fs.writeFileSync(
+        path.join(dossier, 'ssh'),
+        ['#!/bin/sh', 'for a in "$@"; do last="$a"; done', 'printf \'%s\\n\' "$last" >> "$APPELS"', 'case "$last" in etat*) printf \'%s\\n\' "$ETAT_SSH" ;; esac', ''].join('\n'),
+        { mode: 0o755 },
+      );
+      const genv = path.join(dossier, 'genv');
+      const resume = path.join(dossier, 'resume');
+      fs.writeFileSync(genv, '');
+      fs.writeFileSync(resume, '');
+      const r = spawnSync('bash', ['-c', run], {
+        encoding: 'utf8',
+        env: {
+          PATH: `${dossier}:${process.env.PATH ?? '/usr/bin:/bin'}`,
+          APPELS: appels,
+          ETAT_SSH: etat,
+          RUNNER_TEMP: dossier,
+          GITHUB_ENV: genv,
+          GITHUB_STEP_SUMMARY: resume,
+          CIBLE: 'production',
+          SHA,
+          DEPLOY_USER: 'deploy',
+          DEPLOY_HOST: 'hote.invalid',
+          ...env,
+        },
+      });
+      return {
+        status: r.status,
+        appels: fs.existsSync(appels) ? fs.readFileSync(appels, 'utf8').trimEnd().split('\n') : [],
+        genv: fs.readFileSync(genv, 'utf8'),
+        resume: fs.readFileSync(resume, 'utf8'),
+        sortie: r.stdout + r.stderr,
+      };
+    } finally {
+      fs.rmSync(dossier, { recursive: true, force: true });
+    }
+  }
+
+  it('note le sha en ligne avant l’activation', () => {
+    const r = jouer(noter.run ?? '', {}, `etat cible=production courant=${AVANT} versions=3 libre_mio=9000`);
+    assert.equal(r.status, 0, r.sortie);
+    assert.deepEqual(r.appels, ['etat production']);
+    assert.equal(r.genv, `COURANT_AVANT=${AVANT}\n`);
+  });
+
+  it('note une valeur vide quand aucune version n’est en ligne', () => {
+    const r = jouer(noter.run ?? '', {}, 'etat cible=production courant=aucun versions=0 libre_mio=9000');
+    assert.equal(r.status, 0, r.sortie);
+    assert.equal(r.genv, 'COURANT_AVANT=\n');
+  });
+
+  it('refuse une réponse illisible de etat (rien n’est activé)', () => {
+    const r = jouer(noter.run ?? '', {}, 'n’importe quoi');
+    assert.equal(r.status, 1, r.sortie);
+    assert.equal(r.genv, '');
+  });
+
+  it('rebascule sur la version exacte notée avant, puis contrôle etat', () => {
+    const r = jouer(retourAuto.run ?? '', { COURANT_AVANT: AVANT, URGENCE: 'false' }, `etat cible=production courant=${AVANT} versions=3 libre_mio=9000`);
+    assert.equal(r.status, 0, r.sortie);
+    assert.deepEqual(r.appels, [`retour production ${AVANT}`, 'etat production']);
+    assert.match(r.resume, new RegExp(AVANT));
+  });
+
+  it('échoue si etat ne confirme pas la version visée après le retour', () => {
+    const r = jouer(retourAuto.run ?? '', { COURANT_AVANT: AVANT, URGENCE: 'false' }, `etat cible=production courant=${SHA} versions=3 libre_mio=9000`);
+    assert.equal(r.status, 1, r.sortie);
+  });
+
+  it('ne fait rien si ce run n’a pas changé current (sha déjà en ligne)', () => {
+    const r = jouer(retourAuto.run ?? '', { COURANT_AVANT: SHA, URGENCE: 'false' }, '');
+    assert.equal(r.status, 0, r.sortie);
+    assert.deepEqual(r.appels, []);
+    assert.match(r.resume, /n’a pas changé|n'a pas changé/);
+  });
+
+  it('ne rebascule pas sans version notée (premier déploiement), et le dit', () => {
+    const r = jouer(retourAuto.run ?? '', { COURANT_AVANT: '', URGENCE: '' }, '');
+    assert.equal(r.status, 1, r.sortie);
+    assert.deepEqual(r.appels, []);
+  });
+
+  it('ne rebascule jamais un retrait d’urgence (le contenu retiré ne revient pas)', () => {
+    const r = jouer(retourAuto.run ?? '', { COURANT_AVANT: AVANT, URGENCE: 'true' }, '');
+    assert.equal(r.status, 1, r.sortie);
+    assert.deepEqual(r.appels, []);
+    assert.match(r.resume, /urgence/);
   });
 });

@@ -391,6 +391,19 @@ jobs:
           set -euo pipefail
           # -rt sans -l : aucun lien symbolique envoyé (CR-01) ; le serveur refuse de toute façon un envoi qui en contient.
           rsync -rt --chmod=D755,F644 --stats -e "ssh -i $RUNNER_TEMP/cle -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$RUNNER_TEMP/kh -o ConnectTimeout=15" dist/ "$DEPLOY_USER@$DEPLOY_HOST:$CIBLE/$SHA/"
+      - name: Noter la version courante avant l'activation (cible exacte d'un retour automatique)
+        run: |
+          set -euo pipefail
+          ETAT=$(ssh -i "$RUNNER_TEMP/cle" -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/kh" -o ConnectTimeout=15 "$DEPLOY_USER@$DEPLOY_HOST" "etat $CIBLE")
+          echo "$ETAT"
+          case "$ETAT" in
+            "etat cible=$CIBLE courant="*) ;;
+            *) echo "::error::réponse de etat illisible avant l'activation : rien n'est activé."; exit 1 ;;
+          esac
+          # Vide quand aucune version n'est en ligne (courant=aucun) : aucun retour automatique possible.
+          COURANT_AVANT=$(printf '%s\n' "$ETAT" | sed -n 's/.* courant=\([0-9a-f]\{40\}\) .*/\1/p')
+          echo "COURANT_AVANT=$COURANT_AVANT" >> "$GITHUB_ENV"
+          echo "- Version en ligne avant l'activation : ${COURANT_AVANT:-aucune} ($CIBLE)" >> "$GITHUB_STEP_SUMMARY"
       - name: Activer la version (bascule atomique de current)
         id: activer
         run: |
@@ -446,14 +459,39 @@ jobs:
             echo "- Version servie : $SHA (/version.json)"
             echo "- En-têtes Strict-Transport-Security et Content-Security-Policy présents"
           } >> "$GITHUB_STEP_SUMMARY"
+      # Retour vers la version exacte notée avant l'activation, jamais vers « la précédente » de l'historique (WR-01) :
+      # si ce run n'a pas changé current (sha déjà en ligne, relance), rien n'est rebasculé. Un retrait d'urgence
+      # n'est jamais annulé automatiquement : le contenu retiré ne doit pas revenir en ligne sur un test de fumée raté.
       - name: Retour arrière automatique (une étape a échoué après l'activation)
         if: failure() && steps.activer.outcome == 'success'
+        env:
+          URGENCE: ${{ inputs.retrait_urgence }}
         run: |
           set -euo pipefail
-          echo "::error::Une étape a échoué après l'activation : retour à la version précédente."
-          ssh -i "$RUNNER_TEMP/cle" -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/kh" -o ConnectTimeout=15 "$DEPLOY_USER@$DEPLOY_HOST" "retour $CIBLE"
-          ssh -i "$RUNNER_TEMP/cle" -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/kh" -o ConnectTimeout=15 "$DEPLOY_USER@$DEPLOY_HOST" "etat $CIBLE"
-          echo "- Retour arrière automatique : current rebasculé sur la version précédente" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${URGENCE:-}" = "true" ]; then
+            echo "::error::Une étape a échoué après l'activation d'un retrait d'urgence : aucun retour automatique (le contenu retiré resterait sinon en ligne). Vérifier la version servie à la main ; rollback.yml avec une version explicite si besoin."
+            echo "- Retour arrière automatique : non lancé (retrait d'urgence), vérification manuelle requise" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          if [ -z "${COURANT_AVANT:-}" ]; then
+            echo "::error::Une étape a échoué après l'activation, mais aucune version n'était en ligne avant : aucun retour automatique possible."
+            echo "- Retour arrière automatique : impossible (aucune version en ligne avant l'activation)" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          if [ "$COURANT_AVANT" = "$SHA" ]; then
+            echo "::error::Une étape a échoué après l'activation, mais ce run n'a pas changé current ($SHA était déjà en ligne) : aucun retour."
+            echo "- Retour arrière automatique : rien à faire, current n'a pas changé ($SHA)" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "::error::Une étape a échoué après l'activation : retour à la version en ligne avant ce run ($COURANT_AVANT)."
+          ssh -i "$RUNNER_TEMP/cle" -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/kh" -o ConnectTimeout=15 "$DEPLOY_USER@$DEPLOY_HOST" "retour $CIBLE $COURANT_AVANT"
+          ETAT=$(ssh -i "$RUNNER_TEMP/cle" -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/kh" -o ConnectTimeout=15 "$DEPLOY_USER@$DEPLOY_HOST" "etat $CIBLE")
+          echo "$ETAT"
+          case " $ETAT " in
+            *" courant=$COURANT_AVANT "*) ;;
+            *) echo "::error::current ne pointe pas $COURANT_AVANT après le retour arrière automatique."; exit 1 ;;
+          esac
+          echo "- Retour arrière automatique : current rebasculé sur $COURANT_AVANT (version en ligne avant ce run)" >> "$GITHUB_STEP_SUMMARY"
       - name: Effacer la clé et l'empreinte du runner
         if: always()
         run: rm -f "$RUNNER_TEMP/cle" "$RUNNER_TEMP/kh"
