@@ -21,7 +21,8 @@
     "dev": "astro dev",
     "preview": "astro preview",
     "e2e": "node scripts/e2e.ts",
-    "audit:lire": "node scripts/audit-lire.ts"
+    "audit:lire": "node scripts/audit-lire.ts",
+    "relecture": "node scripts/relecture.ts"
   },
   "dependencies": {
     "ajv": "^8.20.0",

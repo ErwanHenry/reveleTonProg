@@ -44,6 +44,7 @@ describe('scaffold Node 24', () => {
       preview: 'astro preview',
       e2e: 'node scripts/e2e.ts',
       'audit:lire': 'node scripts/audit-lire.ts',
+      relecture: 'node scripts/relecture.ts',
     });
   });
 
