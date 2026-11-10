@@ -366,7 +366,7 @@ describe('ci.yml : job deploy (HEB-02, HEB-12, HEB-14)', () => {
 
   it('retour arrière automatique si une étape échoue après une activation réussie, vers la version notée avant (WR-01)', () => {
     const etape = s.find((x) => x.run?.includes('"retour $CIBLE $COURANT_AVANT"'));
-    assert.equal(etape?.if, "failure() && steps.activer.outcome == 'success'");
+    assert.equal(etape?.if, "(failure() || cancelled()) && steps.activer.outcome == 'success'", 'aussi sur annulation ou dépassement du délai (IN-07)');
     assert.deepEqual(etape?.env, { URGENCE: '${{ inputs.retrait_urgence }}' });
     for (const r of runs(dep)) assert.ok(!r.includes('"retour $CIBLE"'), 'jamais de retour sans sha explicite dans deploy');
   });

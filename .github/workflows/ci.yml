@@ -557,8 +557,10 @@ jobs:
       # Retour vers la version exacte notée avant l'activation, jamais vers « la précédente » de l'historique (WR-01) :
       # si ce run n'a pas changé current (sha déjà en ligne, relance), rien n'est rebasculé. Un retrait d'urgence
       # n'est jamais annulé automatiquement : le contenu retiré ne doit pas revenir en ligne sur un test de fumée raté.
-      - name: Retour arrière automatique (une étape a échoué après l'activation)
-        if: failure() && steps.activer.outcome == 'success'
+      # Aussi quand le run est annulé ou dépasse timeout-minutes après l'activation (IN-07) : la version activée n'a
+      # alors pas été vérifiée.
+      - name: Retour arrière automatique (une étape a échoué, ou le run a été annulé, après l'activation)
+        if: (failure() || cancelled()) && steps.activer.outcome == 'success'
         env:
           URGENCE: ${{ inputs.retrait_urgence }}
         run: |
