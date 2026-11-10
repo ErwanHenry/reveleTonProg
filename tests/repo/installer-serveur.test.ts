@@ -83,7 +83,26 @@ function stub(dossier: string, nom: string, lignes: string[]): void {
   ecrire(path.join(dossier, nom), `${lignes.join('\n')}\n`, 0o755);
 }
 
-function banc(options: { adresseEssai?: string } = {}): Banc {
+/** Bloc public factice : deux blocs de premier niveau (nom nu puis www), adresses d'exemple, accolades imbriquées. */
+function blocPublic(adresses: [string, string] = ['site.exemple.fr', 'www.site.exemple.fr']): string {
+  const [nu, www] = adresses;
+  return [
+    '# bloc de production factice { accolade de commentaire',
+    `${nu} {`,
+    '\troot * /srv/reveletonprog/current',
+    '\theader {',
+    '\t\t-Server',
+    '\t}',
+    '}',
+    '',
+    `${www} {`,
+    '\tredir https://site.exemple.fr{uri} permanent',
+    '}',
+    '',
+  ].join('\n');
+}
+
+function banc(options: { adresseEssai?: string; blocPublic?: string; sansEssaiSource?: boolean } = {}): Banc {
   const base = fs.mkdtempSync(path.join(tmp, 'cas-'));
   const racine = path.join(base, 'racine');
   const source = path.join(base, 'source');
@@ -108,8 +127,10 @@ function banc(options: { adresseEssai?: string } = {}): Banc {
   for (const c of ['rtp-battement', 'rtp-sauvegarde', 'rtp-restauration']) {
     ecrire(path.join(source, 'deploy/cron', c), fs.readFileSync(path.join(ROOT, 'deploy/cron', c), 'utf8'));
   }
-  ecrire(path.join(source, 'deploy/caddy/essai.caddy'), `# Bloc factice\n\n${options.adresseEssai ?? 'essai.exemple.fr'} {\n\trespond "essai"\n}\n`);
-  ecrire(path.join(source, 'deploy/caddy/site.caddy'), '# bloc de production factice\n');
+  if (!options.sansEssaiSource) {
+    ecrire(path.join(source, 'deploy/caddy/essai.caddy'), `# Bloc factice\n\n${options.adresseEssai ?? 'essai.exemple.fr'} {\n\trespond "essai"\n}\n`);
+  }
+  ecrire(path.join(source, 'deploy/caddy/site.caddy'), options.blocPublic ?? blocPublic());
 
   const cle = path.join(base, 'cle.pub');
   ecrire(cle, `${CLE}\n`);
@@ -574,6 +595,175 @@ describe('ops/installer-serveur.sh : refus', () => {
   });
 });
 
+describe('ops/installer-serveur.sh : bloc public (site-public)', () => {
+  const ETAPES_TOUT = `${ETAPES},site-public`;
+  const BLOC_PUBLIC = 'opt/vaultwarden/sites.d/reveletonprog.caddy';
+  /** Racine de production : srv/reveletonprog/current, lien relatif comme le pose le verbe activer. */
+  function avecCurrent(b: Banc): void {
+    fs.mkdirSync(path.join(b.racine, 'srv/reveletonprog'), { recursive: true });
+    fs.chmodSync(path.join(b.racine, 'srv/reveletonprog'), 0o755);
+    fs.symlinkSync(`releases/${'b'.repeat(40)}`, path.join(b.racine, 'srv/reveletonprog/current'));
+  }
+
+  it('installe deploy/caddy/site.caddy en sites.d/reveletonprog.caddy (0644, root, par renommage)', () => {
+    const b = banc();
+    avecCurrent(b);
+    lancer(b, ['--appliquer', '--etape', 'montages']);
+    const v = lancer(b, ['--etape', 'site-public']);
+    assert.equal(v.status, 0, v.stdout + v.stderr);
+    assert.ok(afaire(v).some((l) => l.includes('/opt/vaultwarden/sites.d/reveletonprog.caddy')), v.stdout);
+    assert.ok(!fs.existsSync(path.join(b.racine, BLOC_PUBLIC)), 'la vérification n’écrit rien');
+    const r = lancer(b, ['--appliquer', '--etape', 'site-public']);
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    assert.ok(faits(r).some((l) => l.includes('reveletonprog.caddy')), r.stdout);
+    assert.equal(fs.readFileSync(path.join(b.racine, BLOC_PUBLIC), 'utf8'), fs.readFileSync(path.join(b.source, 'deploy/caddy/site.caddy'), 'utf8'));
+    assert.equal(mode(path.join(b.racine, BLOC_PUBLIC)), 0o644);
+    assert.ok(lireJournal(b, 'chown').split('\n').some((l) => l.startsWith('root:root ') && l.includes('sites.d/.rtp-installation.')), 'fichier temporaire à root avant renommage');
+    assert.deepEqual(fs.readdirSync(path.join(b.racine, 'opt/vaultwarden/sites.d')), ['reveletonprog.caddy']);
+    const a = lancer(b, ['--appliquer', '--etape', 'site-public']);
+    assert.equal(a.status, 0);
+    assert.deepEqual(faits(a), []);
+    assert.match(a.stdout, /\[ok\] \/opt\/vaultwarden\/sites\.d\/reveletonprog\.caddy : à jour \(644\)/);
+    assert.equal(lireJournal(b, 'interdits'), '');
+  });
+
+  it('accepte un dossier current (pas seulement un lien)', () => {
+    const b = banc();
+    fs.mkdirSync(path.join(b.racine, 'srv/reveletonprog/current'), { recursive: true });
+    lancer(b, ['--appliquer', '--etape', 'montages']);
+    assert.equal(lancer(b, ['--appliquer', '--etape', 'site-public']).status, 0);
+  });
+
+  it('refuse (code 7), dans les deux modes et sans rien écrire, tant que /srv/reveletonprog/current est absent', () => {
+    const b = banc();
+    lancer(b, ['--appliquer', '--etape', 'montages']);
+    const avant = instantane(b.racine);
+    for (const m of ['--verifier', '--appliquer']) {
+      const r = lancer(b, [m, '--etape', 'montages,site-public']);
+      assert.equal(r.status, 7, `${m} : ${r.stdout}${r.stderr}`);
+      assert.match(r.stderr, /déployer d'abord la cible production : le bloc public servirait une racine absente/);
+    }
+    assert.deepEqual(instantane(b.racine), avant);
+  });
+
+  it('refuse (code 6) une adresse réservée dans l’un ou l’autre bloc, ou un bloc sans adresse', () => {
+    const cas: [string, string][] = [
+      ['site.exemple.invalid', 'www.site.exemple.fr'],
+      ['site.exemple.fr', 'www.site.exemple.invalid'],
+      ['site.exemple.fr', 'www.site.exemple.test'],
+      ['site.exemple.fr, autre.localhost', 'www.site.exemple.fr'],
+      ['https://site.exemple.example', 'www.site.exemple.fr'],
+    ];
+    for (const adresses of cas) {
+      const b = banc({ blocPublic: blocPublic(adresses) });
+      avecCurrent(b);
+      lancer(b, ['--appliquer', '--etape', 'montages']);
+      const avant = instantane(b.racine);
+      for (const m of ['--verifier', '--appliquer']) {
+        const r = lancer(b, [m, '--etape', 'site-public']);
+        assert.equal(r.status, 6, `${adresses.join(' / ')} ${m} : ${r.stdout}${r.stderr}`);
+        assert.match(r.stderr, /bloc public : domaine réservé/);
+      }
+      assert.deepEqual(instantane(b.racine), avant);
+    }
+    for (const contenu of ['# commentaire seulement\n', 'respond "sans adresse"\n', 'site.exemple.fr {\n\troot * /x\n']) {
+      const b = banc({ blocPublic: contenu });
+      avecCurrent(b);
+      const r = lancer(b, ['--etape', 'site-public']);
+      assert.equal(r.status, 6, JSON.stringify(contenu));
+      assert.match(r.stderr, /bloc public : adresse introuvable/);
+    }
+  });
+
+  it('lit toutes les adresses de premier niveau du vrai bloc du dépôt (aucun domaine réservé)', () => {
+    const b = banc({ blocPublic: fs.readFileSync(path.join(ROOT, 'deploy/caddy/site.caddy'), 'utf8') });
+    avecCurrent(b);
+    lancer(b, ['--appliquer', '--etape', 'montages']);
+    const r = lancer(b, ['--etape', 'site-public']);
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+  });
+
+  it('est idempotent avec toutes les étapes : deux applications, puis aucune action à faire', () => {
+    const b = banc();
+    avecCurrent(b);
+    const r1 = lancer(b, ['--appliquer', '--etape', ETAPES_TOUT, '--cle-publique', b.cle, '--horodatage', HORODATAGE], { entree: ENTREE });
+    assert.equal(r1.status, 0, r1.stdout + r1.stderr);
+    const r2 = lancer(b, ['--appliquer', '--etape', ETAPES_TOUT, '--cle-publique', b.cle, '--horodatage', HORODATAGE]);
+    assert.equal(r2.status, 0, r2.stdout + r2.stderr);
+    assert.deepEqual(faits(r2), []);
+    const v = lancer(b, ['--verifier', '--etape', ETAPES_TOUT, '--horodatage', HORODATAGE]);
+    assert.equal(v.status, 0, v.stdout + v.stderr);
+    assert.deepEqual(afaire(v), []);
+    assert.ok(fs.existsSync(path.join(b.racine, BLOC_PUBLIC)));
+    assert.ok(fs.existsSync(path.join(b.racine, 'opt/vaultwarden/sites.d/reveletonprog-essai.caddy')));
+    assert.ok(fs.lstatSync(path.join(b.racine, 'srv/reveletonprog/current')).isSymbolicLink(), 'current jamais touché');
+    assert.equal(lireJournal(b, 'interdits'), '');
+  });
+});
+
+describe('ops/installer-serveur.sh : hôte technique retiré (marqueur /opt/rtp/essai-retire)', () => {
+  const BLOC_ESSAI = 'opt/vaultwarden/sites.d/reveletonprog-essai.caddy';
+  const MARQUEUR = 'opt/rtp/essai-retire';
+  function bancRetire(options: { sansEssaiSource?: boolean; adresseEssai?: string } = {}): Banc {
+    const b = banc(options);
+    ecrire(path.join(b.racine, MARQUEUR), '');
+    return b;
+  }
+  const lignesRetire = (s: Sortie): string[] => s.stdout.split('\n').filter((l) => l.startsWith('[ok: retiré]'));
+
+  it('toutes les étapes en application : le bloc d’essai n’est pas réinstallé, une ligne [ok: retiré], code 0', () => {
+    const b = bancRetire();
+    const r = appliquerTout(b);
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    assert.ok(!fs.existsSync(path.join(b.racine, BLOC_ESSAI)), 'bloc d’essai réinstallé');
+    const l = lignesRetire(r);
+    assert.equal(l.length, 1, r.stdout);
+    assert.match(l[0] ?? '', /^\[ok: retiré\] reveletonprog-essai\.caddy : hôte technique retiré le .+ \(marqueur présent\), rien à installer$/);
+    assert.ok(fs.existsSync(path.join(b.racine, MARQUEUR)), 'le marqueur n’est jamais supprimé');
+  });
+
+  it('toutes les étapes en vérification : aucune action à faire pour site-essai', () => {
+    const b = bancRetire();
+    const r = lancer(b, ['--verifier', '--etape', ETAPES, '--cle-publique', b.cle, '--horodatage', HORODATAGE]);
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    assert.ok(!afaire(r).some((l) => l.includes('essai.caddy')), afaire(r).join('\n'));
+    assert.equal(lignesRetire(r).length, 1);
+  });
+
+  it('--etape site-essai seule, dans les deux modes : rien n’est écrit', () => {
+    const b = bancRetire();
+    lancer(b, ['--appliquer', '--etape', 'montages']);
+    const avant = instantane(path.dirname(b.racine));
+    for (const m of ['--verifier', '--appliquer']) {
+      const r = lancer(b, [m, '--etape', 'site-essai']);
+      assert.equal(r.status, 0, `${m} : ${r.stdout}${r.stderr}`);
+      assert.equal(lignesRetire(r).length, 1);
+      assert.deepEqual(afaire(r), []);
+      assert.deepEqual(faits(r), []);
+    }
+    assert.deepEqual(instantane(path.dirname(b.racine)), avant);
+  });
+
+  it('sans source deploy/caddy/essai.caddy ni adresse valide : code 0 (ni source manquante ni domaine réservé)', () => {
+    const b = bancRetire({ sansEssaiSource: true });
+    lancer(b, ['--appliquer', '--etape', 'montages']);
+    const r = lancer(b, ['--appliquer', '--etape', 'site-essai']);
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    const b2 = bancRetire({ adresseEssai: 'essai.exemple.invalid' });
+    const r2 = lancer(b2, ['--verifier', '--etape', 'site-essai']);
+    assert.equal(r2.status, 0, r2.stdout + r2.stderr);
+  });
+
+  it('sans le marqueur, le bloc d’essai est toujours installé, et sa source manquante reste une erreur (code 1)', () => {
+    const b = banc();
+    lancer(b, ['--appliquer', '--etape', 'montages']);
+    assert.equal(lancer(b, ['--appliquer', '--etape', 'site-essai']).status, 0);
+    assert.ok(fs.existsSync(path.join(b.racine, BLOC_ESSAI)));
+    const b2 = banc({ sansEssaiSource: true });
+    assert.equal(lancer(b2, ['--verifier', '--etape', 'site-essai']).status, 1);
+  });
+});
+
 describe('ops/installer-serveur.sh : code', () => {
   const script = fs.readFileSync(SCRIPT, 'utf8');
   const code = script
@@ -622,5 +812,15 @@ describe('ops/installer-serveur.sh : code', () => {
     assert.match(script, /Usage/);
     assert.match(script, /Codes de sortie/);
     assert.doesNotMatch(script, /[–—]/);
+  });
+
+  it('en-tête et usage nomment site-public, le marqueur et le code 7 ; le script ne crée ni ne supprime le marqueur', () => {
+    const entete = script.split('\nset -euo pipefail')[0] ?? '';
+    assert.match(entete, /site-public/);
+    assert.match(entete, /essai-retire/);
+    assert.match(entete, /7 bloc public refusé/);
+    assert.match(script, /Étapes : [^\n]*\n[^\n]*site-essai, site-public, depot/);
+    assert.match(code, /ORDRE_ETAPES='[^']*site-essai site-public depot'/);
+    assert.doesNotMatch(code, /(touch|rm|:\s*>)[^\n]*MARQUEUR_ESSAI_RETIRE/);
   });
 });

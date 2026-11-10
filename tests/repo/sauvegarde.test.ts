@@ -166,7 +166,14 @@ function stubs(dossier: string): void {
 }
 
 /** Banc complet : source copiée du dépôt, faux serveur construit par le vrai installateur. */
-function banc(options: { sansRestaurationEnv?: boolean } = {}): Banc {
+/**
+ * Blocs Caddy du site présents sur le faux serveur : « essai » (avant l'ouverture), « deux » (les jours de
+ * l'ouverture), « public » (après : bloc et chemins d'essai absents), « aucun » (configuration amputée).
+ */
+type Blocs = 'essai' | 'deux' | 'public' | 'aucun';
+
+function banc(options: { sansRestaurationEnv?: boolean; blocs?: Blocs } = {}): Banc {
+  const blocs = options.blocs ?? 'essai';
   const base = fs.mkdtempSync(path.join(tmp, 'cas-'));
   const b: Banc = {
     base,
@@ -197,13 +204,20 @@ function banc(options: { sansRestaurationEnv?: boolean } = {}): Banc {
   ecrire(path.join(b.racine, 'opt/vaultwarden/.env'), ENV_AUTRE, 0o600);
   const cle = path.join(base, 'cle.pub');
   ecrire(cle, `${CLE}\n`);
-  const r = spawnSync('bash', [path.join(b.source, 'ops/installer-serveur.sh'), '--appliquer', '--etape', ETAPES, '--cle-publique', cle, '--racine', b.racine, '--source', b.source], {
+  // Lien current de production posé avant l'installation : l'étape site-public refuse une racine absente.
+  fs.mkdirSync(path.join(b.racine, 'srv/reveletonprog'), { recursive: true });
+  fs.chmodSync(path.join(b.racine, 'srv/reveletonprog'), 0o755);
+  fs.symlinkSync(`releases/${SHA_PROD}`, path.join(b.racine, 'srv/reveletonprog/current'));
+  const etapes = blocs === 'essai' ? ETAPES : `${ETAPES},site-public`;
+  const r = spawnSync('bash', [path.join(b.source, 'ops/installer-serveur.sh'), '--appliquer', '--etape', etapes, '--cle-publique', cle, '--racine', b.racine, '--source', b.source], {
     encoding: 'utf8',
     input: ENTREE,
     env: env(b),
   });
   assert.equal(r.status, 0, `installation du faux serveur : ${r.stdout}${r.stderr}`);
   if (options.sansRestaurationEnv) fs.rmSync(path.join(b.racine, 'etc/rtp/restauration.env'));
+  if (blocs === 'public' || blocs === 'aucun') fs.rmSync(path.join(b.racine, 'opt/vaultwarden/sites.d/reveletonprog-essai.caddy'));
+  if (blocs === 'aucun') fs.rmSync(path.join(b.racine, 'opt/vaultwarden/sites.d/reveletonprog.caddy'));
 
   // Compléments : clés d'hôte, historiques, liens current.
   ecrire(path.join(b.racine, 'etc/ssh/ssh_host_ed25519_key'), `${CLE_PRIVEE}\n`, 0o600);
@@ -211,9 +225,10 @@ function banc(options: { sansRestaurationEnv?: boolean } = {}): Banc {
   ecrire(path.join(b.racine, 'etc/ssh/ssh_host_ed25519_key.pub'), 'ssh-ed25519 AAAAfactice root@hote\n');
   ecrire(path.join(b.racine, 'etc/ssh/sshd_config'), 'PermitRootLogin no\n');
   ecrire(path.join(b.racine, 'srv/reveletonprog/.historique'), `2026-11-08T20:00:00Z activer ${SHA_PROD}\n`);
-  ecrire(path.join(b.racine, 'srv/reveletonprog/essai/.historique'), `2026-11-08T20:00:00Z activer ${SHA_ESSAI}\n`);
-  fs.symlinkSync(`releases/${SHA_PROD}`, path.join(b.racine, 'srv/reveletonprog/current'));
-  fs.symlinkSync(`releases/${SHA_ESSAI}`, path.join(b.racine, 'srv/reveletonprog/essai/current'));
+  if (blocs !== 'public') {
+    ecrire(path.join(b.racine, 'srv/reveletonprog/essai/.historique'), `2026-11-08T20:00:00Z activer ${SHA_ESSAI}\n`);
+    fs.symlinkSync(`releases/${SHA_ESSAI}`, path.join(b.racine, 'srv/reveletonprog/essai/current'));
+  }
   return b;
 }
 
@@ -481,6 +496,70 @@ describe('ops/tester-restauration.sh : restauration réussie', () => {
   });
 });
 
+describe("ops/tester-restauration.sh : étapes de l'installateur selon les blocs restaurés", () => {
+  const FIXE = 'montages,import-caddy,commande,battement,sauvegarde';
+  const etapesVues = (r: Sortie): string => {
+    const m = /^\[info\] étapes de l'installateur : (\S+)$/m.exec(r.stderr);
+    assert.ok(m, r.stderr);
+    return m[1] as string;
+  };
+
+  it("bloc d'essai seul (avant l'ouverture) : site-essai vérifié, pas site-public", () => {
+    const b = banc({ blocs: 'essai' });
+    assert.equal(sauvegarder(b).status, 0);
+    const r = restaurer(b);
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    assert.equal(etapesVues(r), `${FIXE},site-essai`);
+    assert.equal(json(r)['installateur'], 'conforme');
+  });
+
+  it("les deux blocs (jours de l'ouverture) : site-essai et site-public vérifiés, current recréé d'après liens.txt", () => {
+    const b = banc({ blocs: 'deux' });
+    assert.equal(sauvegarder(b).status, 0);
+    assert.ok(entrees(path.join(b.destination, `${AUJOURDHUI}.tar.gz`)).includes('opt/vaultwarden/sites.d/reveletonprog.caddy'));
+    const r = restaurer(b);
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    assert.equal(etapesVues(r), `${FIXE},site-essai,site-public`);
+    assert.equal(json(r)['caddy'], 'valide');
+    assert.equal(lire(b, 'pings').split('\n').filter(Boolean).length, 1);
+  });
+
+  it("bloc public seul et chemins d'essai absents (après l'ouverture) : site-public vérifié, pas site-essai", () => {
+    const b = banc({ blocs: 'public' });
+    const s = sauvegarder(b);
+    assert.equal(s.status, 0, s.stderr);
+    const contenu = entrees(path.join(b.destination, `${AUJOURDHUI}.tar.gz`));
+    assert.ok(!contenu.includes('opt/vaultwarden/sites.d/reveletonprog-essai.caddy'));
+    assert.ok(!contenu.includes('srv/reveletonprog/essai/.historique'));
+    const r = restaurer(b);
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    assert.equal(etapesVues(r), `${FIXE},site-public`);
+    assert.equal(json(r)['installateur'], 'conforme');
+  });
+
+  it("bloc public sans lien current dans l'archive : l'installateur refuse (étape 3), aucun ping", () => {
+    const b = banc({ blocs: 'public' });
+    fs.rmSync(path.join(b.racine, 'srv/reveletonprog/current'));
+    assert.equal(sauvegarder(b).status, 0);
+    const r = restaurer(b);
+    assert.equal(r.status, 1, r.stdout + r.stderr);
+    assert.equal(json(r)['etape'], 'installateur');
+    assert.equal(lire(b, 'pings'), '');
+  });
+
+  it('aucun bloc du site : échec à l’étape blocs, aucun ping', () => {
+    const b = banc({ blocs: 'aucun' });
+    assert.equal(sauvegarder(b).status, 0);
+    const r = restaurer(b);
+    assert.equal(r.status, 1, r.stdout + r.stderr);
+    const j = json(r);
+    assert.equal(j['resultat'], 'echec');
+    assert.equal(j['etape'], 'blocs');
+    assert.equal(lire(b, 'pings'), '');
+    assert.deepEqual(fs.readdirSync(b.tmpdir), []);
+  });
+});
+
 describe('ops/tester-restauration.sh : échecs, aucun ping', () => {
   function echecAttendu(b: Banc, r: Sortie, etape: string): void {
     assert.equal(r.status, 1, r.stdout + r.stderr);
@@ -596,7 +675,10 @@ describe('scripts de sauvegarde : code', () => {
   it('tester-restauration.sh appelle le vrai installateur en vérification et valider-caddy.sh', () => {
     const texte = fs.existsSync(RESTAURER) ? fs.readFileSync(RESTAURER, 'utf8') : '';
     assert.match(texte, /--verifier/);
-    assert.match(texte, /montages,import-caddy,commande,battement,sauvegarde,site-essai/);
+    assert.match(texte, /'montages,import-caddy,commande,battement,sauvegarde'/);
+    assert.match(texte, /sites\.d\/reveletonprog-essai\.caddy/);
+    assert.match(texte, /sites\.d\/reveletonprog\.caddy/);
+    assert.doesNotMatch(texte, /ETAPES_INSTALLATEUR='montages,import-caddy,commande,battement,sauvegarde,site-essai'/);
     assert.match(texte, /valider-caddy\.sh/);
     assert.match(texte, /tar -xpzf/);
   });
