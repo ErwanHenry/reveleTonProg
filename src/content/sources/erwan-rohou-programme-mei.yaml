@@ -12,4 +12,8 @@ archive:
   extrait: archives/erwan-rohou/e4e379a88baa.txt
   sha256: e4e379a88baabbb93831f55851adcad8ce7e69205cc8f586ef3381e01a3a37fc
   capture_le: 2026-11-03T23:00:00+01:00
+  wayback_exception:
+    motif: "La page d'origine affiche des données personnelles de particuliers : le site ne renvoie pas vers une copie Wayback Machine de cette page."
+    decide_par: Erwan Henry
+    decide_le: 2026-11-10
   binaire_sha256: e26a40569a7592822c893af24cbdea107d5f2533355e81eac4473284813ba097

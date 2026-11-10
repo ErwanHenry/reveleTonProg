@@ -5,11 +5,12 @@ auteur: candidat
 candidats:
   - delphine-batho
 titre: "Priorité 4 : La République terrestre"
-url: https://www.delphinebatho.fr/priorites/priorite-4/
+url: https://www.delphinebatho.fr/priorites/la-republique-terrestre/
 date_publication: 2026-11
 date_consultation: 2026-11-03
 archive:
   extrait: archives/delphine-batho/364ee24bb75e.txt
   sha256: 364ee24bb75e2a65a7c3397c20bdf523278132e03e810443fdd4e802e414a200
   capture_le: 2026-11-03T22:00:00+01:00
+  wayback_url: https://web.archive.org/web/20261109220340/https://www.delphinebatho.fr/priorites/la-republique-terrestre/
   binaire_sha256: dc6d7a0276a5944abe64b7e7f47819001de1624703e6e04d14ea3ac9c12138f6

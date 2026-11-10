@@ -29,7 +29,7 @@ const spec = (remplacer: Remplacement[]): PiegeSpec => ({ piege: 'test', regle: 
 const err = (code: string, fichier: string, pointer: string): ElementAttendu => ({ code, severite: 'error', fichier, pointer });
 
 /** Exceptions Wayback du corpus réel, triées. En ajouter une demande la décision écrite d'Erwan. */
-const EXCEPTIONS_EPINGLEES: string[] = [];
+const EXCEPTIONS_EPINGLEES: string[] = ['erwan-rohou-programme-mei'];
 
 describe('PUB-04 : copie Wayback ou exception motivée', () => {
   it('exception valide à la place de wayback_url : aucun diagnostic en production', () => {
