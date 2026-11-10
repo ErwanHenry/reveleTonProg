@@ -7,7 +7,9 @@ import {
   buildSourceYaml,
   checkExtract,
   extractName,
+  diffUnifie,
   normalizeExtract,
+  paramsDeSource,
   refreshDecision,
   sha256Hex,
   type ParamsSource,
@@ -15,6 +17,7 @@ import {
 import { validateYamlText } from '../../src/lib/content-core/load.ts';
 import { REPO_ROOT, SCHEMAS_DIR } from '../helpers/validate-yaml.ts';
 import path from 'node:path';
+import { readFileSync, readdirSync } from 'node:fs';
 
 const LONG = `${'Une phrase fictive assez longue pour passer le minimum de caractères exigé. '.repeat(10)}\n`;
 
@@ -119,10 +122,70 @@ describe('buildSourceYaml', () => {
     assert.deepEqual(validateYamlText('source', avec, path.join(REPO_ROOT, 'x.yaml'), { schemasDir: SCHEMAS_DIR }).diagnostics, []);
   });
 
+  it('place wayback_exception (motif, decide_par, decide_le) après la place de wayback_url et avant binaire_sha256', () => {
+    const avec = buildSourceYaml({
+      ...PARAMS,
+      archive: { ...PARAMS.archive, waybackException: { motif: "La page d'origine affiche des données personnelles.", decidePar: 'Erwan Henry', decideLe: '2026-11-10' } },
+    });
+    const archive = (parse(avec, { schema: 'core' }) as { archive: Record<string, object> }).archive;
+    assert.deepEqual(Object.keys(archive), ['extrait', 'sha256', 'capture_le', 'wayback_exception', 'binaire_sha256']);
+    assert.deepEqual(Object.keys(archive.wayback_exception ?? {}), ['motif', 'decide_par', 'decide_le']);
+    assert.deepEqual(validateYamlText('source', avec, path.join(REPO_ROOT, 'x.yaml'), { schemasDir: SCHEMAS_DIR }).diagnostics, []);
+  });
+
+  it('relire puis réécrire une source avec exception redonne les mêmes octets', () => {
+    const texte = `version_schema: 1
+id: marie-fictive-page
+type: site_candidat
+auteur: candidat
+candidats:
+  - marie-fictive
+titre: "Page : fictive"
+url: https://marie-fictive.exemple.invalid/page
+date_publication: 2026-10
+date_consultation: 2026-11-03
+archive:
+  extrait: archives/marie-fictive/0123456789ab.txt
+  sha256: ${'a'.repeat(64)}
+  capture_le: 2026-11-03T10:00:00+01:00
+  wayback_exception:
+    motif: "La page d'origine affiche des données personnelles de particuliers : elle n'est pas envoyée à la Wayback Machine."
+    decide_par: Erwan Henry
+    decide_le: 2026-11-10
+  binaire_sha256: ${'b'.repeat(64)}
+`;
+    assert.equal(buildSourceYaml(paramsDeSource(parse(texte, { schema: 'core' }))), texte);
+  });
+
+  it('relire puis réécrire chaque source réelle redonne les mêmes octets', () => {
+    const dossier = path.join(REPO_ROOT, 'src', 'content', 'sources');
+    const noms = readdirSync(dossier).filter((n) => n.endsWith('.yaml'));
+    assert.ok(noms.length > 50);
+    for (const n of noms) {
+      const texte = readFileSync(path.join(dossier, n), 'utf8');
+      assert.equal(buildSourceYaml(paramsDeSource(parse(texte, { schema: 'core' }))), texte, n);
+    }
+  });
+
   it('les dates partielles et complètes restent des chaînes (pas de coercition YAML)', () => {
     const d = parse(buildSourceYaml({ ...PARAMS, datePublication: '2026-10-05' }), { schema: 'core' }) as { date_publication: unknown; date_consultation: unknown };
     assert.equal(d.date_publication, '2026-10-05');
     assert.equal(d.date_consultation, '2026-11-03');
+  });
+});
+
+describe('diffUnifie', () => {
+  it('textes identiques : chaîne vide', () => {
+    assert.equal(diffUnifie('a\n', 'a\n', 'f'), '');
+  });
+
+  it('une ligne remplacée, une ligne ajoutée : format de diff -u (suppression avant ajout)', () => {
+    const avant = 'a\nb\nc\nd\ne\nf\ng\nh\ni\nj\nk\n';
+    const apres = 'a\nb\nX\nd\ne\nf\ng\nh\ni\nj\nk\nl\n';
+    assert.equal(
+      diffUnifie(avant, apres, 'src/content/sources/x.yaml'),
+      '--- a/src/content/sources/x.yaml\n+++ b/src/content/sources/x.yaml\n@@ -1,6 +1,6 @@\n a\n b\n-c\n+X\n d\n e\n f\n@@ -9,3 +9,4 @@\n i\n j\n k\n+l\n',
+    );
   });
 });
 

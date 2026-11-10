@@ -21,6 +21,13 @@ archive:
   capture_le: 2026-10-20T10:00:00+02:00
 `;
 
+const WAYBACK = '  wayback_url: https://web.archive.org/web/20261020120000/https://marie-fictive.exemple.invalid/programme\n';
+const EXCEPTION = `  wayback_exception:
+    motif: "La page d'origine affiche des données personnelles : elle n'est pas envoyée à la Wayback Machine."
+    decide_par: Erwan Henry
+    decide_le: 2026-11-10
+`;
+
 function swap(from: string, to: string): string {
   assert.ok(BASE.includes(from), `cible introuvable dans la base : ${from}`);
   return BASE.replace(from, to);
@@ -35,6 +42,9 @@ describe('source : cas valides', () => {
     ['sans wayback_url (optionnel)', BASE],
     ['wayback_url web.archive.org', `${BASE}  wayback_url: https://web.archive.org/web/20261020120000/https://marie-fictive.exemple.invalid/programme\n`],
     ['binaire_sha256 optionnel', `${BASE}  binaire_sha256: ${'b'.repeat(64)}\n`],
+    ['wayback_exception motivée (sans wayback_url)', `${BASE}${EXCEPTION}`],
+    ['wayback_exception puis binaire_sha256', `${BASE}${EXCEPTION}  binaire_sha256: ${'b'.repeat(64)}\n`],
+    ['motif de 20 caractères exactement', `${BASE}${EXCEPTION.replace(/motif: .*\n/, `motif: ${'m'.repeat(20)}\n`)}`],
     ['date_publication complète', swap('date_publication: 2026-10', 'date_publication: 2026-10-05')],
     ['date_publication mensuelle', swap('date_publication: 2026-10', 'date_publication: 2026-10')],
     ['deux candidats', swap('  - marie-fictive\n', '  - marie-fictive\n  - jean-imaginaire\n')],
@@ -60,6 +70,14 @@ describe('source : cas invalides', () => {
     ['date_consultation partielle', swap('date_consultation: 2026-10-20', 'date_consultation: 2026-10'), [{ code: 'SCHEMA_FORMAT', pointer: '/date_consultation' }]],
     ['url en http', swap('https://marie-fictive.exemple.invalid/programme', 'http://marie-fictive.exemple.invalid/programme'), [{ code: 'SCHEMA_FORMAT', pointer: '/url' }]],
     ['champ inconnu', `${BASE}fiabilite: haute\n`, [{ code: 'SCHEMA_UNEVALUATEDPROPERTIES', pointer: '/fiabilite' }]],
+    ['wayback_exception sans motif', `${BASE}${EXCEPTION.replace(/ {4}motif: .*\n/, '')}`, [{ code: 'SCHEMA_REQUIRED', pointer: '/archive/wayback_exception' }]],
+    ['wayback_exception sans decide_par', `${BASE}${EXCEPTION.replace(/ {4}decide_par: .*\n/, '')}`, [{ code: 'SCHEMA_REQUIRED', pointer: '/archive/wayback_exception' }]],
+    ['wayback_exception sans decide_le', `${BASE}${EXCEPTION.replace(/ {4}decide_le: .*\n/, '')}`, [{ code: 'SCHEMA_REQUIRED', pointer: '/archive/wayback_exception' }]],
+    ['wayback_exception : motif de 19 caractères', `${BASE}${EXCEPTION.replace(/motif: .*\n/, `motif: ${'m'.repeat(19)}\n`)}`, [{ code: 'SCHEMA_MINLENGTH', pointer: '/archive/wayback_exception/motif' }]],
+    ['wayback_exception : motif de 301 caractères', `${BASE}${EXCEPTION.replace(/motif: .*\n/, `motif: ${'m'.repeat(301)}\n`)}`, [{ code: 'SCHEMA_MAXLENGTH', pointer: '/archive/wayback_exception/motif' }]],
+    ['wayback_exception : date partielle', `${BASE}${EXCEPTION.replace('decide_le: 2026-11-10', 'decide_le: 2026-11')}`, [{ code: 'SCHEMA_FORMAT', pointer: '/archive/wayback_exception/decide_le' }]],
+    ['wayback_exception : champ inconnu', `${BASE}${EXCEPTION}    visible: oui\n`, [{ code: 'SCHEMA_UNEVALUATEDPROPERTIES', pointer: '/archive/wayback_exception/visible' }]],
+    ['wayback_exception à côté de wayback_url', `${BASE}${WAYBACK}${EXCEPTION}`, [{ code: 'SCHEMA_FALSE', pointer: '/archive/wayback_url' }]],
   ];
   for (const [name, text, expected] of bad) it(name, () => expectErrors('source', text, expected));
 });
