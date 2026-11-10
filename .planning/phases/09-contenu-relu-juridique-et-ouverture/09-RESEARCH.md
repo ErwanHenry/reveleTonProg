@@ -525,16 +525,24 @@ export const reglePublication: CorpusRule = {
 | A9 | Retirer `essai` plutôt que le garder protégé | §5.8 | Perte d'un hôte de répétition ; réversible |
 | A10 | Le texte exact de l'art. 1-1 I 1° (« domicile ») s'applique à Erwan tel quel (pas de dérogation pour adresse de domiciliation) | §4.3 | Option A inadaptée |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Régime d'éditeur (D-02 vs LCEN 1-1 I 1°)** — Que publie Erwan : (A) régime I avec adresse professionnelle et téléphone, ou (B) régime II avec identité remise à Hetzner ? D-02 « sans adresse postale » n'est pas compatible avec le I tel que lu. À trancher **avant** d'écrire les Mentions (checkpoint humain du plan juridique) ; ne pas avancer sans réponse. Recommandation : A avec adresse de domiciliation ; faire relire par un juriste après l'ouverture.
+   - **RESOLVED:** D-02 révisée (décision d'Erwan « 1b pour l'instant ») : régime II maintenant, identité transmise à Hetzner avec preuve datée hors dépôt ; bascule vers une domiciliation (régime I) sur les déclencheurs de D-02 (audience notable ou presse, tout revenu, lien avec l'activité de freelance).
 2. **Statuts `renonce` / `pressenti`** — Les relit-il aussi (liste « ne se présentent pas ») ? Si oui, fixer la date de Wauquiez (`2026-07`).
+   - **RESOLVED:** décision 2a : les 22 statuts « ne se présente pas » et « pressenti » ne sont pas relus pour l'ouverture ; ces personnes sont absentes de la production (filtre de 09-15) ; la date de Wauquiez est sans objet.
 3. **Rohou** — Adopter l'instantané existant plutôt que l'exception ? Garder le mécanisme d'exception dans tous les cas (D-08) ?
+   - **RESOLVED:** décision 3a : l'exception Rohou est gardée (`archive.wayback_exception`), pas de lien Wayback vers une page qui affiche des données de particuliers (09-03).
 4. **Les 5 cas WR-05 de travail** — consignés comme ouverts (D-06) : confirmation.
+   - **RESOLVED:** les 5 cas WR-05 de travail attendent la relecture du thème travail ; ils sont listés comme ouverts dans le RUNBOOK par 09-09.
 5. **Retrait d'un thème en urgence** — la liste blanche doit-elle suivre automatiquement ?
+   - **RESOLVED:** sévérités de la liste blanche telles que conçues dans 09-02 : publié hors liste = erreur en production ; listé non publié et site vide = avertissement, donc le retrait d'urgence d'un thème entier (repasser en brouillon) n'est jamais bloqué et la liste ne suit pas automatiquement.
 6. **D1** (sonde externe) — déclencheur externe ou override signé dans `08-VERIFICATION.md` ? Demande de décision d'Erwan, hors code.
+   - **RESOLVED:** Erwan a élargi la période et la grâce de la sonde à 1 jour ; pas de déclencheur externe pour l'instant ; l'override OPS-01 (D1) est consigné dans `08-VERIFICATION.md` par 09-09.
 7. **Texte légal vs résumés** — Légifrance a été lu par résumeur ; Erwan doit relire les articles 1-1, 1-2 et le décret dans son navigateur avant signature.
+   - **RESOLVED:** Erwan lit les textes liés (art. 1-1, 1-2, décret 2007-1527, L49, loi 77-808 art. 11) dans son navigateur avant de signer la note (09-08, Task 2).
 8. **Volume de relecture** — 47 mesures x 4 niveaux + 37 statuts + 37 cases : la fenêtre 23 nov. - 1er déc. suffit-elle ?
+   - **RESOLVED:** volume estimé à 6 à 8 h de relecture, dans la fenêtre du 23 novembre au 1er décembre (09-10).
 
 ## Environment Availability
 

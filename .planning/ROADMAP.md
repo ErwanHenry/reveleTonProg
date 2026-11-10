@@ -38,7 +38,7 @@ Actions humaines qui conditionnent le code. Dates proposées pour tenir le 2026-
 | Acheter le domaine et poser le DNS (A et AAAA, apex et www) | Phase 8 (HTTPS, hôte technique), `config/site.yml` | 2026-11-16 | Prévoir la propagation avant la demande de certificat ; éviter plus de 5 certificats identiques par 7 jours |
 | Envoyer l'identité d'éditeur à Hetzner et garder la preuve datée | `hebergeur.yml` en `actif`, Phase 9 | 2026-11-16 | Condition des Mentions légales finales |
 | Créer l'Environment `production` (relecteur requis, limité à `main`), déposer les secrets et l'empreinte du serveur | Phase 8 | 2026-11-20 | Rien n'est stocké dans le dépôt |
-| Relire un thème complet (santé) pour tous les candidats du périmètre, environ 3 à 4 h | Phase 9 (PUB-02) | début 2026-11-23, fin 2026-12-01 | Un thème complet vaut mieux que trois thèmes partiels |
+| Relire un thème complet (santé) pour tous les candidats du périmètre, environ 6 à 8 h | Phase 9 (PUB-02) | début 2026-11-23, fin 2026-12-01 | Un thème complet vaut mieux que trois thèmes partiels |
 | Solliciter un juriste (régime d'éditeur, base du droit de réponse, journaux, localStorage) | LEG-02 | demande 2026-11-13, avis 2026-12-02 | À défaut d'avis à temps, consigner par écrit le risque accepté au plus tard le 2026-12-03 |
 | Tester l'adresse de contact réelle de bout en bout | LEG-01 | 2026-11-27 | Envoi et réponse depuis l'extérieur |
 | Approuver le premier déploiement sur l'hôte technique, puis chaque déploiement en production | HEB-12, HEB-14 | essai technique vers 2026-11-27 ; ouverture vers 2026-12-05 | Approbation dans GitHub, un clic par déploiement |
@@ -135,23 +135,25 @@ Plans:
   4. Les Mentions légales finales portent le régime d'éditeur validé, l'hébergeur `actif`, un contact réel testé de bout en bout, la politique de journal exacte et la base légale du droit de réponse vérifiée sur Légifrance ; une relecture juridique a eu lieu, ou Erwan a consigné par écrit le risque accepté.
   5. Le RUNBOOK décrit le retrait d'urgence d'une mesure en moins d'une heure et le calendrier de gel des scrutins de 2027 ; le journal d'audit et ses empreintes sont refaits sur la build déployée, puis le site est ouvert avec l'hôte technique retiré.
 
-**Plans**: 13 plans (6 waves; 09-03 and 09-08 to 09-13 have checkpoints with Erwan; the review of the santé theme by Erwan, 23 November to 1 December, is the critical path)
+**Plans**: 15 plans (8 waves; 09-03 and 09-08 to 09-13 have checkpoints with Erwan; 09-08 starts as soon as 09-04 is done, signature targeted before 23 November; the review of the santé theme by Erwan, 23 November to 1 December, about 6 to 8 h, is the critical path)
 
 Plans:
 
 - [ ] 09-01-PLAN.md — Relecture ouverte (pilote.relecture_ouverte), éditeur par positions de nœuds YAML, registre, commandes liste, marquer, note (vague 1)
-- [ ] 09-02-PLAN.md — Liste blanche config/publication.yml, règle PUBLICATION_*, filtre des pages, codes check-dist, relecteur et date affichés (vague 1)
+- [ ] 09-02-PLAN.md — Liste blanche config/publication.yml, règle PUBLICATION_*, filtre des pages, codes check-dist (vague 1)
 - [ ] 09-03-PLAN.md — W9 : exception Wayback motivée, adoption d'un instantané existant, sources Batho et Rohou (vague 1, validation d'Erwan)
 - [ ] 09-04-PLAN.md — Mentions légales finales (régime II), contact réel, phrase du journal d'erreurs, note de risques R1 à R9 (vague 1)
 - [ ] 09-05-PLAN.md — Page de relecture locale sur 127.0.0.1 avec jeton CSRF, jamais dans le dist (vague 2)
 - [ ] 09-06-PLAN.md — Commandes publier (relu vers publie, thème entier) et retirer (retrait d'urgence avec case de couverture) (vague 2)
 - [ ] 09-07-PLAN.md — Installateur site-public, test de restauration conditionnel, favicon.ico et règle check-dist (vague 2)
 - [ ] 09-08-PLAN.md — Actes d'Erwan : identité transmise à Hetzner, contact testé de bout en bout, signature de la note de risques (vague 2)
-- [ ] 09-09-PLAN.md — RUNBOOK (retrait d'urgence, gel 2027, relecture, publication, ouverture), ADR-059 à 062, préparation du serveur (vague 3, accord d'Erwan)
+- [ ] 09-09-PLAN.md — RUNBOOK (retrait d'urgence, gel 2027, relecture, publication, ouverture), ADR-059 à 062, préparation du serveur (vague 5, accord d'Erwan)
 - [ ] 09-10-PLAN.md — Relecture du thème santé par Erwan : 47 mesures, 37 statuts, 37 cases (vague 3, du 23 novembre au 1er décembre)
-- [ ] 09-11-PLAN.md — Publication de santé sur l'hôte d'essai, hébergeur actif, exercice chronométré de retrait d'urgence (vague 4)
-- [ ] 09-12-PLAN.md — Ouverture : cible production, bloc Caddy public et certificats, supervision réorientée, hôte d'essai retiré (vague 5)
-- [ ] 09-13-PLAN.md — Journal d'audit refait sur la build en ligne (DETTE-04), 4G remesurée avec la page santé, confirmation d'Erwan (vague 6)
+- [ ] 09-11-PLAN.md — Publication de santé sur l'hôte d'essai, hébergeur actif, exercice chronométré de retrait d'urgence (vague 6)
+- [ ] 09-12-PLAN.md — Ouverture : cible production, bloc Caddy public et certificats, supervision réorientée, hôte d'essai retiré (vague 7)
+- [ ] 09-13-PLAN.md — Journal d'audit refait sur la build en ligne (DETTE-04), 4G remesurée avec la page santé, confirmation d'Erwan (vague 8)
+- [ ] 09-14-PLAN.md — Relecteur et date affichés sur chaque mesure publiée (PUB-03), code check-dist RELECTURE_ABSENTE (vague 3)
+- [ ] 09-15-PLAN.md — Personnes sans statut relu absentes de la production (D-06, décision 2a), comptes honnêtes, code check-dist CANDIDAT_NON_RELU_EN_PRODUCTION (vague 4)
 
 ### Phase 10: Import de décembre
 
