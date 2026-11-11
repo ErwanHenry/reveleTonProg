@@ -248,7 +248,9 @@ function envoyer(res: ServerResponse, statut: number, corps: string, entetes: Re
     'content-security-policy': CSP_RELECTURE,
     'cache-control': 'no-store',
     'x-content-type-options': 'nosniff',
-    'referrer-policy': 'no-referrer',
+    // same-origin et non no-referrer : sous no-referrer le navigateur envoie « Origin: null » sur le POST des
+    // formulaires de cette page, que controlerEntetes refuse (403). Rien ne part vers les sites des sources.
+    'referrer-policy': 'same-origin',
     'content-length': String(Buffer.byteLength(corps)),
     ...entetes,
   });

@@ -18,6 +18,6 @@ Ligne à reporter dans `docs/RISQUES-JURIDIQUES.md` quand la note existera (plan
 ## Signature de la note de risques
 
 - Réponse d'Erwan le 2026-11-11, mot pour mot : « je signe, textes lus le 11/11/27 ».
-- Date inscrite pour la lecture des textes : 2026-11-11. L'année « 27 » de la réponse est lue comme une faute de frappe (la réponse est du 2026-11-11, une date de 2027 serait dans le futur). Interprétation de l'orchestrateur, signalée à Erwan dans la conversation ; à corriger s'il le demande.
+- Date inscrite pour la lecture des textes : 2026-11-11. L'année « 27 » de la réponse est lue comme une faute de frappe (la réponse est du 2026-11-11, une date de 2027 serait dans le futur). Interprétation de l'orchestrateur, **confirmée par Erwan le 2026-11-11** (réponse « Oui, 2026 »).
 - Date de signature : 2026-11-11, date de la réponse (règle du plan).
 - Commit : « docs(09-08): note de risques juridiques signée par Erwan (risque accepté) ».

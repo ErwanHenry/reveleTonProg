@@ -23,7 +23,7 @@ key-files:
     - docs/RETROSPECTIVE.md
 
 key-decisions:
-  - "Erwan a signé le 2026-11-11 par la phrase « je signe, textes lus le 11/11/27 » ; l'année « 27 » est lue comme une faute de frappe pour 2026 (interprétation de l'orchestrateur, signalée à Erwan)"
+  - "Erwan a signé le 2026-11-11 par la phrase « je signe, textes lus le 11/11/27 » ; l'année « 27 » est une faute de frappe pour 2026, confirmée par Erwan le même jour (« Oui, 2026 »)"
   - "La ligne « Relecture par un juriste » dit « prévue après l'ouverture, pas encore faite » : le critère du plan demande zéro « à compléter » dans la note signée"
   - "Les trois actes d'Erwan ont été recueillis par l'orchestrateur dans la conversation, sans agent d'exécution : rien à automatiser"
 
@@ -54,7 +54,7 @@ Le risque juridique de l'ouverture sans juriste est accepté par écrit, daté e
 ## Écarts
 
 1. **Critère de forme du plan.** Le plan vérifie `^Date : AAAA-MM-JJ$` ; la note écrit ses champs en liste (`- Date : …`). Vérifié avec `^- Date : …$` : 2 lignes (date de la note, date de signature).
-2. **Année de la lecture des textes.** Voir la première décision ci-dessus.
+2. **Année de la lecture des textes.** Voir la première décision ci-dessus : confirmée par Erwan.
 3. **LEG-01 non cochée ici.** Elle demande aussi l'hébergeur `actif`, qui arrive au plan 09-11.
 
 ## Points ouverts

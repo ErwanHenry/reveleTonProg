@@ -251,7 +251,14 @@ describe('ci.yml : job e2e (Playwright)', () => {
   it('installe, puis Chromium avec ses dépendances système, puis lance npm run e2e', () => {
     const runs = runsOf(job);
     const iCi = runs.indexOf('npm ci');
-    const iPw = runs.indexOf('npx playwright install --with-deps chromium');
+    // L'installation est rejouée jusqu'à trois fois (panne passagère des miroirs apt du runner).
+    const iPw = runs.findIndex((r) => r.includes('npx playwright install --with-deps chromium'));
+    assert.match(runs[iPw] ?? '', /for essai in 1 2 3/, 'installation de Chromium rejouée trois fois');
+    // Chaque essai est borné : trois essais et leurs pauses doivent tenir sous le timeout-minutes du job, tests compris.
+    const borne = /timeout (\d+) npx playwright install/.exec(runs[iPw] ?? '');
+    assert.ok(borne, 'chaque essai est borné par timeout');
+    assert.ok(3 * Number(borne[1]) + 90 <= ((job['timeout-minutes'] ?? 0) - 10) * 60, 'les essais laissent 10 minutes aux tests');
+    assert.match(runs[iPw] ?? '', /exit 1\s*$/, 'échec franc après le dernier essai');
     const iE2e = runs.indexOf('npm run e2e');
     assert.ok(iCi >= 0 && iCi < iPw && iPw < iE2e, 'ordre npm ci, playwright install, npm run e2e');
     assert.ok(runs.includes('npm audit signatures'));
