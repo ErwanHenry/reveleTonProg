@@ -141,6 +141,11 @@ export interface Corpus {
   /** Toutes les mesures visibles dans ce mode, sur les thèmes visibles. */
   mesures: VueMesure[];
   perimetre: ReadonlySet<string>;
+  /**
+   * Personnes du jeu de données écartées en production faute de statut relu ou publié (D-06, plan 09-15) :
+   * elles n'ont ni page, ni ligne, ni entrée du plan du site. Toujours 0 en preview.
+   */
+  nonRelus: number;
   glossaire: ReadonlyMap<string, EntreeGlossaire>;
   sources: ReadonlyMap<string, Source>;
   theme(id: string): VueTheme;
@@ -273,7 +278,13 @@ export function construireCorpus(brut: Brut, mode: Mode, themesOuverts?: Readonl
   const sources = new Map(brut.sources.map((s) => [s.id, s] as const));
   const glossaire = new Map(brut.glossaire.map((g) => [g.id, g] as const));
 
-  const candidats: VueCandidat[] = [...brut.candidats]
+  // Production : une personne sans aucun statut relu ou publié n'est pas publiée du tout (D-06, décision 2a), avant
+  // l'attribution des rangs (rangs contigus). Même définition que le statut affiché et le validateur (ADR-041) :
+  // statutAffiche(c, 'production') === null. Hors périmètre par construction, le filtre ne change pas le périmètre.
+  const retenus = production ? brut.candidats.filter((c) => statutAffiche(c, mode) !== null) : brut.candidats;
+  const nonRelus = brut.candidats.length - retenus.length;
+
+  const candidats: VueCandidat[] = [...retenus]
     .sort((a, b) => collator.compare(a.nom_tri, b.nom_tri) || collator.compare(a.id, b.id))
     .map((c, rang) => {
       const statutRecent = statutLePlusRecent(c.statuts) as unknown as StatutEntree | undefined;
@@ -299,7 +310,8 @@ export function construireCorpus(brut: Brut, mode: Mode, themesOuverts?: Readonl
     return { mesure: m, source, ancre: `m-${m.id.replaceAll('/', '-')}`, badge: badgeDe(m.statut_relecture) };
   };
   const mesures = brut.mesures
-    .filter((m) => idsThemesVisibles.has(m.theme) && (!production || m.statut_relecture === 'publie'))
+    // Défense en profondeur : en production, la mesure d'une personne écartée ne peut atteindre aucune page.
+    .filter((m) => idsThemesVisibles.has(m.theme) && (!production || (m.statut_relecture === 'publie' && parId.has(m.candidat))))
     .sort((a, b) => collator.compare(a.titre, b.titre) || collator.compare(a.id, b.id))
     .map(vueMesure);
 
@@ -401,6 +413,7 @@ export function construireCorpus(brut: Brut, mode: Mode, themesOuverts?: Readonl
     candidats,
     mesures,
     perimetre,
+    nonRelus,
     glossaire,
     sources,
     theme(id) {
