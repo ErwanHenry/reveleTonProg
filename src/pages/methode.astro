@@ -14,7 +14,7 @@ import { TOURS } from '../lib/dates-tours.ts';
 import { MESURE_SERVEUR_4G, PROFILS_4G } from '../lib/profil-4g.ts';
 
 // Date de dernière révision de cette page (à mettre à jour à chaque modification du texte).
-const REVISION = '2026-11-09';
+const REVISION = '2026-11-11';
 
 // Fail closed : une couverture illisible ne produit pas une page Méthode approximative.
 const lue = lireCouverture(couvertureBrute);
@@ -25,6 +25,17 @@ const dataset = loadDatasetDatagouv();
 const ecart = ecartAnnonce(dataset);
 // Les phrases d'avant la mise en ligne suivent le statut de l'hébergeur (WR-03), comme la page Mentions légales.
 const heb = loadHebergeurConfig();
+// Production (D-06, plan 09-15) : combien de personnes le site affiche, et combien attendent la relecture de leur statut.
+const corpusAffiche = await getCorpus();
+const nAffiches = corpusAffiche.candidats.length;
+const nPerimetre = corpusAffiche.perimetre.size;
+const kNonRelus = corpusAffiche.mode === 'production' ? corpusAffiche.nonRelus : 0;
+const personnalites = (n: number): string => `${n} ${n > 1 ? 'personnalités' : 'personnalité'}`;
+const candidatures = (n: number): string => `${n} ${n > 1 ? 'candidatures déclarées' : 'candidature déclarée'} ou à une primaire`;
+const phraseAffichees =
+  nAffiches === 0
+    ? `Ce site n'affiche encore aucune personnalité : ${kNonRelus > 1 ? `les ${kNonRelus} personnalités du jeu de données apparaîtront après relecture de leur statut` : 'la personnalité du jeu de données apparaîtra après relecture de son statut'}.`
+    : `Ce site affiche ${personnalites(nAffiches)} dont le statut a été relu, dont ${candidatures(nPerimetre)} ; ${kNonRelus > 1 ? `les ${kNonRelus} autres personnalités du jeu de données apparaîtront après relecture de leur statut` : "l'autre personnalité du jeu de données apparaîtra après relecture de son statut"}.`;
 
 const nomTheme = (id: string): string => THEMES_SPEC.find((t) => t.id === id)?.nom ?? id;
 const themesAine = THEMES_SPEC.filter((t) => t.prioritaire_aine).map((t) => t.nom);
@@ -89,6 +100,7 @@ const SEV: Record<string, string> = { erreur: 'erreur', avertissement: 'avertiss
         Attribution : liste des personnalités de {dataset.producteur.replace(/ \(.*$/, '')}, jeu de données publié sur <a href={dataset.page} rel="noopener noreferrer">data.gouv.fr</a>, {dataset.licence}. Seuls le statut, sa source et le lien vers le site de campagne sont repris. La source d'un statut de candidature peut être un article de presse : l'exigence de source primaire porte sur les mesures, pas sur les statuts. Une candidature est « pressentie » quand la personne est citée comme candidate possible sans l'avoir déclarée elle-même ; elle n'a alors aucune mesure présentée.
       </p>
     </div>
+    {kNonRelus > 0 && <p data-personnalites-affichees>{phraseAffichees}</p>}
 
     <h2>Qui figure sur une page thème</h2>
     <p>Une page thème présente les candidats dont la candidature est, selon la dernière vérification relue :</p>

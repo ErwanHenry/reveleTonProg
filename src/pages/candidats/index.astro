@@ -5,10 +5,15 @@ import OrdreCandidats from '../../components/OrdreCandidats.astro';
 import { BADGES, LIBELLES_STATUT, formatDate, getCorpus } from '../../lib/corpus/index.ts';
 
 const corpus = await getCorpus();
+// Production : seules les personnes dont un statut a été relu sont listées (D-06, plan 09-15) ; le texte le dit.
+const production = corpus.mode === 'production';
+const k = corpus.nonRelus;
 ---
 <Base
   titre="Les candidats : reveleTonProg"
-  description="Toutes les personnalités du jeu de données, avec leur parti revendiqué et leur statut."
+  description={production
+    ? 'Les personnalités du jeu de données dont le statut a été relu, avec leur parti revendiqué et leur statut.'
+    : 'Toutes les personnalités du jeu de données, avec leur parti revendiqué et leur statut.'}
   miseAJour={corpus.miseAJourIndex()}
 >
   <main id="contenu" class="conteneur">
@@ -26,7 +31,7 @@ const corpus = await getCorpus();
       </>
     ) : (
       <>
-        <p>Toutes les personnalités du jeu de données, dans l'ordre choisi ci-dessus. Le statut est celui de la dernière source consultée.</p>
+        <p>{production ? 'Les personnalités du jeu de données dont le statut a été relu' : 'Toutes les personnalités du jeu de données'}, dans l'ordre choisi ci-dessus. Le statut est celui de la dernière source consultée.</p>
         <OrdreCandidats />
         <ul class="lignes" data-ordonnable>
           {corpus.candidats.map((c) => {
@@ -47,6 +52,17 @@ const corpus = await getCorpus();
           })}
         </ul>
       </>
+    )}
+    {k > 0 && (
+      <p data-non-relus>
+        {corpus.candidats.length === 0
+          ? (k === 1
+            ? '1 personnalité du jeu de données apparaîtra après relecture de son statut.'
+            : `${k} personnalités du jeu de données apparaîtront après relecture de leur statut.`)
+          : k === 1
+            ? '1 autre personnalité du jeu de données apparaîtra après relecture de son statut.'
+            : `${k} autres personnalités du jeu de données apparaîtront après relecture de leur statut.`}
+      </p>
     )}
   </main>
 </Base>

@@ -75,7 +75,7 @@ const n = vue.autresPersonnalites;
         <p class="autres-personnalites">
           {n === 1
             ? '1 autre personnalité du jeu de données ne figure pas ici : '
-            : `${n} autres personnalités du jeu de données ne figurent pas ici : `}<a href="/candidats/">voir la liste complète des candidats</a>.
+            : `${n} autres personnalités du jeu de données ne figurent pas ici : `}<a href="/candidats/">{corpus.nonRelus > 0 ? 'voir la liste des candidats' : 'voir la liste complète des candidats'}</a>.
         </p>
       )}
     </LecteurNiveaux>
