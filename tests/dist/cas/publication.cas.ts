@@ -49,4 +49,68 @@ export default function publication(ctx: ContexteSite): void {
     assert.equal(hors[0]?.severite, 'erreur');
     assert.match(hors[0]?.fichier ?? '', /climat/);
   });
+
+  // PUB-03 (D-05) : « Relue par <relecteur> le <date>. », un seul paragraphe par mesure, hors des quatre niveaux.
+  const pagesDeThemes = (outDir: string): string[] => {
+    const dossier = path.join(outDir, 'themes');
+    return fs
+      .readdirSync(dossier)
+      .map((id) => path.join(dossier, id, 'index.html'))
+      .filter((f) => fs.existsSync(f));
+  };
+  const articles = (html: string): string[] => html.match(/<article class="mesure"[\s\S]*?<\/article>/g) ?? [];
+
+  it('PUB-03 : en production, chaque mesure porte une seule ligne de relecture, lue dans son YAML', () => {
+    const { outDir } = production();
+    const yaml = fs.readFileSync(path.join(racine, 'src', 'content', 'mesures', 'marie-fictive', 'aide-construction.yaml'), 'utf8');
+    const relecteur = /^relecteur: (.+)$/m.exec(yaml)?.[1];
+    const date = /^date_relecture: (\d{4}-\d{2}-\d{2})$/m.exec(yaml)?.[1];
+    assert.ok(relecteur !== undefined && date !== undefined);
+    let vues = 0;
+    let nommee = 0;
+    for (const f of pagesDeThemes(outDir)) {
+      for (const a of articles(fs.readFileSync(f, 'utf8'))) {
+        vues++;
+        const lignes = a.match(/<p class="relecture" data-relecture[^>]*>[\s\S]*?<\/p>/g) ?? [];
+        assert.equal(lignes.length, 1, `une ligne de relecture attendue par mesure dans ${f}`);
+        assert.match(lignes[0] ?? '', /^<p class="relecture" data-relecture>Relue par [^<]+ le <time datetime="\d{4}-\d{2}-\d{2}">[^<]+<\/time>\.<\/p>$/);
+        // hors de tout bloc de niveau de lecture : visible quel que soit le niveau, sans JS
+        const redactions = a.match(/<div class="redaction"[\s\S]*?<\/div>/g) ?? [];
+        assert.ok(redactions.every((r) => !r.includes('data-relecture')));
+        if (a.includes('id="m-marie-fictive-aide-construction"')) {
+          nommee++;
+          assert.ok((lignes[0] ?? '').includes(`Relue par ${relecteur} le `));
+          assert.ok((lignes[0] ?? '').includes(`datetime="${date}"`));
+        }
+      }
+    }
+    assert.ok(vues > 0, 'aucune mesure vue');
+    assert.equal(nommee, 1, 'la mesure fixture nommée doit apparaître une fois');
+  });
+
+  it('PUB-03 : en preview, un brouillon n’a pas de ligne de relecture', () => {
+    const preview = ctx.construire('m1-preview', { racine: materialiserCorpusM1(path.join(ctx.tmp(), 'corpus-m1-relecture-preview')), mode: 'preview' });
+    assert.equal(preview.status, 0, `astro build (preview) a échoué :\n${preview.output}`);
+    let brouillons = 0;
+    for (const f of pagesDeThemes(preview.outDir)) {
+      for (const a of articles(fs.readFileSync(f, 'utf8'))) {
+        if (a.includes('data-statut-relecture="brouillon"')) {
+          brouillons++;
+          assert.ok(!a.includes('data-relecture'));
+        }
+      }
+    }
+    assert.ok(brouillons > 0, 'le jeu preview doit contenir un brouillon');
+  });
+
+  it('PUB-03 : check-dist sur le build de production ne signale pas RELECTURE_ABSENTE', () => {
+    const { outDir } = production();
+    const { themesOuverts } = loadPublicationConfig(racine);
+    const constats = checkDist(outDir, {
+      mode: 'production',
+      themesOuverts,
+      cellulesParTheme: cellulesAttendues(racine, ctx.repoRoot, 'production', themesOuverts),
+    });
+    assert.deepEqual(constats.filter((c) => c.code === 'RELECTURE_ABSENTE' || c.code.startsWith('POIDS_')), []);
+  });
 }

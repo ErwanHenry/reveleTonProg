@@ -222,6 +222,10 @@ export default function methode(ctx: ContexteSite): void {
       }
     });
 
+    it('PUB-03 : la page dit que chaque mesure publiée indique qui l\'a relue et à quelle date', () => {
+      assert.ok(txt(page()).includes("Chaque mesure publiée indique qui l'a relue et à quelle date."));
+    });
+
     it('source de la page : aucun mot interdit ni nombre en dur', () => {
       const src = fs.readFileSync(path.join(ctx.repoRoot, 'src/pages/methode.astro'), 'utf8');
       for (const m of MOTS_INTERDITS) for (const ex of m.exemples) assert.ok(!src.includes(ex), `« ${ex} » en dur`);

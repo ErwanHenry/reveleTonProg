@@ -83,6 +83,15 @@ interface OptsMesure {
   date?: string | null;
   lien?: string | null;
   id?: string;
+  /** Ligne de relecture (PUB-03) : `null` aucune, `2` deux lignes, sinon surcharges du relecteur et de la date. */
+  relecture?: null | 2 | { relecteur?: string; date?: string };
+}
+
+function ligneRelecture(o: OptsMesure): string {
+  if (o.relecture === null) return '';
+  const r = o.relecture === 2 || o.relecture === undefined ? {} : o.relecture;
+  const une = `<p class="relecture" data-relecture>Relue par ${r.relecteur ?? 'Erwan Henry'} le <time datetime="${r.date ?? '2026-10-21'}">21 octobre 2026</time>.</p>`;
+  return o.relecture === 2 ? une + une : une;
 }
 
 function mesure(o: OptsMesure = {}): string {
@@ -91,7 +100,7 @@ function mesure(o: OptsMesure = {}): string {
   const lien =
     o.lien === null ? '' : ` <a href="${o.lien ?? 'https://x.exemple.invalid/p'}" rel="noopener noreferrer">Programme</a>`;
   const source = o.source === false ? '' : `<p class="source">Source :${lien}${date}</p>`;
-  return `<article class="mesure"${statut}${o.id ? ` id="${o.id}"` : ''}><h3>Une mesure</h3><p>Texte de la mesure.</p>${source}</article>`;
+  return `<article class="mesure"${statut}${o.id ? ` id="${o.id}"` : ''}><h3>Une mesure</h3><p>Texte de la mesure.</p>${ligneRelecture(o)}${source}</article>`;
 }
 
 function theme(id: string, cellules: number, opts: { mesure?: () => string; noindex?: boolean; corps?: string } = {}): string {
@@ -637,6 +646,18 @@ describe('checkDist : brouillons et indexation', () => {
     exactement('BROUILLON_EN_PRODUCTION', { 'themes/logement/index.html': theme('logement', 2, { mesure: () => mesure({ statut: null }) }) });
     exactement('BROUILLON_EN_PRODUCTION', { 'index.html': page({ corps: '<span data-badge>Brouillon</span>' }) });
     exactement('BROUILLON_EN_PRODUCTION', { 'index.html': page({ corps: '<div class="banniere-preview">Preview</div>' }) });
+  });
+
+  it('RELECTURE_ABSENTE : une seule ligne de relecture avec un relecteur et une vraie date, en production seulement', () => {
+    const avec = (o: OptsMesure) => ({ 'themes/logement/index.html': theme('logement', 2, { mesure: () => mesure(o) }) });
+    assert.deepEqual(verifier(distPropre(avec({}))).codes, []);
+    exactement('RELECTURE_ABSENTE', avec({ relecture: null }));
+    exactement('RELECTURE_ABSENTE', avec({ relecture: 2 }));
+    exactement('RELECTURE_ABSENTE', avec({ relecture: { relecteur: '  ' } }));
+    exactement('RELECTURE_ABSENTE', avec({ relecture: { date: '2026-02-30' } }));
+    exactement('RELECTURE_ABSENTE', avec({ relecture: { date: '21/10/2026' } }));
+    const preview = distPropre(avec({ relecture: null, statut: 'brouillon' }), { preview: true });
+    assert.ok(!verifier(preview, 'preview').codes.includes('RELECTURE_ABSENTE'));
   });
 
   it('PREVIEW_INDEXABLE : page sans noindex, ou sans robots.txt Disallow: /', () => {
