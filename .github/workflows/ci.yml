@@ -169,7 +169,16 @@ jobs:
       - name: Vérifier les signatures des paquets
         run: npm audit signatures
       - name: Installer Chromium et ses dépendances système
-        run: npx playwright install --with-deps chromium
+        # Les miroirs apt du runner tombent parfois (résolution DNS) : trois essais espacés avant d'échouer,
+        # pour qu'une panne passagère ne bloque pas un déploiement ou un retrait d'urgence.
+        run: |
+          for essai in 1 2 3; do
+            if npx playwright install --with-deps chromium; then exit 0; fi
+            echo "::warning::Installation de Chromium : essai $essai en échec"
+            sleep $((essai * 45))
+          done
+          echo "::error::Installation de Chromium impossible après 3 essais (miroirs apt du runner ?)"
+          exit 1
       - name: Lancer les tests navigateur (fixture et corpus réel)
         run: npm run e2e
       - name: Conserver le rapport Playwright en cas d'échec
