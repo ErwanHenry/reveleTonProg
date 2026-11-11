@@ -58,6 +58,7 @@ export const CODES_CHECK_DIST = [
   'THEME_OUVERT_ABSENT',
   'PUBLICATION_VIDE',
   'BROUILLON_EN_PRODUCTION',
+  'RELECTURE_ABSENTE',
   'PREVIEW_INDEXABLE',
   'LIEN_INTERNE_CASSE',
   'LANG_ABSENTE',
@@ -682,6 +683,22 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
           signaler('BROUILLON_EN_PRODUCTION', rel, `mesure sans data-statut-relecture="publie"${m.attrs.id ? ` (« ${m.attrs.id} »)` : ''}`);
         }
       }
+      // PUB-03 (D-05) : exactement une ligne « Relue par … le … » par mesure, avec un relecteur et une vraie date
+      for (const m of mesures) {
+        const lignes = trouver(m, (n) => n.attrs['data-relecture'] !== undefined);
+        const fautes: string[] = [];
+        if (lignes.length !== 1) fautes.push(`${lignes.length} ligne(s) de relecture (une seule attendue)`);
+        else {
+          const ligne = lignes[0] as Noeud;
+          const dates = trouver(ligne, (n) => n.tag === 'time');
+          const hors = ligne.enfants.filter((e): e is string => typeof e === 'string').join('').replace(/Relue par|\ble\b|[\s.]/g, '');
+          if (hors === '') fautes.push('relecteur vide');
+          if (dates.length !== 1 || !estDateCalendaire(dates[0]?.attrs.datetime ?? '')) fautes.push('date <time datetime> absente ou invalide');
+        }
+        if (fautes.length > 0) {
+          signaler('RELECTURE_ABSENTE', rel, `mesure${m.attrs.id ? ` « ${m.attrs.id} »` : ''} : ${fautes.join(' ; ')}`);
+        }
+      }
       if (tous.some((n) => n.attrs['data-badge'] !== undefined)) signaler('BROUILLON_EN_PRODUCTION', rel, 'pastille de preview (data-badge) en production');
       if (tous.some((n) => aClasse(n, 'banniere-preview'))) signaler('BROUILLON_EN_PRODUCTION', rel, 'bandeau de preview en production');
     } else {
@@ -795,6 +812,14 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
 }
 
 /** Horodatage ISO 8601 en UTC (`Z`), millisecondes facultatives, date et heure réelles. */
+/** AAAA-MM-JJ qui existe au calendrier (le 30 février est refusé). */
+function estDateCalendaire(texte: string): boolean {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(texte);
+  if (m === null) return false;
+  const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+  return d.toISOString().slice(0, 10) === texte;
+}
+
 function estHorodatageUtc(texte: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(texte)) return false;
   const d = new Date(texte);

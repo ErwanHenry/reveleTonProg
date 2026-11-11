@@ -382,6 +382,12 @@ blockquote[data-citation] p {
   margin: 0;
 }
 
+.relecture {
+  margin: 1rem 0 0;
+  color: var(--encre-douce);
+  font-size: var(--t-label);
+}
+
 .source {
   margin-top: 1rem;
   padding-top: 0.5rem;

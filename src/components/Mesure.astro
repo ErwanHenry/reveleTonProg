@@ -2,7 +2,7 @@
 import BadgeBrouillon from './BadgeBrouillon.astro';
 import BlocSource from './BlocSource.astro';
 import TexteEnfant from './TexteEnfant.astro';
-import { LIBELLES_NIVEAUX, NIVEAUX } from '../lib/corpus/index.ts';
+import { LIBELLES_NIVEAUX, NIVEAUX, formatDate } from '../lib/corpus/index.ts';
 import type { VueMesure } from '../lib/corpus/index.ts';
 import { lienIssue, lienMailto } from '../lib/corpus/signalement.ts';
 import { loadSiteConfig } from '../lib/site-config.ts';
@@ -20,6 +20,8 @@ const paragraphes = (t: string): string[] => t.split(/\n{2,}/).map((p) => p.trim
 const config = loadSiteConfig();
 const lienMail = lienMailto(config.contact, mesure.id, `${Astro.url.pathname}#${vue.ancre}`);
 const lienGithub = lienIssue(config.depot, mesure.id);
+// PUB-03 (D-05) : jamais sur un brouillon (son badge dit déjà « brouillon, non relu »)
+const relue = mesure.statut_relecture !== 'brouillon' && mesure.relecteur !== undefined && mesure.date_relecture !== undefined;
 const manque = "Cette version n'est pas encore rédigée ; voici la version En bref.";
 ---
 <article class="mesure" id={vue.ancre} data-statut-relecture={mesure.statut_relecture}>
@@ -49,6 +51,7 @@ const manque = "Cette version n'est pas encore rédigée ; voici la version En b
       )}
     </div>
   ))}
+  {relue && <p class="relecture" data-relecture>Relue par {mesure.relecteur} le <time datetime={mesure.date_relecture}>{formatDate(mesure.date_relecture as string)}</time>.</p>}
   <div class="source">
     <BlocSource source={source} libelle="Source primaire" />
     <p class="signaler">
