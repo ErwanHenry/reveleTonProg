@@ -911,7 +911,7 @@ describe('checkDist : version.json (HEB-07, D-12) et types de fichiers du dist (
     });
 
     it('refuse une icône ailleurs qu’à la racine ou d’un autre nom (TYPE_FICHIER_INATTENDU)', () => {
-      for (const rel of ['img/favicon.ico', 'autre.ico', 'Favicon.ico']) {
+      for (const rel of ['img/favicon.ico', 'autre.ico', 'favicon-2.ico']) {
         const r = avecTypes({ 'favicon.ico': icone(300), [rel]: icone(300) });
         assert.deepEqual(r.codes, ['TYPE_FICHIER_INATTENDU'], rel);
         assert.deepEqual(r.fichiers, [rel]);

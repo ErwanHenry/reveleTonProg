@@ -8,7 +8,7 @@ import { ModeInvalideError, resolveContentRoot, resolveMode } from '../src/lib/c
 import { DeploiementInvalideError, estDeploiement } from '../src/lib/deploiement.ts';
 import { loadPublicationConfig } from '../src/lib/publication-config.ts';
 import { loadSiteConfig } from '../src/lib/site-config.ts';
-import { cellulesAttendues, checkDist } from './lib/check-dist.ts';
+import { TYPES_AUTORISES, cellulesAttendues, checkDist } from './lib/check-dist.ts';
 
 const USAGE = `Usage : node scripts/check-dist.ts [--dist <dossier>] [--root <dossier>] [--mode preview|production] [--format text|github]
 
@@ -24,7 +24,8 @@ const USAGE = `Usage : node scripts/check-dist.ts [--dist <dossier>] [--root <do
   provisoire (TLD réservé : .invalid, .test, .example, .localhost) deviennent des erreurs au lieu d'avertissements.
   RTP_DEPLOIEMENT n'accepte que 1, 0 ou vide ; toute autre valeur est refusée (code 2).
   version.json doit exister et donner exactement commit et date ; GITHUB_SHA (40 hexadécimaux, en CI) impose son
-  commit, et le commit « dev » est refusé sous RTP_DEPLOIEMENT=1. Le dist ne contient que html, txt, xml et json.
+  commit, et le commit « dev » est refusé sous RTP_DEPLOIEMENT=1. Le dist ne contient que html, txt, xml et json,
+  plus une seule icône : favicon.ico à la racine, 4 096 octets au plus (régénérée par node scripts/favicon.ts).
   Code de sortie : 0 sans erreur, 1 si au moins une erreur, 2 si les arguments, le mode, config/site.yml ou config/publication.yml sont invalides.
 `;
 
@@ -86,11 +87,11 @@ try {
   process.exit(2);
 }
 // Version servie (HEB-07) : GITHUB_SHA (CI) est le commit attendu dans version.json quand il compte 40 hexadécimaux,
-// comme dans src/pages/version.json.ts. Types de fichiers (HEB-08) : html, txt, xml et json seulement.
+// comme dans src/pages/version.json.ts. Types de fichiers (HEB-08) : html, txt, xml et json, plus le seul favicon.ico
+// à la racine (D-11) : TYPES_AUTORISES de scripts/lib/check-dist.ts.
 const sha = process.env.GITHUB_SHA ?? '';
 const version = /^[0-9a-f]{40}$/.test(sha) ? { commitAttendu: sha } : {};
-const typesAutorises = ['.html', '.txt', '.xml', '.json'] as const;
-const constats = checkDist(dist, { mode, cellulesParTheme: attendues, themesOuverts, deploiement, domaine, version, typesAutorises });
+const constats = checkDist(dist, { mode, cellulesParTheme: attendues, themesOuverts, deploiement, domaine, version, typesAutorises: TYPES_AUTORISES });
 
 for (const c of constats) console.log(`${c.code} ${safe(c.fichier)} : ${safe(c.message)}`);
 if (format === 'github') {

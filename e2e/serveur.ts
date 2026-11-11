@@ -34,6 +34,7 @@ const TYPES: Record<string, string> = {
   '.txt': 'text/plain; charset=utf-8',
   '.xml': 'application/xml; charset=utf-8',
   '.json': 'application/json; charset=utf-8', // version.json (HEB-07)
+  '.ico': 'image/x-icon', // favicon.ico (D-11)
 };
 
 /**
@@ -73,7 +74,10 @@ export function creerServeur(racineArg: string, options: OptionsServeur = {}): S
     }
     const ext = path.extname(abs);
     const brut = readFileSync(reel);
-    const h: Record<string, string> = { 'content-type': TYPES[ext] ?? 'application/octet-stream', 'cache-control': 'no-store' };
+    // L'icône reçoit la valeur du bloc Caddy (Cache-Control "no-cache", deploy/caddy/site.caddy) : servie en
+    // no-store, Chromium ne garde plus la page dans le bfcache (vérifié par e2e/parcours.spec.ts, D-11).
+    const cache = ext === '.ico' ? 'no-cache' : 'no-store';
+    const h: Record<string, string> = { 'content-type': TYPES[ext] ?? 'application/octet-stream', 'cache-control': cache };
     if (csp !== null) h['content-security-policy'] = csp;
     if (ext in TYPES && /\bgzip\b/.test(String(req.headers['accept-encoding'] ?? ''))) {
       let gz = memo.get(reel);

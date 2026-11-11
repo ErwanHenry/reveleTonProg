@@ -101,6 +101,7 @@ describe('e2e/serveur.ts', () => {
     const r = await get('/favicon.ico', { 'accept-encoding': 'identity' });
     assert.equal(r.status, 200);
     assert.equal(r.headers['content-type'], 'image/x-icon');
+    assert.equal(r.headers['cache-control'], 'no-cache', 'comme le bloc Caddy : en no-store, Chromium refuse le bfcache');
     assert.ok(r.corps.equals(ICONE));
   });
 

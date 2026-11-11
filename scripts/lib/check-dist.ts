@@ -26,7 +26,16 @@ export const LIMITES = {
   brut: 500_000, // 500 Ko bruts par page
   gzip: 100_000, // 100 Ko compressés par page : c'est cette limite qui mord en premier
   script: 2048, // un script classique du site pèse moins de 2 Ko
+  favicon: 4096, // public/favicon.ico (D-11) : l'icône générée par scripts/favicon.ts pèse quelques centaines d'octets
 } as const;
+
+/**
+ * Extensions permises dans le dist (HEB-08), passées par le CLI à `typesAutorises`. `.ico` ne couvre que
+ * favicon.ico à la racine, 4 096 octets au plus (D-11) : toute autre icône reste TYPE_FICHIER_INATTENDU.
+ */
+export const TYPES_AUTORISES = ['.html', '.txt', '.xml', '.json', '.ico'] as const;
+/** Seule icône admise, à la racine du dist (copie de public/favicon.ico). */
+export const FAVICON = 'favicon.ico';
 
 /** Tous les codes que le contrôle peut produire (la page Méthode de la Phase 5 les affichera). */
 export const CODES_CHECK_DIST = [
@@ -762,7 +771,18 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
   if (opts.typesAutorises !== undefined) {
     const permis = new Set(opts.typesAutorises);
     for (const f of fichiers) {
-      if (permis.has(path.posix.extname(f))) continue;
+      const ext = path.posix.extname(f);
+      if (ext === '.ico' && permis.has(ext)) {
+        // Icône (D-11) : une seule, à la racine, sous LIMITES.favicon ; elle est revalidée comme les pages (no-cache).
+        if (f !== FAVICON) {
+          signaler('TYPE_FICHIER_INATTENDU', f, `icône refusée : seul favicon.ico à la racine du dist est permis (public/favicon.ico, généré par scripts/favicon.ts)`);
+        } else {
+          const taille = fs.statSync(path.join(dist, f)).size;
+          if (taille > LIMITES.favicon) signaler('TYPE_FICHIER_INATTENDU', f, `favicon.ico de ${taille} octets (limite ${LIMITES.favicon}) : régénérer par node scripts/favicon.ts`);
+        }
+        continue;
+      }
+      if (permis.has(ext)) continue;
       signaler(
         'TYPE_FICHIER_INATTENDU',
         f,
