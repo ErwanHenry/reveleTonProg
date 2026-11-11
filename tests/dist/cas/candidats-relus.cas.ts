@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { analyserHtml, aClasse, texte, trouver } from '../../../scripts/lib/html.ts';
+import { candidatsNonRelus, cellulesAttendues, checkDist } from '../../../scripts/lib/check-dist.ts';
 import type { Noeud } from '../../../scripts/lib/html.ts';
 import { loadAll } from '../../../src/lib/content-core/load.ts';
 import { construireCorpus } from '../../../src/lib/corpus/vue.ts';
@@ -135,6 +136,34 @@ export default function candidatsRelus(ctx: ContexteSite): void {
       const fils = main.enfants.filter((e): e is Noeud => typeof e !== 'string');
       const iDataset = fils.findIndex((x) => x.attrs['data-dataset'] !== undefined);
       assert.ok(iDataset >= 0 && fils[iDataset + 1]?.attrs['data-personnalites-affichees'] !== undefined, 'juste après div[data-dataset]');
+    });
+  });
+
+  describe('check-dist : CANDIDAT_NON_RELU_EN_PRODUCTION sur la build M1', () => {
+    const controler = (outDir: string) =>
+      checkDist(outDir, {
+        mode: 'production',
+        cellulesParTheme: cellulesAttendues(racine, ctx.repoRoot, 'production'),
+        candidatsNonRelus: [...candidatsNonRelus(racine, ctx.repoRoot)],
+      });
+
+    it('build de production : aucune erreur, et les deux personnes écartées sont bien celles du contenu', () => {
+      assert.deepEqual([...candidatsNonRelus(racine, ctx.repoRoot)].sort(), ['nina-pressentie', 'paul-de-villefranche']);
+      const erreurs = controler(production().outDir).filter((c) => c.severite === 'erreur');
+      assert.deepEqual(erreurs, [], erreurs.map((c) => `${c.code} ${c.fichier} : ${c.message}`).join('\n'));
+    });
+
+    it('copie du dist avec candidats/paul-de-villefranche/index.html plantée : CANDIDAT_NON_RELU_EN_PRODUCTION', () => {
+      const copie = path.join(ctx.tmp(), 'dist-plante');
+      fs.cpSync(production().outDir, copie, { recursive: true });
+      const fichier = path.join(copie, 'candidats', 'paul-de-villefranche', 'index.html');
+      fs.mkdirSync(path.dirname(fichier), { recursive: true });
+      fs.copyFileSync(path.join(copie, 'candidats', 'marie-fictive', 'index.html'), fichier);
+      const constats = controler(copie).filter((c) => c.code === 'CANDIDAT_NON_RELU_EN_PRODUCTION');
+      assert.deepEqual(
+        constats.map((c) => [c.fichier, c.severite]),
+        [['candidats/paul-de-villefranche/index.html', 'erreur']],
+      );
     });
   });
 

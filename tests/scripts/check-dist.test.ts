@@ -7,7 +7,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { CODES_CHECK_DIST, LIMITES, TYPES_AUTORISES, cellulesAttendues, checkDist } from '../../scripts/lib/check-dist.ts';
+import { CODES_CHECK_DIST, LIMITES, TYPES_AUTORISES, candidatsNonRelus, cellulesAttendues, checkDist } from '../../scripts/lib/check-dist.ts';
+import { materialiserCorpusM1 } from '../helpers/corpus-m1.ts';
 import type { OptionsCheckDist } from '../../scripts/lib/check-dist.ts';
 import { empreinteCsp } from '../../src/lib/csp-empreintes.ts';
 import { loadSiteConfig } from '../../src/lib/site-config.ts';
@@ -640,6 +641,60 @@ describe('checkDist : liste blanche de publication', () => {
   });
 });
 
+describe('checkDist : personnes sans statut relu (D-06, plan 09-15)', () => {
+  const NON_RELUS = ['paul-de-villefranche'];
+  const res = (fichiers: Fichiers, mode: Mode = 'production', extra: Partial<OptionsCheckDist> = { candidatsNonRelus: NON_RELUS }) =>
+    checkDist(ecrireDist(fichiers), { mode, cellulesParTheme: new Map([['logement', 2]]), ...extra });
+  const code = 'CANDIDAT_NON_RELU_EN_PRODUCTION';
+  const pageCandidat = page({ titre: 'Paul de Villefranche' });
+
+  it('page candidats/<id>/index.html plantée : erreur nommant l\'id et le fichier (et son entrée de sitemap)', () => {
+    const c = res(distPropre({ 'candidats/paul-de-villefranche/index.html': pageCandidat }));
+    const nonRelus = c.filter((x) => x.code === code);
+    assert.ok(nonRelus.length >= 1, JSON.stringify(c));
+    assert.ok(nonRelus.every((x) => x.severite === 'erreur'));
+    assert.ok(nonRelus.some((x) => x.fichier === 'candidats/paul-de-villefranche/index.html' && x.message.includes('paul-de-villefranche')));
+    assert.deepEqual([...new Set(c.map((x) => x.code))], [code]);
+  });
+
+  it('lien planté (absolu, avec fragment, ou relatif) : erreur sur la page qui lie', () => {
+    for (const href of ['/candidats/paul-de-villefranche/', '/candidats/paul-de-villefranche/#logement', '../candidats/paul-de-villefranche/']) {
+      const c = res(distPropre({ 'themes/logement/index.html': theme('logement', 2, { corps: `<a href="${href}">Paul</a>` }) }));
+      const nonRelus = c.filter((x) => x.code === code);
+      assert.equal(nonRelus.length, 1, `${href} : ${JSON.stringify(c)}`);
+      assert.equal(nonRelus[0]?.fichier, 'themes/logement/index.html');
+      assert.match(nonRelus[0]?.message ?? '', /paul-de-villefranche/);
+    }
+  });
+
+  it('entrée de sitemap plantée : erreur sur sitemap.xml', () => {
+    const urls = ['/', '/themes/logement/', '/candidats/paul-de-villefranche/'].map((c) => `https://${DOMAINE_TEST}${c}`);
+    const c = res(distPropre({ 'sitemap.xml': xmlSitemap(urls) }));
+    assert.deepEqual(
+      c.map((x) => [x.code, x.fichier]),
+      [[code, 'sitemap.xml']],
+    );
+  });
+
+  it('preview, option absente ou id retenu : aucun constat', () => {
+    const plante = { 'candidats/paul-de-villefranche/index.html': page({ noindex: true }) };
+    assert.ok(!res(distPropre(plante, { preview: true }), 'preview').some((x) => x.code === code));
+    assert.ok(!res(distPropre({ 'candidats/paul-de-villefranche/index.html': pageCandidat }), 'production', {}).some((x) => x.code === code));
+    const retenu = distPropre({
+      'candidats/marie-fictive/index.html': pageCandidat,
+      'themes/logement/index.html': theme('logement', 2, { corps: '<a href="/candidats/marie-fictive/">Marie</a>' }),
+    });
+    assert.deepEqual(res(retenu), []);
+  });
+
+  it('candidatsNonRelus : ids sans statut relu ou publié (statutRetenu en production), lus avec loadAll', () => {
+    assert.deepEqual([...candidatsNonRelus(CORPUS, REPO_ROOT)], []);
+    const racine = materialiserCorpusM1(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'rtp-checkdist-m1-')), 'corpus-m1'));
+    tmpDirs.push(path.dirname(racine));
+    assert.deepEqual([...candidatsNonRelus(racine, REPO_ROOT)].sort(), ['nina-pressentie', 'paul-de-villefranche']);
+  });
+});
+
 describe('checkDist : brouillons et indexation', () => {
   it('BROUILLON_EN_PRODUCTION : mesure sans statut publié, sans attribut, badge ou bandeau de preview', () => {
     exactement('BROUILLON_EN_PRODUCTION', { 'themes/logement/index.html': theme('logement', 2, { mesure: () => mesure({ statut: 'brouillon' }) }) });
@@ -1020,6 +1075,16 @@ describe('CLI scripts/check-dist.ts', () => {
     const r = spawnSync(process.execPath, [CLI, ...args], { cwd: REPO_ROOT, env: { ...propre, ...env }, encoding: 'utf8' });
     return { status: r.status, out: r.stdout ?? '', err: r.stderr ?? '' };
   };
+
+  it('CANDIDAT_NON_RELU_EN_PRODUCTION : le CLI lit les personnes sans statut relu dans la racine de contenu', () => {
+    const racine = materialiserCorpusM1(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'rtp-checkdist-cli-m1-')), 'corpus-m1'));
+    tmpDirs.push(path.dirname(racine));
+    const propre = lancer(['--dist', ecrireDist(distCli()), '--root', racine, '--mode', 'production']);
+    assert.doesNotMatch(propre.out, /CANDIDAT_NON_RELU_EN_PRODUCTION/);
+    const plante = lancer(['--dist', ecrireDist(distCli({ 'candidats/nina-pressentie/index.html': page() })), '--root', racine, '--mode', 'production']);
+    assert.equal(plante.status, 1, plante.out + plante.err);
+    assert.match(plante.out, /^CANDIDAT_NON_RELU_EN_PRODUCTION candidats\/nina-pressentie\/index\.html : .*nina-pressentie/m);
+  });
 
   it('dist propre : code 0 et une ligne de résumé (plus l’avertissement DOMAINE_PROVISOIRE tant que le domaine est provisoire)', () => {
     const dist = ecrireDist(distCli());
