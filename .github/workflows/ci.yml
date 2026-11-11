@@ -170,12 +170,14 @@ jobs:
         run: npm audit signatures
       - name: Installer Chromium et ses dépendances système
         # Les miroirs apt du runner tombent parfois (résolution DNS) : trois essais espacés avant d'échouer,
-        # pour qu'une panne passagère ne bloque pas un déploiement ou un retrait d'urgence.
+        # pour qu'une panne passagère ne bloque pas un déploiement ou un retrait d'urgence. Chaque essai est
+        # borné à 4 minutes (apt met environ 7 minutes à renoncer seul) : au pire l'étape échoue en 14 minutes,
+        # avec son message, bien avant le timeout-minutes du job.
         run: |
           for essai in 1 2 3; do
-            if npx playwright install --with-deps chromium; then exit 0; fi
+            if timeout 240 npx playwright install --with-deps chromium; then exit 0; fi
             echo "::warning::Installation de Chromium : essai $essai en échec"
-            sleep $((essai * 45))
+            if [ "$essai" -lt 3 ]; then sleep $((essai * 30)); fi
           done
           echo "::error::Installation de Chromium impossible après 3 essais (miroirs apt du runner ?)"
           exit 1
