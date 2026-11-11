@@ -4,13 +4,13 @@ milestone: v1.1
 milestone_name: "Lot 3 : hébergement et mise en ligne"
 status: executing
 stopped_at: Completed 09-07-PLAN.md
-last_updated: "2026-11-11T00:10:22.488Z"
-last_activity: "2026-11-11 (09-07 : étape site-public, restauration conditionnelle, favicon.ico)"
+last_updated: "2026-11-11T00:25:19.076Z"
+last_activity: "2026-11-11 (09-07 : étape site-public de l'installateur, test de restauration selon les blocs, favicon.ico ; à appliquer sur le serveur : étapes sauvegarde,depot avant le 1er décembre)"
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 38
-  completed_plans: 32
+  completed_plans: 33
   percent: 40
 ---
 
@@ -100,7 +100,7 @@ Items acknowledged and deferred at v1.0 close on 2026-11-04 (Erwan: « Fix, then
 
 ## Session Continuity
 
-Last session: 2026-11-11T00:10:22.478Z
+Last session: 2026-11-11T00:25:19.066Z
 Stopped at: Completed 09-07-PLAN.md
 Resume file: None
 

@@ -43,7 +43,7 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 
 - [ ] **PUB-01**: Erwan relit les mesures d'un thème avec une commande qui liste ce qui reste à relire et passe une mesure en `relu` en enregistrant relecteur et date
 - [ ] **PUB-02**: Un thème entièrement relu pour tous les candidats de son périmètre est publié en production ; aucun brouillon n'y apparaît (garde d'équité et liste blanche de publication)
-- [ ] **PUB-03**: Chaque mesure publiée affiche son relecteur et sa date de relecture
+- [x] **PUB-03**: Chaque mesure publiée affiche son relecteur et sa date de relecture
 - [ ] **PUB-04**: Les sources citées par les mesures publiées ont toutes une copie Wayback, ou une exception motivée (données personnelles) acceptée par la règle
 
 ### Ouverture (juridique)
@@ -126,7 +126,7 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 | LEG-03 | Phase 9 | Pending |
 | PUB-01 | Phase 9 | Pending |
 | PUB-02 | Phase 9 | Pending |
-| PUB-03 | Phase 9 | Pending |
+| PUB-03 | Phase 9 | Complete |
 | PUB-04 | Phase 9 | Pending |
 | IMP-01 | Phase 10 | Pending |
 | IMP-02 | Phase 10 | Pending |

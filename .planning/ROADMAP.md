@@ -152,7 +152,7 @@ Plans:
 - [ ] 09-11-PLAN.md — Publication de santé sur l'hôte d'essai, hébergeur actif, exercice chronométré de retrait d'urgence (vague 6)
 - [ ] 09-12-PLAN.md — Ouverture : cible production, bloc Caddy public et certificats, supervision réorientée, hôte d'essai retiré (vague 7)
 - [ ] 09-13-PLAN.md — Journal d'audit refait sur la build en ligne (DETTE-04), 4G remesurée avec la page santé, confirmation d'Erwan (vague 8)
-- [ ] 09-14-PLAN.md — Relecteur et date affichés sur chaque mesure publiée (PUB-03), code check-dist RELECTURE_ABSENTE (vague 3)
+- [x] 09-14-PLAN.md — Relecteur et date affichés sur chaque mesure publiée (PUB-03), code check-dist RELECTURE_ABSENTE (vague 3)
 - [ ] 09-15-PLAN.md — Personnes sans statut relu absentes de la production (D-06, décision 2a), comptes honnêtes, code check-dist CANDIDAT_NON_RELU_EN_PRODUCTION (vague 4)
 
 ### Phase 10: Import de décembre
@@ -180,5 +180,5 @@ Plans:
 | 6. Diagnostic du VPS et décision | v1.1 | 1/0 | Complete    | 2026-11-08 |
 | 7. Domaine paramétré, inlining et dette | v1.1 | 8/8 | Complete    | 2026-11-07 |
 | 8. Serveur, pipeline, supervision et sauvegardes | v1.1 | 15/15 | Complete    | 2026-11-10 |
-| 9. Contenu relu, juridique et ouverture | v1.1 | 8/15 | In Progress|  |
+| 9. Contenu relu, juridique et ouverture | v1.1 | 9/15 | In Progress|  |
 | 10. Import de décembre | v1.1 | 0/0 | Not started | - |
