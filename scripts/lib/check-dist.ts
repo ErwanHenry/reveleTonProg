@@ -59,6 +59,7 @@ export const CODES_CHECK_DIST = [
   'PUBLICATION_VIDE',
   'BROUILLON_EN_PRODUCTION',
   'RELECTURE_ABSENTE',
+  'CANDIDAT_NON_RELU_EN_PRODUCTION',
   'PREVIEW_INDEXABLE',
   'LIEN_INTERNE_CASSE',
   'LANG_ABSENTE',
@@ -106,6 +107,13 @@ export interface OptionsCheckDist {
    * (avertissements : un thème listé sans page, un dist sans aucun thème). Sans elle, ces trois codes sont inactifs.
    */
   themesOuverts?: readonly string[];
+  /**
+   * Identifiants des personnes sans statut relu ou publié (`candidatsNonRelus` de la racine de contenu, D-06, plan 09-15).
+   * Donnée, elle active en production CANDIDAT_NON_RELU_EN_PRODUCTION (erreur) : une page `candidats/<id>/index.html`,
+   * un lien vers `/candidats/<id>/` ou une entrée de sitemap.xml pour l'une d'elles. Le CLI la remplit toujours ;
+   * sans elle, ou en preview, le code est inactif.
+   */
+  candidatsNonRelus?: readonly string[];
   /**
    * Vrai pour un contrôle avant déploiement (RTP_DEPLOIEMENT=1) : un contact provisoire (CONTACT_PROVISOIRE, TLD réservé) et
    * une page qui annonce un hébergeur seulement prévu (HEBERGEUR_PREVU) deviennent des erreurs, sinon des avertissements.
@@ -286,6 +294,26 @@ export function cellulesAttendues(contentRoot: string, projectRoot: string, mode
     out.set(e.id, perimetre);
   }
   return out;
+}
+
+/**
+ * Personnes sans statut relu ou publié (D-06, plan 09-15) : absentes de la production. Même définition que le view-model
+ * et le validateur (ADR-041) : `statutRetenu(statuts, 'production')` indéfini. Calculé depuis le contenu brut.
+ */
+export function candidatsNonRelus(contentRoot: string, projectRoot: string): Set<string> {
+  const { entries } = loadAll(contentRoot, { schemasDir: schemasDirOf(projectRoot), mode: 'production' });
+  return new Set(entries.filter((e) => e.collection === 'candidats' && statutRetenu(e.data.statuts, 'production') === undefined).map((e) => e.id));
+}
+
+/** Identifiant de candidat visé par un chemin public `/candidats/<id>/` (avec ou sans index.html), sinon `undefined`. */
+function idCandidatDuChemin(chemin: string): string | undefined {
+  const m = /^\/candidats\/([^/]+)\/(?:index\.html)?$/.exec(chemin);
+  if (m === null || m[1] === undefined) return undefined;
+  try {
+    return decodeURIComponent(m[1]);
+  } catch {
+    return m[1];
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -738,6 +766,45 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
       if (!themesVus.has(id)) signaler('THEME_OUVERT_ABSENT', `themes/${id}/index.html`, `le thème « ${id} » est listé dans themes_ouverts mais n'a pas de page dans le dist`, 'avertissement');
     }
     if (themesVus.size === 0) signaler('PUBLICATION_VIDE', 'index.html', 'le dist ne contient aucune page de thème : aucun thème n\'est ouvert au public', 'avertissement');
+  }
+
+  // Personnes sans statut relu (D-06, plan 09-15) : ni page, ni lien, ni entrée de sitemap en production.
+  const nonRelus = opts.mode === 'production' && opts.candidatsNonRelus !== undefined ? new Set(opts.candidatsNonRelus) : new Set<string>();
+  if (nonRelus.size > 0) {
+    const raison = 'aucun statut relu ou publié (D-06) : la personne ne doit pas être publique';
+    for (const rel of fichiers) {
+      const id = idCandidatDuChemin(`/${rel}`);
+      if (id !== undefined && nonRelus.has(id)) signaler('CANDIDAT_NON_RELU_EN_PRODUCTION', rel, `page de « ${id} » dans le dist : ${raison}`);
+    }
+    for (const p of pages) {
+      for (const a of trouver(p.racine, (n) => n.tag === 'a' && n.attrs.href !== undefined)) {
+        const href = nettoyerUrl(a.attrs.href ?? '');
+        if (href === '' || href.startsWith('#')) continue; // la page elle-même : déjà signalée comme page
+        let chemin: string;
+        try {
+          // Lien relatif (résolu depuis la page) ou absolu vers le domaine du site, avec ou sans « www. ».
+          const u = new URL(href, `https://dist.invalid/${p.rel}`);
+          const interne = u.host === 'dist.invalid' || (opts.domaine !== undefined && (u.host === opts.domaine || u.host === `www.${opts.domaine}`));
+          if (!interne) continue;
+          chemin = u.pathname;
+        } catch {
+          continue;
+        }
+        const id = idCandidatDuChemin(chemin);
+        if (id !== undefined && nonRelus.has(id)) signaler('CANDIDAT_NON_RELU_EN_PRODUCTION', p.rel, `lien vers /candidats/${id}/ : ${raison}`);
+      }
+    }
+    const plan = fs.existsSync(path.join(racineDist, 'sitemap.xml')) ? fs.readFileSync(path.join(racineDist, 'sitemap.xml'), 'utf8') : undefined;
+    for (const loc of plan === undefined ? [] : locsSitemap(plan)) {
+      let chemin: string;
+      try {
+        chemin = new URL(loc, 'https://dist.invalid/').pathname;
+      } catch {
+        continue;
+      }
+      const id = idCandidatDuChemin(chemin);
+      if (id !== undefined && nonRelus.has(id)) signaler('CANDIDAT_NON_RELU_EN_PRODUCTION', 'sitemap.xml', `entrée <loc> pour /candidats/${id}/ : ${raison}`);
+    }
   }
 
   // robots.txt et sitemap.xml

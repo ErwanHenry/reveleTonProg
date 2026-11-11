@@ -8,7 +8,7 @@ import { ModeInvalideError, resolveContentRoot, resolveMode } from '../src/lib/c
 import { DeploiementInvalideError, estDeploiement } from '../src/lib/deploiement.ts';
 import { loadPublicationConfig } from '../src/lib/publication-config.ts';
 import { loadSiteConfig } from '../src/lib/site-config.ts';
-import { TYPES_AUTORISES, cellulesAttendues, checkDist } from './lib/check-dist.ts';
+import { TYPES_AUTORISES, candidatsNonRelus, cellulesAttendues, checkDist } from './lib/check-dist.ts';
 
 const USAGE = `Usage : node scripts/check-dist.ts [--dist <dossier>] [--root <dossier>] [--mode preview|production] [--format text|github]
 
@@ -18,6 +18,8 @@ const USAGE = `Usage : node scripts/check-dist.ts [--dist <dossier>] [--root <do
   --format text|github    text (défaut) ou annotations GitHub Actions en plus
   Liste blanche : config/publication.yml de la racine de contenu (themes_ouverts) ; en production, une page de thème
   hors liste est une erreur (THEME_HORS_LISTE_BLANCHE), un thème listé sans page ou un dist sans thème un avertissement.
+  Personnes sans statut relu ou publié (lues dans la racine de contenu, D-06) : en production, une page, un lien ou
+  une entrée de sitemap.xml pour l'une d'elles est une erreur (CANDIDAT_NON_RELU_EN_PRODUCTION).
   Le domaine du site est lu dans config/site.yml (racine du projet) : en production, URL canonique de chaque page,
   sitemap.xml et ligne Sitemap de robots.txt doivent le suivre ; en preview, aucun des trois n'est permis.
   RTP_DEPLOIEMENT=1 (job de déploiement) : un contact provisoire, un hébergeur seulement prévu et un domaine
@@ -70,6 +72,8 @@ try {
   process.exit(2);
 }
 const attendues = cellulesAttendues(contentRoot, projectRoot, mode, themesOuverts);
+// D-06 (plan 09-15) : toujours passé ; checkDist ne l'applique qu'en production.
+const nonRelus = [...candidatsNonRelus(contentRoot, projectRoot)];
 let deploiement = false;
 try {
   deploiement = estDeploiement(process.env);
@@ -91,7 +95,7 @@ try {
 // à la racine (D-11) : TYPES_AUTORISES de scripts/lib/check-dist.ts.
 const sha = process.env.GITHUB_SHA ?? '';
 const version = /^[0-9a-f]{40}$/.test(sha) ? { commitAttendu: sha } : {};
-const constats = checkDist(dist, { mode, cellulesParTheme: attendues, themesOuverts, deploiement, domaine, version, typesAutorises: TYPES_AUTORISES });
+const constats = checkDist(dist, { mode, cellulesParTheme: attendues, themesOuverts, candidatsNonRelus: nonRelus, deploiement, domaine, version, typesAutorises: TYPES_AUTORISES });
 
 for (const c of constats) console.log(`${c.code} ${safe(c.fichier)} : ${safe(c.message)}`);
 if (format === 'github') {

@@ -658,7 +658,7 @@ describe('checkDist : personnes sans statut relu (D-06, plan 09-15)', () => {
   });
 
   it('lien planté (absolu, avec fragment, ou relatif) : erreur sur la page qui lie', () => {
-    for (const href of ['/candidats/paul-de-villefranche/', '/candidats/paul-de-villefranche/#logement', '../candidats/paul-de-villefranche/']) {
+    for (const href of ['/candidats/paul-de-villefranche/', '/candidats/paul-de-villefranche/#logement', '../../candidats/paul-de-villefranche/index.html']) {
       const c = res(distPropre({ 'themes/logement/index.html': theme('logement', 2, { corps: `<a href="${href}">Paul</a>` }) }));
       const nonRelus = c.filter((x) => x.code === code);
       assert.equal(nonRelus.length, 1, `${href} : ${JSON.stringify(c)}`);

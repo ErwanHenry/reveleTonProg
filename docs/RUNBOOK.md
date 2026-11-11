@@ -222,6 +222,7 @@ En local : `RTP_MODE=preview npm run build -- --outDir dist-preview`, puis la m�
 | `PUBLICATION_VIDE` | aucune page de thème dans le dist de production (avertissement) | normal si tout est retiré ; sinon vérifier `themes_ouverts` et les statuts |
 | `BROUILLON_EN_PRODUCTION` | trace de brouillon dans un build de production | vérifier `RTP_MODE` et le statut de la mesure |
 | `RELECTURE_ABSENTE` | mesure publiée sans exactement une ligne « Relue par … le … » avec relecteur et date réelle (erreur en production) | renseigner `relecteur` et `date_relecture` dans le YAML de la mesure ; ne pas publier une mesure non relue |
+| `CANDIDAT_NON_RELU_EN_PRODUCTION` | une personne sans aucun statut relu ou publié serait publique en production : page `candidats/<id>/`, lien vers elle ou entrée de `sitemap.xml` (erreur, D-06) | faire relire son statut avec `npm run relecture -- marquer statut <candidat>`, ou trouver la page qui la lie encore (le message nomme l'identifiant et le fichier) ; ne jamais changer un statut pour faire passer le contrôle |
 | `PREVIEW_INDEXABLE` | build preview indexable : page sans `noindex`, `robots.txt` sans `Disallow: /`, `<link rel="canonical">` dans une page, `sitemap.xml` présent ou ligne `Sitemap:` dans `robots.txt` | vérifier le mode du build (`RTP_MODE=preview`) ; la preview n'a pas d'URL publique |
 | `LIEN_INTERNE_CASSE` | lien interne vers une page ou une ancre absente | corriger le lien |
 | `LANG_ABSENTE` | `<html>` sans `lang="fr"` | corriger la mise en page |

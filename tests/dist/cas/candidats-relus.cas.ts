@@ -167,6 +167,39 @@ export default function candidatsRelus(ctx: ContexteSite): void {
     });
   });
 
+  describe('corpus réel en production : le site dit combien de personnes attendent la relecture de leur statut', () => {
+    it('lignes de /candidats/ = personnes au statut relu ; phrases sans « autres » quand personne n\'est affiché', () => {
+      const b = ctx.construire('reel-production', { racine: ctx.repoRoot, mode: 'production' });
+      assert.equal(b.status, 0, `astro build (corpus réel, production) a échoué :\n${b.output}`);
+      const ecartes = candidatsNonRelus(ctx.repoRoot, ctx.repoRoot);
+      const total = loadAll(ctx.repoRoot, { schemasDir: SCHEMAS_DIR, mode: 'production' }).entries.filter((e) => e.collection === 'candidats').length;
+      const n = total - ecartes.size;
+      const k = ecartes.size;
+      const a = arbre(b.outDir, 'candidats/index.html');
+      assert.equal(trouver(a, (x) => x.tag === 'li' && x.attrs['data-rang'] !== undefined).length, n);
+      for (const id of ecartes) assert.equal(fs.existsSync(path.join(b.outDir, 'candidats', id)), false, `candidats/${id}/ construit`);
+      const p = trouver(a, (x) => x.tag === 'p' && x.attrs['data-non-relus'] !== undefined);
+      const m = trouver(arbre(b.outDir, 'methode/index.html'), (x) => x.tag === 'p' && x.attrs['data-personnalites-affichees'] !== undefined);
+      if (k === 0) {
+        assert.equal(p.length + m.length, 0);
+        return;
+      }
+      const pluriel = k > 1;
+      if (n === 0) {
+        assert.ok(txt(a).includes('Aucun candidat à afficher pour le moment.'));
+        assert.equal(
+          txt(p[0] as Noeud),
+          pluriel ? `${k} personnalités du jeu de données apparaîtront après relecture de leur statut.` : '1 personnalité du jeu de données apparaîtra après relecture de son statut.',
+        );
+        assert.match(txt(m[0] as Noeud), /^Ce site n'affiche encore aucune personnalité : /);
+      } else {
+        assert.match(txt(p[0] as Noeud), pluriel ? new RegExp(`^${k} autres personnalités `) : /^1 autre personnalité /);
+        assert.match(txt(m[0] as Noeud), new RegExp(`^Ce site affiche ${n} personnalité`));
+      }
+      assert.ok(txt(m[0] as Noeud).includes(pluriel ? `les ${k} ` : "l'"), txt(m[0] as Noeud));
+    });
+  });
+
   describe('preview : tout le monde reste visible', () => {
     it('pages de Paul et Nina avec leur pastille de brouillon, six lignes sur /candidats/, aucune phrase de production', () => {
       const { outDir } = preview();
