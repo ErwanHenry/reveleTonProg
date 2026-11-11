@@ -83,7 +83,11 @@ describe('serveur de relecture (corpus M1 temporaire, thème logement)', () => {
     assert.equal(r.headers['content-security-policy'], CSP_RELECTURE);
     assert.equal(r.headers['cache-control'], 'no-store');
     assert.equal(r.headers['x-content-type-options'], 'nosniff');
-    assert.equal(r.headers['referrer-policy'], 'no-referrer');
+    // « same-origin », jamais « no-referrer » : sous no-referrer, un navigateur envoie « Origin: null » sur le POST
+    // d'un formulaire de la page elle-même, et le contrôle d'origine refuse alors toute validation (403). Constaté
+    // dans un vrai navigateur le 2026-11-11 : les tests à en-têtes fabriqués ne le voyaient pas. Sous same-origin,
+    // l'origine complète part vers ce serveur et rien ne part vers les sites des sources.
+    assert.equal(r.headers['referrer-policy'], 'same-origin');
     assert.match(String(r.headers['content-type']), /^text\/html; charset=utf-8$/);
     assert.match(r.corps, /reste 7 sur 11/);
     assert.match(r.corps, /href="\/candidat\/elise-erard"/);
