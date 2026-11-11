@@ -50,7 +50,7 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 
 - [ ] **LEG-01**: Les Mentions légales finales portent le régime d'éditeur validé, l'hébergeur `actif`, l'adresse de contact réelle testée de bout en bout, la politique de journal et la base légale exacte du droit de réponse (vérifiée sur Légifrance)
 - [x] **LEG-02**: Une relecture juridique a eu lieu avant l'ouverture, ou Erwan a consigné par écrit le risque accepté
-- [ ] **LEG-03**: Le RUNBOOK décrit le retrait d'urgence d'une mesure en moins d'une heure et le calendrier de gel des scrutins de 2027
+- [x] **LEG-03**: Le RUNBOOK décrit le retrait d'urgence d'une mesure en moins d'une heure et le calendrier de gel des scrutins de 2027
 
 ### Supervision et sauvegardes
 
@@ -123,7 +123,7 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 | DETTE-04 | Phase 9 | Pending |
 | LEG-01 | Phase 9 | Pending |
 | LEG-02 | Phase 9 | Complete |
-| LEG-03 | Phase 9 | Pending |
+| LEG-03 | Phase 9 | Complete |
 | PUB-01 | Phase 9 | Pending |
 | PUB-02 | Phase 9 | Pending |
 | PUB-03 | Phase 9 | Complete |

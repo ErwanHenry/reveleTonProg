@@ -2,8 +2,13 @@
 phase: 08-serveur-pipeline-supervision-et-sauvegardes
 verified: 2026-11-10T19:30:00Z
 status: human_needed
-score: 6/6 roadmap success criteria verified; 13/14 requirements satisfied, OPS-01 partial (D1, human action pending)
-overrides_applied: 0
+score: 6/6 roadmap success criteria verified; 13/14 requirements satisfied, OPS-01 accepted by override on 2026-11-11 (D1) ; 48 h without false alert still to be confirmed by Erwan
+overrides_applied: 1
+overrides:
+  - must_have: "OPS-01 : une sonde externe alerte sur Telegram après 3 échecs consécutifs"
+    reason: "La planification GitHub ne tient pas */10 ; sonde-externe élargie à 1 jour / 1 jour pour couper les fausses alertes. L'alerte rapide de contenu passe par le battement du VPS (HTTPS, 5 min, grâce 10 min), prouvée le 2026-11-10 ; la sonde externe reste un filet quotidien hors VPS."
+    accepted_by: "ErwanHenry"
+    accepted_at: "2026-11-11"
 gaps: []
 deferred:
   - truth: "Le site public (nom nu et www) est servi en HTTPS et un déploiement de la cible production, construit sous RTP_DEPLOIEMENT=1, a réussi de bout en bout"
@@ -19,9 +24,6 @@ human_verification:
   - test: "D1, sonde externe : dans Healthchecks.io, passer le contrôle sonde-externe de 10 min / 20 min à 1 jour de période et 1 jour de grâce (action en cours d'Erwan le 2026-11-10), puis confirmer qu'aucune fausse alerte n'arrive sur Telegram pendant 48 h"
     expected: "Capture Healthchecks montrant sonde-externe à 1 jour / 1 jour et UP ; plus de DOWN parasite comme ceux de 10:11 et 12:44 le 2026-11-10"
     why_human: "Configuration Healthchecks et réception Telegram hors de portée du dépôt et du VPS ; la capture d'Erwan du 2026-11-10 montre encore 10 min / 20 min et DOWN"
-  - test: "Décider le sort d'OPS-01 : accepter par écrit que la sonde externe GitHub ne garantisse plus « alerte après 3 échecs » (le battement du VPS, contrôle de contenu HTTPS toutes les 5 min, porte l'alerte rapide), ou ajouter un déclencheur externe (service de cron qui appelle workflow_dispatch avec un jeton limité à Actions)"
-    expected: "Soit un override signé dans ce fichier (must_have OPS-01, accepted_by ErwanHenry, accepted_at), soit un plan de correction en Phase 9"
-    why_human: "Arbitrage produit entre fiabilité de l'alerte externe et coût d'un service tiers ; seule la décision d'Erwan clôt OPS-01"
 ---
 
 # Phase 8: Serveur, pipeline, supervision et sauvegardes Verification Report
@@ -156,15 +158,7 @@ Aucune exigence orpheline : les 14 identifiants mappés à la Phase 8 dans REQUI
 **Expected:** Override signé dans ce fichier, ou correction planifiée en Phase 9.
 **Why human:** Arbitrage d'Erwan.
 
-Override proposé si Erwan accepte :
-
-```yaml
-overrides:
-  - must_have: "OPS-01 : une sonde externe alerte sur Telegram après 3 échecs consécutifs"
-    reason: "La planification GitHub ne tient pas */10 ; sonde-externe élargie à 1 jour / 1 jour pour couper les fausses alertes. L'alerte rapide de contenu passe par le battement du VPS (HTTPS, 5 min, grâce 10 min), prouvée le 2026-11-10 ; la sonde externe reste un filet quotidien hors VPS."
-    accepted_by: "ErwanHenry"
-    accepted_at: "<date de la décision>"
-```
+**Décision (2026-11-11) :** Erwan accepte l'override (réponse « Go » au point de validation du plan 09-09, qui présentait les trois écritures serveur W1 à W3 et cet override). Il est inscrit dans l'en-tête de ce fichier (bloc `overrides`, à son nom, daté du 2026-11-11). Reste ouvert : la confirmation par Erwan de 48 h sans fausse alerte (point 1 ci-dessus), non donnée dans sa réponse.
 
 ### Gaps Summary
 

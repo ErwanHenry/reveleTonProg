@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: "Lot 3 : hébergement et mise en ligne"
 status: executing
-stopped_at: Completed 09-15-PLAN.md
+stopped_at: Completed 09-09-PLAN.md ; waiting for Erwan (09-10, review of the santé theme)
 last_updated: "2026-11-11T00:53:59.447Z"
 last_activity: "2026-11-11 (09-15 : filtre de production des personnes sans statut relu, comptes honnêtes sur /candidats/ et la Méthode, code check-dist CANDIDAT_NON_RELU_EN_PRODUCTION ; production réelle : aucune personne affichée tant que 09-10 n'a relu aucun statut)"
 progress:
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-11-04)
 ## Current Position
 
 Phase: 9 of 10 (contenu relu, juridique et ouverture)
-Plan: 09-01 à 09-08, 09-14 et 09-15 done (dernier : 09-15, personnes sans statut relu absentes de la production) ; reste 09-09 à 09-13
+Plan: 09-01 à 09-09, 09-14 et 09-15 done (dernier : 09-09, RUNBOOK, ADR-059 à 062, serveur prêt, override OPS-01 accepté) ; reste 09-10 (relecture santé par Erwan, chemin critique), puis 09-11 à 09-13
 Status: Executing phase 9
 Last activity: 2026-11-11 (09-15 : filtre de production des personnes sans statut relu, comptes honnêtes sur /candidats/ et la Méthode, code check-dist CANDIDAT_NON_RELU_EN_PRODUCTION ; production réelle : aucune personne affichée tant que 09-10 n'a relu aucun statut)
 

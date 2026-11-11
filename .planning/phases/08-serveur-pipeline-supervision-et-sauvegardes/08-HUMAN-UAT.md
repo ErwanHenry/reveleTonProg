@@ -3,7 +3,7 @@ status: partial
 phase: 08-serveur-pipeline-supervision-et-sauvegardes
 source: [08-VERIFICATION.md]
 started: 2026-11-10
-updated: 2026-11-10
+updated: 2026-11-11
 ---
 
 ## Current Test
@@ -14,7 +14,7 @@ Réglage de `sonde-externe` dans Healthchecks.
 
 ### 1. Sonde externe sans fausse alerte (OPS-01, D1)
 expected: Erwan règle `sonde-externe` à 1 jour de période et 1 jour de grâce dans Healthchecks, puis aucune fausse alerte DOWN sur Telegram pendant 48 h ; ou il retient un déclencheur externe (service de cron qui appelle `workflow_dispatch` avec un jeton limité à Actions) à faire en Phase 9
-result: pending (capture du 2026-11-10 : encore 10 min / 20 min)
+result: pending (réglage à 1 jour / 1 jour fait par Erwan le 2026-11-10 ; override OPS-01 accepté par Erwan le 2026-11-11, inscrit dans 08-VERIFICATION.md ; confirmation de 48 h sans fausse alerte Telegram encore attendue)
 
 ### 2. Approbation des déploiements par Erwan lui-même
 expected: avant l'ouverture, Erwan approuve au moins un déploiement depuis l'interface GitHub (en 08-15, l'orchestrateur a approuvé avec le jeton d'Erwan, à sa demande)
@@ -22,7 +22,7 @@ result: passed (run 42904829430 approuvé par Erwan dans l'interface GitHub le 2
 
 ### 3. Test de restauration après les correctifs de revue
 expected: `rtp-tester-restauration` relancé après la réapplication du 2026-11-10 ; fait à 19:23 UTC (résultat ok, 0 fichier modifié) ; le cron mensuel le rejoue le 2026-12-01
-result: passed
+result: passed (rejoué le 2026-11-11 après la mise à jour du script par le plan 09-09 : résultat ok, 19 fichiers, 0 modifié, installateur conforme, Caddy valide, ping ok)
 
 ## Gaps
 
