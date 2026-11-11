@@ -247,7 +247,7 @@ En local : `RTP_MODE=preview npm run build -- --outDir dist-preview`, puis la m�
 | `TYPE_FICHIER_INATTENDU` | fichier du dist autre que `.html`, `.txt`, `.xml`, `.json` et le seul `favicon.ico` à la racine (4 096 octets au plus, régénéré par `node scripts/favicon.ts` ; toute autre icône ou une icône plus lourde est refusée) (CSS, JS, police, image séparés) : il demanderait une règle de cache long dans le bloc Caddy (HEB-08), que le bloc n'a plus depuis l'intégration de la Phase 7 | intégrer la ressource dans la page, ou ajouter d'abord la règle de cache au rendu Caddy (`scripts/render-caddy.ts`) puis l'extension à `check-dist` |
 | `FICHIER_NON_REGULIER` | entrée du dist qui n'est ni un fichier ordinaire ni un dossier (lien symbolique, même cassé ou vers un dossier, tube, socket, périphérique) ; erreur dans tous les modes. Caddy suivrait un lien dans son propre conteneur, et la commande forcée du serveur refuse un tel envoi (code 65) | retirer le lien et copier le fichier lui-même dans le dist (revue de code WR-06) |
 
-**Garde de déploiement (contact et domaine).** Tant que le domaine n'est pas acheté, `config/site.yml` garde `contact@domaine-a-definir.invalid` et la CI passe avec un avertissement. Le job de déploiement du lot 3 doit définir `RTP_DEPLOIEMENT=1` : le build (`astro build`) échoue alors si le contact finit par un TLD réservé (`.invalid`, `.test`, `.example`, `.localhost` : `estHoteProvisoire` de `src/lib/site-config.ts`, partagé avec `check-dist`), et `check-dist` signale `CONTACT_PROVISOIRE` en erreur. Même logique pour l'hébergeur : tant que `config/hebergeur.yml` dit `statut: prevu`, le build échoue sous `RTP_DEPLOIEMENT=1`, et `check-dist` signale `HEBERGEUR_PREVU` en erreur sur un dist construit plus tôt (artefact `site-preview`, `dist-reel`) qui contient encore les phrases d'avant la mise en ligne. Même logique pour le domaine : tant que `domaine` finit par l'un de ces TLD réservés, le build échoue sous `RTP_DEPLOIEMENT=1` et `check-dist` signale `DOMAINE_PROVISOIRE` en erreur. Quand le domaine et le contact sont tous deux provisoires, le build s'arrête sur une seule erreur qui nomme les deux : « config/site.yml : domaine provisoire (TLD réservé : .invalid, .test, .example, .localhost) refusé quand RTP_DEPLOIEMENT=1 : renseigner le vrai domaine avant de déployer ; contact provisoire (TLD réservé : .invalid, .test, .example, .localhost) refusé quand RTP_DEPLOIEMENT=1 : renseigner une vraie adresse avant de déployer ». Sans la variable, le build passe avec un seul avertissement « config/site.yml : valeurs provisoires (TLD réservé), à remplacer avant le déploiement : … ». `node scripts/render-caddy.ts` refuse aussi de rendre le bloc (code 2) sous `RTP_DEPLOIEMENT=1` quand le **domaine** est provisoire ; un contact provisoire seul ne l'empêche pas, car le contact n'est pas dans le bloc (le build et `check-dist` le refusent). `RTP_DEPLOIEMENT` n'accepte que `1` (déploiement), `0` ou une valeur vide : `true`, `yes` ou toute autre valeur font échouer le build et `check-dist` (code 2) au lieu de désactiver les gardes en silence (`src/lib/deploiement.ts`).
+**Garde de déploiement (contact et domaine).** Le domaine et le contact de `config/site.yml` sont réels (le contact est celui du domaine depuis 09-04) : la garde ne les arrête plus, mais elle reste active pour tout retour à une valeur provisoire (`.invalid` et les autres TLD réservés), qui ferait passer la CI avec un avertissement. Le job de déploiement définit `RTP_DEPLOIEMENT=1` pour la cible `production` : le build (`astro build`) échoue alors si le contact finit par un TLD réservé (`.invalid`, `.test`, `.example`, `.localhost` : `estHoteProvisoire` de `src/lib/site-config.ts`, partagé avec `check-dist`), et `check-dist` signale `CONTACT_PROVISOIRE` en erreur. Même logique pour l'hébergeur : tant que `config/hebergeur.yml` dit `statut: prevu`, le build échoue sous `RTP_DEPLOIEMENT=1`, et `check-dist` signale `HEBERGEUR_PREVU` en erreur sur un dist construit plus tôt (artefact `site-preview`, `dist-reel`) qui contient encore les phrases d'avant la mise en ligne. Même logique pour le domaine : tant que `domaine` finit par l'un de ces TLD réservés, le build échoue sous `RTP_DEPLOIEMENT=1` et `check-dist` signale `DOMAINE_PROVISOIRE` en erreur. Quand le domaine et le contact sont tous deux provisoires, le build s'arrête sur une seule erreur qui nomme les deux : « config/site.yml : domaine provisoire (TLD réservé : .invalid, .test, .example, .localhost) refusé quand RTP_DEPLOIEMENT=1 : renseigner le vrai domaine avant de déployer ; contact provisoire (TLD réservé : .invalid, .test, .example, .localhost) refusé quand RTP_DEPLOIEMENT=1 : renseigner une vraie adresse avant de déployer ». Sans la variable, le build passe avec un seul avertissement « config/site.yml : valeurs provisoires (TLD réservé), à remplacer avant le déploiement : … ». `node scripts/render-caddy.ts` refuse aussi de rendre le bloc (code 2) sous `RTP_DEPLOIEMENT=1` quand le **domaine** est provisoire ; un contact provisoire seul ne l'empêche pas, car le contact n'est pas dans le bloc (le build et `check-dist` le refusent). `RTP_DEPLOIEMENT` n'accepte que `1` (déploiement), `0` ou une valeur vide : `true`, `yes` ou toute autre valeur font échouer le build et `check-dist` (code 2) au lieu de désactiver les gardes en silence (`src/lib/deploiement.ts`).
 
 ### Changer de domaine
 
@@ -281,11 +281,67 @@ Règle de classement : positions décroissantes, puis cases « fort », puis ord
 
 ### Ouvrir la relecture
 
-`pilote.relecture_ouverte` (dans `data/couverture-themes.yaml`) vaut `false` pendant la phase 3 : toutes les mesures, les fichiers thème, les fichiers de couverture et les statuts des fiches du corpus pilote doivent rester en `brouillon`, sans relecteur, et `tests/corpus` le fait respecter (code `PILOTE_NON_BROUILLON`). Erwan passe la valeur à `true` dans le commit où il commence à marquer des fichiers `relu` ou `publie` ; ensuite seuls les schémas et les règles de la phase 2 encadrent les états de relecture. Ne jamais la remettre à `false` une fois qu'un fichier est `relu`.
+`pilote.relecture_ouverte` (dans `data/couverture-themes.yaml`) vaut `true` depuis le premier commit de la phase 9 (plan 09-01). Pendant la phase 3 elle valait `false` : tout le corpus pilote devait rester en `brouillon`, sans relecteur, et `tests/corpus` le faisait respecter (code `PILOTE_NON_BROUILLON`). Depuis qu'elle est à `true`, seuls les schémas et les règles de la phase 2 encadrent les états de relecture. **Ne jamais la remettre à `false`** : un fichier `relu` ou `publie` ferait échouer `PILOTE_NON_BROUILLON`. `scripts/couverture-scan.ts` ne réécrit pas ce fichier : le scan ne peut pas la remettre à `false`. La relecture elle-même se fait avec l'outil décrit dans « Relire un thème ».
 
 ### Relire les dates de couverture
 
-Chaque case « Non précisé » affiche « Non précisé dans les sources consultées le <`verifie_le`> », puis la date de consultation de chaque source listée. Si une source a été consultée **après** `verifie_le`, le lecteur lit une vérification faite avant la lecture de la source : `npm run validate` le signale par l'avertissement `COUVERTURE_VERIFIEE_AVANT_SOURCE` (il ne bloque pas la CI et figure dans le catalogue de la page Méthode). Correction éditoriale, jamais par script ni par recherche-remplacement : relire la case dans les sources listées, puis mettre `verifie_le` à la date de cette relecture ; ou, si c'est la date de consultation qui est fausse, la corriger d'après la capture archivée (`archive.capture_le`). Les cas ouverts au 2026-11-07 sont listés dans `.planning/phases/07-domaine-param-tr-inlining-et-dette/07-REVIEW-FIX.md` (WR-05).
+Chaque case « Non précisé » affiche « Non précisé dans les sources consultées le <`verifie_le`> », puis la date de consultation de chaque source listée. Si une source a été consultée **après** `verifie_le`, le lecteur lit une vérification faite avant la lecture de la source : `npm run validate` le signale par l'avertissement `COUVERTURE_VERIFIEE_AVANT_SOURCE` (il ne bloque pas la CI et figure dans le catalogue de la page Méthode). Correction éditoriale, jamais par script ni par recherche-remplacement : relire la case dans les sources listées, puis mettre `verifie_le` à la date de cette relecture ; ou, si c'est la date de consultation qui est fausse, la corriger d'après la capture archivée (`archive.capture_le`). Les cas ouverts au 2026-11-07 sont listés dans `.planning/phases/07-domaine-param-tr-inlining-et-dette/07-REVIEW-FIX.md` (WR-05) ; les trois du thème santé se traitent pendant la relecture (« Relire un thème »), les cinq du thème `travail` restent ouverts.
+
+### Relire un thème
+
+La relecture est la seule voie qui fait passer une mesure de `brouillon` à `relu` : l'outil local `npm run relecture` (ADR-059). Il écrit seulement `statut_relecture`, `relecteur` et `date_relecture` (mesure ou statut de candidat) ou `verifie_le` et `verifie_par` (case de couverture), en insérant ces lignes sans réécrire le fichier, puis il vérifie que rien d'autre n'a changé. Il n'est jamais déployé et le site ne le lit pas. **Aucun agent ne corrige le texte d'une mesure de lui-même** : une correction est une modification manuelle du YAML, faite par Erwan ou validée par lui, et la cible doit ensuite être relue de nouveau (état « à revoir », ci-dessous).
+
+Cadre de travail : un worktree et une branche à part, pour que la relecture n'encombre pas `main`. Pousser la branche au moins une fois par séance (règle d'or : rien d'utile ne reste seulement sur le Mac plus de 24 h) et fusionner par pull request.
+
+```bash
+git worktree add -b relecture/sante ../reveleTonProg-relecture main
+cd ../reveleTonProg-relecture && fnm exec --using=24 npm ci
+```
+
+Commandes, toutes sous `fnm exec --using=24` depuis ce dossier (`--root <dossier>` avant le nom de la commande pour travailler sur une copie du corpus) :
+
+| Commande | Effet |
+|---|---|
+| `npm run relecture -- liste --theme sante` | ce qui reste à relire, candidat par candidat, et la ligne `reste N sur M` ; `--format json` pour une sortie lisible par un script, `--relecteur <nom>` pour compter les cases relues par un autre relecteur |
+| `npm run relecture -- servir` | page de relecture sur `http://127.0.0.1:4327/` (thème santé par défaut ; `--theme <id>`, `--port <n>`), arrêt par Ctrl+C |
+| `npm run relecture -- marquer mesure <candidat>/<slug>` | passe la mesure à `relu` avec le relecteur et la date du jour (Paris) |
+| `npm run relecture -- marquer statut <candidat>` | idem pour le statut de candidature retenu |
+| `npm run relecture -- marquer case <theme> <candidat>` | pose `verifie_le` et `verifie_par` sur la case de couverture |
+| `npm run relecture -- note mesure:<candidat>/<slug> "texte"` | ouvre une note de correction (cibles `statut:<candidat>` et `case:<theme>/<candidat>` aussi) ; 500 caractères au plus |
+| `npm run relecture -- note --resoudre mesure:<candidat>/<slug>` | ferme la note quand la correction est faite |
+
+Options de `marquer` : `--relecteur <nom>` (défaut `Erwan Henry`), `--date AAAA-MM-JJ` (défaut : aujourd'hui, heure de Paris), `--malgre-note`, `--hors-perimetre`. `marquer` refuse, sans rien écrire, dans ces cas : cible inconnue, fichier invalide, note ouverte sur la cible (sauf `--malgre-note`), statut hors du périmètre d'équité (sauf `--hors-perimetre`, voir « Publier un thème »), date de statut incomplète, mesure ou statut déjà `publie`. Si la validation de production trouve une erreur nouvelle après l'écriture, il remet les octets d'origine.
+
+La page `servir` écoute sur la boucle locale seulement, exige un jeton propre à chaque lancement pour toute écriture et refuse un autre hôte ou une autre origine. Pour chaque candidat, elle montre les quatre rédactions à côté du `texte_source` et de l'extrait archivé autour de la citation, la source avec ses dates et son empreinte, les alertes de la CI, le statut de candidature et la case de couverture avec ses dates ; les formulaires « Valider » et « Note » appellent le même code que le terminal. Elle relit le corpus à chaque requête : une correction faite à la main dans le YAML apparaît au rechargement.
+
+Le registre `relecture/journal.jsonl` garde, à chaque écriture de l'outil, l'empreinte sha256 du texte relu ; `relecture/notes.jsonl` garde les notes. Les deux fichiers sont en ajout seul et publics (le dépôt est public) : aucune donnée personnelle dans une note. Quand le texte d'une cible change après sa relecture, `liste` l'affiche « à revoir (modifié depuis la relecture) » (état `a_revoir` dans la sortie JSON) et `publier` refuse : refaire `marquer` après avoir relu la correction.
+
+**Dates de couverture.** Trois cas du thème santé sont à traiter pendant la relecture de leur case, jamais par recherche-remplacement : `clara-egger`, `benoit-mathieu` et `manolo-mlekuz` ont `verifie_le: 2026-11-03` alors que leur source a été consultée le 2026-11-04 (avertissement `COUVERTURE_VERIFIEE_AVANT_SOURCE`, fichier `src/content/couverture/sante.yaml`). Relire la case dans les sources listées, puis `marquer case sante <candidat>` : `verifie_le` prend la date de cette relecture et l'avertissement disparaît. Cinq cas du thème `travail` restent ouverts tant que ce thème n'est pas relu (D-06) : `clara-egger`, `benoit-mathieu`, `antoine-mikolajczak`, `manolo-mlekuz` et `natacha-polony`. Ce sont des avertissements : ils ne bloquent ni la CI ni le déploiement.
+
+**Périmètre de l'ouverture.** Seuls les 37 statuts « déclaré » du thème santé sont relus (121 cibles : 47 mesures, 37 statuts, 37 cases de couverture). Les 22 personnes « ne se présente pas » ou « pressenti » ne sont pas relues et restent absentes de la production (voir « Publier un thème »).
+
+### Publier un thème
+
+Une mesure passe en deux temps : `relu` (par Erwan, cible par cible, « Relire un thème »), puis `publie` pour le thème entier, quand tout son périmètre est relu (ADR-059). Un thème n'est visible en production que s'il est `publie` **et** listé dans `config/publication.yml` (ADR-060).
+
+1. **Ouvrir le thème dans la liste blanche.** Ajouter son identifiant sous `themes_ouverts` de `config/publication.yml` (séquence en bloc, éléments indentés de deux espaces sous la clé), dans un commit dédié relu par Erwan : c'est une décision éditoriale, que l'outil ne prend jamais. `publier` refuse tant que le thème n'y est pas (« thème absent de config/publication.yml »).
+2. **Vérifier qu'il ne reste rien à relire** : `npm run relecture -- liste --theme <id>` doit afficher `reste 0`, sans note ouverte ni cible « à revoir ».
+3. **Essai à blanc puis publication** :
+
+```bash
+npm run relecture -- publier --theme <id> --dry-run
+npm run relecture -- publier --theme <id>
+```
+
+   Options : `--relecteur <nom>` et `--date AAAA-MM-JJ`. La commande passe les mesures `relu` du thème et le thème lui-même à `publie` en une seule opération tout ou rien : elle valide tout le corpus en mode production et remet les octets d'origine si une erreur apparaît. Elle **ne marque jamais rien `relu`**. Elle refuse, en listant toutes les raisons ensemble et sans rien écrire : thème absent de la liste blanche, mesure pas encore relue ou « à revoir », note ouverte, statut ou case de couverture pas encore relus, mesure d'un candidat hors du périmètre d'équité, erreur de validation du thème, alerte `ARCHIVE_WAYBACK_ABSENTE` (source sans copie Wayback ni exception motivée, voir « Archiver une source »). Un second passage répond « déjà publié ».
+4. **Pull request.** Vérifier en local que `npm run validate -- --mode production` donne zéro erreur ; la CI refait la validation, la build et `check-dist`. Un build local de déploiement se fait avec `RTP_DEPLOIEMENT=1 RTP_MODE=production GITHUB_SHA=$(git rev-parse HEAD) npm run build`, puis `npm run check-dist` : tant que `config/hebergeur.yml` est `prevu`, il échoue, c'est la garde de déploiement.
+5. **Déploiement.** Après la fusion, le run de `main` attend l'approbation d'Erwan (bouton « Review deployments », voir « Déploiement »).
+
+Codes qui bloquent une publication mal préparée : `PUBLICATION_THEME_NON_OUVERT` (thème `publie` mais absent de la liste : erreur en production), `THEME_HORS_LISTE_BLANCHE` et `THEME_OUVERT_ABSENT` côté `check-dist`, `RELECTURE_ABSENTE` (mesure publiée sans sa ligne de relecture). Leurs lignes sont dans les tables « Codes du validateur » et « Contrôle post-build (check-dist) ».
+
+**Ligne du relecteur.** Chaque mesure publiée affiche, à tous les niveaux de lecture et sans JavaScript, « Relue par <relecteur> le <date>. » (valeurs du YAML de la mesure). `check-dist` refuse un build de production où cette ligne manque ou est invalide (`RELECTURE_ABSENTE`).
+
+**Personnes sans statut relu (décision D-06, « 2a »).** En production, une personne du jeu de données qui n'a aucun statut de candidature `relu` ou `publie` est absente : ni page `candidats/<id>/`, ni ligne sur `/candidats/`, ni entrée de `sitemap.xml`, ni lien, ni nom sur une page thème. La page Candidats et la page Méthode disent combien de personnes attendent la relecture de leur statut. `check-dist` refuse un dist qui en exposerait une (`CANDIDAT_NON_RELU_EN_PRODUCTION`). Une personne apparaît dès que son statut est relu : `npm run relecture -- marquer statut <candidat>` (avec `--hors-perimetre` pour un statut « ne se présente pas » ou « pressenti », hors du périmètre d'équité). La définition est celle de l'ADR-041 : la production ne compte que les statuts `relu` et `publie`, la prévisualisation montre tout le monde avec ses pastilles de brouillon.
 
 ### Archiver une source
 
@@ -296,7 +352,7 @@ Prérequis :
 - le clone du dépôt privé, voisin du projet (`../reveleTonProg-archives`) ou désigné par `RTP_ARCHIVES_DIR` (un chemin relatif se lit depuis `--root`, jamais depuis le dossier courant). Dans un worktree, exporter `RTP_ARCHIVES_DIR=/Users/erwanhenry/claude-projects/reveleTonProg-archives` ;
 - Node 24 : `fnm exec --using=24 npm run archive -- …`. La racine de contenu est le dossier courant (`--root` pour en choisir un autre ; `RTP_CONTENT_ROOT` est ignorée).
 
-Les cinq modes :
+Les six modes :
 
 ```bash
 # 1. Capturer une nouvelle source (--wayback soumet l'URL, --push envoie le binaire au dépôt privé)
@@ -314,9 +370,12 @@ npm run archive -- --wayback-missing --candidat prenom-nom
 
 # 5. Pousser tout ce qui attend dans le dépôt privé
 npm run archive -- --sync-private
+
+# 6. Adopter un instantané Wayback déjà existant (lecture seule de web.archive.org, rien n'est soumis)
+npm run archive -- --wayback-adopter <id-source> --instantane <AAAAMMJJhhmmss> [--nouvelle-url https://…] [--dry-run]
 ```
 
-`--dry-run` va jusqu'à la validation sans rien écrire. `--candidat` se répète si plusieurs candidats sont concernés (le premier nomme le dossier d'archive). `--date-publication` est obligatoire et jamais devinée : date visible sur la page, sinon date de création du PDF (`pdfinfo`), sinon l'en-tête `Last-Modified`, sinon le mois visible `AAAA-MM`.
+`--dry-run` va jusqu'à la validation sans rien écrire (pour le mode 6 : lecture de l'instantané et comparaison, sans rien changer). `--candidat` se répète si plusieurs candidats sont concernés (le premier nomme le dossier d'archive). `--date-publication` est obligatoire et jamais devinée : date visible sur la page, sinon date de création du PDF (`pdfinfo`), sinon l'en-tête `Last-Modified`, sinon le mois visible `AAAA-MM`.
 
 Refus et que faire :
 
@@ -339,7 +398,13 @@ Rafraîchir (`--refresh`) :
 - **texte modifié** : nouvel extrait (le sha12 change), `wayback_url` retiré (il montre l'ancien contenu), et l'avertissement « contenu modifié : relancer validate, les mesures citant cette source doivent être revérifiées ». L'ancien extrait reste dans `archives/` : le supprimer s'il n'est plus cité ;
 - une source saisie à la main (`fichier-manuel`) est ignorée avec un avertissement ; pour la mettre à jour : `--refresh <id> --file <nouveau fichier>`.
 
-Une page dont le pied de page publie des données personnelles de particuliers (cas de `erwan-rohou-programme-mei`) n'est ni archivée telle quelle ni soumise à Wayback : saisie manuelle expurgée avec `--file`, `wayback_url` laissé vide. `--wayback-missing` soumettrait pourtant cette page : utiliser `--wayback-only` avec la liste des autres sources.
+Une page dont le pied de page publie des données personnelles de particuliers (cas de `erwan-rohou-programme-mei`) n'est ni archivée telle quelle ni soumise à Wayback : saisie manuelle expurgée avec `--file`, `wayback_url` absent, remplacé par une exception motivée (ci-dessous). Une source qui porte `archive.wayback_exception` n'est jamais soumise ni adoptée par l'outil, y compris par `--wayback-missing`.
+
+**Adopter un instantané existant (mode 6, ADR-061).** Quand l'adresse d'une page a changé (l'ancienne répond 404) mais qu'un instantané Wayback de la nouvelle adresse existe, `--wayback-adopter <id> --instantane <horodatage> [--nouvelle-url <url>]` lit l'instantané (14 chiffres, repris de son adresse web.archive.org) et ne l'adopte que si **chaque paragraphe** de l'extrait archivé s'y retrouve (trouvé : 30 sur 30, 29 sur 29 et 39 sur 39 pour les trois sources de Delphine Batho en 09-03). Il avertit d'un écart de plus de 24 h entre la capture du dépôt et l'instantané. `--nouvelle-url` corrige aussi le champ `url` de la source ; l'extrait, son sha256 et les dates ne changent pas. Montrer le diff à Erwan avant d'écrire dans `src/content/sources/`.
+
+**Exception Wayback motivée.** Une source citée par une mesure publiée exige `archive.wayback_url` ou le champ `archive.wayback_exception` (`motif`, `decide_par`, `decide_le`), exclusifs l'un de l'autre ; sinon `ARCHIVE_WAYBACK_ABSENTE`. La décision revient à Erwan seul : `decide_par` et `decide_le` portent son nom et la date. La liste des exceptions du corpus réel est épinglée par `tests/rules/sources-wayback.test.ts` (aujourd'hui `erwan-rohou-programme-mei`, motif : la page affiche des données personnelles de particuliers, donc le site ne renvoie pas vers une copie Wayback de cette page) : ajouter une exception fait échouer ce test tant qu'elle n'est pas ajoutée à la liste, dans une pull request relue. Le motif n'est affiché sur aucune page. Sources Batho (PUB-04) : les trois (priorités 1, 2 et 4) ont leur nouvelle adresse et leur instantané adopté, aucune n'est ouverte ; deux points restent à décider par Erwan, le champ `source_localisation` des deux mesures santé de Delphine Batho (il dit encore « page de la priorité 1 La pleine santé ») et trois lignes de « sources consultées » de `data/couverture-themes.yaml` qui citent les anciennes adresses.
+
+**Site qui refuse l'outil.** Le site de Delphine Batho répond HTTP 403 à l'agent utilisateur de l'outil d'archivage alors qu'un navigateur reçoit 200. L'adoption n'est pas touchée (elle ne lit que web.archive.org), mais un futur `--refresh` de ces sources demandera `--file` avec une page enregistrée depuis le navigateur.
 
 Wayback est une corroboration, jamais un blocage : un échec (429 = plafond quotidien par URL, délai de 150 s dépassé, redirection inattendue) est un avertissement avec la commande de reprise, et `--wayback-missing` liste ce qui manque. Si Save Page Now renvoie l'instantané d'une autre adresse que celle soumise, l'outil prévient et n'enregistre rien : relancer plus tard avec `--wayback-only <id>`. Un instantané plus ancien de plus de 24 h que la capture est signalé (Wayback peut renvoyer une capture existante) : le contenu a pu changer depuis.
 
@@ -367,17 +432,17 @@ Forcer un déploiement de la tête de `main` (sans nouveau commit, ou après un 
 
 **Un run attend l'approbation : approuver ou rejeter tout de suite, ne jamais le laisser en attente.** Le job attend dans le groupe de concurrence `deploy-production` : un run oublié bloque les déploiements suivants (GitHub ne garde qu'un job en attente par groupe, le plus récent remplace l'autre), et une approbation tardive est refusée dès que `main` a avancé avec des changements du site ou pendant un gel. Les retours arrière ont leur propre groupe (`retour-production`) : un déploiement en attente ne les bloque plus et ne peut pas les annuler. Rejeter un run ne touche pas au serveur.
 
-Étapes juridiques à faire avant la mise en ligne publique :
+Étapes juridiques avant la mise en ligne publique (état au 2026-11-11, plan qui porte chaque étape) :
 
-1. Communiquer l'identité de l'éditeur à l'hébergeur (condition du II de l'article 1-1 pour ne publier que l'identité de l'hébergeur) et conserver la preuve de cet envoi.
-2. Vérifier sur la facture que l'entité qui héberge le VPS est bien Hetzner Online GmbH (hypothèse A5 de la phase 5) ; sinon corriger `config/hebergeur.yml`.
-3. Passer `statut: actif` dans `config/hebergeur.yml`, dans le commit de déploiement. Tant que le statut est `prevu`, un build avec `RTP_DEPLOIEMENT=1` échoue.
-4. Décrire dans les Mentions légales ce que garde le journal d'accès de Caddy (champs, adresse IP entière ou tronquée, durée de conservation : 14 jours au plus avec le bloc généré, voir « Bloc Caddy (Phase 8) ») une fois sa configuration arrêtée. Avec `statut: actif`, la page dit seulement que le serveur reçoit l'adresse IP pour envoyer les pages ; elle ne dit plus que le site ne collecte aucune donnée personnelle.
-5. Faire relire par un juriste les Mentions légales et l'interprétation de la CNIL sur `localStorage` (hypothèse A2 : réglages d'affichage exemptés de consentement).
-6. Remplacer le domaine provisoire de `config/site.yml` (le build échoue sous `RTP_DEPLOIEMENT=1` tant qu'il finit par un TLD réservé : `.invalid`, `.test`, `.example`, `.localhost`), puis régénérer le bloc Caddy (« Changer de domaine »).
-7. Remplacer l'adresse de contact provisoire de `config/site.yml`.
-8. Vérifier que le dépôt `ErwanHenry/reveleTonProg` est toujours public (il l'est depuis le 2026-11-04) et le garder public : les liens du site vers le dépôt (Qui sommes-nous, « Signaler une erreur (GitHub) », « Extrait archivé ») en dépendent et renverraient une erreur 404 s'il redevenait privé. Contrôle : `gh repo view ErwanHenry/reveleTonProg --json visibility` doit répondre `PUBLIC`.
-9. Hypothèse A4 confirmée : `actions/upload-artifact` fonctionne avec `permissions: contents: read` (artefact `site-preview` publié à chaque run de `main`, par exemple le run 42525804302 du 2026-11-08). Rien à faire au premier déploiement.
+1. **Fait** (09-08) : l'identité de l'éditeur est transmise à l'hébergeur (condition du II de l'article 1-1 pour ne publier que l'identité de l'hébergeur) ; déclaré par Erwan le 2026-11-10, la preuve est conservée hors du dépôt.
+2. **Fait** (09-08) : l'entité qui facture le VPS est bien celle de `config/hebergeur.yml` (Hetzner Online GmbH, hypothèse A5 de la phase 5).
+3. **À faire** (09-11) : passer `statut: actif` dans `config/hebergeur.yml`. Tant que le statut est `prevu`, un build avec `RTP_DEPLOIEMENT=1` échoue, et les phrases d'identité et de sortie d'erreur des Mentions légales ne s'affichent pas.
+4. **Fait** (09-04) : les Mentions légales décrivent le journal d'accès de Caddy (14 jours au plus, adresse IP tronquée, voir « Bloc Caddy (Phase 8) ») et la sortie d'erreur du conteneur (adresse entière, plafonnée en taille, pas en durée), avec la sentence RGPD ; ces phrases ne s'affichent qu'avec `statut: actif`.
+5. **Remplacé** (09-08) : la relecture par un juriste avant l'ouverture est remplacée par la note de risques signée par Erwan le 2026-11-11 (`docs/RISQUES-JURIDIQUES.md`, mention « risque accepté », décision D-03) ; une relecture par un juriste est prévue après l'ouverture, en commençant par le régime d'éditeur (R1) et la lecture de la CNIL sur `localStorage` (hypothèse A2).
+6. **Fait** : le domaine de `config/site.yml` est le domaine réel ; le bloc Caddy est rendu depuis lui (« Changer de domaine »).
+7. **Fait** (09-04 pour l'adresse, 09-08 pour le test de bout en bout du 2026-11-10) : le contact de `config/site.yml` est celui du domaine.
+8. **À faire** le jour de l'ouverture (09-12) : vérifier que le dépôt `ErwanHenry/reveleTonProg` est toujours public et le garder public : les liens du site vers le dépôt (Qui sommes-nous, « Signaler une erreur (GitHub) », « Extrait archivé ») renverraient une erreur 404 s'il redevenait privé. Contrôle : `gh repo view ErwanHenry/reveleTonProg --json visibility` doit répondre `PUBLIC`.
+9. **Sans objet** : l'hypothèse A4 est confirmée, `actions/upload-artifact` fonctionne avec `permissions: contents: read` (artefact `site-preview` publié à chaque run de `main`) ; rien à faire au premier déploiement.
 
 ### Retour arrière
 
@@ -410,6 +475,15 @@ ssh keel-vps 'SSH_ORIGINAL_COMMAND="etat essai" runuser -u deploy -- /usr/local/
 ### Gel des scrutins et retrait d'urgence
 
 - Fenêtres : du 17 au 19 avril 2027 et du 1er au 3 mai 2027, dates civiles en heure de Paris (veille et lendemain de chaque tour, tirées de `TOURS` dans `src/lib/dates-tours.ts` : déplacer un tour déplace le gel). Le runner est en UTC ; la garde convertit.
+
+Calendrier 2027 (vérifié avec `node scripts/garde-gel.ts --urgence '' --justification '' --date <ISO>` : autorisé le 2027-04-16 à 23:59, refusé du 2027-04-17 au 2027-04-19, autorisé le 2027-04-20, refusé du 2027-05-01 au 2027-05-03, autorisé le 2027-05-04) :
+
+| Tour | Scrutin | Gel, heure de Paris | Dernier déploiement sûr | Déploiement de nouveau possible |
+|---|---|---|---|---|
+| 1 | dimanche 18 avril 2027 | du samedi 17 avril 2027 à 00:00 au lundi 19 avril 2027 à 23:59 | vendredi 16 avril 2027, approbation avant minuit | mardi 20 avril 2027 dès 00:00 |
+| 2 | dimanche 2 mai 2027 | du samedi 1er mai 2027 à 00:00 au lundi 3 mai 2027 à 23:59 | vendredi 30 avril 2027, approbation avant minuit | mardi 4 mai 2027 dès 00:00 |
+
+La garde est rejouée au moment de l'approbation : ce qui compte est l'heure de l'**approbation**, pas celle du push. Minuit à Paris est 22:00 UTC la veille en avril et en mai. Avec 7 à 9 minutes de CI mesurées, un push du vendredi soir n'a pas de marge : viser le jeudi, et ne rien laisser en attente d'approbation à l'entrée dans une fenêtre. Pendant une fenêtre, la CI passe, `deploy` est sauté, et seul un retrait d'urgence justifié peut livrer (« Retrait d'urgence d'une mesure (moins d'une heure) »).
 - Pendant un gel, un push sur `main` passe la CI mais `deploy` est sauté, avec l'avertissement « déploiement refusé » dans le résumé du job `gel`. Un retour arrière est refusé de la même façon. Un run qui a passé `gel` avant le gel et attend encore l'approbation est refusé au moment de l'approbation : `deploy` rejoue la garde en première étape et échoue (« Déploiement refusé par la garde de gel au moment de l'approbation »), sans rien envoyer.
 - Retrait d'urgence pendant un gel (par exemple une mesure publiée sans source) : commiter le retrait (mesure repassée en `brouillon`), pousser sur `main`, puis relancer avec la case cochée et une justification écrite d'au moins 20 caractères :
 
@@ -428,8 +502,84 @@ gh workflow run rollback.yml -f cible=production -f retrait_urgence=true -f just
 - `basic_auth` sur tous les chemins sauf `/robots.txt`, deux utilisateurs : `essai` (relecture par Erwan) et `sonde` (sonde externe, battement HTTPS, test de fumée, mesures 4G). Mots de passe en clair dans Vaultwarden, copie locale dans `~/.config/rtp/` (0600). Empreintes bcrypt dans `/opt/vaultwarden/.env` (root, 0600), passées au conteneur par `RTP_ESSAI_HASH` et `RTP_SONDE_HASH`.
 - Changer un mot de passe : nouvelle empreinte bcrypt calculée hors du dépôt (jamais affichée), `ops/installer-serveur.sh --appliquer --etape env-caddy` avec la ligne `RTP_ESSAI_HASH=…` ou `RTP_SONDE_HASH=…` sur l'entrée standard, puis recréation du conteneur (procédure de la section suivante) : la variable d'un conteneur ne change qu'à sa recréation, un `caddy reload` garde l'ancienne. Pour `sonde`, mettre aussi à jour Vaultwarden, `~/.config/rtp/sonde-pass`, les secrets `DEPLOY_SMOKE_PASS` et `SONDE_PASS`, et `RTP_SONDE_PASS` dans `/etc/rtp/battement.env` (étape `battement`).
 - Non indexé : `X-Robots-Tag: noindex, nofollow` sur toutes les réponses (401 compris) et `robots.txt` fermé (`Disallow: /`). L'en-tête est posé par une directive `header` à part : le sous-bloc `header` commun est différé (à cause de `-Server`) et Caddy ne l'applique pas au 401 de `basic_auth`. Pas de `handle_errors` : sur le serveur partagé, il ferait passer au niveau debug le journal des erreurs 5xx de tous les sites. Contrôle sans identifiant : `curl -sI https://essai.<domaine>/ | grep -i x-robots-tag`. Mêmes en-têtes et même journal masqué que la production.
-- Construit sans `RTP_DEPLOIEMENT` (ADR-055). Retiré à l'ouverture en Phase 9 : bloc ôté de `sites.d`, `caddy reload`, sonde et test de fumée réorientés vers l'hôte public.
+- Construit sans `RTP_DEPLOIEMENT` (ADR-055). Retiré à l'ouverture en Phase 9 : bloc ôté de `sites.d`, `caddy reload`, sonde et test de fumée réorientés vers l'hôte public, selon la procédure ordonnée de « Ouverture publique (Phase 9) ».
 - **Point de la Phase 9 (Mentions légales).** La build d'essai a l'hébergeur `prevu` : ses Mentions légales disent « aucun serveur de l'éditeur ne reçoit vos visites », alors que l'hôte d'essai est un serveur. Il est privé, protégé par mot de passe et visité seulement par Erwan et la sonde. La phrase redevient vraie quand l'hôte d'essai est retiré, et la build publique passe à `actif`.
+
+### Ouverture publique (Phase 9)
+
+Procédure ordonnée de la mise en ligne sur le domaine public (D-09), exécutée par le plan 09-12. Règle D-01 (ADR-057) : **chaque écriture du serveur et chaque réglage GitHub est montré à Erwan (commande, effet, retour arrière) et lancé seulement après son accord explicite**, depuis la session principale ; les agents n'écrivent jamais sur le serveur ni dans les réglages. Chaque écriture est suivie de son contrôle avant la suivante ; un contrôle qui échoue arrête la suite et applique le retour arrière écrit à côté. Jamais de redémarrage ni de recréation de Caddy : valider, puis recharger. `<domaine>` est la valeur de `domaine:` dans `config/site.yml` (`D=$(awk '/^domaine:/{print $2}' config/site.yml)`).
+
+**Préalables (lecture seule).** Le thème santé est relu et publié (« Publier un thème », `config/publication.yml` ouvre exactement `sante`) ; la note de risques est signée ; `config/hebergeur.yml` est `actif` et le contact est celui du domaine ; un build `RTP_DEPLOIEMENT=1` de la tête de `main` passe `check-dist` à zéro erreur ; `node scripts/garde-gel.ts` ne signale aucun gel ; aucun run n'attend l'approbation (`gh run list --branch main --limit 5`) ; le DNS répond : `dig +short A <domaine> @1.1.1.1` et `@9.9.9.9`, pareil pour `www.<domaine>`, adresse du serveur et **aucun enregistrement AAAA** (`dig +short AAAA`) ; le serveur est sous 85 % de disque ; l'instantané des autres sites d'avant l'ouverture est pris (`~/.config/rtp/sites-avant-ouverture.tsv`, voir « Serveur : installer et vérifier »).
+
+**Une seule cible de livraison à la fois.** Après l'étape 2, plus rien ne se déploie vers `essai`.
+
+| # | Écriture | Effet | Contrôle | Retour arrière |
+|---|---|---|---|---|
+| 1 | `gh variable delete DEPLOY_URL --env production` | le premier déploiement de production saute le test de fumée HTTPS : le bloc public n'existe pas encore, le test échouerait et déclencherait un retour arrière inutile | `gh variable list --env production` ne montre plus `DEPLOY_URL` | `gh variable set DEPLOY_URL --env production --body https://essai.<domaine>` |
+| 2 | `gh variable set DEPLOY_CIBLE --body production` | la prochaine build se fait sous `RTP_DEPLOIEMENT=1` et part vers `/srv/reveletonprog` | `gh variable list` | `gh variable set DEPLOY_CIBLE --body essai` |
+| 3 | `gh workflow run ci.yml --ref main -f deployer=true`, puis **Erwan approuve lui-même** dans l'interface (« Review deployments ») | `releases/<sha>` et le lien `current` existent côté production ; rien n'est encore public | le journal « Construire » montre `RTP_DEPLOIEMENT: 1` et `check-dist` à zéro erreur ; « Test de fumée » est sauté ; `ssh keel-vps 'readlink /srv/reveletonprog/current; cat /srv/reveletonprog/current/version.json'` donne le commit de la tête | en cas d'échec : retours arrière des étapes 2 puis 1 |
+| 4 | `git archive --format=tar.gz HEAD ops deploy \| ssh keel-vps 'mkdir -p /opt/rtp/depot && tar -xz -C /opt/rtp/depot'` | copie de `ops/` et `deploy/` du commit sur le serveur | `ssh keel-vps 'bash /opt/rtp/depot/ops/installer-serveur.sh --verifier --etape site-public </dev/null'` répond `[a faire]` pour le bloc seulement | relancer depuis le commit précédent |
+| 5 | `ssh keel-vps 'bash /opt/rtp/depot/ops/installer-serveur.sh --appliquer --etape site-public </dev/null'` | écrit `/opt/vaultwarden/sites.d/reveletonprog.caddy` (nom nu et `www`) ; Caddy ne le lit qu'au rechargement ; refusé en code 7 tant que `current` n'existe pas | seules des lignes `[fait]` ou `[ok]`, code 0 | `ssh keel-vps 'mkdir -p /root/rtp-retire && mv /opt/vaultwarden/sites.d/reveletonprog.caddy /root/rtp-retire/'` |
+| 6 | validation puis rechargement, dans cet ordre (lecture seule, puis écriture) | Caddy sert le domaine et `www` et demande deux certificats : **le site est public à partir d'ici** | voir ci-dessous | retour arrière de l'étape 5, puis nouvelle validation et nouveau rechargement |
+
+Étape 6 en détail :
+
+```bash
+ssh keel-vps "RTP_BLOC_B64=$(base64 < deploy/caddy/site.caddy | tr -d '\n') RTP_AVEC_SANS_VARIABLES=1 bash -s" < ops/valider-caddy.sh
+ssh keel-vps 'docker exec caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile'
+ssh keel-vps 'docker exec caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile'
+```
+
+Le rechargement n'est lancé que si les deux validations (conteneur jetable avec et sans variables, puis `caddy validate`) sont valides. Les certificats se demandent une fois, jamais dans une boucle de reprises : si l'un manque au bout de 5 minutes, ne pas recharger de nouveau, appliquer le retour arrière et lire le nombre de lignes d'erreur ACME (le compte seulement).
+
+**Contrôles de l'ouverture.** Attendre jusqu'à 3 minutes que `curl -s -o /dev/null -w '%{http_code}\n' https://<domaine>/` réponde 200 (vérification du certificat par défaut) et `https://www.<domaine>/` 301, puis contrôler :
+
+- certificats de l'apex et de `www` : `echo | openssl s_client -connect <domaine>:443 -servername <domaine> 2>/dev/null | openssl x509 -noout -issuer -enddate`, et pareil pour `www.<domaine>` ;
+- redirection : `curl -sI https://www.<domaine>/themes/sante/` donne 301 et un `location` sur le domaine nu ;
+- en-têtes de `/` : `Strict-Transport-Security: max-age=300`, la CSP du bloc, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, `Cross-Origin-Opener-Policy`, pas d'en-tête `Server`, `Cache-Control: no-cache` ; **jamais de `no-store` sur `/favicon.ico`** ni ailleurs (il casserait le retour en arrière du navigateur) ;
+- `robots.txt` sans `Disallow: /` et avec sa ligne `Sitemap:`, `sitemap.xml` qui liste `/themes/sante/`, aucun `noindex` ni `X-Robots-Tag` ;
+- `/version.json` : le commit de la tête de `main` ; `/favicon.ico` 200 ;
+- `/themes/` ne liste que le thème ouvert, un thème non ouvert répond 404 ; `/candidats/` ne liste que les personnes au statut relu ; `/mentions-legales/` porte la phrase d'identité de l'hébergeur et le vrai contact ;
+- autres sites du serveur inchangés : `ssh keel-vps 'bash -s -- instantane' < ops/verifier-sites.sh > ~/.config/rtp/sites-apres-bloc-public.tsv`, puis `bash ops/verifier-sites.sh comparer ~/.config/rtp/sites-avant-ouverture.tsv ~/.config/rtp/sites-apres-bloc-public.tsv` : `differents 0` et `disparus 0` (le nouvel hôte public est permis). Si une page de personne sans statut relu répond, c'est une panne : retour arrière immédiat de l'étape 5.
+
+**Réglages après l'ouverture** (chacun après accord d'Erwan) :
+
+| # | Écriture | Effet | Retour arrière |
+|---|---|---|---|
+| 7 | `gh variable set DEPLOY_URL --env production --body https://<domaine>` | le test de fumée des prochains déploiements vise l'hôte public | supprimer la variable |
+| 8 | `gh secret delete DEPLOY_SMOKE_USER --env production`, `gh secret delete DEPLOY_SMOKE_PASS --env production` | plus d'identifiant envoyé à un site public sans défi `basic_auth` | les valeurs sont dans Vaultwarden et `~/.config/rtp/` |
+| 9 | `gh variable set SONDE_URL --body https://<domaine>`, `gh secret delete SONDE_USER --env sonde`, `gh secret delete SONDE_PASS --env sonde`, puis `gh workflow run sonde.yml` | la sonde externe vise l'hôte public sans identifiant | remettre `SONDE_URL` sur l'hôte d'essai ; mots de passe dans Vaultwarden |
+| 10 | battement, ci-dessous | le battement contrôle l'hôte public et son certificat, sans identifiant | recopier `battement.env.essai` et rejouer l'étape |
+
+Étape 10 : modifier la copie locale du fichier d'environnement du battement sans l'afficher, puis l'installer par l'étape `battement` :
+
+```bash
+D=$(awk '/^domaine:/{print $2}' config/site.yml)
+( umask 077; cp -p ~/.config/rtp/battement.env ~/.config/rtp/battement.env.essai
+  { grep -v -E '^(RTP_HOTE|RTP_SONDE_USER|RTP_SONDE_PASS)=' ~/.config/rtp/battement.env.essai; printf 'RTP_HOTE=%s\n' "$D"; } > ~/.config/rtp/battement.env )
+ssh keel-vps 'bash /opt/rtp/depot/ops/installer-serveur.sh --appliquer --etape battement' < ~/.config/rtp/battement.env
+```
+
+Les secrets `SONDE_PING_URL` et les adresses de ping ne changent pas. Contrôle : les deux dernières lignes de `journalctl -t rtp-battement` disent site et certificat `ok`.
+
+**Retrait de l'hôte technique.** Commande approuvée à part, dans cet ordre : poser d'abord le marqueur, puis ôter le bloc de `sites.d` :
+
+```bash
+ssh keel-vps 'mkdir -p /opt/rtp /root/rtp-retire && touch /opt/rtp/essai-retire && mv /opt/vaultwarden/sites.d/reveletonprog-essai.caddy /root/rtp-retire/'
+```
+
+Puis les deux validations et le rechargement de l'étape 6. Avec le marqueur `/opt/rtp/essai-retire`, l'étape `site-essai` de l'installateur répond `[ok: retiré]` et ne réinstalle jamais le bloc, même quand toute la liste des étapes est rejouée (le marqueur n'est posé que par cette commande, jamais par le script). Retour arrière : `ssh keel-vps 'rm /opt/rtp/essai-retire && mv /root/rtp-retire/reveletonprog-essai.caddy /opt/vaultwarden/sites.d/'`, validation, rechargement. Les variables d'empreinte `RTP_ESSAI_HASH` et `RTP_SONDE_HASH` restent : leur retrait changerait le conteneur. Le test de restauration du mois suit les blocs présents dans l'archive ; une sauvegarde puis un test juste après la mise en ligne le prouvent :
+
+```bash
+ssh keel-vps '/usr/local/sbin/rtp-sauvegarder && /usr/local/sbin/rtp-tester-restauration'
+```
+
+**Plus tard, avec une règle de date.**
+
+- **HSTS** : le bloc envoie `max-age=300`. Le passer à `31536000` seulement après au moins **7 jours** stables après l'ouverture (aucune erreur de certificat ni de redirection, `www` vérifié) : modifier la valeur dans `scripts/render-caddy.ts`, relancer `node scripts/render-caddy.ts`, commiter, puis rejouer les étapes 4 à 6 pour ce bloc. **Jamais `includeSubDomains` ni `preload`** : le serveur héberge d'autres sites et l'hôte `essai` a son propre sous-domaine. Date d'ouverture et date visée : à inscrire ici par 09-12.
+- **Dossier `/srv/reveletonprog/essai`** : le garder quelques jours (retour possible), puis le supprimer par une commande approuvée à part.
+- **Enregistrement DNS `essai`** chez IONOS : à retirer par Erwan une fois le dossier supprimé.
+- **IPv6 et enregistrements AAAA** : pas avant que ufw et les réseaux Docker du serveur soient traités (point ouvert de la Phase 8) ; avant tout AAAA, contrôler `curl -6 -I https://<domaine>` depuis l'extérieur.
 
 ### Serveur : installer et vérifier
 
@@ -438,14 +588,14 @@ Règle D-01 : sur le VPS, la lecture est libre (diagnostic, `caddy validate` dan
 - Vérifier sans rien écrire, depuis une copie éphémère du dépôt (retirée à la fin, pas d'accord nécessaire) :
 
 ```bash
-tar -C . -cz ops deploy | ssh keel-vps 'd=$(mktemp -d) && tar -xz -C "$d" && bash "$d/ops/installer-serveur.sh" --verifier --etape montages,env-caddy,import-caddy,utilisateur,commande; r=$?; rm -rf "$d"; exit $r'
+git archive --format=tar.gz HEAD ops deploy | ssh keel-vps 'd=$(mktemp -d) && tar -xz -C "$d" && bash "$d/ops/installer-serveur.sh" --verifier --etape montages,env-caddy,import-caddy,utilisateur,commande; r=$?; rm -rf "$d"; exit $r'
 ```
 
-  Chaque ligne dit `[ok]` ou `[a faire]` ; une configuration conforme n'a aucun `[a faire]`. Ajouter à la liste les étapes déjà installées (`battement`, `sauvegarde`, `restauration-mensuelle`, `site-essai`). Le script n'affiche jamais un contenu ni un secret.
-- Appliquer (écriture, après accord) : rafraîchir la copie du dépôt sur le serveur, puis lancer les étapes approuvées depuis elle. Sans secret à fournir, `</dev/null` ; avec secret, le fichier local sur l'entrée standard :
+  Chaque ligne dit `[ok]` ou `[a faire]` ; une configuration conforme n'a aucun `[a faire]`. Ajouter à la liste les étapes déjà installées (`battement`, `sauvegarde`, `restauration-mensuelle`, `site-essai` ; `site-public` répond code 7 tant que la cible production n'est pas déployée, ce qui est attendu). Le script n'affiche jamais un contenu ni un secret.
+- Appliquer (écriture, après accord) : rafraîchir la copie du dépôt sur le serveur, puis lancer les étapes approuvées depuis elle. La copie vient de `git archive` (l'arbre du dernier commit) et non d'un `tar` du dossier de travail : aucun fichier parasite du Mac (`.DS_Store`) ni modification non commitée n'est envoyé. Contrôle local, doit afficher 0 : `git archive --format=tar.gz HEAD ops deploy | tar -tz | grep -c DS_Store`. Un `.DS_Store` déjà envoyé avant ce changement se retire une fois : `ssh keel-vps 'rm -f /opt/rtp/depot/deploy/.DS_Store'`. Commiter avant d'envoyer. Sans secret à fournir, `</dev/null` ; avec secret, le fichier local sur l'entrée standard :
 
 ```bash
-tar -C . -cz ops deploy | ssh keel-vps 'mkdir -p /opt/rtp/depot && tar -xz -C /opt/rtp/depot'
+git archive --format=tar.gz HEAD ops deploy | ssh keel-vps 'mkdir -p /opt/rtp/depot && tar -xz -C /opt/rtp/depot'
 ssh keel-vps 'bash /opt/rtp/depot/ops/installer-serveur.sh --appliquer --etape commande </dev/null'
 ssh keel-vps 'bash /opt/rtp/depot/ops/installer-serveur.sh --appliquer --etape env-caddy' < ~/.config/rtp/hashes-caddy.env
 ```
@@ -500,7 +650,7 @@ bash ops/verifier-sites.sh comparer ~/.config/rtp/sites-avant.tsv ~/.config/rtp/
 | `production` | Erwan seul relecteur requis, `prevent self-review` désactivé (sinon personne ne peut approuver ses propres push), branches de déploiement : `main` seulement | `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_KNOWN_HOSTS`, `DEPLOY_URL` | `DEPLOY_SSH_KEY`, `DEPLOY_SMOKE_USER`, `DEPLOY_SMOKE_PASS` |
 | `sonde` | aucun relecteur (la sonde tourne toutes les 10 min), `main` seulement | aucune | `SONDE_USER`, `SONDE_PASS`, `SONDE_PING_URL` |
 
-Variables de dépôt : `DEPLOY_CIBLE` (`essai`, puis `production` en Phase 9 ; absente = chaîne de livraison en sommeil) et `SONDE_URL` (`https://essai.<domaine>`, posée par 08-15 ; absente = sonde en sommeil). Les relecteurs requis d'un Environment ne fonctionnent sur le plan gratuit que parce que le dépôt est public.
+Variables de dépôt : `DEPLOY_CIBLE` (`essai`, puis `production` à l'ouverture, voir « Ouverture publique (Phase 9) » ; absente = chaîne de livraison en sommeil) et `SONDE_URL` (`https://essai.<domaine>`, posée par 08-15 ; absente = sonde en sommeil). Les relecteurs requis d'un Environment ne fonctionnent sur le plan gratuit que parce que le dépôt est public.
 
 - Poser une valeur sans l'afficher, depuis le fichier local : `gh secret set DEPLOY_SSH_KEY --env production < ~/.config/rtp/rtp-deploy-github` (même forme pour `gh variable set … --env production`). La clé privée ne reste ensuite que dans l'Environment et dans Vaultwarden.
 - Contrôler (noms seulement) : `gh secret list --env production`, `gh variable list --env production`, `gh variable list`, et `gh api repos/ErwanHenry/reveleTonProg/environments/production --jq '.protection_rules'`.
@@ -524,7 +674,76 @@ Faits du serveur, constatés en 08-09 (ADR-057) :
 ## Incidents fréquents
 
 ### Une mesure publiée sans source
-Retirer dans l'heure (passer en `brouillon`), tracer au journal, redéployer. Pendant un gel des scrutins : « Gel des scrutins et retrait d'urgence ».
+Retirer dans l'heure : voir « Retrait d'urgence d'une mesure (moins d'une heure) » juste en dessous. Pendant un gel des scrutins : « Gel des scrutins et retrait d'urgence ».
+
+### Retrait d'urgence d'une mesure (moins d'une heure)
+
+Objectif : une mesure publiée qui ne doit plus l'être (absence de source, erreur factuelle, demande fondée) disparaît du site **en moins d'une heure** entre la décision et la page servie. Trois voies, à prendre dans cet ordre. Dans tous les cas : noter l'identifiant de la mesure (`<candidat>/<slug>`) et l'heure de début.
+
+**Voie 1, retour arrière (moins de 2 minutes).** À prendre si la version précédente ne contient pas la mesure. Elle ne passe ni par la CI ni par `main` (cible `essai` tant que le site n'est pas ouvert) :
+
+```bash
+gh workflow run rollback.yml -f cible=production
+gh workflow run rollback.yml -f cible=production -f version=<sha>
+```
+
+Erwan approuve dans l'interface (Environment `production`), voir « Retour arrière ». Mesures de 08-13 : 56 s et 70 s au total, approbation comprise (vue à +48 s et +59 s), exécution de 8 s et 11 s. Un retour arrière ne change pas `main` : le déploiement suivant remettrait la tête de `main`, donc la mesure. Faire aussi la voie 2 ou 3 dans la foulée.
+
+**Voie 2, retirer la mesure.** La commande repasse la mesure à `brouillon` et vérifie que tout le corpus de production reste sans erreur :
+
+```bash
+npm run relecture -- retirer <candidat>/<slug> --dry-run
+npm run relecture -- retirer <candidat>/<slug>
+```
+
+*Piège de la couverture.* Si c'est la **seule** mesure publiée du candidat sur ce thème, la case de couverture « mesures » ne serait plus vraie et la CI passerait au rouge (`EQUITE_COUVERTURE_INCOHERENTE`). La commande refuse alors (code 1, rien n'est écrit), explique le piège et imprime les deux lignes à copier, la première avec les identifiants des sources du candidat :
+
+```bash
+npm run relecture -- retirer <candidat>/<slug> --case non_precise --sources <id-source,id-source>
+npm run relecture -- retirer <candidat>/<slug> --case programme_non_publie
+```
+
+Choisir entre les deux est une décision éditoriale d'Erwan : `non_precise` dit « non précisé dans les sources consultées » (les sources nommées doivent être des sources du candidat), `programme_non_publie` dit que le candidat n'a pas publié de programme sur ce thème. La commande ne choisit jamais seule. Avec `--case`, la mesure et la case changent dans la même opération, avec `verifie_le` et `verifie_par` à la date et au nom du relecteur (`--relecteur`, `--date`). Si le candidat a d'autres mesures publiées sur le thème, `--case` est refusé comme inutile.
+
+*Erreur sans rapport.* `retirer` exige zéro erreur de validation de production sur tout le corpus après l'écriture. Une erreur déjà présente et sans rapport avec la mesure la bloque : la sortie nomme chaque erreur (fichier, ligne, code) et dit que les fichiers sont restaurés. La CI serait rouge de la même façon, donc aucun déploiement ne passerait : prendre la voie 1 pour retirer la mesure tout de suite, puis corriger l'erreur nommée dans un commit à part (voir « Lire un diagnostic ») et refaire la voie 2 ou 3.
+
+**Voie 3, repli le plus rapide, sans décision éditoriale.** Le thème entier repasse à `brouillon` : sa page disparaît de la production, aucune mesure ni case n'est touchée.
+
+```bash
+npm run relecture -- retirer --theme <id> --dry-run
+npm run relecture -- retirer --theme <id>
+```
+
+`config/publication.yml` peut garder le thème : un thème listé mais non publié n'est qu'un avertissement (`PUBLICATION_THEME_OUVERT_NON_PUBLIE`). Même validation de production que la voie 2, donc même parade en cas d'erreur sans rapport.
+
+**Après l'écriture (voies 2 et 3).**
+
+1. Relire le diff (`git diff`), commiter, pousser sur `main`. La commande rappelle ces étapes et le journal `relecture/journal.jsonl` reçoit une ligne `retirer`, à commiter avec le retrait.
+2. Approuver le déploiement dès que le run le demande (« Review deployments »). **Rejeter tout déploiement encore en attente** : approuvé plus tard, il pourrait remettre en ligne ce qu'on retire. Un run en attente retient le groupe `deploy-production`.
+3. Contrôler : `/version.json` sert le commit du retrait et la page du thème ne montre plus la mesure.
+4. **Pendant un gel des scrutins**, `deploy` est sauté : après le push, relancer avec la case d'urgence cochée et une justification écrite d'au moins 20 caractères (la commande le rappelle quand la date de Paris tombe dans une fenêtre) :
+
+```bash
+gh workflow run ci.yml --ref main -f retrait_urgence=true -f justification="Retrait de la mesure <candidat>/<slug> : <motif>"
+gh workflow run rollback.yml -f cible=production -f retrait_urgence=true -f justification="<motif du retour arrière>"
+```
+
+**À consigner ensuite.** Une issue GitHub datée (heure UTC de début et de fin, identifiant de la mesure, voie utilisée, commit, run, motif), sans donnée personnelle ; la ligne du journal de relecture est déjà dans le commit.
+
+**Remettre la mesure en ligne.** Corriger le texte ou la source par une modification manuelle du YAML, validée par Erwan ; si la case de couverture a été changée par `--case`, la remettre à `mesures` de la même façon (`EQUITE_COUVERTURE_INCOHERENTE` l'exige) ; puis `npm run relecture -- marquer mesure <candidat>/<slug>` et `npm run relecture -- publier --theme <id>` (voir « Relire un thème » et « Publier un thème »), pull request, approbation.
+
+**Budget de temps.** Cible : moins d'une heure. Chaîne de livraison mesurée sur les trois derniers runs de `main` dont le job « Déployer » a réussi (2026-11-10, runs 42909517138, 42913976301 et 42917023412, cible `essai`) ; l'approbation d'Erwan est la seule attente humaine :
+
+| Étape | Mesuré (minimum à maximum) | Budget |
+|---|---|---|
+| Décision, puis `retirer` en essai à blanc et en réel (la commande : 1,2 s sur le vrai corpus, 09-06) | quelques secondes pour la commande | 5 min |
+| Relire le diff, commiter, pousser | non mesuré | 2 min |
+| CI jusqu'à la fin de « Construire la build de déploiement » (le job navigateur est le plus long) | 409 s à 518 s (6 min 49 s à 8 min 38 s) | 9 min |
+| Approbation d'Erwan | 205 s à 446 s (3 min 25 s à 7 min 26 s) sur ces runs, mais elle dépend de lui | 15 min |
+| Job « Déployer » après l'approbation (envoi, activation, test de fumée) | 19 s à 33 s | 1 min |
+| **Total** | de la création du run à la fin du déploiement : 668 s à 920 s (11 min 8 s à 15 min 20 s) | **32 min** |
+
+Hors approbation, la chaîne mesurée prend 436 s à 537 s (7 min 16 s à 8 min 57 s). Le budget de 32 minutes laisse environ 28 minutes de marge, de quoi relancer une CI en échec une fois. Le retour arrière (voie 1) tient en moins de 2 minutes, approbation comprise. Le chiffre de l'exercice chronométré sur une vraie mesure publiée sera inscrit ici par 09-11 : aucune mesure n'est publiée avant la fin de la relecture.
 
 ### Build CI en échec
 Ouvrir l'exécution du workflow `CI`. Trois jobs tournent en parallèle :
@@ -534,14 +753,16 @@ Ouvrir l'exécution du workflow `CI`. Trois jobs tournent en parallèle :
 
 ### Droit de réponse
 
-Cadre : article 1-1 de la loi pour la confiance dans l'économie numérique (LCEN) et son décret d'application. Procédure :
+Cadre : article 1-1 de la loi pour la confiance dans l'économie numérique (LCEN), III, et son décret d'application n° 2007-1527 du 24 octobre 2007, tels que lus le 2026-11-10 sur Légifrance (`docs/RISQUES-JURIDIQUES.md`, R2). Le droit de réponse en ligne ne repose plus sur l'ancien IV de l'article 6, même si les visas du décret le citent encore : ne pas « corriger » vers lui. Procédure :
 
-1. La demande est écrite et adressée au directeur de la publication à l'adresse de contact de `config/site.yml` (alias dédié, jamais une adresse personnelle). Elle est recevable dans un délai de trois mois à compter de la mise en ligne du contenu visé.
-2. Accuser réception le jour même. La réponse est insérée au plus tard trois jours après réception de la demande, présentée comme une réponse du demandeur, et reste accessible aussi longtemps que le contenu d'origine.
-3. Suivi : ouvrir une issue GitHub qui trace la date de réception, la date d'insertion et la décision, sans donnée personnelle du demandeur.
-4. Une demande de rectification d'erreur factuelle suit la procédure de correction habituelle (sources, relecture), pas celle du droit de réponse.
+1. **Comment la demande arrive.** Par courriel, à l'adresse de contact de `config/site.yml` (alias dédié, jamais une adresse personnelle ; aucune adresse postale n'est publiée). Le décret admet la lettre recommandée avec accusé de réception ou tout moyen prouvant l'identité de l'auteur de la demande et la réception : le courriel reçu, daté, avec ses en-têtes, sert de preuve de réception. Elle est recevable dans un délai de trois mois à compter de la mise à disposition du contenu visé.
+2. **Ce que la demande doit contenir.** Les références du contenu visé et ses conditions d'accès, le nom de l'auteur du contenu s'il est indiqué, la nature du contenu, les passages contestés et le texte de la réponse demandée.
+3. **Délais et forme.** Accuser réception le jour même. La réponse tient en **200 lignes** au plus. Elle est insérée au plus tard trois jours après réception de la demande, dans des conditions similaires à celles du contenu visé, présentée comme une réponse du demandeur, et reste accessible aussi longtemps que le contenu d'origine. Le refus d'insérer expose, tel que lu, à une amende de 3 750 euros.
+4. **Contenu retiré ou corrigé.** Si le contenu contesté est retiré ou corrigé dans les trois jours de la réception, il n'y a pas à insérer la réponse (article 5 du décret, lecture à confiance moyenne : à faire relire par le juriste de l'après-ouverture). Retirer une mesure se fait par « Retrait d'urgence d'une mesure (moins d'une heure) » ; corriger un texte reste une modification manuelle validée par Erwan puis une nouvelle relecture.
+5. **Suivi.** Ouvrir une issue GitHub qui trace la date de réception, la date d'insertion et la décision, sans donnée personnelle du demandeur.
+6. **Erreur factuelle.** Une demande de rectification d'erreur factuelle suit la procédure de correction habituelle (sources, relecture), pas celle du droit de réponse.
 
-Tant que l'adresse de contact est la valeur provisoire en `.invalid`, aucune demande ne peut être reçue : la remplacer fait partie du lot 3.
+Limite connue : les réponses partent de la boîte personnelle de l'éditeur tant qu'il n'y a pas de vraie boîte pour l'alias (note de risques, acceptée par la signature). Une demande perdue (redirection en panne, courriel filtré) ferait courir le délai de trois jours sans le savoir.
 
 ## Restauration
 
@@ -562,13 +783,13 @@ Configuration du serveur (ADR-058) :
 
 Reconstruire le serveur depuis le dépôt (machine neuve ou configuration perdue), chaque écriture approuvée, dans cet ordre :
 
-1. Copie du dépôt : `tar -C . -cz ops deploy | ssh keel-vps 'mkdir -p /opt/rtp/depot && tar -xz -C /opt/rtp/depot'`.
+1. Copie du dépôt : `git archive --format=tar.gz HEAD ops deploy | ssh keel-vps 'mkdir -p /opt/rtp/depot && tar -xz -C /opt/rtp/depot'`.
 2. `--appliquer --etape sauvegarde-caddy`, puis `montages`, puis `env-caddy` avec les deux empreintes de Vaultwarden sur l'entrée standard.
 3. Lecture : `docker compose config -q` dans `/opt/vaultwarden`, puis `ops/valider-caddy.sh` avec `RTP_AJOUTER_IMPORT=1 RTP_AVEC_SANS_VARIABLES=1`.
 4. `--etape import-caddy`, puis la recréation du conteneur (« Serveur : installer et vérifier »).
 5. `--etape utilisateur,commande --cle-publique <clé publique de déploiement>`.
 6. `--etape battement` (fichier `battement.env` de Vaultwarden sur l'entrée standard), `--etape sauvegarde`, `--etape restauration-mensuelle` (ligne `HC_RESTAURATION=…`).
-7. `--etape site-essai`, puis `caddy validate` et `caddy reload` dans le conteneur.
+7. `--etape site-public` (après un premier déploiement de production) et, tant que l'hôte technique existe, `--etape site-essai`, puis `caddy validate` et `caddy reload` dans le conteneur.
 8. Vérifier : `--verifier` sur toutes ces étapes (aucun `[a faire]`), `rtp-tester-restauration`, puis un déploiement approuvé. Si la clé d'hôte SSH du serveur a changé, remplacer `DEPLOY_KNOWN_HOSTS` dans l'Environment `production`, ligne lue par le canal SSH de confiance, jamais par un scan.
 
 ## Monitoring
@@ -581,11 +802,12 @@ Healthchecks.io (compte d'Erwan) reçoit des pings et alerte quand un contrôle 
 | `vps-disque-85` | `rtp-battement` | 5 min | 10 min | `/fail` : disque le plus plein à 85 % ou plus | `ssh keel-vps 'df -h; docker system df'` |
 | `vps-disque-92` | `rtp-battement` | 5 min | 10 min | `/fail` à 92 % (le déploiement refuse déjà au-delà, code 75) | même commande, puis libérer de la place sans toucher aux autres sites |
 | `vps-certificat` | `rtp-battement`, une fois `RTP_HOTE` posé | 5 min | 10 min | `/fail` : certificat servi qui expire dans moins de 14 jours | `ssh keel-vps 'docker logs --since 24h caddy 2>&1 \| grep -ci acme'` puis lire les messages ACME |
-| `sonde-externe` | `.github/workflows/sonde.yml`, toutes les 10 min | 10 min | 20 min | environ 3 sondes manquées : page d'accueil sans le marqueur, `/version.json` illisible, hôte injoignable | `gh run list --workflow sonde.yml --limit 3`, puis `gh run view <id> --log-failed` |
+| `sonde-externe` | `.github/workflows/sonde.yml`, toutes les 10 min | 1 jour | 1 jour | environ 2 jours sans ping de succès : page d'accueil sans le marqueur, `/version.json` illisible, hôte injoignable | `gh run list --workflow sonde.yml --limit 3`, puis `gh run view <id> --log-failed` |
 | `restauration-mensuelle` | `rtp-tester-restauration`, le 1er du mois | planning `0 11 1 * *` UTC | 3 jours | test du mois manqué ou en échec | `ssh keel-vps 'journalctl -t rtp-restauration -n 20 --no-pager'` |
 
 - La sonde ne pingue qu'en cas de succès ; en cas d'échec elle envoie seulement la raison au journal du contrôle (`/log`). Le battement fait tous ses contrôles, puis envoie un ping par contrôle dans un ordre fixe ; sa ligne JSON (journal `rtp-battement`) ne contient ni adresse ni identifiant. Chaque appel externe est borné par `timeout` (`docker inspect` et `openssl s_client` 15 s, requêtes HTTPS 15 s, pings 60 s) et la ligne cron passe par `flock -n /run/rtp-battement.lock` : pendant une panne de Docker ou de Caddy, un passage encore en cours fait sauter le suivant au lieu de s'empiler (revue de code WR-05).
 - Alertes simulées, sans remplir le disque ni toucher au certificat (elles envoient de vraies alertes : à faire approuver comme une écriture) : `ssh keel-vps 'RTP_SEUIL1=1 /usr/local/sbin/rtp-battement'`, puis `RTP_SEUIL2=1`, puis `RTP_CERT_JOURS=9999` (une fois `RTP_HOTE` posé), et un passage normal pour le rétablissement. `RTP_HC_SIMULATION=1` affiche le signal prévu pour chaque contrôle sans rien envoyer.
+- **Sonde externe à 1 jour (écart à OPS-01).** OPS-01 demandait une alerte Telegram après 3 échecs consécutifs de la sonde externe. La planification de GitHub ne tient pas un rythme de 10 minutes : elle glisse et saute des exécutions, ce qui a produit de fausses alertes. Erwan a réglé la période et la grâce du contrôle `sonde-externe` à 1 jour chez Healthchecks le 2026-11-10 ; le workflow tourne toujours toutes les 10 minutes mais ne déclenche plus d'alerte qu'après environ 2 jours sans succès. L'alerte rapide du contenu est le battement du VPS (HTTPS, toutes les 5 minutes, grâce de 10 minutes : `vps-battement`, `vps-certificat`). Aucun déclencheur externe n'est prévu pour l'instant. L'écart n'est inscrit comme accepté dans `08-VERIFICATION.md` qu'avec la réponse écrite d'Erwan (plan 09-09).
 - GitHub peut retarder une exécution planifiée de quelques minutes, et suspend la planification après 60 jours sans activité dans le dépôt : `sonde-externe` passe alors en panne (interrupteur de l'homme mort). Relancer avec `gh workflow enable sonde.yml`, puis `gh workflow run sonde.yml`.
 - Avant le DNS, `vps-battement` lit la version d'essai sur le disque (`/srv/reveletonprog/essai/current/version.json`) et `vps-certificat` ne reçoit rien. Après le DNS (08-15), `RTP_HOTE` et les identifiants de la sonde dans `battement.env` font passer le battement en HTTPS à travers Caddy.
 

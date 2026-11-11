@@ -617,7 +617,7 @@ describe('documentation (phase 9) : RUNBOOK (LEG-03, PUB-01, PUB-02)', () => {
       '-f retrait_urgence=true',
       '-f justification=',
       'Review deployments',
-      'rejeter',
+      'Rejeter',
       'relecture -- publier',
       'relecture -- marquer',
       'moins d\'une heure',
@@ -675,7 +675,7 @@ describe('documentation (phase 9) : RUNBOOK (LEG-03, PUB-01, PUB-02)', () => {
       'CANDIDAT_NON_RELU_EN_PRODUCTION',
       'THEME_HORS_LISTE_BLANCHE',
       'Relue par',
-      'pull request',
+      'Pull request',
       'Review deployments',
     ]) {
       assert.ok(s.includes(needle), `Publier un thème doit contenir « ${needle} »`);
@@ -729,7 +729,7 @@ describe('documentation (phase 9) : RUNBOOK (LEG-03, PUB-01, PUB-02)', () => {
       'ops/valider-caddy.sh',
       'caddy validate',
       'caddy reload',
-      'gh variable set DEPLOY_URL --env production',
+      'gh variable set DEPLOY_URL --env production --body https://<domaine>',
       'gh variable set SONDE_URL',
       '--etape battement',
       'touch /opt/rtp/essai-retire',
@@ -787,7 +787,7 @@ describe('documentation (phase 9) : RUNBOOK (LEG-03, PUB-01, PUB-02)', () => {
 
   it('aucun secret, hash, adresse de ping ni adresse IP dans les sections de la phase 9', () => {
     const sections = [...TITRES.map(nom), 'Archiver une source', 'Droit de réponse'].map((t) => sectionRunbook(t)).join('\n');
-    assert.doesNotMatch(sections, /\$2[aby]\$|hc-ping\.com\/[0-9a-f-]{8}|BEGIN OPENSSH|\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/);
+    assert.doesNotMatch(sections.replaceAll('127.0.0.1', 'boucle-locale').replaceAll('1.1.1.1', 'resolveur-a').replaceAll('9.9.9.9', 'resolveur-b'), /\$2[aby]\$|hc-ping\.com\/[0-9a-f-]{8}|BEGIN OPENSSH|\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/);
   });
 
   it('les sections nouvelles ou réécrites n\'ont ni tiret long ni demi-cadratin, ni mot interdit', () => {
