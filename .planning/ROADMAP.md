@@ -145,7 +145,7 @@ Plans:
 - [x] 09-04-PLAN.md — Mentions légales finales (régime II), contact réel, phrase du journal d'erreurs, note de risques R1 à R9 (vague 1)
 - [x] 09-05-PLAN.md — Page de relecture locale sur 127.0.0.1 avec jeton CSRF, jamais dans le dist (vague 2)
 - [x] 09-06-PLAN.md — Commandes publier (relu vers publie, thème entier) et retirer (retrait d'urgence avec case de couverture) (vague 2)
-- [ ] 09-07-PLAN.md — Installateur site-public, test de restauration conditionnel, favicon.ico et règle check-dist (vague 2)
+- [x] 09-07-PLAN.md — Installateur site-public, test de restauration conditionnel, favicon.ico et règle check-dist (vague 2)
 - [x] 09-08-PLAN.md — Actes d'Erwan : identité transmise à Hetzner, contact testé de bout en bout, signature de la note de risques (vague 2)
 - [ ] 09-09-PLAN.md — RUNBOOK (retrait d'urgence, gel 2027, relecture, publication, ouverture), ADR-059 à 062, préparation du serveur (vague 5, accord d'Erwan)
 - [ ] 09-10-PLAN.md — Relecture du thème santé par Erwan : 47 mesures, 37 statuts, 37 cases (vague 3, du 23 novembre au 1er décembre)
@@ -180,5 +180,5 @@ Plans:
 | 6. Diagnostic du VPS et décision | v1.1 | 1/0 | Complete    | 2026-11-08 |
 | 7. Domaine paramétré, inlining et dette | v1.1 | 8/8 | Complete    | 2026-11-07 |
 | 8. Serveur, pipeline, supervision et sauvegardes | v1.1 | 15/15 | Complete    | 2026-11-10 |
-| 9. Contenu relu, juridique et ouverture | v1.1 | 0/0 | Not started | - |
+| 9. Contenu relu, juridique et ouverture | v1.1 | 8/15 | In Progress|  |
 | 10. Import de décembre | v1.1 | 0/0 | Not started | - |

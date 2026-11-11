@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: "Lot 3 : hébergement et mise en ligne"
 status: executing
-stopped_at: Completed 09-06-PLAN.md
-last_updated: "2026-11-10T23:25:49.574Z"
-last_activity: "2026-11-11 (09-06 : commandes publier et retirer)"
+stopped_at: Completed 09-07-PLAN.md
+last_updated: "2026-11-11T00:10:22.488Z"
+last_activity: "2026-11-11 (09-07 : étape site-public, restauration conditionnelle, favicon.ico)"
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 38
-  completed_plans: 31
+  completed_plans: 32
   percent: 40
 ---
 
@@ -27,9 +27,9 @@ See: .planning/PROJECT.md (updated 2026-11-04)
 ## Current Position
 
 Phase: 9 of 10 (contenu relu, juridique et ouverture)
-Plan: 09-05, 09-06 and 09-08 done (relecture locale ; commandes publier et retirer ; note de risques signée) ; wave 2 continues with 09-07
+Plan: 09-05, 09-06, 09-07 and 09-08 done (relecture locale ; commandes publier et retirer ; étape site-public et favicon ; note de risques signée) ; wave 2 complete
 Status: Executing phase 9
-Last activity: 2026-11-11 (09-06 : commandes publier et retirer de l'outil de relecture)
+Last activity: 2026-11-11 (09-07 : étape site-public de l'installateur, test de restauration selon les blocs, favicon.ico ; à appliquer sur le serveur : étapes sauvegarde,depot avant le 1er décembre)
 
 Progress v1.1: [..........] 0/5 phases, 0 plans
 
@@ -72,6 +72,7 @@ Recent decisions affecting current work:
 - [Roadmap v1.1]: déploiement par releases datées + lien `current`, job dans `ci.yml`, build de production reconstruite, jamais d'artefact preview
 - [Roadmap v1.1]: dépôt public depuis le 2026-11-04 : réviser l'ADR-051, la preview n'est jamais servie
 - [09-05]: page de relecture locale = node:http sur 127.0.0.1 seulement, Host exact, Origin, jeton par lancement ; « Valider » appelle le même `marquer` que la ligne de commande ; un refus répond 409 avec le message, jamais d'écriture
+- [09-07]: le bloc public n'arrive sur le serveur que par l'étape site-public (codes 6 et 7) ; après le retrait de l'hôte technique, le marqueur /opt/rtp/essai-retire neutralise site-essai ; le test de restauration déduit ses étapes des blocs restaurés ; favicon.ico généré par scripts/favicon.ts, seul .ico admis par check-dist, servi en no-cache (no-store casse le bfcache)
 
 ### Pending Todos
 
@@ -99,8 +100,8 @@ Items acknowledged and deferred at v1.0 close on 2026-11-04 (Erwan: « Fix, then
 
 ## Session Continuity
 
-Last session: 2026-11-10T23:25:49.564Z
-Stopped at: Completed 09-06-PLAN.md
+Last session: 2026-11-11T00:10:22.478Z
+Stopped at: Completed 09-07-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
