@@ -6,6 +6,9 @@ import { fileURLToPath } from 'node:url';
 import { CATALOGUE, HYPOTHESES } from '../../src/lib/content-core/rules/config.ts';
 import { CODES_CHECK_DIST } from '../../scripts/lib/check-dist.ts';
 import { MESURE_SERVEUR_4G } from '../../src/lib/profil-4g.ts';
+import { motsInterdits } from '../../src/lib/content-core/rules/text/forbidden.ts';
+import { COMMANDES } from '../../scripts/relecture.ts';
+import { FENETRES_GEL } from '../../scripts/garde-gel.ts';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const read = (f: string): string => fs.readFileSync(path.join(ROOT, f), 'utf8');
@@ -576,4 +579,266 @@ describe('documentation (phase 8) : mesure 4G derrière le serveur réel (PERF-0
       assert.doesNotMatch(ligne, /[–—]/, `tiret long ou demi-cadratin dans la phrase de mesure du ${nom}`);
     });
   }
+});
+
+describe('documentation (phase 9) : RUNBOOK (LEG-03, PUB-01, PUB-02)', () => {
+  const TITRES = [
+    '### Relire un thème',
+    '### Publier un thème',
+    "### Retrait d'urgence d'une mesure (moins d'une heure)",
+    '### Ouverture publique (Phase 9)',
+  ];
+  const nom = (t: string): string => t.replace(/^#+ /, '');
+
+  it('a les quatre titres, une fois chacun', () => {
+    for (const t of TITRES) {
+      const echappe = t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      assert.equal((runbook.match(new RegExp(`^${echappe}$`, 'gm')) ?? []).length, 1, `titre absent ou en double : ${t}`);
+    }
+    assert.equal((runbook.match(/^### Retrait d'urgence d'une mesure/gm) ?? []).length, 1);
+    assert.equal((runbook.match(/^### Ouverture publique/gm) ?? []).length, 1);
+  });
+
+  it('le retrait d\'urgence est sous « Incidents fréquents » et l\'ancienne section y renvoie', () => {
+    const incidents = runbook.split('\n## Incidents fréquents\n')[1]?.split('\n## ')[0] ?? '';
+    assert.ok(incidents.includes("### Retrait d'urgence d'une mesure (moins d'une heure)"));
+    assert.ok(sectionRunbook('Une mesure publiée sans source').includes("Retrait d'urgence d'une mesure"));
+  });
+
+  it('retrait d\'urgence : trois voies dans l\'ordre, piège de la couverture, budget, gel, retour de la mesure', () => {
+    const s = sectionRunbook("Retrait d'urgence d'une mesure (moins d'une heure)");
+    const ordre = ['rollback.yml', 'relecture -- retirer <candidat>/<slug>', 'relecture -- retirer --theme <id>'].map((n) => s.indexOf(n));
+    assert.ok(ordre.every((i) => i >= 0), `une des trois voies manque : ${ordre.join(', ')}`);
+    assert.deepEqual([...ordre].sort((a, b) => a - b), ordre, 'les trois voies ne sont pas dans l\'ordre');
+    for (const needle of [
+      '--case non_precise --sources',
+      '--case programme_non_publie',
+      'EQUITE_COUVERTURE_INCOHERENTE',
+      '-f retrait_urgence=true',
+      '-f justification=',
+      'Review deployments',
+      'rejeter',
+      'relecture -- publier',
+      'relecture -- marquer',
+      'moins d\'une heure',
+      'Budget',
+      '| Étape |',
+      'secondes',
+      'issue',
+    ]) {
+      assert.ok(s.includes(needle), `Retrait d'urgence doit contenir « ${needle} »`);
+    }
+  });
+
+  it('gel : calendrier 2027 des deux tours, dernier déploiement sûr, source des dates', () => {
+    const s = sectionRunbook("Gel des scrutins et retrait d'urgence");
+    for (const needle of ['dimanche 18 avril 2027', 'samedi 17 avril 2027', 'lundi 19 avril 2027', 'dimanche 2 mai 2027', 'samedi 1er mai 2027', 'lundi 3 mai 2027', 'vendredi 16 avril 2027', 'vendredi 30 avril 2027', 'src/lib/dates-tours.ts']) {
+      assert.ok(s.includes(needle), `Gel doit contenir « ${needle} »`);
+    }
+    assert.deepEqual(FENETRES_GEL.map((f) => [f.debut, f.fin]), [['2027-04-17', '2027-04-19'], ['2027-05-01', '2027-05-03']]);
+  });
+
+  it('relire un thème : worktree, commandes, registre, notes, cas de dates, cas de travail encore ouverts', () => {
+    const s = sectionRunbook('Relire un thème');
+    for (const needle of [
+      'git worktree add',
+      'relecture -- liste',
+      'relecture -- servir',
+      'relecture -- marquer mesure',
+      'relecture -- marquer statut',
+      'relecture -- marquer case',
+      'relecture -- note',
+      '--resoudre',
+      'relecture/journal.jsonl',
+      'a_revoir',
+      'COUVERTURE_VERIFIEE_AVANT_SOURCE',
+      'clara-egger',
+      'benoit-mathieu',
+      'manolo-mlekuz',
+      'antoine-mikolajczak',
+      'natacha-polony',
+      'travail',
+    ]) {
+      assert.ok(s.includes(needle), `Relire un thème doit contenir « ${needle} »`);
+    }
+  });
+
+  it('publier un thème : liste blanche, publier, refus, personnes sans statut relu, ligne du relecteur', () => {
+    const s = sectionRunbook('Publier un thème');
+    for (const needle of [
+      'config/publication.yml',
+      'themes_ouverts',
+      'relecture -- publier',
+      '--dry-run',
+      'PUBLICATION_THEME_NON_OUVERT',
+      'RELECTURE_ABSENTE',
+      'CANDIDAT_NON_RELU_EN_PRODUCTION',
+      'THEME_HORS_LISTE_BLANCHE',
+      'Relue par',
+      'pull request',
+      'Review deployments',
+    ]) {
+      assert.ok(s.includes(needle), `Publier un thème doit contenir « ${needle} »`);
+    }
+  });
+
+  it('archivage : adoption d\'un instantané Wayback, exception motivée, site qui refuse l\'agent (403)', () => {
+    const s = sectionRunbook('Archiver une source');
+    for (const needle of ['--wayback-adopter', '--instantane', '--nouvelle-url', 'wayback_exception', 'decide_par', 'tests/rules/sources-wayback.test.ts', 'erwan-rohou-programme-mei', '403', '--file']) {
+      assert.ok(s.includes(needle), `Archiver une source doit contenir « ${needle} »`);
+    }
+  });
+
+  it('droit de réponse : décret 2007-1527, 200 lignes, trois mois, trois jours, art. 1-1', () => {
+    const s = sectionRunbook('Droit de réponse');
+    for (const needle of ['2007-1527', '200 lignes', 'trois mois', 'trois jours', '1-1', 'accusé de réception', 'prouvant', '3 750 euros', 'issue']) {
+      assert.ok(s.includes(needle), `Droit de réponse doit contenir « ${needle} »`);
+    }
+    assert.doesNotMatch(s, /valeur provisoire en `\.invalid`/);
+  });
+
+  it('étapes juridiques : chaque étape est marquée faite, remplacée ou à faire avec son plan', () => {
+    const liste = runbook.split('Étapes juridiques')[1]?.split('### Retour arrière')[0] ?? '';
+    for (const needle of ['09-08', '09-11', '09-04', 'note de risques signée']) {
+      assert.ok(liste.includes(needle), `Étapes juridiques doit contenir « ${needle} »`);
+    }
+    const etapes = liste.split('\n').filter((l) => /^\d+\. /.test(l));
+    assert.equal(etapes.length, 9);
+    for (const e of etapes) assert.match(e, /^\d+\. \*\*(Fait|Remplacé|À faire|Sans objet)/, `étape sans marque : ${e.slice(0, 60)}`);
+  });
+
+  it('autres sections mises à jour : relecture ouverte, garde de déploiement, git archive, sonde à un jour', () => {
+    assert.match(sectionRunbook('Ouvrir la relecture'), /vaut `true` depuis le premier commit de la phase 9/);
+    assert.doesNotMatch(runbook, /vaut `false` pendant la phase 3/);
+    assert.doesNotMatch(runbook, /Tant que le domaine n'est pas acheté, `config\/site\.yml` garde/);
+    const serveur = sectionRunbook('Serveur : installer et vérifier');
+    assert.ok(serveur.includes('git archive --format=tar.gz HEAD ops deploy'));
+    assert.doesNotMatch(runbook, /tar -C \. -cz ops deploy/);
+    const m = sectionRunbook('Monitoring');
+    for (const needle of ['1 jour', 'OPS-01', 'battement']) assert.ok(m.includes(needle), `Monitoring doit contenir « ${needle} »`);
+  });
+
+  it('ouverture publique : réglages GitHub, écritures du serveur dans l\'ordre, contrôles, suites datées', () => {
+    const s = sectionRunbook('Ouverture publique (Phase 9)');
+    const ordre = [
+      'gh variable delete DEPLOY_URL --env production',
+      'gh variable set DEPLOY_CIBLE --body production',
+      '-f deployer=true',
+      'git archive --format=tar.gz HEAD ops deploy',
+      '--etape site-public',
+      'ops/valider-caddy.sh',
+      'caddy validate',
+      'caddy reload',
+      'gh variable set DEPLOY_URL --env production',
+      'gh variable set SONDE_URL',
+      '--etape battement',
+      'touch /opt/rtp/essai-retire',
+      'rtp-tester-restauration',
+    ].map((n) => s.indexOf(n));
+    assert.ok(ordre.every((i) => i >= 0), `commande absente : ${ordre.join(', ')}`);
+    assert.deepEqual([...ordre].sort((a, b) => a - b), ordre, 'les commandes ne sont pas dans l\'ordre');
+    for (const needle of [
+      'DEPLOY_CIBLE',
+      'DEPLOY_SMOKE_USER',
+      'DEPLOY_SMOKE_PASS',
+      'SONDE_USER',
+      'SONDE_PASS',
+      'RTP_HOTE',
+      '[ok: retiré]',
+      'verifier-sites.sh',
+      'www',
+      'robots.txt',
+      'sitemap.xml',
+      'noindex',
+      'version.json',
+      '31536000',
+      'includeSubDomains',
+      'preload',
+      '7 jours',
+      'AAAA',
+      'accord',
+      'Retour arrière',
+    ]) {
+      assert.ok(s.includes(needle), `Ouverture publique doit contenir « ${needle} »`);
+    }
+  });
+
+  it('les commandes du RUNBOOK existent : commandes de relecture, entrées des workflows, options d\'archivage', () => {
+    for (const m of runbook.matchAll(/relecture -- (?:--root \S+ )?([a-z]+)/g)) {
+      assert.ok((COMMANDES as readonly string[]).includes(m[1] as string), `commande de relecture inconnue : ${m[1]}`);
+    }
+    const ci = read('.github/workflows/ci.yml');
+    const rollback = read('.github/workflows/rollback.yml');
+    for (const entree of ['deployer', 'retrait_urgence', 'justification']) assert.match(ci, new RegExp(`^      ${entree}:`, 'm'), `ci.yml sans l'entrée ${entree}`);
+    for (const entree of ['cible', 'version', 'retrait_urgence', 'justification']) assert.match(rollback, new RegExp(`^      ${entree}:`, 'm'), `rollback.yml sans l'entrée ${entree}`);
+    const archive = read('scripts/archive-source.ts');
+    for (const option of ['--wayback-adopter', '--instantane', '--nouvelle-url']) assert.ok(archive.includes(option), `archive-source.ts sans ${option}`);
+    const installateur = read('ops/installer-serveur.sh');
+    for (const etape of ['site-public', 'battement', 'depot']) assert.ok(installateur.includes(etape));
+  });
+
+  it('table check-dist : chaque code y figure une seule fois', () => {
+    const table = runbook.split('### Contrôle post-build (check-dist)')[1]?.split('\n### ')[0] ?? '';
+    for (const code of CODES_CHECK_DIST) {
+      const lignes = table.split('\n').filter((l) => l.startsWith(`| \`${code}\` |`));
+      assert.equal(lignes.length, 1, `${code} : ${lignes.length} ligne(s) dans la table check-dist`);
+    }
+  });
+
+  it('aucun secret, hash, adresse de ping ni adresse IP dans les sections de la phase 9', () => {
+    const sections = [...TITRES.map(nom), 'Archiver une source', 'Droit de réponse'].map((t) => sectionRunbook(t)).join('\n');
+    assert.doesNotMatch(sections, /\$2[aby]\$|hc-ping\.com\/[0-9a-f-]{8}|BEGIN OPENSSH|\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/);
+  });
+
+  it('les sections nouvelles ou réécrites n\'ont ni tiret long ni demi-cadratin, ni mot interdit', () => {
+    const noms = [...TITRES.map(nom), "Gel des scrutins et retrait d'urgence", 'Droit de réponse', 'Archiver une source', 'Serveur : installer et vérifier', 'Ouvrir la relecture'];
+    for (const t of noms) {
+      const s = sectionRunbook(t);
+      assert.doesNotMatch(s, /[–—]/, `tiret long ou demi-cadratin dans « ${t} »`);
+      assert.deepEqual(motsInterdits(s, { exempterCitations: false }), [], `mot interdit dans « ${t} »`);
+    }
+    const liste = runbook.split('Étapes juridiques')[1]?.split('### Retour arrière')[0] ?? '';
+    assert.doesNotMatch(liste, /[–—]/);
+  });
+});
+
+describe('documentation (phase 9) : ADR', () => {
+  const ATTENDUS: Record<string, { titre: string; needles: string[] }> = {
+    '059': { titre: 'outil de relecture local', needles: ['relecture/journal.jsonl', 'node.range', 'relu', 'publie', 'hors de src/content'] },
+    '060': { titre: 'liste blanche de publication', needles: ['config/publication.yml', 'PUBLICATION_THEME_NON_OUVERT', 'THEME_HORS_LISTE_BLANCHE', 'ADR-041', 'CANDIDAT_NON_RELU_EN_PRODUCTION'] },
+    '061': { titre: 'exception Wayback motivée', needles: ['wayback_exception', '--wayback-adopter', 'paragraphe'] },
+    '062': { titre: 'éditeur non professionnel', needles: ['1-1', 'note de risques', 'domiciliation', 'Hetzner'] },
+  };
+
+  it('ARCHITECTURE : ADR-059 à 062 après l\'ADR-058 et avant les dépendances externes, dans l\'ordre', () => {
+    const position = (n: string): number => architecture.search(new RegExp(`^### ADR-${n} : `, 'm'));
+    const ordre = ['058', '059', '060', '061', '062'].map(position);
+    assert.ok(ordre.every((i) => i >= 0), `ADR absent : ${ordre.join(', ')}`);
+    assert.deepEqual([...ordre].sort((a, b) => a - b), ordre);
+    assert.ok(position('062') < architecture.indexOf('## Dépendances externes critiques'));
+    for (const n of Object.keys(ATTENDUS)) assert.equal((architecture.match(new RegExp(`^### ADR-${n} : `, 'gm')) ?? []).length, 1, `ADR-${n} en double`);
+  });
+
+  for (const [n, { titre, needles }] of Object.entries(ATTENDUS)) {
+    it(`ADR-${n} : titre, Contexte, Décision, Conséquence, mots clés, aucun tiret long`, () => {
+      const adr = sectionAdr(n);
+      assert.ok(adr.split('\n')[0]?.includes(titre), `titre de l'ADR-${n} sans « ${titre} »`);
+      for (const rubrique of ['**Contexte**', '**Décision**', '**Conséquence']) assert.ok(adr.includes(rubrique), `ADR-${n} sans ${rubrique}`);
+      for (const needle of needles) assert.ok(adr.includes(needle), `ADR-${n} doit contenir « ${needle} »`);
+      assert.doesNotMatch(adr, /[–—]/);
+      assert.deepEqual(motsInterdits(adr, { exempterCitations: false }), []);
+    });
+  }
+
+  it('ADR-049 : note de la phase 9, `actif` conditionne aussi la phrase d\'identité et celle de la sortie d\'erreur', () => {
+    const adr = sectionAdr('049');
+    assert.ok(adr.includes('Note de la phase 9'));
+    assert.ok(adr.includes('phrase d\'identité'));
+    assert.ok(adr.includes('sortie d\'erreur'));
+  });
+
+  it('le schéma Mermaid reste fermé et unique', () => {
+    assert.equal((architecture.match(/^```mermaid$/gm) ?? []).length, 1);
+    assert.equal((architecture.match(/^```$/gm) ?? []).length, 1);
+  });
 });
