@@ -5,6 +5,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { loadAll } from '../../src/lib/content-core/load.ts';
 import { MARQUEUR_GLOSSAIRE, PERIMETRE_EQUITE } from '../../src/lib/content-core/rules/config.ts';
+import { statutRetenu } from '../../src/lib/content-core/rules/equite.ts';
 import { BASE_CORPUS } from '../helpers/overlay.ts';
 import { CORPUS_M1, SURCHARGES_AUTORISEES, TRAPPE_BROUILLON, materialiserCorpusM1, nettoyerCorpusM1 } from '../helpers/corpus-m1.ts';
 import { REPO_ROOT, SCHEMAS_DIR } from '../helpers/validate-yaml.ts';
@@ -100,6 +101,12 @@ describe('corpus-m1 : la surcouche fictive des pages M1', () => {
       .map((c) => c.id)
       .sort();
     assert.deepEqual(perimetre, ['elise-erard', 'jean-imaginaire', 'marie-fictive', 'paul-de-villefranche']);
+    // Sans aucun statut relu ou publié, donc absentes de la production (D-06, plan 09-15) : Paul et Nina.
+    const nonRelus = candidats
+      .filter((c) => statutRetenu(c.data.statuts, 'production') === undefined)
+      .map((c) => c.id)
+      .sort();
+    assert.deepEqual(nonRelus, ['nina-pressentie', 'paul-de-villefranche']);
   });
 
   it('couvre les cas de candidats : collation, particule, statut non relu, renoncement relu, pressenti', () => {

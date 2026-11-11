@@ -20,6 +20,7 @@ import {
   themesLivres,
 } from '../../src/lib/corpus/vue.ts';
 import type { Candidat } from '../../src/lib/corpus/types.ts';
+import { dansPerimetre } from '../../src/lib/content-core/rules/equite.ts';
 import { TRAPPE_BROUILLON, materialiserCorpusM1, nettoyerCorpusM1 } from '../helpers/corpus-m1.ts';
 import { REPO_ROOT, SCHEMAS_DIR } from '../helpers/validate-yaml.ts';
 
@@ -193,9 +194,10 @@ describe('vue : production', () => {
   it('renonces = luc-retire ; un renoncement non relu bascule dans les autres personnalités', () => {
     const c = construireCorpus(brut, 'production');
     assert.deepEqual(ids(c.theme('logement').renonces.map((v) => v.donnees)), ['luc-retire']);
-    // nina (pressentie, brouillon) et paul (déclaré mais pas encore relu) : autres personnalités en production (ADR-041)
-    assert.equal(c.theme('logement').autresPersonnalites, 2);
-    assert.equal(c.theme('climat').autresPersonnalites, 2);
+    // nina (pressentie, brouillon) et paul (déclaré mais pas encore relu) n'ont aucun statut relu : absents de la
+    // production (D-06, plan 09-15), ils ne sont donc plus comptés parmi les autres personnalités.
+    assert.equal(c.theme('logement').autresPersonnalites, 0);
+    assert.equal(c.theme('climat').autresPersonnalites, 0);
 
     const b = copie();
     const luc = b.candidats.find((x) => x.id === 'luc-retire') as Candidat;
@@ -223,6 +225,59 @@ describe('vue : production', () => {
     assert.equal(statutAffiche(nina, 'production'), null);
     const luc = c.candidat('luc-retire').donnees;
     assert.equal(statutAffiche(luc, 'production')?.code, 'renonce');
+  });
+});
+
+describe('vue : personnes sans statut relu (D-06, plan 09-15)', () => {
+  it('production : absentes, rangs contigus, nonRelus = 2, candidat() et pageCandidat() lèvent', () => {
+    const c = construireCorpus(brut, 'production');
+    assert.deepEqual(ids(c.candidats.map((v) => v.donnees)), ['elise-erard', 'marie-fictive', 'jean-imaginaire', 'luc-retire']);
+    assert.deepEqual(
+      c.candidats.map((v) => v.rang),
+      [0, 1, 2, 3],
+    );
+    assert.equal(c.nonRelus, 2);
+    assert.throws(() => c.candidat('paul-de-villefranche'), /paul-de-villefranche/);
+    assert.throws(() => c.candidat('nina-pressentie'), /nina-pressentie/);
+    assert.throws(() => c.pageCandidat('paul-de-villefranche'), /paul-de-villefranche/);
+    assert.throws(() => c.pageCandidat('nina-pressentie'), /nina-pressentie/);
+    for (const t of c.themes) {
+      const presents = [...t.cellules.map((x) => x.candidat.id), ...t.renonces.map((x) => x.id)];
+      assert.ok(!presents.includes('paul-de-villefranche') && !presents.includes('nina-pressentie'), t.theme.id);
+    }
+    const dump = JSON.stringify({ themes: c.themes, candidats: c.candidats, mesures: c.mesures });
+    assert.ok(!dump.includes('Villefranche'), 'aucune trace de Paul dans le corpus de production');
+    assert.ok(!dump.includes('nina-pressentie'), 'aucune trace de Nina dans le corpus de production');
+  });
+
+  it('production : le périmètre est le même avec et sans le filtre (ADR-041)', () => {
+    const c = construireCorpus(brut, 'production');
+    const attendu = new Set(brut.candidats.filter((x) => dansPerimetre(x.statuts, 'production')).map((x) => x.id));
+    assert.deepEqual([...c.perimetre].sort(), [...attendu].sort());
+    assert.deepEqual([...c.perimetre].sort(), ['elise-erard', 'jean-imaginaire', 'marie-fictive']);
+  });
+
+  it("production : une mesure publiée d'une personne écartée ne reste pas dans les mesures", () => {
+    const b = copie();
+    const modele = b.mesures.find((m) => m.candidat === 'marie-fictive' && m.statut_relecture === 'publie')!;
+    b.mesures.push({ ...structuredClone(modele), id: 'paul-de-villefranche/plantee', candidat: 'paul-de-villefranche' });
+    const c = construireCorpus(b, 'production');
+    assert.ok(!c.mesures.some((m) => m.mesure.candidat === 'paul-de-villefranche'));
+    assert.ok(construireCorpus(b, 'preview').mesures.some((m) => m.mesure.candidat === 'paul-de-villefranche'), 'preview : la mesure reste');
+  });
+
+  it('preview : tout le monde reste, avec la pastille de brouillon, nonRelus = 0', () => {
+    const c = construireCorpus(brut, 'preview');
+    assert.equal(c.candidats.length, 6);
+    assert.equal(c.nonRelus, 0);
+    assert.equal(c.pageCandidat('paul-de-villefranche').badgeStatut, BADGES.brouillon);
+    assert.equal(c.pageCandidat('nina-pressentie').badgeStatut, BADGES.brouillon);
+  });
+
+  it('production sans personne écartée : nonRelus = 0', () => {
+    const b = copie();
+    b.candidats = b.candidats.filter((x) => x.id !== 'paul-de-villefranche' && x.id !== 'nina-pressentie');
+    assert.equal(construireCorpus(b, 'production').nonRelus, 0);
   });
 });
 

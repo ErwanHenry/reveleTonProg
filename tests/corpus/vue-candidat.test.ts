@@ -67,19 +67,9 @@ describe('pageCandidat : production', () => {
     assert.equal(p.miseAJour, '2026-10-26');
   });
 
-  it('Paul : statut non relu jamais présenté comme un fait', () => {
-    const p = corpus().pageCandidat('paul-de-villefranche');
-    assert.equal(p.statut, null);
-    assert.equal(p.badgeStatut, null);
-    // Hors périmètre en production tant que son statut « declare » n'est pas relu (ADR-041) : pas de section.
-    assert.deepEqual(p.sections, []);
-  });
-
-  it('Nina (pressentie, hors périmètre) : aucune section', () => {
-    const p = corpus().pageCandidat('nina-pressentie');
-    assert.deepEqual(p.sections, []);
-    assert.equal(p.statut, null);
-    assert.equal(p.miseAJour, undefined);
+  it('Paul et Nina (aucun statut relu) : absents de la production, pageCandidat lève (D-06, plan 09-15)', () => {
+    assert.throws(() => corpus().pageCandidat('paul-de-villefranche'), /paul-de-villefranche/);
+    assert.throws(() => corpus().pageCandidat('nina-pressentie'), /nina-pressentie/);
   });
 
   it('Luc : statut renonce relu affiché, aucune section', () => {
