@@ -12,11 +12,13 @@ import type { ContexteSite } from '../contexte.ts';
 const norm = (s: string): string => s.replace(/\s+/g, ' ').trim();
 const txt = (n: Noeud): string => norm(texte(n));
 
-const IDS = ['elise-erard', 'marie-fictive', 'jean-imaginaire', 'nina-pressentie', 'luc-retire', 'paul-de-villefranche'];
+// Production : Paul et Nina n'ont aucun statut relu, ils sont absents de la build (D-06, plan 09-15).
+const IDS = ['elise-erard', 'marie-fictive', 'jean-imaginaire', 'luc-retire'];
+const ECARTES = ['nina-pressentie', 'paul-de-villefranche'];
 const SANS_MESURE = "Aucune mesure n'est présentée pour cette personnalité : les thèmes couvrent les candidatures déclarées et les candidatures à une primaire.";
 const STATUT_A_VERIFIER = "Aucune mesure n'est présentée pour cette personnalité tant que son statut est en cours de vérification.";
 const INTRO_CANDIDATS =
-  "Toutes les personnalités du jeu de données, dans l'ordre choisi ci-dessus. Le statut est celui de la dernière source consultée.";
+  "Les personnalités du jeu de données dont le statut a été relu, dans l'ordre choisi ci-dessus. Le statut est celui de la dernière source consultée.";
 const NIVEAUX_HALL = [
   ['En bref', 'Une phrase par mesure.'],
   ['En détail', 'Le coût annoncé, le calendrier, ce qui existe déjà dans la loi et la citation du programme.'],
@@ -61,9 +63,10 @@ export default function candidat(ctx: ContexteSite): void {
   };
 
   describe('production : pages candidat', () => {
-    it('une page par personnalité', () => {
+    it('une page par personnalité au statut relu, aucune pour Paul et Nina', () => {
       const { outDir } = production();
       for (const id of IDS) assert.ok(fs.existsSync(path.join(outDir, 'candidats', id, 'index.html')), `candidats/${id}/index.html`);
+      for (const id of ECARTES) assert.equal(fs.existsSync(path.join(outDir, 'candidats', id, 'index.html')), false, `candidats/${id}/index.html`);
     });
 
     it('Marie : nom, parti revendiqué, statut daté avec lien source', () => {
@@ -97,30 +100,6 @@ export default function candidat(ctx: ContexteSite): void {
       assert.equal(trouver(arbre, (n) => n.tag === 'section' && n.attrs.id === 'ecole').length, 0, 'thème relu absent en production');
       const ordre = trouver(arbre, (n) => n.tag === 'section' && n.attrs['data-theme'] !== undefined).map((s) => s.attrs.id);
       assert.deepEqual(ordre, ['logement', 'climat']);
-    });
-
-    it('Paul : statut en cours de vérification, sans date', () => {
-      const { arbre } = page(production().outDir, 'candidats/paul-de-villefranche/index.html');
-      const statut = trouver(arbre, (n) => n.tag === 'p' && aClasse(n, 'statut'))[0] as Noeud;
-      assert.equal(txt(statut), 'Statut en cours de vérification');
-      assert.equal(trouver(statut, (n) => n.tag === 'time').length, 0);
-    });
-
-    it("Paul (W2) : statut non relu, la phrase sans mesure ne dit rien de la candidature", () => {
-      const { arbre } = page(production().outDir, 'candidats/paul-de-villefranche/index.html');
-      const t = txt(arbre);
-      assert.ok(t.includes(STATUT_A_VERIFIER), t);
-      assert.ok(!t.includes(SANS_MESURE), 'phrase du périmètre affichée pour un statut non relu');
-      assert.doesNotMatch(t, /candidatures déclarées/);
-      assert.equal(lien(arbre, 'Voir les thèmes').attrs.href, '/themes/');
-    });
-
-    it('Nina (W2) : statut « pressenti » non relu, phrase du statut à vérifier et lien « Voir les thèmes »', () => {
-      const { arbre } = page(production().outDir, 'candidats/nina-pressentie/index.html');
-      assert.ok(txt(arbre).includes(STATUT_A_VERIFIER));
-      assert.ok(!txt(arbre).includes(SANS_MESURE));
-      assert.equal(lien(arbre, 'Voir les thèmes').attrs.href, '/themes/');
-      assert.equal(trouver(arbre, (n) => n.tag === 'section' && n.attrs['data-theme'] !== undefined).length, 0);
     });
 
     it('Luc : ne se présente pas, avec motif et date', () => {
@@ -160,7 +139,8 @@ export default function candidat(ctx: ContexteSite): void {
       assert.equal(lien(marie, /^1 autre mesure/).attrs.href, '/candidats/marie-fictive/#logement');
       const renonce = trouver(arbre, (n) => n.tag === 'details' && aClasse(n, 'renonce'))[0] as Noeud;
       assert.equal(lien(renonce, 'Luc Retiré').attrs.href, '/candidats/luc-retire/');
-      assert.equal(lien(arbre, 'voir la liste complète des candidats').attrs.href, '/candidats/');
+      // Paul et Nina ne sont plus comptés parmi les autres personnalités (plan 09-15) : aucune autre dans la fixture.
+      assert.equal(liens(arbre).filter((a) => txt(a) === 'voir la liste complète des candidats').length, 0);
       const fil = trouver(arbre, (n) => n.tag === 'nav' && n.attrs['aria-label'] === "Fil d'Ariane")[0] as Noeud;
       assert.equal(lien(fil, 'Thèmes').attrs.href, '/themes/');
       assert.equal(lien(fil, 'Accueil').attrs.href, '/');
@@ -179,7 +159,7 @@ export default function candidat(ctx: ContexteSite): void {
   });
 
   describe('production : index et hall', () => {
-    it('/candidats/ : six lignes dans l\'ordre du rang, nom, parti, statut', () => {
+    it('/candidats/ : quatre lignes dans l\'ordre du rang, nom, parti, statut', () => {
       const { arbre } = page(production().outDir, 'candidats/index.html');
       assert.equal(txt(trouver(arbre, (n) => n.tag === 'h1')[0] as Noeud), 'Les candidats');
       assert.ok(txt(arbre).includes(INTRO_CANDIDATS));
@@ -188,19 +168,18 @@ export default function candidat(ctx: ContexteSite): void {
       const lignes = trouver(ul, (n) => n.tag === 'li' && n.attrs['data-rang'] !== undefined);
       assert.deepEqual(
         lignes.map((l) => l.attrs['data-rang']),
-        ['0', '1', '2', '3', '4', '5'],
+        ['0', '1', '2', '3'],
       );
       assert.deepEqual(
         lignes.map((l) => lien(l, /./).attrs.href),
-        ['elise-erard', 'marie-fictive', 'jean-imaginaire', 'nina-pressentie', 'luc-retire', 'paul-de-villefranche'].map((id) => `/candidats/${id}/`),
+        IDS.map((id) => `/candidats/${id}/`),
       );
       const elise = lignes[0] as Noeud;
       assert.ok(txt(elise).includes('Parti revendiqué : Mouvement Inventé'));
       assert.ok(txt(elise).includes('Candidature déclarée · 18 octobre 2026'));
       assert.ok(trouver(elise, (n) => n.tag === 'time' && n.attrs.datetime === '2026-10-18').length === 1);
-      assert.ok(txt(lignes[5] as Noeud).includes('Statut en cours de vérification'));
-      assert.ok(txt(lignes[5] as Noeud).includes('Sans étiquette de parti déclarée'));
-      assert.ok(txt(lignes[4] as Noeud).includes('Ne se présente pas · 25 octobre 2026'));
+      assert.ok(!txt(ul).includes('Statut en cours de vérification'), 'aucune ligne au statut non relu en production');
+      assert.ok(txt(lignes[3] as Noeud).includes('Ne se présente pas · 25 octobre 2026'));
     });
 
     it('/themes/ : tuiles logement et climat (pas ecole), 3 candidats chacune', () => {
@@ -275,6 +254,18 @@ export default function candidat(ctx: ContexteSite): void {
       const ordre = trouver(arbre, (n) => n.tag === 'section' && n.attrs['data-theme'] !== undefined).map((s) => s.attrs.id);
       assert.deepEqual(ordre, ['logement', 'ecole', 'climat']);
       assert.equal(lien(section(arbre, 'ecole'), 'Voir tous les candidats sur le thème École').attrs.href, '/themes/ecole/#c-marie-fictive');
+    });
+
+    it('/candidats/ : six lignes, Paul sans étiquette de parti, intro de preview', () => {
+      const { arbre } = page(preview().outDir, 'candidats/index.html');
+      assert.ok(txt(arbre).includes("Toutes les personnalités du jeu de données, dans l'ordre choisi ci-dessus. Le statut est celui de la dernière source consultée."));
+      const lignes = trouver(arbre, (n) => n.tag === 'li' && n.attrs['data-rang'] !== undefined);
+      assert.deepEqual(
+        lignes.map((l) => lien(l, /./).attrs.href),
+        ['elise-erard', 'marie-fictive', 'jean-imaginaire', 'nina-pressentie', 'luc-retire', 'paul-de-villefranche'].map((id) => `/candidats/${id}/`),
+      );
+      assert.ok(txt(lignes[5] as Noeud).includes('Sans étiquette de parti déclarée'));
+      assert.ok(txt(lignes[5] as Noeud).includes('brouillon, non relu'));
     });
 
     it('Paul : statut déclaré en brouillon avec sa pastille', () => {

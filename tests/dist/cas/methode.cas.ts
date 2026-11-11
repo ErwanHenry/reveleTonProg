@@ -142,6 +142,9 @@ export default function methode(ctx: ContexteSite): void {
       assert.ok(t.includes('Licence Ouverte 2.0') && t.includes('2027 et moi'));
       const hrefs = trouver(bloc, (n) => n.tag === 'a').map((n) => n.attrs.href);
       assert.ok(hrefs.includes(d.page), hrefs.join(' | '));
+      // Le bloc décrit le fichier source, pas le site : le compte des personnes affichées est à part (plan 09-15).
+      assert.ok(!t.includes('dont le statut a été relu'), t);
+      assert.equal(avec(bloc, 'data-personnalites-affichees').length, 0);
     });
 
     it("sondages : loi n° 77-808 et Commission des sondages, jamais « sondages … relèvent de l'Arcom » (CR-01)", () => {

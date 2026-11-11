@@ -192,7 +192,7 @@ export default function theme(ctx: ContexteSite): void {
       );
     });
 
-    it('« Ne se présentent pas » : renonce relu, sans carte ; autres personnalités comptées', () => {
+    it('« Ne se présentent pas » : renonce relu, sans carte ; aucune autre personnalité en production', () => {
       const { arbre } = page(production().outDir, 'themes/logement/index.html');
       const d = trouver(arbre, (n) => n.tag === 'details' && aClasse(n, 'renonce'))[0] as Noeud;
       assert.ok(d, 'section details.renonce');
@@ -201,8 +201,8 @@ export default function theme(ctx: ContexteSite): void {
       assert.ok(norm(texte(d)).includes('Luc Retiré : retrait de la candidature. 25 octobre 2026.'));
       assert.ok(trouver(d, (n) => n.tag === 'time' && n.attrs.datetime === '2026-10-25').length === 1);
       assert.equal(trouver(d, (n) => aClasse(n, 'cellule')).length, 0);
-      const autres = trouver(arbre, (n) => n.tag === 'p' && aClasse(n, 'autres-personnalites'))[0] as Noeud;
-      assert.equal(norm(texte(autres)), '2 autres personnalités du jeu de données ne figurent pas ici : voir la liste complète des candidats.');
+      // Paul et Nina (aucun statut relu) sont absents de la production (plan 09-15) : plus aucune autre personnalité à compter.
+      assert.equal(trouver(arbre, (n) => n.tag === 'p' && aClasse(n, 'autres-personnalites')).length, 0);
     });
 
     it('pied de page : date de mise à jour = maximum des dates affichées ; canari d’espace', () => {

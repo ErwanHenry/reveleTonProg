@@ -140,7 +140,7 @@ export default function ordre(ctx: ContexteSite): void {
       const { arbre } = page('candidats/index.html');
       const main = trouver(arbre, (n) => n.tag === 'main')[0] as Noeud;
       const fils = elements(main);
-      const iIntro = fils.findIndex((n) => n.tag === 'p' && norm(texte(n)).startsWith('Toutes les personnalités'));
+      const iIntro = fils.findIndex((n) => n.tag === 'p' && /^(Toutes les|Les) personnalités du jeu de données/.test(norm(texte(n))));
       const iCtl = fils.findIndex((n) => n.attrs['data-ordre-controle'] !== undefined);
       const iListe = fils.findIndex((n) => n.tag === 'ul' && n.attrs['data-ordonnable'] !== undefined);
       assert.ok(iIntro >= 0 && iCtl >= 0 && iListe >= 0);
