@@ -14,7 +14,7 @@ Réglage de `sonde-externe` dans Healthchecks.
 
 ### 1. Sonde externe sans fausse alerte (OPS-01, D1)
 expected: Erwan règle `sonde-externe` à 1 jour de période et 1 jour de grâce dans Healthchecks, puis aucune fausse alerte DOWN sur Telegram pendant 48 h ; ou il retient un déclencheur externe (service de cron qui appelle `workflow_dispatch` avec un jeton limité à Actions) à faire en Phase 9
-result: pending (réglage à 1 jour / 1 jour fait par Erwan le 2026-11-10 ; override OPS-01 accepté par Erwan le 2026-11-11, inscrit dans 08-VERIFICATION.md ; confirmation de 48 h sans fausse alerte Telegram encore attendue)
+result: pending (réglage à 1 jour / 1 jour fait par Erwan le 2026-11-10 ; override OPS-01 accepté par Erwan le 2026-11-11, inscrit dans 08-VERIFICATION.md ; Erwan déclare le 2026-11-11 à 16:19 (heure de Paris) : « Aucune fausse alerte depuis 48 h » ; les dernières fausses alertes consignées datent du 2026-11-10 à 10:11 et 12:44, soit environ 27 h plus tôt : la fenêtre de 48 h se ferme le 2026-11-12 vers 12:44, à reconfirmer par Erwan après cette heure)
 
 ### 2. Approbation des déploiements par Erwan lui-même
 expected: avant l'ouverture, Erwan approuve au moins un déploiement depuis l'interface GitHub (en 08-15, l'orchestrateur a approuvé avec le jeton d'Erwan, à sa demande)

@@ -91,7 +91,7 @@ Conteneur Caddy : `StartedAt` 2026-11-09T19:28:52Z et 0 redémarrage, inchangés
 
 ## Points ouverts
 
-- Confirmation par Erwan de 48 h sans fausse alerte `sonde-externe`.
+- Sonde externe : Erwan déclare le 2026-11-11 n'avoir reçu aucune fausse alerte depuis le réglage ; la fenêtre de 48 h après les dernières fausses alertes (2026-11-10, 12:44) se ferme le 2026-11-12, à reconfirmer après.
 - 09-11 : chiffre de l'exercice chronométré de retrait à inscrire dans le RUNBOOK. 09-12 : date d'ouverture et date cible de l'allongement du HSTS.
 - Pour la relecture (09-10) : `source_localisation` des deux mesures santé de Delphine Batho et trois lignes de « sources consultées » de `data/couverture-themes.yaml` citent encore l'ancien intitulé ou les anciennes adresses.
 - Article 5 du décret 2007-1527 (pas d'insertion si le contenu est corrigé ou retiré sous trois jours) : à confirmer par le juriste.
