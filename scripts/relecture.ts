@@ -29,7 +29,10 @@ Commandes :
   marquer case <theme> <candidat>                 pose verifie_le et verifie_par sur la case de couverture
       options : --relecteur <nom> --date AAAA-MM-JJ --malgre-note --hors-perimetre
   note <cible> <texte> | note --resoudre <cible>  notes de correction (relecture/notes.jsonl)
-  servir, publier, retirer                        ajoutées par les plans suivants
+  servir [--theme <id>] [--port <n>]              page de relecture locale sur 127.0.0.1 (défaut : sante, 4327)
+  publier --theme <id> [--dry-run]                passe un thème entièrement relu en publie (tout ou rien)
+  retirer <candidat/slug> [--case …] [--dry-run]  retrait d'urgence d'une mesure publiée
+  retirer --theme <id> [--dry-run]                repli : remet tout le thème en brouillon
 `;
 
 export async function principal(argv: string[], ctx: Omit<Contexte, 'racine' | 'schemasDir'>, cwd = process.cwd()): Promise<number> {
