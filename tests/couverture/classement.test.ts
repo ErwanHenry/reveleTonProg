@@ -108,6 +108,49 @@ describe('lireCouverture', () => {
   });
 });
 
+// IMP-01 (D-02) : lireCouverture passe par l'analyseur plafonné ; un refus donne fichier, ligne, colonne et code,
+// trois diagnostics au plus, le dernier suivi de « (+N autre(s)) », et ne lève jamais.
+describe('IMP-01 : lireCouverture et l’analyseur plafonné', () => {
+  const MOTIF = /^YAML illisible : data\/couverture-themes\.yaml:\d+:\d+ YAML_[A-Z_]+ /;
+
+  it('alias bénin : une entrée par diagnostic, avec fichier, ligne, colonne et code', () => {
+    const { problemes, data } = lireCouverture('version: &v 1\nautre: *v\n');
+    assert.deepEqual(problemes, ['YAML illisible : data/couverture-themes.yaml:2:8 YAML_ALIAS_INTERDIT les alias YAML (*nom) sont interdits : répéter la valeur']);
+    assert.deepEqual(data.themes, []);
+  });
+
+  it('clé en double : YAML_DUPLICATE_KEY, fichier passé en paramètre', () => {
+    const { problemes } = lireCouverture('version: 1\nversion: 1\n', 'tests/essai.yaml');
+    assert.equal(problemes.length, 1);
+    assert.match(problemes[0] ?? '', /^YAML illisible : tests\/essai\.yaml:2:1 YAML_DUPLICATE_KEY clé en double/);
+  });
+
+  it('bombe d’alias : trois entrées au plus puis « (+N autre(s)) », sans lever', () => {
+    const lignes = ['a: &a ["x","x","x","x","x","x","x","x","x"]'];
+    for (const [i, n] of ['b', 'c', 'd', 'e', 'f'].entries()) lignes.push(`${n}: &${n} [${Array(9).fill(`*${'abcde'[i]}`).join(',')}]`);
+    const { problemes } = lireCouverture(`${lignes.join('\n')}\n`);
+    assert.equal(problemes.length, 3);
+    for (const p of problemes) assert.match(p, MOTIF);
+    assert.ok(problemes[2]?.endsWith(' (+42 autre(s))'), problemes[2]);
+    assert.ok(!problemes[1]?.includes('autre(s)'));
+  });
+
+  it('YAML syntaxiquement cassé : positions et code, sans lever', () => {
+    const { problemes } = lireCouverture('version: [1\n');
+    assert.ok(problemes.length > 0);
+    assert.match(problemes[0] ?? '', MOTIF);
+  });
+
+  it('racine non objet : la phrase existante est gardée', () => {
+    assert.deepEqual(lireCouverture('- a\n').problemes, ['le tableau de couverture doit être un objet YAML']);
+    assert.deepEqual(lireCouverture('').problemes, ['le tableau de couverture doit être un objet YAML']);
+  });
+
+  it('le vrai data/couverture-themes.yaml ne donne aucun problème', () => {
+    assert.deepEqual(lireCouverture(readFileSync(path.join(REPO_ROOT, 'data', 'couverture-themes.yaml'), 'utf8')).problemes, []);
+  });
+});
+
 describe('classer sur l’estimation de recherche', () => {
   const { data } = lireCouverture(ESTIMATION);
   const r = classer(data);

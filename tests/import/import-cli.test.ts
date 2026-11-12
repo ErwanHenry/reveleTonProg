@@ -1,7 +1,7 @@
 import { after, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { parse, stringify } from 'yaml';
@@ -261,5 +261,105 @@ describe('npm run import:datagouv (scripts/import-datagouv.ts)', () => {
     assert.match(res.stdout, /racine \.(\s|$)/);
     const fixture = path.join(REPO_ROOT, 'tests', 'fixtures', 'corpus-valide', 'src', 'content', 'candidats');
     assert.ok(!existsSync(path.join(fixture, 'jean-luc-melenchon.yaml')));
+  });
+});
+
+// IMP-01 (D-02) : chaque fichier YAML lu par l'import passe par l'analyseur plafonné (yaml-plafonne.ts), y compris
+// une fiche dont l'action serait « inchangé ». Un refus nomme fichier, ligne, colonne et code ; rien n'est écrit.
+describe('import : lectures YAML plafonnées (IMP-01)', () => {
+  /** Tous les fichiers de la racine (chemin relatif -> octets), pour prouver que rien n'a été écrit. */
+  function octetsRacine(root: string): Map<string, Buffer> {
+    const out = new Map<string, Buffer>();
+    for (const rel of (readdirSync(root, { recursive: true }) as string[]).sort()) {
+      const full = path.join(root, rel);
+      if (lstatSync(full).isFile()) out.set(rel, readFileSync(full));
+    }
+    return out;
+  }
+  function memesOctets(avant: Map<string, Buffer>, apres: Map<string, Buffer>): void {
+    assert.deepEqual([...apres.keys()], [...avant.keys()]);
+    for (const [n, b] of avant) assert.ok(b.equals(apres.get(n) as Buffer), `${n} modifié`);
+  }
+  /** Racine temporaire peuplée par un premier import réel (dans la racine temporaire seulement). */
+  function racinePeuplee(): { root: string; snap: string } {
+    const root = tmpRoot();
+    const snap = path.join(root, 'data', 'import', path.basename(newestSnapshot()));
+    assert.equal(importer(['--file', snap, '--root', root]).status, 0);
+    return { root, snap };
+  }
+  /** Première fiche dont `nom` et `nom_tri` sont égaux (un alias bénin n'y change aucune valeur). */
+  function ficheNomEgal(root: string): { id: string; file: string; texte: string; nom: string } {
+    const dir = path.join(root, 'src', 'content', 'candidats');
+    for (const n of readdirSync(dir).sort()) {
+      const texte = readFileSync(path.join(dir, n), 'utf8');
+      const m = /^nom: (.+)\nnom_tri: \1$/m.exec(texte);
+      if (m) return { id: n.replace(/\.yaml$/, ''), file: path.join(dir, n), texte, nom: m[1] as string };
+    }
+    assert.fail('aucune fiche avec nom === nom_tri');
+  }
+
+  it('une fiche existante avec un seul alias bénin : code 1, conflit nommé avec fichier, ligne et code, rien d’écrit', () => {
+    const { root, snap } = racinePeuplee();
+    const f = ficheNomEgal(root);
+    writeFileSync(f.file, f.texte.replace(`\nnom: ${f.nom}\nnom_tri: ${f.nom}\n`, `\nnom: &n ${f.nom}\nnom_tri: *n\n`));
+    const avant = octetsRacine(root);
+    const res = importer(['--file', snap, '--root', root]);
+    assert.equal(res.status, 1, res.stdout + res.stderr);
+    const attendu = `conflit : ${f.id} — fichier existant illisible (src/content/candidats/${f.id}.yaml:`;
+    assert.ok(res.stdout.includes(attendu), res.stdout);
+    assert.match(res.stdout, new RegExp(`candidats/${f.id}\\.yaml:\\d+:\\d+ YAML_ALIAS_INTERDIT les alias YAML`));
+    assert.match(res.stderr, /rien n'a été écrit/);
+    memesOctets(avant, octetsRacine(root));
+  });
+
+  it('une fiche existante avec une clé en double : YAML_DUPLICATE_KEY, sa ligne et « clé en double »', () => {
+    const { root, snap } = racinePeuplee();
+    const f = ficheNomEgal(root);
+    const lignes = f.texte.split('\n').length;
+    writeFileSync(f.file, `${f.texte}id: ${f.id}\n`);
+    const avant = octetsRacine(root);
+    const res = importer(['--file', snap, '--root', root]);
+    assert.equal(res.status, 1, res.stdout + res.stderr);
+    assert.match(res.stdout, new RegExp(`candidats/${f.id}\\.yaml:${lignes}:1 YAML_DUPLICATE_KEY clé en double`));
+    memesOctets(avant, octetsRacine(root));
+  });
+
+  it('une bombe d’alias dans une fiche : trois positions au plus puis « (+N autre(s)) »', () => {
+    const { root, snap } = racinePeuplee();
+    const f = ficheNomEgal(root);
+    const lignes = ['a: &a ["x","x","x","x","x","x","x","x","x"]'];
+    for (const [i, n] of ['b', 'c', 'd', 'e', 'f'].entries()) lignes.push(`${n}: &${n} [${Array(9).fill(`*${'abcde'[i]}`).join(',')}]`);
+    writeFileSync(f.file, `${lignes.join('\n')}\n`);
+    const res = importer(['--file', snap, '--root', root, '--dry-run']);
+    assert.equal(res.status, 1, res.stdout + res.stderr);
+    const ligne = res.stdout.split('\n').find((l) => l.startsWith(`conflit : ${f.id} `)) ?? '';
+    assert.equal((ligne.match(/YAML_ALIAS_INTERDIT/g) ?? []).length, 3, ligne);
+    assert.match(ligne, / \(\+42 autre\(s\)\)\)$/);
+  });
+
+  it('data/import/correspondances.yaml avec un alias : code 1, fichier, ligne et code sur stderr, rien d’écrit', () => {
+    const root = tmpRoot();
+    const corr = path.join(root, 'data', 'import', 'correspondances.yaml');
+    const texte = readFileSync(corr, 'utf8');
+    const remplace = texte.replace('    nom: Mélenchon\n    nom_tri: Mélenchon\n', '    nom: &m Mélenchon\n    nom_tri: *m\n');
+    assert.notEqual(remplace, texte);
+    writeFileSync(corr, remplace);
+    const avant = octetsRacine(root);
+    const res = importer(['--file', path.join(root, 'data', 'import', path.basename(newestSnapshot())), '--root', root]);
+    assert.equal(res.status, 1, res.stdout + res.stderr);
+    assert.match(res.stderr, /data\/import\/correspondances\.yaml:\d+:\d+ YAML_ALIAS_INTERDIT/);
+    assert.doesNotMatch(res.stderr, /at .*\.ts:\d+/);
+    memesOctets(avant, octetsRacine(root));
+  });
+
+  it('une fiche hors amont avec une clé en double : code 0, la ligne « illisible » porte la raison', () => {
+    const root = tmpRoot();
+    const snap = path.join(root, 'data', 'import', path.basename(newestSnapshot()));
+    mkdirSync(path.join(root, 'src', 'content', 'candidats'), { recursive: true });
+    writeFileSync(path.join(root, 'src', 'content', 'candidats', 'hors-amont.yaml'), 'a: 1\na: 2\n');
+    const res = importer(['--file', snap, '--root', root, '--dry-run']);
+    assert.equal(res.status, 0, res.stdout + res.stderr);
+    assert.match(res.stdout, /illisible .*hors-amont/);
+    assert.match(res.stdout, /hors-amont \(src\/content\/candidats\/hors-amont\.yaml:2:1 YAML_DUPLICATE_KEY clé en double/);
   });
 });

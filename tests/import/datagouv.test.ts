@@ -17,6 +17,8 @@ import {
   snapshotName,
 } from '../../scripts/lib/datagouv.ts';
 import type { Correspondance, UpstreamRow } from '../../scripts/lib/datagouv.ts';
+import { definirChamps } from '../../scripts/lib/relecture/editer.ts';
+import { YamlRefuse } from '../../src/lib/content-core/yaml-plafonne.ts';
 import { validateYamlText } from '../../src/lib/content-core/load.ts';
 import { REPO_ROOT, SCHEMAS_DIR } from '../helpers/validate-yaml.ts';
 
@@ -270,6 +272,54 @@ describe('WR-07 : ajouterStatutYaml conserve commentaires et mise en forme', () 
 
   it('refuse un texte sans séquence statuts', () => {
     assert.throws(() => ajouterStatutYaml('id: x\n', { code: 'declare' }), /statuts/);
+  });
+});
+
+// IMP-01 (D-02) : ajouterStatutYaml obtient son Document de l'analyseur plafonné (lireDocumentPlafonne) et ajoute
+// le statut après les octets existants. La preuve porte sur chaque vraie fiche candidat, lue sans être écrite.
+describe('IMP-01 : ajouterStatutYaml passe par l’analyseur plafonné et garde les octets existants', () => {
+  const STATUT = { code: 'renonce', date: '2026-12-10', statut_relecture: 'brouillon' };
+
+  it('alias ou clé en double : YamlRefuse qui nomme le fichier', () => {
+    const fichier = 'src/content/candidats/essai.yaml';
+    const alias = 'id: &i essai\nnom: *i\nstatuts:\n  - code: declare\n';
+    const doublon = 'id: essai\nstatuts:\n  - code: declare\nid: autre\n';
+    for (const [texte, code] of [[alias, 'YAML_ALIAS_INTERDIT'], [doublon, 'YAML_DUPLICATE_KEY']] as const) {
+      assert.throws(
+        () => ajouterStatutYaml(texte, STATUT, fichier),
+        (e: unknown) => e instanceof YamlRefuse && e.message.startsWith(`${fichier}:`) && e.message.includes(code),
+        code,
+      );
+    }
+  });
+
+  const dir = path.join(REPO_ROOT, 'src', 'content', 'candidats');
+  const noms = readdirSync(dir).filter((n) => n.endsWith('.yaml')).sort();
+
+  it('sur chaque vraie fiche, telle quelle : la sortie commence par le texte d’entrée', () => {
+    assert.ok(noms.length > 0);
+    for (const n of noms) {
+      const texte = readFileSync(path.join(dir, n), 'utf8');
+      const sortie = ajouterStatutYaml(texte, STATUT, `src/content/candidats/${n}`);
+      assert.ok(sortie.startsWith(texte), n);
+      assert.match(sortie.slice(texte.length), /^  - code: renonce\n    date: 2026-12-10\n    statut_relecture: brouillon\n$/, n);
+    }
+  });
+
+  it('sur chaque vraie fiche, après relecture du dernier statut (en mémoire) : même preuve', () => {
+    for (const n of noms) {
+      const brut = readFileSync(path.join(dir, n), 'utf8');
+      const statuts = (parse(brut, { schema: 'core' }) as { statuts: unknown[] }).statuts;
+      const texte = definirChamps(brut, ['statuts', statuts.length - 1], [
+        { cle: 'statut_relecture', valeur: 'relu' },
+        { cle: 'relecteur', valeur: 'Erwan Henry' },
+        { cle: 'date_relecture', valeur: '2026-11-20' },
+      ]);
+      assert.notEqual(texte, brut, n);
+      const sortie = ajouterStatutYaml(texte, STATUT, `src/content/candidats/${n}`);
+      assert.ok(sortie.startsWith(texte), n);
+      assert.match(sortie.slice(texte.length), /^  - code: renonce\n    date: 2026-12-10\n    statut_relecture: brouillon\n$/, n);
+    }
   });
 });
 

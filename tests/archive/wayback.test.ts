@@ -357,6 +357,20 @@ describe('archive-source --wayback-adopter (hors réseau)', () => {
     assert.match(out.texte(), /Aucune source à soumettre/);
   });
 
+  it('IMP-01 : --wayback-missing avec une source au YAML refusé (alias) : code 1, fichier et ligne, rien n’est soumis', async (t) => {
+    const r = racine();
+    writeFileSync(path.join(r, 'src', 'content', 'sources', 'alias-piege.yaml'), 'id: alias-piege\nurl: &u https://x.example/\ncopie: *u\n');
+    const out = sortie(t);
+    const appels = t.mock.method(globalThis, 'fetch', async () => new Response(null, { status: 500 }));
+    await refus(
+      executer(['--wayback-missing', '--root', r]),
+      1,
+      /src\/content\/sources\/alias-piege\.yaml:3:8 YAML_ALIAS_INTERDIT .*rien n'a été soumis/s,
+    );
+    assert.equal(appels.mock.callCount(), 0);
+    assert.doesNotMatch(out.texte(), /illisible : ignorée/);
+  });
+
   it('--refresh garde l’exception (texte modifié : nouvel extrait, exception conservée)', async (t) => {
     const r = racine(EXCEPTION);
     const prive = mkdtempSync(path.join(os.tmpdir(), 'rtp-prive-'));
