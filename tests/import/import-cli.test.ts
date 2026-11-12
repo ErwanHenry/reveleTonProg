@@ -363,3 +363,192 @@ describe('import : lectures YAML plafonnées (IMP-01)', () => {
     assert.match(res.stdout, /hors-amont \(src\/content\/candidats\/hors-amont\.yaml:2:1 YAML_DUPLICATE_KEY clé en double/);
   });
 });
+
+// IMP-03 (D-06, D-04) : rapport Markdown, répétition à blanc tolérante aux identifiants inconnus, --check.
+// Tout se passe sur des racines temporaires : le vrai dépôt n'est jamais écrit.
+describe('import : --format, --dry-run tolérant et --check (IMP-03)', () => {
+  function octets(root: string): Map<string, Buffer> {
+    const out = new Map<string, Buffer>();
+    for (const rel of (readdirSync(root, { recursive: true }) as string[]).sort()) {
+      const full = path.join(root, rel);
+      if (lstatSync(full).isFile()) out.set(rel, readFileSync(full));
+    }
+    return out;
+  }
+  function identiques(avant: Map<string, Buffer>, apres: Map<string, Buffer>): void {
+    assert.deepEqual([...apres.keys()], [...avant.keys()]);
+    for (const [n, b] of avant) assert.ok(b.equals(apres.get(n) as Buffer), `${n} modifié`);
+  }
+  function section(texte: string, titre: string): string {
+    const i = texte.indexOf(`${titre}\n`);
+    assert.ok(i >= 0, `section absente : ${titre}`);
+    const reste = texte.slice(i + titre.length + 1);
+    const j = reste.search(/^(## |---$)/m);
+    return (j < 0 ? reste : reste.slice(0, j)).trim();
+  }
+  function racinePeuplee(): { root: string; snap: string } {
+    const root = tmpRoot();
+    const snap = path.join(root, 'data', 'import', path.basename(newestSnapshot()));
+    assert.equal(importer(['--file', snap, '--root', root]).status, 0);
+    return { root, snap };
+  }
+  /** Copie du dépôt réduite à ce que lit --check (jamais le vrai dépôt : le chargeur mémorise par racine). */
+  function copieDepot(): string {
+    const racine = mkdtempSync(path.join(os.tmpdir(), 'rtp-check-'));
+    tmpDirs.push(racine);
+    mkdirSync(path.join(racine, 'data'), { recursive: true });
+    cpSync(IMPORT_DIR, path.join(racine, 'data', 'import'), { recursive: true });
+    cpSync(path.join(REPO_ROOT, 'data', 'dataset-datagouv.yaml'), path.join(racine, 'data', 'dataset-datagouv.yaml'));
+    mkdirSync(path.join(racine, 'src', 'content'), { recursive: true });
+    cpSync(path.join(REPO_ROOT, 'src', 'content', 'candidats'), path.join(racine, 'src', 'content', 'candidats'), { recursive: true });
+    return racine;
+  }
+  function deuxInconnus(root: string, snap: string): string {
+    return muter(root, snap, (j) => {
+      const modele = j.candidats[0] as Record<string, any>;
+      j.candidats.push({ ...modele, id: 'nouveau-un', nom: 'Essai Fictif Un' }, { ...modele, id: 'nouveau-deux', nom: 'Essai Fictif Deux', statut: 'renonce' });
+    });
+  }
+
+  it('--dry-run avec deux ids inconnus : code 0, listés sous « Nouveaux à décider », aucun octet écrit', () => {
+    const root = tmpRoot();
+    const modif = deuxInconnus(root, newestSnapshot());
+    const avant = octets(root);
+    const res = importer(['--file', modif, '--root', root, '--dry-run', '--format', 'markdown']);
+    assert.equal(res.status, 0, res.stdout + res.stderr);
+    const s = section(res.stdout, '## Nouveaux à décider (absents de correspondances.yaml)');
+    assert.match(s, /^- nouveau-deux : Essai Fictif Deux, renonce \(/m);
+    assert.match(s, /^- nouveau-un : Essai Fictif Un, declare \(/m);
+    // les autres lignes sont traitées normalement
+    assert.equal((section(res.stdout, '## Nouveaux').match(/^- /gm) ?? []).length, snapshotRows(newestSnapshot()).length);
+    identiques(avant, octets(root));
+  });
+
+  it('--dry-run en texte : ligne « à décider : » avec les deux identifiants, résumé et code 0', () => {
+    const root = tmpRoot();
+    const modif = deuxInconnus(root, newestSnapshot());
+    const res = importer(['--file', modif, '--root', root, '--dry-run']);
+    assert.equal(res.status, 0, res.stdout + res.stderr);
+    assert.match(res.stdout, /^à décider : nouveau-deux, nouveau-un$/m);
+    assert.match(res.stdout, /simulation \(--dry-run\)/);
+  });
+
+  it('sans --dry-run, un id inconnu arrête tout même avec --format markdown', () => {
+    const root = tmpRoot();
+    const modif = deuxInconnus(root, newestSnapshot());
+    const res = importer(['--file', modif, '--root', root, '--format', 'markdown']);
+    assert.equal(res.status, 1);
+    assert.match(res.stderr, /nouveau-un, nouveau-deux/);
+    assert.equal(res.stdout, '');
+    assert.equal(fichiers(root).size, 0);
+  });
+
+  it('markdown : un statut qui change imprime la transition avec sa source et sa date', () => {
+    const { root, snap } = racinePeuplee();
+    ajouterMotif(root, 'melenchon', 'retrait');
+    const modif = muter(root, snap, (j) => {
+      const r = j.candidats.find((x) => x.id === 'melenchon') as Record<string, any>;
+      r.statut = 'renonce';
+      r.source.date = '2026-11-01';
+    });
+    const avant = octets(root);
+    const res = importer(['--file', modif, '--root', root, '--dry-run', '--format', 'markdown']);
+    assert.equal(res.status, 0, res.stdout + res.stderr);
+    assert.match(res.stdout, /^- jean-luc-melenchon : statut : declare \(\d{4}-\d{2}(-\d{2})?\) -> renonce\/retrait \(2026-11-01\), source https:\/\/\S+ du 2026-11-01$/m);
+    assert.doesNotMatch(res.stdout, /[–—]/);
+    identiques(avant, octets(root));
+  });
+
+  it('markdown : deux exécutions donnent les mêmes octets, rien d’autre que le rapport sur stdout', () => {
+    const root = tmpRoot();
+    const snap = path.join(root, 'data', 'import', path.basename(newestSnapshot()));
+    const a = importer(['--file', snap, '--root', root, '--dry-run', '--format', 'markdown']);
+    const b = importer(['--file', snap, '--root', root, '--dry-run', '--format', 'markdown']);
+    assert.equal(a.status, 0, a.stderr);
+    assert.equal(a.stdout, b.stdout);
+    assert.ok(a.stdout.startsWith('# Rapport de répétition à blanc'));
+    assert.doesNotMatch(a.stdout, /^(import|créé|simulation) :/m);
+  });
+
+  it('--format markdown sans --dry-run écrit comme d’habitude et imprime le rapport', () => {
+    const root = tmpRoot();
+    const snap = path.join(root, 'data', 'import', path.basename(newestSnapshot()));
+    const res = importer(['--file', snap, '--root', root, '--format', 'markdown']);
+    assert.equal(res.status, 0, res.stdout + res.stderr);
+    assert.ok(res.stdout.startsWith('# Rapport de répétition à blanc'));
+    assert.equal(fichiers(root).size, snapshotRows(newestSnapshot()).length);
+  });
+
+  it('--format avec une autre valeur : code 2', () => {
+    const res = importer(['--file', newestSnapshot(), '--dry-run', '--format', 'html']);
+    assert.equal(res.status, 2);
+    assert.match(res.stderr, /--format/);
+  });
+
+  it('conflit en markdown : le rapport est imprimé (section Conflits) et le code est 1', () => {
+    const { root, snap } = racinePeuplee();
+    ajouterMotif(root, 'melenchon', 'retrait');
+    const modif = muter(root, snap, (j) => {
+      const r = j.candidats.find((x) => x.id === 'melenchon') as Record<string, any>;
+      r.statut = 'renonce';
+      r.source.date = '2025-01-01';
+    });
+    const res = importer(['--file', modif, '--root', root, '--dry-run', '--format', 'markdown']);
+    assert.equal(res.status, 1, res.stdout + res.stderr);
+    assert.match(section(res.stdout, '## Conflits'), /^- jean-luc-melenchon : régression de date/);
+  });
+
+  it('dépôt réel en markdown : aucun nouveau, changé ni conflit, sections dans l’ordre, aucun tiret long', () => {
+    const res = importer(['--file', newestSnapshot(), '--dry-run', '--format', 'markdown']);
+    assert.equal(res.status, 0, res.stdout + res.stderr);
+    for (const t of ['## Nouveaux', '## Changés', '## Conflits']) assert.equal(section(res.stdout, t), 'aucun', t);
+    assert.match(res.stdout, /^## Absents du jeu amont$/m);
+    assert.doesNotMatch(res.stdout, /[–—]/);
+  });
+
+  it('--check sur une copie du dépôt : code 0 et « 0 écart »', () => {
+    const res = importer(['--check', '--root', copieDepot()]);
+    assert.equal(res.status, 0, res.stdout + res.stderr);
+    assert.match(res.stdout, /cohérence instantané \/ fiches : 0 écart/);
+  });
+
+  it('--check sur une copie dont un statut diffère : code 1 et une ligne d’écart', () => {
+    const racine = copieDepot();
+    const dossier = path.join(racine, 'src', 'content', 'candidats');
+    const nom = readdirSync(dossier).sort().find((n) => readFileSync(path.join(dossier, n), 'utf8').includes('code: declare'));
+    assert.ok(nom);
+    const f = path.join(dossier, nom);
+    writeFileSync(f, readFileSync(f, 'utf8').replace('code: declare', 'code: pressenti'));
+    const avant = octets(racine);
+    const res = importer(['--check', '--root', racine]);
+    assert.equal(res.status, 1, res.stdout + res.stderr);
+    assert.ok(res.stdout.includes(`${nom.replace(/\.yaml$/, '')} : statut : fichier=pressenti amont=declare`), res.stdout);
+    assert.match(res.stdout, /cohérence instantané \/ fiches : 1 écart\(s\)/);
+    identiques(avant, octets(racine));
+  });
+
+  it('--check sur une copie dont le pointeur est périmé : code 1', () => {
+    const racine = copieDepot();
+    const ptr = path.join(racine, 'data', 'dataset-datagouv.yaml');
+    const texte = readFileSync(ptr, 'utf8');
+    const ancien = path.basename(newestSnapshot());
+    // un instantané plus récent déposé sans mettre le pointeur à jour
+    const json = JSON.parse(readFileSync(newestSnapshot(), 'utf8')) as Record<string, unknown>;
+    json.mise_a_jour = '2026-11-09';
+    const nom = '2027etmoi-candidats-2026-11-09-000000000000';
+    writeFileSync(path.join(racine, 'data', 'import', `${nom}.json`), JSON.stringify(json));
+    const meta = JSON.parse(readFileSync(path.join(IMPORT_DIR, ancien.replace(/\.json$/, '.meta.json')), 'utf8')) as Record<string, unknown>;
+    writeFileSync(path.join(racine, 'data', 'import', `${nom}.meta.json`), JSON.stringify({ ...meta, mise_a_jour: '2026-11-09', fetched_at: '2026-11-12T10:00:00+01:00' }));
+    assert.equal(readFileSync(ptr, 'utf8'), texte);
+    const res = importer(['--check', '--root', racine]);
+    assert.equal(res.status, 1, res.stdout + res.stderr);
+    assert.match(res.stdout, /instantane : fichier=data\/import\/.* amont=data\/import\/2027etmoi-candidats-2026-11-09-000000000000\.json/);
+  });
+
+  it('--check refuse --file, --url, --dry-run et --format : code 2', () => {
+    for (const autre of [['--file', newestSnapshot()], ['--url', 'https://exemple.test/x.json'], ['--dry-run'], ['--format', 'texte']]) {
+      const res = importer(['--check', ...autre]);
+      assert.equal(res.status, 2, autre.join(' '));
+    }
+  });
+});
