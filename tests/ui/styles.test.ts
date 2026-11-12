@@ -459,3 +459,22 @@ describe('finitions 09.1 : contrat CSS', () => {
     assert.equal(decl('.definition', 'overflow-wrap'), 'anywhere');
   });
 });
+
+// Finitions visuelles 09.1, proposition 4 (audit B6) : grille sans grands vides. TOUCHE M1-08 (VERROUILLÉ, « même
+// hauteur par rangée ») : décision d'Erwan requise (09.1-09). Chaque carte garde sa structure en colonne (C4).
+describe('styles : grille M1-08 09.1, cartes à leur hauteur', () => {
+  const valeur = (selecteur: string, prop: string): string | undefined =>
+    regles
+      .filter((r) => r.fichier === 'base.css' && r.selecteur === selecteur)
+      .flatMap((r) => r.declarations)
+      .find((d) => d.prop === prop)?.valeur;
+
+  it('.cellules aligne les cartes en haut de leur rangée (align-items: start)', () => {
+    assert.equal(valeur('.cellules', 'align-items'), 'start');
+  });
+
+  it('.cellule reste une colonne flex (zones de la carte inchangées)', () => {
+    assert.equal(valeur('.cellule', 'display'), 'flex');
+    assert.equal(valeur('.cellule', 'flex-direction'), 'column');
+  });
+});
