@@ -200,7 +200,7 @@ Plans:
 
 - [x] 10-01-PLAN.md — Analyseur YAML plafonné léger (équivalent à content-core, sans load.ts) pour l'import, l'archivage et la couverture, test de dépôt avec liste blanche de huit fichiers (vague 1)
 - [x] 10-02-PLAN.md — Cohérence instantané data.gouv / fiches candidats dans npm test, pièges d'une personne déclarée ajoutée à un thème publié (vague 2)
-- [ ] 10-03-PLAN.md — Rapport de répétition à blanc (nouveaux, absents du jeu amont, changés avec leurs sources, conséquences sur les thèmes publiés), option --check, répétition sur le jeu en ligne dans un worktree jetable (vague 3)
+- [x] 10-03-PLAN.md — Rapport de répétition à blanc (nouveaux, absents du jeu amont, changés avec leurs sources, conséquences sur les thèmes publiés), option --check, répétition sur le jeu en ligne dans un worktree jetable (vague 3)
 - [ ] 10-04-PLAN.md — Décisions d'Erwan (D-08, D-09, bornes du gel, fusion en brouillon, repli, ouverture tardive, relecture non fusionnée), avertissement STATUT_PLUS_RECENT_NON_RELU, procédure d'import et gel au RUNBOOK (vague 4)
 - [ ] 10-05-PLAN.md — Import réel sur import/statuts-2026-12 : répétition du matin, correspondances validées par Erwan, pull request avec le rapport (vague 5, 10 au 11 décembre)
 - [ ] 10-06-PLAN.md — Relecture et fusion par Erwan, déploiement approuvé avant le gel, vérifications en production, relevé du gel (vague 6, 11 au 16 décembre)
