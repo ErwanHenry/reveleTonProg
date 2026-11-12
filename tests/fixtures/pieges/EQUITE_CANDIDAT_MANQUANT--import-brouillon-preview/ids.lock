@@ -1,0 +1,5 @@
+# ids.lock — identifiants de candidats figés (append-only). Ne jamais renommer ni supprimer une ligne.
+# Mise à jour : npm run ids -- --write   |   Vérification : npm run validate (ou npm run ids -- --check)
+jean-imaginaire
+marie-fictive
+nouvelle-personne
