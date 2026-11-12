@@ -56,6 +56,47 @@
 }
 
 .hall-themes {
+  margin-top: 2rem;
+}
+
+/* Accueil (proposition 1 du lot B) : présentation, trois garanties, les thèmes, puis le lien vers la Méthode */
+.hall-presentation,
+.garanties {
+  max-width: 68ch;
+}
+
+.hall-presentation {
+  margin: 0 0 0.5rem;
+}
+
+/* Liste sans puces (role="list" garde la sémantique de liste dans Safari), en Label pour rester au premier écran */
+.garanties {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--t-label);
+}
+
+.garanties li {
+  margin: 0 0 0.25rem;
+}
+
+.hall-methode a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+}
+
+.hall-themes + .tuiles {
+  margin-top: 1rem;
+}
+
+/* Un seul thème ouvert : la tuile occupe toute la ligne, même habillage */
+.tuile-une {
+  grid-column: 1 / -1;
+}
+
+.hall-niveaux {
   margin-top: 3rem;
 }
 

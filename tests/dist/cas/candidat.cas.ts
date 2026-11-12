@@ -198,12 +198,14 @@ export default function candidat(ctx: ContexteSite): void {
       );
     });
 
-    it('hall : h1, intro, quatre niveaux, neutralité, tuiles, lien vers les candidats', () => {
+    it('hall : h1, présentation, quatre niveaux, neutralité, tuiles, lien vers les candidats', () => {
       const { arbre, html } = page(production().outDir, 'index.html');
       assert.equal(txt(trouver(arbre, (n) => n.tag === 'h1')[0] as Noeud), 'Les programmes de la présidentielle 2027, à votre niveau');
       assert.ok(html.includes('<title>reveleTonProg : les programmes de la présidentielle 2027</title>'));
       const t = txt(arbre);
-      assert.ok(t.includes('Choisissez un thème : vous lirez la position de chaque candidat, avec sa source. Choisissez aussi votre niveau de lecture.'));
+      // Proposition 1 du lot B (09.1) : l'introduction devient une phrase de présentation (texte en brouillon,
+      // ordre et contenu vérifiés par tests/dist/cas/accueil.cas.ts).
+      assert.equal(trouver(arbre, (n) => n.tag === 'p' && aClasse(n, 'hall-presentation')).length, 1);
       const dl = trouver(arbre, (n) => n.tag === 'dl')[0] as Noeud;
       assert.ok(dl, 'dl des niveaux');
       assert.deepEqual(
@@ -215,11 +217,9 @@ export default function candidat(ctx: ContexteSite): void {
         NIVEAUX_HALL.map(([, d]) => d),
       );
       assert.ok(t.includes('Quatre niveaux de lecture'));
-      assert.ok(
-        t.includes(
-          "Les candidats sont classés par ordre alphabétique, jamais selon les sondages. Chaque mesure vient d'une source primaire datée et décrit ce que le candidat propose, sans jugement.",
-        ),
-      );
+      // Les deux faits de l'ancien paragraphe de neutralité passent dans les garanties (proposition 1 du lot B).
+      assert.match(t, /ordre alphabétique, jamais selon les sondages/);
+      assert.match(t, /sans jugement/);
       assert.ok(trouver(arbre, (n) => n.tag === 'h2').some((h) => txt(h) === 'Les thèmes'));
       assert.deepEqual(
         trouver(arbre, (n) => n.tag === 'li' && n.attrs['data-theme'] !== undefined && aClasse(n, 'tuile')).map((x) => x.attrs['data-theme']),
