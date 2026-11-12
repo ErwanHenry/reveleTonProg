@@ -8,7 +8,7 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 import { analyserHtml, aClasse, texte, trouver } from '../../../scripts/lib/html.ts';
 import type { Noeud } from '../../../scripts/lib/html.ts';
-import { cellulesAttendues, checkDist } from '../../../scripts/lib/check-dist.ts';
+import { PAGE_ERREUR, cellulesAttendues, checkDist } from '../../../scripts/lib/check-dist.ts';
 import { materialiserCorpusM1 } from '../../helpers/corpus-m1.ts';
 import type { ContexteSite } from '../contexte.ts';
 
@@ -115,17 +115,25 @@ export default function integration(ctx: ContexteSite): void {
         }
       });
 
-      it(mode === 'production' ? 'aucune page noindex' : 'bandeau de prévisualisation sur chaque page', () => {
+      it(mode === 'production' ? 'aucune page noindex, sauf la page d\'erreur 404.html qui l\'a' : 'bandeau de prévisualisation sur chaque page', () => {
+        let erreurVue = 0;
         for (const f of ctx.pagesHtml(outDir())) {
           const a = analyserHtml(fs.readFileSync(f, 'utf8'));
           const rel = path.relative(outDir(), f);
           if (mode === 'production') {
             const ni = trouver(a, (n) => n.tag === 'meta' && /noindex/i.test(n.attrs.content ?? ''));
+            // Seule exception, un fichier nommé : la page d'erreur ne doit jamais être indexée (plan 09.1-02).
+            if (rel.split(path.sep).join('/') === PAGE_ERREUR) {
+              erreurVue += 1;
+              assert.equal(ni.length, 1, `${rel} : noindex attendu sur la page d'erreur`);
+              continue;
+            }
             assert.equal(ni.length, 0, `${rel} noindex en production`);
           } else {
             assert.equal(trouver(a, (n) => aClasse(n, 'banniere-preview')).length, 1, `${rel} : bandeau`);
           }
         }
+        if (mode === 'production') assert.equal(erreurVue, 1, `${PAGE_ERREUR} absent du dist de production`);
       });
 
       it('checkDist ne signale aucune erreur', () => {

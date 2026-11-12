@@ -12,9 +12,11 @@ interface Props {
   miseAJour: string | undefined;
   /** Vrai si la page affiche au moins une mesure : ajoute la phrase de signalement avant le pied de page. */
   avecSignalement?: boolean;
+  /** Vrai pour la page d'erreur (404.astro) : noindex dans les deux modes et aucune URL canonique (IN-07). */
+  pageErreur?: boolean;
 }
 
-const { titre, description, miseAJour, avecSignalement = false } = Astro.props;
+const { titre, description, miseAJour, avecSignalement = false, pageErreur = false } = Astro.props;
 const corpus = await getCorpus();
 // Rubrique courante, déduite du chemin (trailingSlash: 'always') : aucun paramètre de page nécessaire.
 const chemin = Astro.url.pathname;
@@ -30,8 +32,8 @@ const courante = /^\/themes(\/|$)/.test(chemin) ? 'themes' : /^\/candidats(\/|$)
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{titre}</title>
     <meta name="description" content={description} />
-    {corpus.mode === 'preview' && <meta name="robots" content="noindex" />}
-    {corpus.mode !== 'preview' && Astro.site && <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site).href} />}
+    {(corpus.mode === 'preview' || pageErreur) && <meta name="robots" content="noindex" />}
+    {corpus.mode !== 'preview' && !pageErreur && Astro.site && <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site).href} />}
     <script is:inline set:html={ordreSource}></script>
   </head>
   <body>
