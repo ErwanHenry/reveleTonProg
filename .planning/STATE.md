@@ -5,7 +5,7 @@ milestone_name: "Lot 3 : hébergement et mise en ligne"
 status: executing
 stopped_at: Completed 09-09-PLAN.md ; waiting for Erwan (09-10, review of the santé theme)
 last_updated: "2026-11-12T13:40:00.000Z"
-last_activity: "2026-11-12 (09.1-01 : lot A partie 1, césure réservée aux noms et titres, survol sous (hover: hover), barre de thème, statut pleine largeur, phrase de /candidats/ ; commits locaux, sauvegarde sur sauvegarde/finitions-lot-a, main poussé au 09.1-05) (10-02 : cohérence instantané data.gouv et fichiers candidats dans npm test, quatre pièges D-05, refus de marquer ; push groupé avec 10-01) (10-01 : lectures YAML de l'import, de l'archivage et de la couverture par l'analyseur plafonné léger yaml-plafonne.ts, test de dépôt à liste blanche de huit fichiers ; commits locaux, push groupé avec 10-02)"
+last_activity: "2026-11-12 (09.1-02 : page 404 en français noindex sans canonique, serveur de test et bloc Caddy public en 404 sans handle_errors, preuve Caddy 2.11.2 locale jetable, contrôles 09-12 au RUNBOOK ; main non poussé, sauvegarde sur sauvegarde/finitions-lot-a) (09.1-01 : lot A partie 1, césure réservée aux noms et titres, survol sous (hover: hover), barre de thème, statut pleine largeur, phrase de /candidats/ ; commits locaux, sauvegarde sur sauvegarde/finitions-lot-a, main poussé au 09.1-05) (10-02 : cohérence instantané data.gouv et fichiers candidats dans npm test, quatre pièges D-05, refus de marquer ; push groupé avec 10-01) (10-01 : lectures YAML de l'import, de l'archivage et de la couverture par l'analyseur plafonné léger yaml-plafonne.ts, test de dépôt à liste blanche de huit fichiers ; commits locaux, push groupé avec 10-02)"
 progress:
   total_phases: 5
   completed_phases: 2
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-11-04)
 Phase: 9 of 10 (contenu relu, juridique et ouverture)
 Plan: 09-01 à 09-09, 09-14 et 09-15 done (dernier : 09-09, RUNBOOK, ADR-059 à 062, serveur prêt, override OPS-01 accepté) ; reste 09-10 (relecture santé par Erwan, chemin critique), puis 09-11 à 09-13
 Status: Executing phase 9 (phase 10 en parallèle : 10-01 et 10-02 done, 10-03 ensuite)
-Last activity: 2026-11-12 (09.1-01 done, lot A en local, main non poussé ; 10-01 : analyseur YAML plafonné léger pour l'import, l'archivage et la couverture ; alias et clés en double refusés avec fichier, ligne et code ; page Méthode identique à l'octet)
+Last activity: 2026-11-12 (09.1-02 done : page 404 et bloc Caddy public prêts, rien appliqué au serveur ; 09.1-01 done, lot A en local, main non poussé ; 10-01 : analyseur YAML plafonné léger pour l'import, l'archivage et la couverture ; alias et clés en double refusés avec fichier, ligne et code ; page Méthode identique à l'octet)
 
 Progress v1.1: [..........] 0/5 phases, 0 plans
 
@@ -72,6 +72,7 @@ Recent decisions affecting current work:
 - [Roadmap v1.1]: déploiement par releases datées + lien `current`, job dans `ci.yml`, build de production reconstruite, jamais d'artefact preview
 - [Roadmap v1.1]: dépôt public depuis le 2026-11-04 : réviser l'ADR-051, la preview n'est jamais servie
 - [09-05]: page de relecture locale = node:http sur 127.0.0.1 seulement, Host exact, Origin, jeton par lancement ; « Valider » appelle le même `marquer` que la ligne de commande ; un refus répond 409 avec le message, jamais d'écriture
+- [09.1-02]: page 404 publique par `@introuvable not file {path} {path}/` puis `rewrite * /404.html` et `file_server { status 404 }`, jamais `handle_errors` (aucune route d'erreur, niveau du journal des autres sites inchangé) ; 09-12 compare les drapeaux `errors` de `caddy adapt` avant et après
 - [09-07]: le bloc public n'arrive sur le serveur que par l'étape site-public (codes 6 et 7) ; après le retrait de l'hôte technique, le marqueur /opt/rtp/essai-retire neutralise site-essai ; le test de restauration déduit ses étapes des blocs restaurés ; favicon.ico généré par scripts/favicon.ts, seul .ico admis par check-dist, servi en no-cache (no-store casse le bfcache)
 - [Phase 9]: 09-15 : en production, une personne sans statut relu ou publié est absente (filtre statutAffiche === null dans construireCorpus, CANDIDAT_NON_RELU_EN_PRODUCTION dans check-dist, même définition ADR-041)
 - [10-01]: les scripts lisent le YAML du dépôt par src/lib/content-core/yaml-plafonne.ts (copie légère de parseYaml, load.ts non importé pour garder ajv hors de la page Méthode, équivalence testée) ; liste blanche de huit fichiers dans tests/repo/yaml-plafonne.test.ts ; --wayback-missing s'arrête sur une source refusée
