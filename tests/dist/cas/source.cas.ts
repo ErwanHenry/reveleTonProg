@@ -46,7 +46,8 @@ export default function source(ctx: ContexteSite): void {
       assert.equal(lignes[0], 'Source primaire : Programme fictif de Marie Fictive');
       assert.equal(lignes[1], 'Consultée le 20 octobre 2026');
       // 09.1, proposition 2 : liens du document sur une ligne, signalements sur une ligne
-      assert.equal(lignes[2], 'Document original Copie archivée Extrait archivé (23c5f1cc8eff)');
+      // Variante 2b : la liste est dans details.source-details, derrière « Vérifier la source »
+      assert.equal(lignes[2], 'Vérifier la source Document original Copie archivée Extrait archivé (23c5f1cc8eff)');
       assert.match(lignes[3] as string, /^Signaler une erreur : Signaler une erreur par courriel.*Signaler une erreur sur GitHub/);
       assert.equal(lignes.length, 4);
       const titre = trouver(s, (n) => n.tag === 'span' && n.attrs['data-citation'] !== undefined)[0] as Noeud;

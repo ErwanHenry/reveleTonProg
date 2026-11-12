@@ -442,6 +442,14 @@ blockquote[data-citation] p {
   list-style: none;
 }
 
+/* Variante 2b (touche C5, à décider par Erwan) : liens du document repliés derrière « Vérifier la source »,
+   marqueur natif gardé, cible de 44 px comme details.renonce summary (48 px en « Gros caractères », niveaux.css) */
+.source-details summary {
+  min-height: 2.75rem;
+  padding: 0.5rem 0;
+  cursor: pointer;
+}
+
 /* « Signaler une erreur : par courriel, sur GitHub » : une ligne qui passe à la ligne, cibles de 44 px */
 .source .signaler {
   display: flex;

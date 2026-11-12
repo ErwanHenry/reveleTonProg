@@ -31,6 +31,11 @@ const archive = source.archive;
     raccourcis à valider par Erwan (clés mesure.original, mesure.wayback, mesure.extrait du copy deck, DEFAULT) ;
     avant : « Lire le document original », « Copie archivée (Wayback Machine) », « Extrait archivé, empreinte
     sha256 … ». role="list" : WebKit et VoiceOver retirent la sémantique d'un <ul> en list-style: none. */}
+{/* BROUILLON 09.1 (variante 2b, touche C5 « toujours visible », à décider par Erwan) : seuls les trois liens du
+    document sont repliés, derrière « Vérifier la source » ; le titre, la date et les signalements restent visibles.
+    Élément natif : s'ouvre sans JavaScript, au clavier et au toucher. */}
+<details class="source-details">
+<summary>Vérifier la source{nommer && <span class="sr-only"> : {source.titre}</span>}</summary>
 <ul class="source-liens" role="list">
   <li><a href={source.url} rel="noopener noreferrer">Document original{nommer && <span class="sr-only"> : {source.titre}</span>}</a></li>
   {archive?.wayback_url !== undefined && (
@@ -40,3 +45,4 @@ const archive = source.archive;
     <li><a href={lienExtrait(config.depot, archive.extrait, resolveContentRoot(process.cwd(), process.env), process.cwd())} rel="noopener noreferrer">Extrait archivé ({archive.sha256.slice(0, 12)}){nommer && <span class="sr-only"> : {source.titre}</span>}</a></li>
   )}
 </ul>
+</details>

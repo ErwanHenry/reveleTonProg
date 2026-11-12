@@ -119,7 +119,8 @@ export default function theme(ctx: ContexteSite): void {
         titre,
         'Consultée le 24 octobre 2026',
         // 09.1, proposition 2 : les trois liens du document sur une ligne (ul.source-liens)
-        'Document original Copie archivée Extrait archivé (c3107ed7287b)',
+        // variante 2b : repliés derrière « Vérifier la source » (titre du document en sr-only, exclu ici)
+        'Vérifier la source Document original Copie archivée Extrait archivé (c3107ed7287b)',
       ]);
       const t = trouver(li, (n) => n.tag === 'time');
       assert.equal(t.length, 1);

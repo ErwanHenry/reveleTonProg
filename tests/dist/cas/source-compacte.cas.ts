@@ -67,6 +67,15 @@ export default function sourceCompacte(ctx: ContexteSite): void {
     assert.match(noms[0] as string, /^Document original\b/, ou);
     assert.match(noms.at(-1) as string, /^Extrait archivé \([0-9a-f]{12}\)/, ou);
     if (noms.length === 3) assert.match(noms[1] as string, /^Copie archivée\b/, ou);
+    // Variante 2b (touche C5) : la liste, et elle seule, est repliée dans details.source-details, fermé par défaut,
+    // dont le résumé visible est « Vérifier la source ».
+    const repli = ul.parent as Noeud;
+    assert.ok(repli.tag === 'details' && aClasse(repli, 'source-details'), `${ou} : liste dans details.source-details`);
+    assert.equal(repli.attrs.open, undefined, `${ou} : fermé par défaut`);
+    const resume = enfantsElements(repli)[0] as Noeud;
+    assert.equal(resume.tag, 'summary', ou);
+    assert.equal(visible(resume), 'Vérifier la source', ou);
+    assert.deepEqual(enfantsElements(repli).map((e) => e.tag), ['summary', 'ul'], `${ou} : rien d'autre dans le repli`);
   };
 
   describe('source compacte 09.1 : bloc source des mesures et des cases vides', () => {
@@ -118,6 +127,9 @@ export default function sourceCompacte(ctx: ContexteSite): void {
               verifierLiens(ul?.tag === 'ul' ? ul : trouver(li, (n) => n.tag === 'ul' && aClasse(n, 'source-liens'))[0], lieu);
               assert.ok(reste.length <= 1, lieu);
               for (const a of trouver(li, (n) => n.tag === 'a')) assert.ok(accessible(a).endsWith(`: ${titre}`), `${lieu} : « ${accessible(a)} »`);
+              // Variante 2b : le résumé du repli nomme aussi le document (plusieurs sources par case)
+              const resume = trouver(li, (n) => n.tag === 'summary')[0] as Noeud;
+              assert.equal(accessible(resume), `Vérifier la source : ${titre}`, lieu);
             }
           }
         }
