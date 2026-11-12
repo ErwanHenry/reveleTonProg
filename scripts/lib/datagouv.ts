@@ -5,7 +5,8 @@
 // Le jeu amont est une entrée non fiable : sa forme est vérifiée explicitement avant tout mapping, et
 // `bloc`, `propositions`, `statut_detail` ne sont jamais lus par `mapRow` (ils ne survivent que dans
 // l'instantané brut sous data/import/).
-import { isSeq, parseDocument, stringify } from 'yaml';
+import { isSeq, stringify } from 'yaml';
+import { lireDocumentPlafonne } from '../../src/lib/content-core/yaml-plafonne.ts';
 
 export interface UpstreamRow {
   id: string;
@@ -269,12 +270,12 @@ export function renderYaml(o: unknown): string {
 
 /**
  * Ajoute un statut en fin de `statuts[]` en éditant le document en place (API Document de `yaml`) :
- * commentaires, ordre des clés et mise en forme du fichier existant sont conservés. Lève une Error
- * si le texte n'a pas de séquence `statuts`.
+ * commentaires, ordre des clés et mise en forme du fichier existant sont conservés. Le Document vient de
+ * l'analyse plafonnée (IMP-01) : un alias, une clé en double ou une racine non objet lève `YamlRefuse`
+ * qui nomme `fichier`. Lève une Error si le texte n'a pas de séquence `statuts`.
  */
-export function ajouterStatutYaml(texte: string, statut: unknown): string {
-  const doc = parseDocument(texte, { schema: 'core', uniqueKeys: true });
-  if (doc.errors.length > 0) throw new Error(`YAML illisible : ${doc.errors[0]?.message ?? ''}`);
+export function ajouterStatutYaml(texte: string, statut: unknown, fichier = 'fiche candidat'): string {
+  const doc = lireDocumentPlafonne(texte, fichier);
   const seq = doc.get('statuts', true);
   if (!isSeq(seq)) throw new Error('séquence statuts absente');
   seq.add(doc.createNode(statut));

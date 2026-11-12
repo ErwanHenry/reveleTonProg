@@ -5,12 +5,12 @@ import { createHash } from 'node:crypto';
 import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
-import { parse } from 'yaml';
 import { IDS_LOCK, ajouterIds, lireIdsLock } from '../src/lib/content-core/ids-lock.ts';
 import type { IdsLock } from '../src/lib/content-core/ids-lock.ts';
 import { formatText } from '../src/lib/content-core/diagnostics.ts';
 import type { Diagnostic } from '../src/lib/content-core/diagnostics.ts';
 import { checkContained, readContained, validateYamlText } from '../src/lib/content-core/load.ts';
+import { YamlRefuse, lireYamlPlafonne } from '../src/lib/content-core/yaml-plafonne.ts';
 import { ajouterStatutYaml, UnknownUpstreamIdsError, UpstreamShapeError, checkUpstream, lireCorrespondances, mapRow, mergeFiche, renderYaml, snapshotName } from './lib/datagouv.ts';
 import type { UpstreamRow } from './lib/datagouv.ts';
 import { FetchSafeError, fetchSafe } from './lib/fetch-safe.ts';
@@ -121,8 +121,10 @@ const corrLue = readContained(root, corrPath);
 if ('diagnostic' in corrLue) fail(`${corrLue.diagnostic.message} (${corrPath})`);
 let table: ReturnType<typeof lireCorrespondances>;
 try {
-  table = lireCorrespondances(parse(corrLue.text, { schema: 'core', uniqueKeys: true }));
+  // IMP-01 : lecture plafonnée (alias refusés, clés en double refusées), refus avec fichier, ligne et code.
+  table = lireCorrespondances(lireYamlPlafonne(corrLue.text, 'data/import/correspondances.yaml'));
 } catch (e) {
+  if (e instanceof YamlRefuse) fail(`data/import/correspondances.yaml refusé : ${e.message}`);
   fail(`data/import/correspondances.yaml invalide : ${e instanceof Error ? e.message : String(e)}`);
 }
 
@@ -146,6 +148,8 @@ interface Plan {
 const plans: Plan[] = [];
 const conflits: string[] = [];
 let invalide = false;
+/** Chemin relatif à la racine importée, pour nommer un fichier refusé (src/content/candidats/<id>.yaml). */
+const relatif = (f: string): string => path.relative(root, f).split(path.sep).join('/');
 
 for (const row of amont.rows) {
   const mapped = mapRow(row, table);
@@ -160,18 +164,14 @@ for (const row of amont.rows) {
       invalide = true;
       continue;
     }
-    let doc: unknown;
+    // IMP-01 (pitfall 6) : chaque fiche existante passe par la lecture plafonnée, même celle dont l'action
+    // sera « inchangé » ; un alias, une clé en double ou une racine non objet est un conflit nommé.
     try {
-      doc = parse(lu.text, { schema: 'core', uniqueKeys: true });
+      existant = lireYamlPlafonne(lu.text, relatif(file));
     } catch (e) {
       conflits.push(`${id} — fichier existant illisible (${e instanceof Error ? e.message.split('\n')[0] : String(e)})`);
       continue;
     }
-    if (doc === null || typeof doc !== 'object' || Array.isArray(doc)) {
-      conflits.push(`${id} — fichier existant illisible (objet YAML attendu)`);
-      continue;
-    }
-    existant = doc as Record<string, unknown>;
     texteExistant = lu.text;
   }
   const fusion = mergeFiche(existant, mapped);
@@ -184,7 +184,7 @@ for (const row of amont.rows) {
     // Édition en place : commentaires et mise en forme du fichier existant conservés.
     const statuts = fusion.fiche.statuts as unknown[];
     try {
-      texte = ajouterStatutYaml(texteExistant, statuts[statuts.length - 1]);
+      texte = ajouterStatutYaml(texteExistant, statuts[statuts.length - 1], relatif(file));
     } catch (e) {
       conflits.push(`${id} — ajout du statut impossible (${e instanceof Error ? e.message : String(e)})`);
       continue;
@@ -290,18 +290,18 @@ for (const id of presents) {
   const f = path.join(candidatsDir, `${id}.yaml`);
   const lu = readContained(root, f);
   if ('diagnostic' in lu) continue;
-  let doc: { ids_externes?: Record<string, string> } | null;
+  let doc: { ids_externes?: Record<string, string> };
   try {
-    doc = parse(lu.text, { schema: 'core' }) as { ids_externes?: Record<string, string> } | null;
-  } catch {
-    illisibles.push(id);
+    doc = lireYamlPlafonne(lu.text, relatif(f)) as { ids_externes?: Record<string, string> };
+  } catch (e) {
+    illisibles.push(`${id} (${e instanceof Error ? e.message.split('\n')[0] : String(e)})`);
     continue;
   }
-  const externe = doc?.ids_externes?.['2027etmoi'];
+  const externe = doc.ids_externes?.['2027etmoi'];
   if (externe !== undefined && !amontIds.has(externe)) absents.push(id);
 }
 if (absents.length > 0) console.log(`absent en amont : ${absents.join(', ')}`);
-if (illisibles.length > 0) console.log(`illisible (YAML invalide, ignoré pour le rapport « absent en amont ») : ${illisibles.join(', ')}`);
+if (illisibles.length > 0) console.log(`illisible (YAML refusé, ignoré pour le rapport « absent en amont ») : ${illisibles.join(', ')}`);
 console.log(
   `import : ${amont.rows.length} ligne(s), ${nb.cree} créé(s), ${nb.statut_ajoute} statut(s) ajouté(s), ${nb.inchange} inchangé(s), ${absents.length} absent(s) en amont, 0 conflit(s) — instantané ${sha12} du ${amont.miseAJour}, racine ${rel}`,
 );
