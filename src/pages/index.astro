@@ -1,6 +1,8 @@
 ---
 import { NOM_SITE } from '../lib/identite.ts';
-// Accueil : les quatre niveaux de lecture, la règle de neutralité et les thèmes publiés.
+// Accueil : ce que le site est, pourquoi lui faire confiance, les thèmes publiés, le lien vers la Méthode, puis les quatre niveaux de lecture
+// (proposition 1 du lot B, audit B3 : les thèmes avant le sélecteur, pour qu'ils soient au premier écran).
+// Le sélecteur (.lecteur) reste un enfant direct de main : le mode « Gros caractères » s'applique à toute la page.
 import Base from '../layouts/Base.astro';
 import LecteurNiveaux from '../components/LecteurNiveaux.astro';
 import TuileTheme from '../components/TuileTheme.astro';
@@ -13,6 +15,8 @@ const niveaux = [
   ['Pour les enfants', 'Des mots simples, avec les mots difficiles expliqués.'],
   ['Gros caractères', 'Un texte plus grand et les thèmes qui touchent souvent les retraités en premier.'],
 ] as const;
+// Un seul thème ouvert (cas de l'ouverture) : sa tuile occupe toute la ligne et une phrase annonce les suivants.
+const unSeulTheme = corpus.themes.length === 1;
 ---
 <Base
   titre={`${NOM_SITE} : les programmes de la présidentielle 2027`}
@@ -21,9 +25,37 @@ const niveaux = [
 >
   <main id="contenu" class="conteneur">
     <h1>Les programmes de la présidentielle 2027, à votre niveau</h1>
-    <p>Choisissez un thème : vous lirez la position de chaque candidat, avec sa source. Choisissez aussi votre niveau de lecture.</p>
+    {/* BROUILLON 09.1 : phrase de présentation, à valider ou réécrire par Erwan (09.1-09) */}
+    <p class="hall-presentation">Ce site explique, thème par thème, ce que proposent les candidats à l'élection présidentielle de 2027. Il ne prend jamais parti.</p>
+    <ul class="garanties" role="list">
+      {/* BROUILLON 09.1 : garantie 1 (source datée et archivée, sans jugement) */}
+      <li>Chaque mesure décrit ce que le candidat propose, sans jugement, et renvoie à son texte, daté et archivé.</li>
+      {/* BROUILLON 09.1 : garantie 2 (ordre alphabétique par défaut, ordre aléatoire au choix) */}
+      <li>Par défaut, les candidats sont classés par ordre alphabétique, jamais selon les sondages ; vous pouvez aussi choisir un ordre aléatoire.</li>
+      {/* BROUILLON 09.1 : garantie 3 (vie privée) */}
+      <li>Aucun cookie, aucune publicité, aucun service extérieur.</li>
+    </ul>
+    <h2 class="hall-themes">Les thèmes</h2>
+    {corpus.themes.length === 0 ? (
+      <>
+        <p>Aucun thème publié pour le moment.</p>
+        <p><a href="/candidats/">Consulter la liste des candidats</a></p>
+      </>
+    ) : (
+      <>
+        <ul class="tuiles">
+          {corpus.themes.map((vue) => <TuileTheme vue={vue} une={unSeulTheme} />)}
+        </ul>
+        {/* BROUILLON 09.1 : phrase affichée quand un seul thème est ouvert */}
+        {unSeulTheme && <p class="autres-themes">Les autres thèmes seront publiés après relecture.</p>}
+        <p><a href="/candidats/">Voir tous les candidats</a></p>
+      </>
+    )}
+    {/* BROUILLON 09.1 : libellé du lien vers la Méthode. Placé après les thèmes pour que la première tuile reste au
+        premier écran sur téléphone, y compris avec les polices plus larges de la CI (e2e/accueil.spec.ts). */}
+    <p class="hall-methode"><a href="/methode/">Comment nous travaillons</a></p>
+    <h2 class="hall-niveaux">Quatre niveaux de lecture</h2>
     <LecteurNiveaux contexte={{ type: 'hall' }} mesures={[]} rappel={false}>
-      <h2>Quatre niveaux de lecture</h2>
       <dl class="niveaux-hall">
         {niveaux.map(([libelle, description]) => (
           <div>
@@ -32,21 +64,6 @@ const niveaux = [
           </div>
         ))}
       </dl>
-      <p>Les candidats sont classés par ordre alphabétique, jamais selon les sondages. Chaque mesure vient d'une source primaire datée et décrit ce que le candidat propose, sans jugement.</p>
-      <h2 class="hall-themes">Les thèmes</h2>
-      {corpus.themes.length === 0 ? (
-        <>
-          <p>Aucun thème publié pour le moment.</p>
-          <p><a href="/candidats/">Consulter la liste des candidats</a></p>
-        </>
-      ) : (
-        <>
-          <ul class="tuiles">
-            {corpus.themes.map((vue) => <TuileTheme vue={vue} />)}
-          </ul>
-          <p><a href="/candidats/">Voir tous les candidats</a></p>
-        </>
-      )}
     </LecteurNiveaux>
   </main>
 </Base>

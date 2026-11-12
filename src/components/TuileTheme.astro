@@ -5,12 +5,14 @@ import type { VueTheme } from '../lib/corpus/index.ts';
 
 interface Props {
   vue: VueTheme;
+  /** Seule tuile de l'accueil (un seul thème ouvert) : elle occupe toute la ligne de la grille. */
+  une?: boolean;
 }
 
-const { vue } = Astro.props;
+const { vue, une = false } = Astro.props;
 const n = vue.cellules.length;
 ---
-<li class="tuile" data-theme={vue.theme.id}>
+<li class:list={['tuile', { 'tuile-une': une }]} data-theme={vue.theme.id}>
   <a class="tuile-lien" href={`/themes/${vue.theme.id}/`}>{vue.theme.nom}</a>
   <span class="tuile-compte">{n > 1 ? `${n} candidats` : `${n} candidat`}</span>
   <BadgeBrouillon texte={vue.badge} />
