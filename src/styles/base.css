@@ -263,6 +263,39 @@ main {
   color: var(--theme);
 }
 
+/* « Aller à un candidat (N) » (09.1, proposition 3) : repli fermé en tête de la page d'un thème, noms en ligne,
+   cibles de 44 px ; 48 px en « Gros caractères », la liste étant hors de .lecteur (règle de niveaux.css) */
+details.acces-candidats {
+  margin: 0 0 1rem;
+}
+
+details.acces-candidats summary {
+  min-height: 2.75rem;
+  padding: 0.5rem 0;
+  font-size: var(--t-corps);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+details.acces-candidats ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+details.acces-candidats a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+}
+
+main:has(> .lecteur > .niveaux #niv-aine:checked) details.acces-candidats :is(a, summary) {
+  min-height: 3rem;
+}
+
 .couverture {
   padding: 1rem;
   background: var(--panneau);
