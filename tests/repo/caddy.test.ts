@@ -379,6 +379,84 @@ describe('renderCaddyEssai : adresse, racine et protection', () => {
   });
 });
 
+describe('renderCaddy : adresse inconnue, page 404.html avec le code 404 (plan 09.1-02, D-05)', () => {
+  const bloc = renderCaddy(SYNTHETIQUE);
+  const lignes = bloc.split('\n');
+  const REGLE = [
+    '\t@introuvable not file {path} {path}/',
+    '\thandle @introuvable {',
+    '\t\trewrite * /404.html',
+    '\t\tfile_server {',
+    '\t\t\tstatus 404',
+    '\t\t}',
+    '\t}',
+  ];
+
+  it('après la ligne « \\tfile_server » : une ligne vide, trois lignes de commentaire, puis exactement les sept lignes de la règle', () => {
+    const i = lignes.indexOf('\tfile_server');
+    assert.ok(i > 0, 'ligne \\tfile_server absente');
+    assert.equal(lignes.indexOf('\tfile_server', i + 1), -1, 'une seule ligne \\tfile_server de premier niveau');
+    assert.equal(lignes[i + 1], '');
+    const commentaires = lignes.slice(i + 2, i + 5);
+    for (const c of commentaires) assert.match(c, /^\t# /, c);
+    assert.deepEqual(lignes.slice(i + 5, i + 5 + REGLE.length), REGLE);
+    assert.equal(lignes[i + 5 + REGLE.length], '', 'ligne vide après la règle');
+  });
+
+  it('chaque ligne de la règle n’apparaît qu’une fois, dans le bloc du domaine (pas dans la redirection www)', () => {
+    for (const l of REGLE.slice(0, 3)) assert.equal(lignes.filter((x) => x === l).length, 1, l);
+    const www = bloc.slice(bloc.indexOf('www.exemple.test {'));
+    assert.doesNotMatch(www, /introuvable|404/);
+  });
+
+  it('commentaire : ni fichier ni dossier, 404 sans corps si la release n’a pas 404.html, pourquoi pas handle_errors, journal d’accès', () => {
+    const i = lignes.indexOf('\tfile_server');
+    const texte = lignes.slice(i + 2, i + 5).join(' ');
+    assert.match(texte, /ni un fichier ni un dossier/);
+    assert.match(texte, /404\.html/);
+    assert.match(texte, /sans corps/);
+    assert.match(texte, /handle_errors/);
+    assert.match(texte, /debug/);
+    assert.match(texte, /2\.11\.2/);
+    assert.match(texte, /journal d.accès/);
+    assert.doesNotMatch(texte, /[–—]/);
+  });
+
+  it('T-09.1-04 : aucun handle_errors hors commentaires, aucune directive error ni intercept', () => {
+    const code = sansCommentaires(bloc);
+    assert.doesNotMatch(code, /handle_errors/);
+    assert.doesNotMatch(code, /^\t+(error|intercept)\b/m);
+  });
+
+  it('T-09.1-05 : cible de réécriture fixe /404.html, jamais un chemin venu de la requête', () => {
+    const reecritures = [...sansCommentaires(bloc).matchAll(/^\t+rewrite (.*)$/gm)].map((m) => m[1]);
+    assert.deepEqual(reecritures, ['* /404.html']);
+  });
+
+  it('en-têtes, compression, journal et redirection www inchangés par la règle', () => {
+    const sans = bloc.split('\n');
+    const i = sans.indexOf('\tfile_server');
+    sans.splice(i + 1, 1 + 3 + REGLE.length);
+    const reduit = sans.join('\n');
+    assert.doesNotMatch(reduit, /introuvable|404/);
+    assert.match(reduit, /^\tencode zstd gzip\n\tfile_server\n\n\theader \{$/m);
+    assert.match(reduit, /^\t\tCache-Control "no-cache"$/m);
+  });
+
+  it('le bloc de l’hôte technique ne reçoit pas la règle (aucun @introuvable)', () => {
+    const essai = renderCaddyEssai({ ...SYNTHETIQUE, racine: '/srv/x/essai/current', journal: '/var/log/caddy/x-essai.log' });
+    assert.doesNotMatch(essai, /@introuvable/);
+    assert.doesNotMatch(essai, /status 404/);
+    assert.doesNotMatch(fs.readFileSync(BLOC_ESSAI, 'utf8'), /@introuvable/);
+  });
+
+  it('bloc versionné : la règle est présente, sans handle_errors hors commentaires', () => {
+    const versionne = fs.readFileSync(BLOC, 'utf8');
+    assert.ok(versionne.includes(`\n${REGLE.join('\n')}\n`), 'règle absente de deploy/caddy/site.caddy');
+    assert.doesNotMatch(sansCommentaires(versionne), /handle_errors/);
+  });
+});
+
 /** Rendu attendu de l'hôte technique pour le dépôt. */
 function renduEssaiDuDepot(): string {
   return renderCaddyEssai({

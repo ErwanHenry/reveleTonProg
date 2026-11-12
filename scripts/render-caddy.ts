@@ -154,6 +154,26 @@ const ENTETE_GENERE = [
 ];
 
 /**
+ * Adresse inconnue (plan 09.1-02, D-05), bloc de production seulement : une requête dont le chemin n'est ni un fichier
+ * ni un dossier de la release reçoit /404.html avec le code 404. Aucune route d'erreur (pas de handle_errors) : la
+ * réponse est ordinaire, notée dans le journal d'accès du site, et le niveau du journal des autres sites ne change pas.
+ * `handle` passe avant le file_server de premier niveau (ordre des directives) : fichiers existants et redirection
+ * des dossiers (/methode vers /methode/) inchangés. Cible fixe : rien de la requête n'entre dans la réécriture.
+ */
+const LIGNES_INTROUVABLE = [
+  "\t# Adresse inconnue (ni un fichier ni un dossier de la release) : 404.html du site avec le code 404 ; une release",
+  '\t# sans ce fichier répond 404 sans corps. Pas de handle_errors : sur le serveur partagé, il ferait passer le journal',
+  "\t# des erreurs de tous les sites au niveau debug (Caddy 2.11.2). Le journal d'accès note ces requêtes comme les autres.",
+  '\t@introuvable not file {path} {path}/',
+  '\thandle @introuvable {',
+  '\t\trewrite * /404.html',
+  '\t\tfile_server {',
+  '\t\t\tstatus 404',
+  '\t\t}',
+  '\t}',
+];
+
+/**
  * Texte du bloc Caddy (fonction pure : aucune lecture du système, même entrée, même chaîne).
  * Indentation par tabulations, retour ligne final. Lève une Error si une entrée casserait le bloc.
  */
@@ -171,6 +191,8 @@ export function renderCaddy(o: OptionsCaddy): string {
     `\troot * ${racine}`,
     '\tencode zstd gzip',
     '\tfile_server',
+    '',
+    ...LIGNES_INTROUVABLE,
     '',
     ...lignesEnTetes(csp),
     '',
