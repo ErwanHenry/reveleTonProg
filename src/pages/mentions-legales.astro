@@ -1,4 +1,5 @@
 ---
+import { NOM_SITE } from '../lib/identite.ts';
 import Base from '../layouts/Base.astro';
 import { formatDate } from '../lib/corpus/index.ts';
 import { loadHebergeurConfig } from '../lib/hebergeur-config.ts';
@@ -12,7 +13,7 @@ const heb = loadHebergeurConfig();
 const site = loadSiteConfig();
 ---
 <Base
-  titre="Mentions légales : reveleTonProg"
+  titre={`Mentions légales : ${NOM_SITE}`}
   description="Qui édite ce site, qui l'héberge, comment exercer un droit de réponse et ce que le site fait de vos données."
   miseAJour={REVISION}
 >

@@ -1,4 +1,5 @@
 ---
+import { NOM_SITE } from '../lib/identite.ts';
 import Base from '../layouts/Base.astro';
 import couvertureBrute from '../../data/couverture-themes.yaml?raw';
 import schemaSource from '../../schemas/source.schema.json';
@@ -70,7 +71,7 @@ const sansMarqueur = (t: string): string => t.replaceAll('[[', '[ [').replaceAll
 const SEV: Record<string, string> = { erreur: 'erreur', avertissement: 'avertissement', selon_mode: 'selon le mode', selon_statut: 'selon le statut' };
 ---
 <Base
-  titre="Méthode : reveleTonProg"
+  titre={`Méthode : ${NOM_SITE}`}
   description="Comment les sources sont choisies, les règles de neutralité, les longueurs de texte, les thèmes pilotes et les limites connues de ce site."
   miseAJour={REVISION}
 >

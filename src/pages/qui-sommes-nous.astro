@@ -1,4 +1,5 @@
 ---
+import { NOM_SITE } from '../lib/identite.ts';
 import Base from '../layouts/Base.astro';
 import { loadSiteConfig } from '../lib/site-config.ts';
 
@@ -8,7 +9,7 @@ const site = loadSiteConfig();
 const depot = `https://github.com/${site.depot}`;
 ---
 <Base
-  titre="Qui sommes-nous : reveleTonProg"
+  titre={`Qui sommes-nous : ${NOM_SITE}`}
   description="Qui publie ce site, comment il est fabriqué, et pourquoi il ne reçoit aucun financement."
   miseAJour={REVISION}
 >

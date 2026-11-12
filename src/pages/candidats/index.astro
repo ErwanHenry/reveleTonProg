@@ -1,4 +1,5 @@
 ---
+import { NOM_SITE } from '../../lib/identite.ts';
 import Base from '../../layouts/Base.astro';
 import BadgeBrouillon from '../../components/BadgeBrouillon.astro';
 import OrdreCandidats from '../../components/OrdreCandidats.astro';
@@ -10,7 +11,7 @@ const production = corpus.mode === 'production';
 const k = corpus.nonRelus;
 ---
 <Base
-  titre="Les candidats : reveleTonProg"
+  titre={`Les candidats : ${NOM_SITE}`}
   description={production
     ? 'Les personnalités du jeu de données dont le statut a été relu, avec leur parti revendiqué et leur statut.'
     : 'Toutes les personnalités du jeu de données, avec leur parti revendiqué et leur statut.'}

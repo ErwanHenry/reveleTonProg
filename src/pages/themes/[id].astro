@@ -1,4 +1,5 @@
 ---
+import { NOM_SITE } from '../../lib/identite.ts';
 import Base from '../../layouts/Base.astro';
 import BadgeBrouillon from '../../components/BadgeBrouillon.astro';
 import Cellule from '../../components/Cellule.astro';
@@ -21,7 +22,7 @@ const mesuresAffichees = vue.cellules.flatMap((c): VueMesure[] => (c.premiere ==
 const n = vue.autresPersonnalites;
 ---
 <Base
-  titre={`${theme.nom} : positions des candidats, reveleTonProg`}
+  titre={`${theme.nom} : positions des candidats, ${NOM_SITE}`}
   description={`Ce que chaque candidat propose sur le thème ${theme.nom}, avec sa source.`}
   miseAJour={vue.miseAJour}
   avecSignalement={mesuresAffichees.length > 0}
