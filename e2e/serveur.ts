@@ -7,6 +7,9 @@
 // `cache-control: no-store` : chaque chargement (mesure 4G) part à froid, à la différence de Caddy.
 // Liens symboliques : le chemin réel (realpath) de la cible doit rester sous le chemin réel du dist,
 // sinon 404 ; un lien qui pointe vers un autre fichier du dist est servi.
+// Adresse inconnue (plan 09.1-02) : comme le bloc Caddy public (`@introuvable not file {path} {path}/`, puis
+// `rewrite * /404.html` et `file_server { status 404 }`), le serveur répond 404 avec <dist>/404.html et les en-têtes
+// d'une page (même contrôle de chemin réel) ; sans 404.html dans le dist, le corps reste « 404 ».
 import { createServer, type Server } from 'node:http';
 import { readFileSync, realpathSync, statSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
@@ -66,11 +69,17 @@ export function creerServeur(racineArg: string, options: OptionsServeur = {}): S
       return;
     }
     if (rel.endsWith('/')) rel += 'index.html';
-    const abs = path.resolve(racine, `.${rel}`);
-    const reel = cheminReel(racine, abs);
+    let abs = path.resolve(racine, `.${rel}`);
+    let reel = cheminReel(racine, abs);
+    let status = 200;
     if (reel === null) {
-      res.writeHead(404).end('404');
-      return;
+      abs = path.join(racine, '404.html');
+      reel = cheminReel(racine, abs);
+      status = 404;
+      if (reel === null) {
+        res.writeHead(404).end('404');
+        return;
+      }
     }
     const ext = path.extname(abs);
     const brut = readFileSync(reel);
@@ -83,10 +92,10 @@ export function creerServeur(racineArg: string, options: OptionsServeur = {}): S
       let gz = memo.get(reel);
       if (!gz) memo.set(reel, (gz = gzipSync(brut, { level: 6 })));
       res
-        .writeHead(200, { ...h, 'content-encoding': 'gzip', vary: 'Accept-Encoding', 'content-length': String(gz.length) })
+        .writeHead(status, { ...h, 'content-encoding': 'gzip', vary: 'Accept-Encoding', 'content-length': String(gz.length) })
         .end(gz);
     } else {
-      res.writeHead(200, { ...h, 'content-length': String(brut.length) }).end(brut);
+      res.writeHead(status, { ...h, 'content-length': String(brut.length) }).end(brut);
     }
   });
 }
