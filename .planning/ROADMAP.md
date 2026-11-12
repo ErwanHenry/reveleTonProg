@@ -26,6 +26,7 @@ Détail complet : [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) ; exi
 - [x] **Phase 7: Domaine paramétré, inlining et dette** : domaine unique en configuration, CSS et scripts dans la page avec CSP à empreintes, dette W3, W4, W10, W7 (completed 2026-11-07)
 - [x] **Phase 8: Serveur, pipeline, supervision et sauvegardes** : Caddy en HTTPS, déploiement atomique avec retour arrière, hôte technique protégé, alertes, restauration réelle (completed 2026-11-10)
 - [ ] **Phase 9: Contenu relu, juridique et ouverture** : un thème relu publié, Mentions légales finales, journal d'audit refait, ouverture publique vers le 5 décembre
+- [ ] **Phase 9.1: Finitions visuelles avant l'ouverture** (INSÉRÉE le 2026-11-12) : défauts de l'audit visuel corrigés, page 404, balises et image de partage, accueil, en-tête, pied de page et page thème retouchés avec validation d'Erwan sur un aperçu ; à faire entrer avant la publication (09-11)
 - [ ] **Phase 10: Import de décembre** : analyseur plafonné, cohérence de l'instantané, import des statuts en pull request relue (10 au 13 décembre, gel du 13 au 15)
 
 ## Piste 0 (Erwan, hors code)
@@ -156,6 +157,20 @@ Plans:
 - [x] 09-14-PLAN.md — Relecteur et date affichés sur chaque mesure publiée (PUB-03), code check-dist RELECTURE_ABSENTE (vague 3)
 - [x] 09-15-PLAN.md — Personnes sans statut relu absentes de la production (D-06, décision 2a), comptes honnêtes, code check-dist CANDIDAT_NON_RELU_EN_PRODUCTION (vague 4)
 
+### Phase 9.1: Finitions visuelles avant l'ouverture (INSÉRÉE)
+
+**Goal**: Le site qui ouvre au public n'a plus les défauts relevés par l'audit visuel du 2026-11-12 et donne une première impression claire, sans changer d'identité : les retouches restent dans le système de design existant et dans toutes les contraintes du projet (accessibilité AA, zéro JS par défaut, poids et 4G, CSP à empreintes, neutralité).
+**Depends on**: Phase 7 (inlining, check-dist) ; doit être fusionnée avant la publication du thème santé (plan 09-11), pour que l'audit final (09-13) porte sur le site retouché
+**Requirements**: FIN-01, FIN-02, FIN-03, FIN-04
+**Success Criteria** (what must be TRUE):
+
+  1. Une adresse inconnue affiche une page 404 en français, dans la mise en page du site, avec un retour vers l'accueil ; les textes des mesures et du glossaire ne sont plus coupés par césure automatique ; le survol ne reste plus collé au doigt sur un écran tactile ; les petits défauts de l'audit (texte « ci-dessus », barre de thème décalée) sont corrigés.
+  2. Un lien partagé affiche un titre, une description et une image du site ; la page porte ses balises de partage et sa couleur de barre de navigateur ; l'image ne pèse rien pour le visiteur (elle n'est chargée que par les robots de partage) et check-dist l'admet comme seul fichier de ce type.
+  3. Erwan a vu sur un aperçu, avant toute fusion, les propositions qui touchent ses textes ou des règles verrouillées du contrat de design (accueil, en-tête, pied de page, bloc source compact, liste d'accès aux candidats, alignement de la grille) et n'entrent sur `main` que celles qu'il a validées, avec ses corrections de texte.
+  4. Tous les garde-fous restent verts après les retouches : axe AA, lecture à 320 px et à 160 %, fonctionnement sans JS, budget de poids et « Slow 4G simulé » sous 1 s, check-dist (empreintes CSP), et la page santé est nettement moins haute sur téléphone qu'à l'audit (26 800 px en « En bref » à 375 px).
+
+**Plans**: TBD
+
 ### Phase 10: Import de décembre
 
 **Goal**: Les statuts de candidats de décembre entrent dans le dépôt par une pull request relue, sans jamais modifier la production avant relecture d'Erwan.
@@ -191,4 +206,5 @@ Plans:
 | 7. Domaine paramétré, inlining et dette | v1.1 | 8/8 | Complete    | 2026-11-07 |
 | 8. Serveur, pipeline, supervision et sauvegardes | v1.1 | 15/15 | Complete    | 2026-11-10 |
 | 9. Contenu relu, juridique et ouverture | v1.1 | 11/15 | In Progress|  |
+| 9.1 Finitions visuelles avant l'ouverture | v1.1 | 0/0 | Not started | - |
 | 10. Import de décembre | v1.1 | 0/6 | Planned | - |
