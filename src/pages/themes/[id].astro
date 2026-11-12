@@ -40,6 +40,20 @@ const n = vue.autresPersonnalites;
       <BadgeBrouillon texte={vue.badge} />
     </div>
     <p>Voici la position de chaque candidat sur ce thème. Cliquez sur un nom pour voir toutes ses mesures.</p>
+    {/* 09.1, proposition 3 (audit B5) : accès direct à une carte (#c-<id>, Cellule.astro), élément natif, sans JavaScript.
+        Ordre alphabétique (vue.cellules, rang) dans tous les modes : hors de [data-ordonnable], l'ordre aléatoire n'y
+        touche jamais. Avant le lecteur : le sélecteur de niveau reste le premier enfant de .lecteur.
+        BROUILLON 09.1 : libellé « Aller à un candidat (N) » à valider par Erwan. */}
+    {vue.cellules.length > 0 && (
+      <details class="acces-candidats">
+        <summary>Aller à un candidat ({vue.cellules.length})</summary>
+        <nav aria-label="Aller à un candidat">
+          <ul role="list">
+            {vue.cellules.map((c) => <li><a href={`#c-${c.candidat.id}`}>{c.candidat.nomAffiche}</a></li>)}
+          </ul>
+        </nav>
+      </details>
+    )}
     <LecteurNiveaux contexte={{ type: 'theme', id }} mesures={mesuresAffichees}>
       <p class="couverture">{phraseCouverture(vue.couverture)}</p>
       <OrdreCandidats />
