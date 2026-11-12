@@ -193,6 +193,18 @@ main {
   margin: 0 0 0.5rem;
 }
 
+/* Pied structuré : phrase de signalement et liens d'abord, puis une règle, puis les informations en petits caractères */
+.pied .signalement-intro {
+  margin: 0 0 1rem;
+  color: var(--encre);
+}
+
+.pied nav + p {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--bord-carte);
+}
+
 @media (min-width: 37.5em) {
   .conteneur {
     padding-inline: 1.5rem;

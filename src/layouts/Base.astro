@@ -69,13 +69,16 @@ const urlCanonique = corpus.mode !== 'preview' && !pageErreur && Astro.site ? ne
       <div class="banniere-preview bandeau-apercu">Version de prévisualisation : contenus non relus, ne pas diffuser.</div>
     )}
     <slot />
-    {avecSignalement && (
-      <div class="conteneur">
-        <p class="signalement-intro">Vous avez repéré une erreur ? Signalez-la : l'identifiant de la mesure est déjà indiqué dans le message.</p>
-      </div>
-    )}
     <footer class="pied">
       <div class="conteneur">
+        {avecSignalement && <p class="signalement-intro">Vous avez repéré une erreur ? Signalez-la : l'identifiant de la mesure est déjà indiqué dans le message.</p>}
+        <nav aria-label="Informations sur le site" class="pied-liens">
+          <ul>
+            <li><a href="/methode/" aria-current={institutionnelle === 'methode' ? 'page' : undefined}>Méthode</a></li>
+            <li><a href="/mentions-legales/" aria-current={institutionnelle === 'mentions-legales' ? 'page' : undefined}>Mentions légales</a></li>
+            <li><a href="/qui-sommes-nous/" aria-current={institutionnelle === 'qui-sommes-nous' ? 'page' : undefined}>Qui sommes-nous</a></li>
+          </ul>
+        </nav>
         {miseAJour === undefined ? (
           <p data-mise-a-jour>Aucun contenu publié pour le moment.</p>
         ) : (
@@ -85,13 +88,6 @@ const urlCanonique = corpus.mode !== 'preview' && !pageErreur && Astro.site ? ne
 n'utilise aucun cookie et n'appelle aucun service extérieur.</p>
         <p>Élection présidentielle : premier tour le dimanche <time datetime={TOURS[0].date}>{formatDate(TOURS[0].date)}</time>, second tour le dimanche <time datetime={TOURS[1].date}>{formatDate(TOURS[1].date)}</time>.{SOURCE_DATES !== null && (<>
 {' '}(<a href={SOURCE_DATES.url} rel="noopener noreferrer">source officielle</a>)</>)}</p>
-        <nav aria-label="Informations sur le site" class="pied-liens">
-          <ul>
-            <li><a href="/methode/" aria-current={institutionnelle === 'methode' ? 'page' : undefined}>Méthode</a></li>
-            <li><a href="/mentions-legales/" aria-current={institutionnelle === 'mentions-legales' ? 'page' : undefined}>Mentions légales</a></li>
-            <li><a href="/qui-sommes-nous/" aria-current={institutionnelle === 'qui-sommes-nous' ? 'page' : undefined}>Qui sommes-nous</a></li>
-          </ul>
-        </nav>
       </div>
     </footer>
   </body>

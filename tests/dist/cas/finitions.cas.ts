@@ -146,4 +146,63 @@ export default function finitions(ctx: ContexteSite): void {
       });
     }
   });
+
+  describe('finitions 09.1 : pied de page', () => {
+    const MISE_A_JOUR = /^<p data-mise-a-jour>(?:Dernière mise à jour des contenus de cette page : <time datetime="\d{4}-\d{2}-\d{2}">[^<]+<\/time>\.|Aucun contenu publié pour le moment\.)<\/p>$/;
+    // Textes exigés, tels qu'ils sortaient avant le réagencement (09.1-04) : octet pour octet.
+    const COOKIE = "<p><span>Ce site</span>\nn'utilise aucun cookie et n'appelle aucun service extérieur.</p>";
+    const TOURS =
+      '<p>Élection présidentielle : premier tour le dimanche <time datetime="2027-04-18">18 avril 2027</time>, second tour le dimanche <time datetime="2027-05-02">2 mai 2027</time>.';
+    const SIGNALEMENT = "<p class=\"signalement-intro\">Vous avez repéré une erreur ? Signalez-la : l'identifiant de la mesure est déjà indiqué dans le message.</p>";
+
+    it("ordre relatif dans footer.pied : phrase de signalement (pages à mesures), liens, mise à jour, cookie, tours ; textes exigés inchangés", () => {
+      // Ordre RELATIF seulement (positions dans le document, jamais « premier enfant ») : une ligne d'identité
+      // optionnelle (p.pied-identite, lot B proposition 5) pourra précéder ces éléments sans modifier ce test.
+      const { outDir } = production();
+      const pages = ctx.pagesHtml(outDir);
+      assert.ok(pages.length > 5);
+      let avecSignalement = 0;
+      for (const f of pages) {
+        const rel = path.relative(outDir, f).split(path.sep).join('/');
+        const html = fs.readFileSync(f, 'utf8');
+        const arbre = analyserHtml(html);
+        const pied = trouver(arbre, (n) => n.tag === 'footer' && aClasse(n, 'pied'));
+        assert.equal(pied.length, 1, `${rel} : un seul footer.pied`);
+        const debut = html.indexOf('<footer class="pied"');
+        const brut = html.slice(debut, html.indexOf('</footer>', debut));
+        const aMesure = trouver(arbre, (n) => n.tag === 'article' && aClasse(n, 'mesure')).length > 0;
+        const signalements = trouver(arbre, (n) => aClasse(n, 'signalement-intro'));
+        assert.equal(signalements.length, aMesure ? 1 : 0, `${rel} : p.signalement-intro exactement sur les pages à mesures`);
+        if (aMesure) {
+          avecSignalement++;
+          assert.ok(trouver(pied[0] as Noeud, (n) => aClasse(n, 'signalement-intro')).length === 1, `${rel} : la phrase de signalement est dans le pied`);
+          assert.ok(html.includes(SIGNALEMENT), `${rel} : texte de signalement inchangé`);
+        }
+        const positions = [
+          ...(aMesure ? [['signalement', brut.indexOf('class="signalement-intro"')] as const] : []),
+          ['liens', brut.indexOf('<nav aria-label="Informations sur le site"')],
+          ['mise à jour', brut.indexOf('<p data-mise-a-jour>')],
+          ['cookie', brut.indexOf('<p><span>Ce site</span>')],
+          ['tours', brut.indexOf('<p>Élection présidentielle')],
+        ] as const;
+        for (const [nom, pos] of positions) assert.ok(pos >= 0, `${rel} : ${nom} absent du pied`);
+        for (let i = 1; i < positions.length; i++) {
+          assert.ok((positions[i - 1] as readonly [string, number])[1] < (positions[i] as readonly [string, number])[1], `${rel} : ${(positions[i - 1] as readonly [string, number])[0]} doit précéder ${(positions[i] as readonly [string, number])[0]}`);
+        }
+        const para = (marque: string): string => {
+          const d = brut.indexOf(marque);
+          return brut.slice(d, brut.indexOf('</p>', d) + 4);
+        };
+        assert.match(para('<p data-mise-a-jour>'), MISE_A_JOUR, `${rel} : ligne de mise à jour`);
+        assert.equal(para('<p><span>Ce site</span>'), COOKIE, `${rel} : phrase sur les cookies`);
+        assert.ok(para('<p>Élection présidentielle').startsWith(TOURS), `${rel} : dates des deux tours`);
+        assert.ok(trouver(arbre, (n) => aClasse(n, 'signalement-intro')).every((n) => {
+          let p: Noeud | null = n;
+          while (p !== null && p.tag !== 'footer') p = p.parent;
+          return p !== null;
+        }), `${rel} : p.signalement-intro hors du pied`);
+      }
+      assert.ok(avecSignalement > 0, 'aucune page à mesures : cas vide');
+    });
+  });
 }

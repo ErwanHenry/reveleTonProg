@@ -155,3 +155,31 @@ test.describe('finitions 09.1 : page candidat sans mesure', () => {
     expect(await taille(page, '.statut')).toBe(20);
   });
 });
+
+test.describe('finitions 09.1 : pied de page', () => {
+  const pagesPied = [...new Set([pageTheme, pageCandidat, PAGES.find((p) => p.url === '/')])].filter((p) => p !== undefined);
+  // Liens du bloc de navigation du pied (cibles de 44 px). Le lien « source officielle » est dans une phrase : cible en ligne,
+  // exemptée de la taille minimale (WCAG 2.5.8), inchangée et non touchée par ce plan.
+  test('à 375 px chaque lien de la navigation du pied fait au moins 44 px de haut', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    for (const cible of pagesPied) {
+      await page.goto(cible.url);
+      const hauteurs = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('footer nav.pied-liens a')].map((a) => [a.textContent ?? '', a.getBoundingClientRect().height] as const));
+      expect(hauteurs.length, `liens du pied de ${cible.url}`).toBeGreaterThanOrEqual(3);
+      for (const [nom, h] of hauteurs) expect(h, `${cible.url} : lien « ${nom} »`).toBeGreaterThanOrEqual(44);
+    }
+  });
+
+  test('à 1280 px le pied ne déborde pas horizontalement', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    for (const cible of pagesPied) {
+      await page.goto(cible.url);
+      const m = await page.evaluate(() => {
+        const f = document.querySelector<HTMLElement>('footer')!;
+        return { pied: f.scrollWidth - f.clientWidth, doc: document.documentElement.scrollWidth - document.documentElement.clientWidth };
+      });
+      expect(m.pied, `${cible.url} : débordement du pied`).toBeLessThanOrEqual(0);
+      expect(m.doc, `${cible.url} : débordement du document`).toBeLessThanOrEqual(0);
+    }
+  });
+});
