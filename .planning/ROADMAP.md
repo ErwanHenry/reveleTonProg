@@ -180,7 +180,7 @@ Plans:
 - [x] 09.1-05-PLAN.md — Plus de rappel du niveau sur l'accueil, gros caractères et niveau mémorisé épinglés sur chaque page candidat, pied de page structuré, gardes complètes et push du lot A (vague 4)
 - [x] 09.1-06-PLAN.md — Worktree design/finitions, script de mesure et référence, propositions 1 (accueil) et 5 (nom, sous-titre, ligne d'identité) en brouillon (vague 5)
 - [x] 09.1-07-PLAN.md — Propositions 2 (bloc source compact, variante 2b si la cible de 21 500 px est manquée), 3 (Aller à un candidat), 4 (grille, règle verrouillée M1-08) (vague 6)
-- [ ] 09.1-08-PLAN.md — Proposition 6 (image de partage, seul PNG admis), indépendance de chaque commit, gardes sur la branche, aperçu 4331/4332, carte de partage locale et fiche pour Erwan (vague 7)
+- [x] 09.1-08-PLAN.md — Proposition 6 (image de partage, seul PNG admis), indépendance de chaque commit, gardes sur la branche, aperçu 4331/4332, carte de partage locale et fiche pour Erwan (vague 7)
 - [ ] 09.1-09-PLAN.md — Réponse d'Erwan proposition par proposition et sur les deux textes du lot A, intégration des seuls commits acceptés avec ses textes, gardes, push, mesure finale avant l'import de décembre, nettoyage (vague 8, validation d'Erwan)
 
 ### Phase 10: Import de décembre
