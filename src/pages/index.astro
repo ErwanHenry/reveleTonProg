@@ -22,7 +22,7 @@ const niveaux = [
   <main id="contenu" class="conteneur">
     <h1>Les programmes de la présidentielle 2027, à votre niveau</h1>
     <p>Choisissez un thème : vous lirez la position de chaque candidat, avec sa source. Choisissez aussi votre niveau de lecture.</p>
-    <LecteurNiveaux contexte={{ type: 'hall' }} mesures={[]}>
+    <LecteurNiveaux contexte={{ type: 'hall' }} mesures={[]} rappel={false}>
       <h2>Quatre niveaux de lecture</h2>
       <dl class="niveaux-hall">
         {niveaux.map(([libelle, description]) => (

@@ -2,11 +2,13 @@
 // Réutilise le build « m1-production » (aucun build supplémentaire).
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import path from 'node:path';
-import { analyserHtml, texte } from '../../../scripts/lib/html.ts';
+import { aClasse, analyserHtml, texte, trouver } from '../../../scripts/lib/html.ts';
 import { materialiserCorpusM1 } from '../../helpers/corpus-m1.ts';
 import { cssDesPages } from '../css-pages.ts';
 import type { ContexteSite } from '../contexte.ts';
+import type { Noeud } from '../../../scripts/lib/html.ts';
 
 /** Blocs « prélude { corps } » du CSS minifié, avec leur chaîne de @media englobants. */
 function blocs(css: string): { prelude: string; corps: string; medias: string[] }[] {
@@ -80,5 +82,68 @@ export default function finitions(ctx: ContexteSite): void {
       assert.ok(!t.includes('ci-dessus'), 'ci-dessus encore présent');
       assert.ok(t.replace(/\s+/g, ' ').includes('par ordre alphabétique du nom, ou dans un ordre aléatoire si vous le choisissez ci-dessous'));
     });
+  });
+
+  describe('finitions 09.1 : niveaux', () => {
+    const elements = (n: Noeud): Noeud[] => n.enfants.filter((e): e is Noeud => typeof e !== 'string');
+    const norm = (s: string): string => s.replace(/\s+/g, ' ').trim();
+    const source = fs.readFileSync(path.join(ctx.repoRoot, 'src', 'scripts', 'niveau.js'), 'utf8');
+
+    for (const [cle, mode] of [['m1-production', 'production'], ['m1-preview', 'preview']] as const) {
+      const construit = () => {
+        const b = ctx.construire(cle, { racine, mode });
+        assert.equal(b.status, 0, `astro build (${mode}) a échoué :\n${b.output}`);
+        return b;
+      };
+      const rel = (outDir: string, f: string): string => path.relative(outDir, f).split(path.sep).join('/');
+
+      it(`${mode} : chaque page candidat garde son sélecteur de niveau et son script, avec ou sans mesure (gros caractères et niveau mémorisé en dépendent)`, () => {
+        const { outDir } = construit();
+        const fiches = ctx.pagesHtml(outDir).filter((f) => /^candidats\/[^/]+\/index\.html$/.test(rel(outDir, f)));
+        assert.ok(fiches.length > 0, 'aucune page candidat');
+        let sansMesure = 0;
+        for (const f of fiches) {
+          const arbre = analyserHtml(fs.readFileSync(f, 'utf8'));
+          const champs = trouver(arbre, (n) => n.tag === 'fieldset' && n.attrs.id === 'niveaux');
+          assert.equal(champs.length, 1, `${rel(outDir, f)} : un seul fieldset#niveaux`);
+          const champ = champs[0] as Noeud;
+          const freres = elements(champ.parent as Noeud);
+          const suivant = freres[freres.indexOf(champ) + 1] as Noeud;
+          assert.equal(suivant?.tag, 'script', `${rel(outDir, f)} : le script de niveau suit le sélecteur`);
+          assert.equal(texte(suivant), source, `${rel(outDir, f)} : script de niveau identique à src/scripts/niveau.js`);
+          // Le mode « Gros caractères » est commuté par main:has(> .lecteur > .niveaux #niv-aine:checked)
+          const lecteur = champ.parent as Noeud;
+          assert.ok(aClasse(lecteur, 'lecteur'), `${rel(outDir, f)} : le sélecteur est dans .lecteur`);
+          assert.equal(lecteur.parent?.tag, 'main', `${rel(outDir, f)} : .lecteur est enfant direct de main`);
+          assert.equal(trouver(arbre, (n) => n.tag === 'input' && n.attrs.id === 'niv-aine').length, 1, `${rel(outDir, f)} : radio « Gros caractères »`);
+          if (trouver(arbre, (n) => n.tag === 'article' && aClasse(n, 'mesure')).length === 0) sansMesure++;
+        }
+        assert.ok(sansMesure > 0, 'la fixture doit compter au moins une page candidat sans mesure (luc-retire), sinon le cas est vide');
+      });
+
+      it(`${mode} : l'accueil garde un seul sélecteur mais plus de lien « Changer le niveau de lecture »`, () => {
+        const { outDir } = construit();
+        const arbre = analyserHtml(ctx.lire(outDir, 'index.html'));
+        assert.equal(trouver(arbre, (n) => n.tag === 'fieldset' && n.attrs.id === 'niveaux').length, 1);
+        assert.equal(trouver(arbre, (n) => aClasse(n, 'rappel-niveau')).length, 0, 'rappel encore présent sur l\'accueil');
+        assert.ok(!norm(texte(arbre)).includes('Changer le niveau de lecture'));
+      });
+
+      it(`${mode} : pages thème et pages candidat gardent le rappel en dernier élément de .lecteur-contenu`, () => {
+        const { outDir } = construit();
+        const pages = ctx.pagesHtml(outDir).filter((f) => /^(themes|candidats)\/[^/]+\/index\.html$/.test(rel(outDir, f)));
+        assert.ok(pages.some((f) => rel(outDir, f).startsWith('themes/')) && pages.some((f) => rel(outDir, f).startsWith('candidats/')));
+        for (const f of pages) {
+          const arbre = analyserHtml(fs.readFileSync(f, 'utf8'));
+          const contenu = trouver(arbre, (n) => aClasse(n, 'lecteur-contenu'))[0] as Noeud | undefined;
+          assert.ok(contenu, `${rel(outDir, f)} : .lecteur-contenu`);
+          const els = elements(contenu);
+          const dernier = els[els.length - 1] as Noeud;
+          assert.ok(aClasse(dernier, 'rappel-niveau'), `${rel(outDir, f)} : le rappel n'est pas le dernier élément`);
+          const a = trouver(dernier, (n) => n.tag === 'a')[0] as Noeud;
+          assert.equal(a.attrs.href, '#niveaux');
+        }
+      });
+    }
   });
 }

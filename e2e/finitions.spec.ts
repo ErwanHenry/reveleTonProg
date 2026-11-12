@@ -113,3 +113,45 @@ test.describe('finitions 09.1 : preuve navigateur', () => {
     });
   }
 });
+
+// Page candidat sans aucune mesure : le sélecteur de niveau y reste (M1-09 : « Gros caractères » agrandit le bloc de statut
+// et les états vides, et le niveau mémorisé y est appliqué). Sans lui, main:has(> .lecteur > .niveaux #niv-aine:checked)
+// ne s'applique plus et niveau.js sort aussitôt. Aucun identifiant en dur : la première page candidat sans mesure, avec statut.
+const reel = (process.env.E2E_DIST ?? 'dist-e2e/reel').includes('reel');
+const candidatsSansMesure = PAGES.filter((p) => /^\/candidats\/[^/]+\/$/.test(p.url) && !lire(p.fichier).includes('class="mesure"') && lire(p.fichier).includes('class="statut'));
+const candidatSansMesure = candidatsSansMesure.find((p) => lire(p.fichier).includes('class="vide"')) ?? candidatsSansMesure[0];
+
+async function taille(page: Page, selecteur: string): Promise<number | null> {
+  return page.evaluate((s) => {
+    const el = document.querySelector(s);
+    return el === null ? null : parseFloat(getComputedStyle(el).fontSize);
+  }, selecteur);
+}
+
+test.describe('finitions 09.1 : page candidat sans mesure', () => {
+  test('le corpus compte une page candidat sans mesure', () => {
+    if (reel) expect(candidatSansMesure, 'le vrai corpus doit compter au moins un candidat sans mesure').toBeDefined();
+    else test.skip(candidatSansMesure === undefined, 'fixture sans page candidat sans mesure');
+  });
+
+  test('« Gros caractères » agrandit le bloc de statut (20 px) et l\'état vide (22 px)', async ({ page }) => {
+    test.skip(candidatSansMesure === undefined, 'aucune page candidat sans mesure');
+    await page.goto(candidatSansMesure!.url);
+    await expect(page.locator('#niv-aine')).toHaveCount(1);
+    expect(await taille(page, '.statut')).toBe(16);
+    const avecVide = (await page.locator('.vide').count()) > 0;
+    if (avecVide) expect(await taille(page, '.vide')).toBe(18);
+    await page.locator('#niv-aine').check();
+    expect(await taille(page, '.statut')).toBe(20);
+    if (avecVide) expect(await taille(page, '.vide')).toBe(22);
+  });
+
+  test('le niveau mémorisé sur une page thème est appliqué sur cette page candidat', async ({ page }) => {
+    test.skip(candidatSansMesure === undefined || pageAvecSelecteur === undefined, 'aucune page candidat sans mesure');
+    await page.goto(pageAvecSelecteur!.url);
+    await page.locator('#niv-aine').check();
+    await page.goto(candidatSansMesure!.url);
+    await expect(page.locator('#niv-aine')).toBeChecked();
+    expect(await taille(page, '.statut')).toBe(20);
+  });
+});
