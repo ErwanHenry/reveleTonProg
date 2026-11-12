@@ -178,7 +178,7 @@ Plans:
 - [x] 09.1-03-PLAN.md — Nom du site en un seul endroit (NOM_SITE), pages construites identiques octet pour octet (vague 2)
 - [x] 09.1-04-PLAN.md — Balises de partage et theme-color, og:url depuis le seul domaine configuré, code check-dist PARTAGE_INCORRECT (vague 3)
 - [x] 09.1-05-PLAN.md — Plus de rappel du niveau sur l'accueil, gros caractères et niveau mémorisé épinglés sur chaque page candidat, pied de page structuré, gardes complètes et push du lot A (vague 4)
-- [ ] 09.1-06-PLAN.md — Worktree design/finitions, script de mesure et référence, propositions 1 (accueil) et 5 (nom, sous-titre, ligne d'identité) en brouillon (vague 5)
+- [x] 09.1-06-PLAN.md — Worktree design/finitions, script de mesure et référence, propositions 1 (accueil) et 5 (nom, sous-titre, ligne d'identité) en brouillon (vague 5)
 - [ ] 09.1-07-PLAN.md — Propositions 2 (bloc source compact, variante 2b si la cible de 21 500 px est manquée), 3 (Aller à un candidat), 4 (grille, règle verrouillée M1-08) (vague 6)
 - [ ] 09.1-08-PLAN.md — Proposition 6 (image de partage, seul PNG admis), indépendance de chaque commit, gardes sur la branche, aperçu 4331/4332, carte de partage locale et fiche pour Erwan (vague 7)
 - [ ] 09.1-09-PLAN.md — Réponse d'Erwan proposition par proposition et sur les deux textes du lot A, intégration des seuls commits acceptés avec ses textes, gardes, push, mesure finale avant l'import de décembre, nettoyage (vague 8, validation d'Erwan)
@@ -218,5 +218,5 @@ Plans:
 | 7. Domaine paramétré, inlining et dette | v1.1 | 8/8 | Complete    | 2026-11-07 |
 | 8. Serveur, pipeline, supervision et sauvegardes | v1.1 | 15/15 | Complete    | 2026-11-10 |
 | 9. Contenu relu, juridique et ouverture | v1.1 | 11/15 | In Progress|  |
-| 9.1 Finitions visuelles avant l'ouverture | v1.1 | 0/9 | Planned | - |
+| 9.1 Finitions visuelles avant l'ouverture | v1.1 | 6/9 | In Progress|  |
 | 10. Import de décembre | v1.1 | 1/6 | In Progress|  |

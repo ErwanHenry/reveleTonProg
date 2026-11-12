@@ -4,13 +4,13 @@ milestone: v1.1
 milestone_name: "Lot 3 : hébergement et mise en ligne"
 status: executing
 stopped_at: Completed 09-09-PLAN.md ; waiting for Erwan (09-10, review of the santé theme)
-last_updated: "2026-11-12T13:40:00.000Z"
-last_activity: "2026-11-12 (09.1-05 : accueil sans rappel du niveau, sélecteur et gros caractères épinglés sur chaque page candidat avec et sans JavaScript, pied de page structuré ; lot A poussé sur main) (09.1-04 : balises de partage et theme-color, og:url depuis le seul domaine configuré, check-dist PARTAGE_INCORRECT ; main non poussé) (09.1-03 : NOM_SITE en un seul endroit, 79 pages comparées avant et après sans une différence ; main non poussé) (09.1-02 : page 404 en français noindex sans canonique, serveur de test et bloc Caddy public en 404 sans handle_errors, preuve Caddy 2.11.2 locale jetable, contrôles 09-12 au RUNBOOK ; main non poussé, sauvegarde sur sauvegarde/finitions-lot-a) (09.1-01 : lot A partie 1, césure réservée aux noms et titres, survol sous (hover: hover), barre de thème, statut pleine largeur, phrase de /candidats/ ; commits locaux, sauvegarde sur sauvegarde/finitions-lot-a, main poussé au 09.1-05) (10-02 : cohérence instantané data.gouv et fichiers candidats dans npm test, quatre pièges D-05, refus de marquer ; push groupé avec 10-01) (10-01 : lectures YAML de l'import, de l'archivage et de la couverture par l'analyseur plafonné léger yaml-plafonne.ts, test de dépôt à liste blanche de huit fichiers ; commits locaux, push groupé avec 10-02)"
+last_updated: "2026-11-12T18:00:00.000Z"
+last_activity: "2026-11-12 (09.1-06 : lot B ouvert, worktree ../reveleTonProg-design sur design/finitions, mesurer.mjs et 09.1-MESURES.md, propositions P1 (accueil) et P5 (nom, sous-titre, ligne d'identité) en brouillon, pull request brouillon #5, rien du lot B sur main) (09.1-05 : accueil sans rappel du niveau, sélecteur et gros caractères épinglés sur chaque page candidat avec et sans JavaScript, pied de page structuré ; lot A poussé sur main) (09.1-04 : balises de partage et theme-color, og:url depuis le seul domaine configuré, check-dist PARTAGE_INCORRECT ; main non poussé) (09.1-03 : NOM_SITE en un seul endroit, 79 pages comparées avant et après sans une différence ; main non poussé) (09.1-02 : page 404 en français noindex sans canonique, serveur de test et bloc Caddy public en 404 sans handle_errors, preuve Caddy 2.11.2 locale jetable, contrôles 09-12 au RUNBOOK ; main non poussé, sauvegarde sur sauvegarde/finitions-lot-a) (09.1-01 : lot A partie 1, césure réservée aux noms et titres, survol sous (hover: hover), barre de thème, statut pleine largeur, phrase de /candidats/ ; commits locaux, sauvegarde sur sauvegarde/finitions-lot-a, main poussé au 09.1-05) (10-02 : cohérence instantané data.gouv et fichiers candidats dans npm test, quatre pièges D-05, refus de marquer ; push groupé avec 10-01) (10-01 : lectures YAML de l'import, de l'archivage et de la couverture par l'analyseur plafonné léger yaml-plafonne.ts, test de dépôt à liste blanche de huit fichiers ; commits locaux, push groupé avec 10-02)"
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 44
-  completed_plans: 35
+  completed_plans: 36
   percent: 40
 ---
 
@@ -72,6 +72,7 @@ Recent decisions affecting current work:
 - [Roadmap v1.1]: déploiement par releases datées + lien `current`, job dans `ci.yml`, build de production reconstruite, jamais d'artefact preview
 - [Roadmap v1.1]: dépôt public depuis le 2026-11-04 : réviser l'ADR-051, la preview n'est jamais servie
 - [09-05]: page de relecture locale = node:http sur 127.0.0.1 seulement, Host exact, Origin, jeton par lancement ; « Valider » appelle le même `marquer` que la ligne de commande ; un refus répond 409 avec le message, jamais d'écriture
+- [09.1-06]: marqueur de la sonde et du battement séparé du nom affiché (MARQUEUR_SONDE dans <meta name="generator">, proposition 5) ; premier écran de l'accueil testé avec la police large de la CI et sans le bandeau de préversion, lien vers la Méthode après les thèmes (proposition 1)
 - [09.1-05]: le sélecteur de niveau reste sur toute page candidat, même sans mesure (M1-09 : gros caractères et niveau mémorisé en dépendent) ; seul l'accueil perd le rappel « Changer le niveau de lecture » ; pied : signalement, liens, puis informations, textes inchangés
 - [09.1-04]: og:url et le lien canonique partagent une seule valeur (production, hors 404, depuis Astro.site) ; PARTAGE_INCORRECT refuse aussi toute image de partage qui serait chargée par une page ; aucune image avant 09.1-08
 - [09.1-03]: nom du site dans `NOM_SITE` (src/lib/identite.ts), valeur inchangée ; la changer est la décision d'Erwan (lot B, proposition 5)
@@ -106,7 +107,7 @@ Items acknowledged and deferred at v1.0 close on 2026-11-04 (Erwan: « Fix, then
 
 ## Session Continuity
 
-Last session: 2026-11-12T13:40:00.000Z
+Last session: 2026-11-12T18:00:00.000Z
 Stopped at: Completed 10-01-PLAN.md (commits locaux, non poussés : push groupé avec 10-02)
 Resume file: None
 
