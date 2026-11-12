@@ -118,9 +118,8 @@ export default function theme(ctx: ContexteSite): void {
       assert.deepEqual(lignes, [
         titre,
         'Consultée le 24 octobre 2026',
-        'Lire le document original',
-        'Copie archivée (Wayback Machine)',
-        'Extrait archivé, empreinte sha256 c3107ed7287b',
+        // 09.1, proposition 2 : les trois liens du document sur une ligne (ul.source-liens)
+        'Document original Copie archivée Extrait archivé (c3107ed7287b)',
       ]);
       const t = trouver(li, (n) => n.tag === 'time');
       assert.equal(t.length, 1);
@@ -137,7 +136,7 @@ export default function theme(ctx: ContexteSite): void {
         assert.equal(sr.length, 1, `suffixe .sr-only dans « ${norm(texte(a))} »`);
         assert.equal(norm(texte(sr[0] as Noeud)), `: ${titre}`);
       }
-      assert.equal(norm(texte(original as Noeud)), `Lire le document original : ${titre}`);
+      assert.equal(norm(texte(original as Noeud)), `Document original : ${titre}`);
       const jean = carte(arbre, 'Jean Imaginaire');
       assert.match(norm(texte(trouver(jean, (n) => aClasse(n, 'vide'))[0] as Noeud)), /^Programme non publié à ce jour\. Vérifié le 21 octobre 2026\.$/);
       assert.ok(trouver(jean, (n) => n.tag === 'time' && n.attrs.datetime === '2026-10-21').length === 1);
@@ -176,7 +175,7 @@ export default function theme(ctx: ContexteSite): void {
               lienExtrait('ErwanHenry/reveleTonProg', s.archive.extrait, racine, ctx.repoRoot),
             ];
             assert.deepEqual(hrefs, attendus, ou);
-            assert.ok(norm(texte(li)).includes(`Extrait archivé, empreinte sha256 ${s.archive.sha256.slice(0, 12)}`), ou);
+            assert.ok(norm(texte(li)).includes(`Extrait archivé (${s.archive.sha256.slice(0, 12)})`), ou);
           }
         }
       }

@@ -420,8 +420,10 @@ blockquote[data-citation] p {
   font-size: var(--t-label);
 }
 
+/* Bloc source compact (09.1, proposition 2) : source primaire et date restent deux lignes de texte, 4 px dessous ;
+   les liens gardent leurs 44 px (48 px en « Gros caractères », niveaux.css), qui suffisent à espacer les lignes. */
 .source p {
-  margin: 0 0 0.5rem;
+  margin: 0 0 0.25rem;
 }
 
 .source a {
@@ -430,11 +432,23 @@ blockquote[data-citation] p {
   min-height: 2.75rem;
 }
 
-/* Liens de signalement : sur leur propre ligne, côte à côte avec 8 px d'écart, cibles de 44 px */
+/* Liens du document (original, copie, extrait) : une ligne qui passe à la ligne, 16 px entre deux liens */
+.source-liens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* « Signaler une erreur : par courriel, sur GitHub » : une ligne qui passe à la ligne, cibles de 44 px */
 .source .signaler {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  align-items: center;
+  gap: 0 1rem;
+  margin: 0;
 }
 
 .signalement-intro {
@@ -460,7 +474,8 @@ blockquote[data-citation] p {
   padding: 0;
 }
 
-.sources-consultees li + li {
+/* Entre deux sources seulement (> ul > li), jamais entre les liens en ligne d'une source (ul.source-liens) */
+.sources-consultees > ul > li + li {
   margin-top: 1rem;
 }
 

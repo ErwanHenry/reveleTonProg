@@ -57,7 +57,7 @@ export default function institutionnel(ctx: ContexteSite): void {
       assert.ok(t.includes(CLES_STOCKAGE.ordre.cle));
       assert.match(t, /aucun cookie/);
       // IN-05 : les deux liens de signalement sont décrits, courriel et GitHub.
-      assert.ok(t.includes('« Signaler une erreur (courriel) »') && t.includes('« Signaler une erreur (GitHub) » mène au site GitHub'), t);
+      assert.ok(t.includes('« Signaler une erreur : par courriel »') && t.includes('« Signaler une erreur : sur GitHub » mène au site GitHub'), t);
       // WR-03 : phrase qui deviendrait fausse avec les journaux du serveur.
       assert.doesNotMatch(t, /ne collecte aucune donnée personnelle/);
     });
