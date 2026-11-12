@@ -2,6 +2,7 @@
 import { NOM_SITE } from '../lib/identite.ts';
 import '../styles/base.css';
 import '../styles/pages.css';
+import baseCss from '../styles/base.css?raw';
 import ordreSource from '../scripts/ordre.js?raw';
 import { formatDate, getCorpus } from '../lib/corpus/index.ts';
 import { SOURCE_DATES, TOURS } from '../lib/dates-tours.ts';
@@ -25,6 +26,12 @@ const institutionnelle = /^\/(methode|mentions-legales|qui-sommes-nous)\/?$/.exe
 const courante = /^\/themes(\/|$)/.test(chemin) ? 'themes' : /^\/candidats(\/|$)/.test(chemin) ? 'candidats' : undefined;
 // URL canonique (HEB-05) : https://<domaine de config/site.yml> + chemin, seulement quand corpus.mode !== 'preview'.
 // Astro.site vaut https://<domaine> dans les deux modes : la build preview (artefact public) ne doit jamais revendiquer le domaine.
+// Couleur de la barre du navigateur (theme-color) = --fond de base.css, lue dans la feuille : une seule valeur.
+const couleurBarre = /--fond:\s*(#[0-9A-Fa-f]{6})\s*;/.exec(baseCss)?.[1];
+// Balises de partage (FIN-02, 09.1-04) : mêmes textes que le titre et la description de la page. og:url et le lien
+// canonique partagent cette seule valeur, donc la même condition : jamais en préversion, jamais sur la page d'erreur, jamais un autre hôte
+// que le domaine configuré (Astro.site). Pas d'image de partage ici (proposition 6 du lot B).
+const urlCanonique = corpus.mode !== 'preview' && !pageErreur && Astro.site ? new URL(Astro.url.pathname, Astro.site).href : undefined;
 ---
 <!doctype html>
 <html lang="fr">
@@ -33,8 +40,16 @@ const courante = /^\/themes(\/|$)/.test(chemin) ? 'themes' : /^\/candidats(\/|$)
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{titre}</title>
     <meta name="description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={NOM_SITE} />
+    <meta property="og:title" content={titre} />
+    <meta property="og:description" content={description} />
+    <meta property="og:locale" content="fr_FR" />
+    {urlCanonique && <meta property="og:url" content={urlCanonique} />}
+    <meta name="twitter:card" content="summary" />
+    {couleurBarre && <meta name="theme-color" content={couleurBarre} />}
     {(corpus.mode === 'preview' || pageErreur) && <meta name="robots" content="noindex" />}
-    {corpus.mode !== 'preview' && !pageErreur && Astro.site && <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site).href} />}
+    {urlCanonique && <link rel="canonical" href={urlCanonique} />}
     <script is:inline set:html={ordreSource}></script>
   </head>
   <body>

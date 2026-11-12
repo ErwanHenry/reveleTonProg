@@ -21,6 +21,7 @@ test.describe('introuvable 404', () => {
     await expect(page.locator('main a[href="/"]')).toHaveCount(1);
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
     await expect(page.locator('link[rel="canonical"]')).toHaveCount(0);
+    await expect(page.locator('meta[property="og:url"]')).toHaveCount(0);
   });
 
   test('axe AA : aucune violation grave', async ({ page }) => {
