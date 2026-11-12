@@ -46,6 +46,7 @@ describe('e2e/serveur.ts', () => {
     writeFileSync(path.join(dist, '_astro', 'x.css'), 'body{color:red}');
     writeFileSync(path.join(dist, 'version.json'), VERSION);
     writeFileSync(path.join(dist, 'favicon.ico'), ICONE);
+    writeFileSync(path.join(dist, 'partage.png'), ICONE);
     writeFileSync(path.join(tmp, 'secret.txt'), 'SECRET');
     // WR-01 : liens symboliques vers l'extérieur du dist (fichier et dossier) et vers l'intérieur.
     symlinkSync(path.join(tmp, 'secret.txt'), path.join(dist, 'lien.txt'));
@@ -102,6 +103,15 @@ describe('e2e/serveur.ts', () => {
     assert.equal(r.status, 200);
     assert.equal(r.headers['content-type'], 'image/x-icon');
     assert.equal(r.headers['cache-control'], 'no-cache', 'comme le bloc Caddy : en no-store, Chromium refuse le bfcache');
+    assert.ok(r.corps.equals(ICONE));
+  });
+
+  it('09.1 : sert /partage.png en image/png, no-cache, sans compression', async () => {
+    const r = await get('/partage.png', { 'accept-encoding': 'gzip' });
+    assert.equal(r.status, 200);
+    assert.equal(r.headers['content-type'], 'image/png');
+    assert.equal(r.headers['cache-control'], 'no-cache', 'comme le bloc Caddy : en no-store, Chromium refuse le bfcache');
+    assert.equal(r.headers['content-encoding'], undefined, 'Caddy ne compresse pas les PNG');
     assert.ok(r.corps.equals(ICONE));
   });
 

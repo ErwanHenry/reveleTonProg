@@ -27,15 +27,19 @@ export const LIMITES = {
   gzip: 100_000, // 100 Ko compressés par page : c'est cette limite qui mord en premier
   script: 2048, // un script classique du site pèse moins de 2 Ko
   favicon: 4096, // public/favicon.ico (D-11) : l'icône générée par scripts/favicon.ts pèse quelques centaines d'octets
+  partage: 100_000, // public/partage.png (09.1, proposition 6) : image de partage 1200 x 630 générée par scripts/partage.ts
 } as const;
 
 /**
  * Extensions permises dans le dist (HEB-08), passées par le CLI à `typesAutorises`. `.ico` ne couvre que
  * favicon.ico à la racine, 4 096 octets au plus (D-11) : toute autre icône reste TYPE_FICHIER_INATTENDU.
+ * `.png` ne couvre que partage.png à la racine, 100 000 octets au plus (09.1) : tout autre PNG reste refusé.
  */
-export const TYPES_AUTORISES = ['.html', '.txt', '.xml', '.json', '.ico'] as const;
+export const TYPES_AUTORISES = ['.html', '.txt', '.xml', '.json', '.ico', '.png'] as const;
 /** Seule icône admise, à la racine du dist (copie de public/favicon.ico). */
 export const FAVICON = 'favicon.ico';
+/** Seul PNG admis, à la racine du dist (copie de public/partage.png, cité par og:image seulement). */
+export const IMAGE_PARTAGE = 'partage.png';
 
 /** Tous les codes que le contrôle peut produire (la page Méthode de la Phase 5 les affichera). */
 export const CODES_CHECK_DIST = [
@@ -971,6 +975,16 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
         } else {
           const taille = fs.statSync(path.join(dist, f)).size;
           if (taille > LIMITES.favicon) signaler('TYPE_FICHIER_INATTENDU', f, `favicon.ico de ${taille} octets (limite ${LIMITES.favicon}) : régénérer par node scripts/favicon.ts`);
+        }
+        continue;
+      }
+      if (ext === '.png' && permis.has(ext)) {
+        // Image de partage (09.1) : un seul PNG, à la racine, sous LIMITES.partage ; jamais chargée par une page (PARTAGE_INCORRECT).
+        if (f !== IMAGE_PARTAGE) {
+          signaler('TYPE_FICHIER_INATTENDU', f, `image refusée : seul partage.png à la racine du dist est permis (public/partage.png, généré par scripts/partage.ts)`);
+        } else {
+          const taille = fs.statSync(path.join(dist, f)).size;
+          if (taille > LIMITES.partage) signaler('TYPE_FICHIER_INATTENDU', f, `partage.png de ${taille} octets (limite ${LIMITES.partage}) : régénérer par node scripts/partage.ts`);
         }
         continue;
       }
