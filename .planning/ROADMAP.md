@@ -186,7 +186,7 @@ Plans:
 
 Plans:
 
-- [ ] 10-01-PLAN.md — Analyseur YAML plafonné léger (équivalent à content-core, sans load.ts) pour l'import, l'archivage et la couverture, test de dépôt avec liste blanche de huit fichiers (vague 1)
+- [x] 10-01-PLAN.md — Analyseur YAML plafonné léger (équivalent à content-core, sans load.ts) pour l'import, l'archivage et la couverture, test de dépôt avec liste blanche de huit fichiers (vague 1)
 - [ ] 10-02-PLAN.md — Cohérence instantané data.gouv / fiches candidats dans npm test, pièges d'une personne déclarée ajoutée à un thème publié (vague 2)
 - [ ] 10-03-PLAN.md — Rapport de répétition à blanc (nouveaux, absents du jeu amont, changés avec leurs sources, conséquences sur les thèmes publiés), option --check, répétition sur le jeu en ligne dans un worktree jetable (vague 3)
 - [ ] 10-04-PLAN.md — Décisions d'Erwan (D-08, D-09, bornes du gel, fusion en brouillon, repli, ouverture tardive, relecture non fusionnée), avertissement STATUT_PLUS_RECENT_NON_RELU, procédure d'import et gel au RUNBOOK (vague 4)
@@ -207,4 +207,4 @@ Plans:
 | 8. Serveur, pipeline, supervision et sauvegardes | v1.1 | 15/15 | Complete    | 2026-11-10 |
 | 9. Contenu relu, juridique et ouverture | v1.1 | 11/15 | In Progress|  |
 | 9.1 Finitions visuelles avant l'ouverture | v1.1 | 0/0 | Not started | - |
-| 10. Import de décembre | v1.1 | 0/6 | Planned | - |
+| 10. Import de décembre | v1.1 | 1/6 | In Progress|  |

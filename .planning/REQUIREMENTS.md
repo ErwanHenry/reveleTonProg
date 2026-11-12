@@ -60,7 +60,7 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 
 ### Import de décembre
 
-- [ ] **IMP-01**: Les lectures YAML des outils d'import et d'archivage passent par un analyseur plafonné (alias, clés en double), comme content-core
+- [x] **IMP-01**: Les lectures YAML des outils d'import et d'archivage passent par un analyseur plafonné (alias, clés en double), comme content-core
 - [ ] **IMP-02**: La CI vérifie la cohérence entre l'instantané data.gouv et les fichiers candidats, et un piège couvre « l'import ajoute un candidat déclaré à un thème publié »
 - [ ] **IMP-03**: L'import des statuts de décembre passe par une répétition à blanc puis une pull request dédiée dont le diff (nouveaux, retirés, changés) est relu par Erwan ; la production n'en est affectée qu'après relecture
 
@@ -139,7 +139,7 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 | FIN-02 | Phase 9.1 | Pending |
 | FIN-03 | Phase 9.1 | Pending |
 | FIN-04 | Phase 9.1 | Pending |
-| IMP-01 | Phase 10 | Pending |
+| IMP-01 | Phase 10 | Complete |
 | IMP-02 | Phase 10 | Pending |
 | IMP-03 | Phase 10 | Pending |
 
