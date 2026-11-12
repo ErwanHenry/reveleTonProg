@@ -45,11 +45,10 @@ export default function source(ctx: ContexteSite): void {
       const lignes = enfantsElements(s).map((e) => norm(texte(e)));
       assert.equal(lignes[0], 'Source primaire : Programme fictif de Marie Fictive');
       assert.equal(lignes[1], 'Consultée le 20 octobre 2026');
-      assert.equal(lignes[2], 'Lire le document original');
-      assert.equal(lignes[3], 'Copie archivée (Wayback Machine)');
-      assert.equal(lignes[4], 'Extrait archivé, empreinte sha256 23c5f1cc8eff');
-      assert.match(lignes[5] as string, /^Signaler une erreur \(courriel\).*Signaler une erreur \(GitHub\)/);
-      assert.equal(lignes.length, 6);
+      // 09.1, proposition 2 : liens du document sur une ligne, signalements sur une ligne
+      assert.equal(lignes[2], 'Document original Copie archivée Extrait archivé (23c5f1cc8eff)');
+      assert.match(lignes[3] as string, /^Signaler une erreur : Signaler une erreur par courriel.*Signaler une erreur sur GitHub/);
+      assert.equal(lignes.length, 4);
       const titre = trouver(s, (n) => n.tag === 'span' && n.attrs['data-citation'] !== undefined)[0] as Noeud;
       assert.equal(norm(texte(titre)), 'Programme fictif de Marie Fictive');
       const t = trouver(s, (n) => n.tag === 'time')[0] as Noeud;
@@ -72,11 +71,13 @@ export default function source(ctx: ContexteSite): void {
       assert.equal(issue?.attrs.href, lienIssue('ErwanHenry/reveleTonProg', ID));
       assert.equal(issue?.attrs.rel, 'noopener noreferrer');
       for (const a of [mail, issue]) {
-        const sr = trouver(a as Noeud, (n) => n.tag === 'span' && aClasse(n, 'sr-only'))[0] as Noeud;
-        assert.ok(sr, 'suffixe .sr-only');
-        assert.equal(norm(texte(sr)), `sur la mesure « ${TITRE} »`);
+        const sr = trouver(a as Noeud, (n) => n.tag === 'span' && aClasse(n, 'sr-only'));
+        assert.equal(sr.length, 2, 'préfixe et suffixe .sr-only');
+        assert.equal(norm(texte(sr[0] as Noeud)), 'Signaler une erreur');
+        assert.equal(norm(texte(sr[1] as Noeud)), `sur la mesure « ${TITRE} »`);
       }
-      assert.equal(norm(texte(mail as Noeud)), `Signaler une erreur (courriel) sur la mesure « ${TITRE} »`);
+      assert.equal(norm(texte(mail as Noeud)), `Signaler une erreur par courriel sur la mesure « ${TITRE} »`);
+      assert.equal(norm(texte(issue as Noeud)), `Signaler une erreur sur GitHub sur la mesure « ${TITRE} »`);
     });
 
     it('chaque mesure de chaque page thème a ses deux liens de signalement', () => {
@@ -84,8 +85,8 @@ export default function source(ctx: ContexteSite): void {
         const arbre = analyserHtml(fs.readFileSync(f, 'utf8'));
         for (const m of trouver(arbre, (n) => n.tag === 'article' && aClasse(n, 'mesure'))) {
           const textes = liens(m).map((a) => norm(texte(a)));
-          assert.equal(textes.filter((t) => t.startsWith('Signaler une erreur (courriel)')).length, 1, f);
-          assert.equal(textes.filter((t) => t.startsWith('Signaler une erreur (GitHub)')).length, 1, f);
+          assert.equal(textes.filter((t) => t.startsWith('Signaler une erreur par courriel')).length, 1, f);
+          assert.equal(textes.filter((t) => t.startsWith('Signaler une erreur sur GitHub')).length, 1, f);
         }
       }
     });
