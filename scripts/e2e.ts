@@ -1,6 +1,7 @@
 // Tests navigateur : construit les deux corpus l'un après l'autre (un seul `astro build` à la fois : cache
 // .astro partagé), puis lance Playwright sur chaque dist.
 // Usage : node scripts/e2e.ts [--jeu m1|reel|tous] [--reutiliser] [-- <arguments playwright>]
+// Se termine par e2e/relecture.spec.ts (config à part, playwright.relecture.config.ts : ni dist ni serveur de dist).
 // Ne pas lancer en même temps que `npm test` dans le même dossier.
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync } from 'node:fs';
@@ -61,6 +62,13 @@ try {
       env: { ...process.env, E2E_DIST: outDir, E2E_PORT: String(PORTS[jeu]) },
     });
     bilan.push(`${jeu} : ${res.status === 0 ? 'OK' : 'ECHEC'}`);
+    if (res.status !== 0) echec = true;
+  }
+  // Page locale de relecture dans un vrai navigateur : ni dist ni serveur de dist, donc une seule fois (pas une par jeu).
+  // Sauté quand l'appel désigne des fichiers précis (`-- e2e/axe.spec.ts`).
+  if (argsPlaywright.length === 0) {
+    const res = spawnSync(BIN('playwright'), ['test', '-c', 'playwright.relecture.config.ts'], { cwd: REPO_ROOT, stdio: 'inherit' });
+    bilan.push(`relecture : ${res.status === 0 ? 'OK' : 'ECHEC'}`);
     if (res.status !== 0) echec = true;
   }
 } finally {
