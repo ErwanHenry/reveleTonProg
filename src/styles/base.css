@@ -305,6 +305,9 @@ main:has(> .lecteur > .niveaux #niv-aine:checked) details.acces-candidats :is(a,
 .cellules {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+  /* 09.1, proposition 4 (audit B6) : chaque carte à sa hauteur, plus de grand vide à côté d'une case courte.
+     TOUCHE M1-08 (VERROUILLÉ, « même hauteur par rangée ») : décision d'Erwan requise. */
+  align-items: start;
   gap: 1.5rem;
   margin: 0 0 2rem;
   list-style: none;
