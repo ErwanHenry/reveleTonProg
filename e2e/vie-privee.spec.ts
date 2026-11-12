@@ -6,8 +6,10 @@ import { premierePage } from './pages.ts';
 
 test('stockage local, cookies et requêtes sortantes', async ({ page, context }) => {
   const hotes = new Set<string>();
+  const chemins = new Set<string>();
   page.on('request', (r) => {
     const u = new URL(r.url());
+    chemins.add(u.pathname);
     if (u.protocol === 'http:' || u.protocol === 'https:') hotes.add(u.hostname);
   });
 
@@ -38,4 +40,6 @@ test('stockage local, cookies et requêtes sortantes', async ({ page, context })
   expect(await page.evaluate(() => document.cookie)).toBe('');
   expect(await context.cookies()).toEqual([]);
   expect([...hotes]).toEqual(['127.0.0.1']);
+  // 09.1 (proposition 6) : l'image de partage n'est citée que par og:image, pour les robots ; aucun visiteur ne la demande.
+  expect([...chemins].filter((c) => /partage\.png$/.test(c)), 'aucune page ne doit charger partage.png').toEqual([]);
 });

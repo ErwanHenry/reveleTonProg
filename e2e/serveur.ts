@@ -38,6 +38,7 @@ const TYPES: Record<string, string> = {
   '.xml': 'application/xml; charset=utf-8',
   '.json': 'application/json; charset=utf-8', // version.json (HEB-07)
   '.ico': 'image/x-icon', // favicon.ico (D-11)
+  '.png': 'image/png', // partage.png (09.1, proposition 6) : jamais chargé par une page, servi comme le bloc Caddy
 };
 
 /**
@@ -85,10 +86,10 @@ export function creerServeur(racineArg: string, options: OptionsServeur = {}): S
     const brut = readFileSync(reel);
     // L'icône reçoit la valeur du bloc Caddy (Cache-Control "no-cache", deploy/caddy/site.caddy) : servie en
     // no-store, Chromium ne garde plus la page dans le bfcache (vérifié par e2e/parcours.spec.ts, D-11).
-    const cache = ext === '.ico' ? 'no-cache' : 'no-store';
+    const cache = ext === '.ico' || ext === '.png' ? 'no-cache' : 'no-store';
     const h: Record<string, string> = { 'content-type': TYPES[ext] ?? 'application/octet-stream', 'cache-control': cache };
     if (csp !== null) h['content-security-policy'] = csp;
-    if (ext in TYPES && /\bgzip\b/.test(String(req.headers['accept-encoding'] ?? ''))) {
+    if (ext in TYPES && ext !== '.png' && /\bgzip\b/.test(String(req.headers['accept-encoding'] ?? ''))) {
       let gz = memo.get(reel);
       if (!gz) memo.set(reel, (gz = gzipSync(brut, { level: 6 })));
       res

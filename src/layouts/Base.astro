@@ -6,6 +6,7 @@ import baseCss from '../styles/base.css?raw';
 import ordreSource from '../scripts/ordre.js?raw';
 import { formatDate, getCorpus } from '../lib/corpus/index.ts';
 import { SOURCE_DATES, TOURS } from '../lib/dates-tours.ts';
+import { ALT_PARTAGE, FICHIER_PARTAGE, HAUTEUR_PARTAGE, LARGEUR_PARTAGE } from '../lib/partage.ts';
 
 interface Props {
   titre: string;
@@ -30,8 +31,11 @@ const courante = /^\/themes(\/|$)/.test(chemin) ? 'themes' : /^\/candidats(\/|$)
 const couleurBarre = /--fond:\s*(#[0-9A-Fa-f]{6})\s*;/.exec(baseCss)?.[1];
 // Balises de partage (FIN-02, 09.1-04) : mêmes textes que le titre et la description de la page. og:url et le lien
 // canonique partagent cette seule valeur, donc la même condition : jamais en préversion, jamais sur la page d'erreur, jamais un autre hôte
-// que le domaine configuré (Astro.site). Pas d'image de partage ici (proposition 6 du lot B).
+// que le domaine configuré (Astro.site).
 const urlCanonique = corpus.mode !== 'preview' && !pageErreur && Astro.site ? new URL(Astro.url.pathname, Astro.site).href : undefined;
+// Image de partage (proposition 6, public/partage.png) : même condition que og:url, donc jamais en préversion ni sur la
+// page d'erreur ; URL absolue sur le domaine configuré. Citée par ces seules balises : aucune page ne la charge.
+const urlImage = urlCanonique !== undefined && Astro.site ? new URL(`/${FICHIER_PARTAGE}`, Astro.site).href : undefined;
 ---
 <!doctype html>
 <html lang="fr">
@@ -47,7 +51,11 @@ const urlCanonique = corpus.mode !== 'preview' && !pageErreur && Astro.site ? ne
     <meta property="og:description" content={description} />
     <meta property="og:locale" content="fr_FR" />
     {urlCanonique && <meta property="og:url" content={urlCanonique} />}
-    <meta name="twitter:card" content="summary" />
+    {urlImage && <meta property="og:image" content={urlImage} />}
+    {urlImage && <meta property="og:image:width" content={String(LARGEUR_PARTAGE)} />}
+    {urlImage && <meta property="og:image:height" content={String(HAUTEUR_PARTAGE)} />}
+    {urlImage && <meta property="og:image:alt" content={ALT_PARTAGE} />}
+    <meta name="twitter:card" content={urlImage ? 'summary_large_image' : 'summary'} />
     {couleurBarre && <meta name="theme-color" content={couleurBarre} />}
     {(corpus.mode === 'preview' || pageErreur) && <meta name="robots" content="noindex" />}
     {urlCanonique && <link rel="canonical" href={urlCanonique} />}

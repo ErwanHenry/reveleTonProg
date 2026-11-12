@@ -252,7 +252,7 @@ describe('checkDist : dist propre', () => {
   });
 
   it('expose les limites et la liste des codes', () => {
-    assert.deepEqual(LIMITES, { brut: 500_000, gzip: 100_000, script: 2048, favicon: 4096 });
+    assert.deepEqual(LIMITES, { brut: 500_000, gzip: 100_000, script: 2048, favicon: 4096, partage: 100_000 });
     for (const code of ['POIDS_BRUT', 'POIDS_GZIP', 'MOT_INTERDIT', 'BROUILLON_EN_PRODUCTION', 'CELLULES_INCOHERENTES']) {
       assert.ok((CODES_CHECK_DIST as readonly string[]).includes(code), `${code} absent de CODES_CHECK_DIST`);
     }
@@ -1075,8 +1075,42 @@ describe('checkDist : version.json (HEB-07, D-12) et types de fichiers du dist (
     assert.deepEqual(verifier(distPropre()).codes, []);
   });
 
-  it('TYPES_AUTORISES : html, txt, xml, json et ico (pour le seul favicon.ico)', () => {
-    assert.deepEqual([...TYPES_AUTORISES], ['.html', '.txt', '.xml', '.json', '.ico']);
+  it('TYPES_AUTORISES : html, txt, xml, json, ico (pour le seul favicon.ico) et png (pour le seul partage.png)', () => {
+    assert.deepEqual([...TYPES_AUTORISES], ['.html', '.txt', '.xml', '.json', '.ico', '.png']);
+  });
+
+  describe('partage.png (09.1, proposition 6) : un seul PNG, à la racine, 100 000 octets au plus', () => {
+    const image = (n: number): Buffer => Buffer.alloc(n, 1);
+    const avecTypes = (fichiers: Record<string, string | Buffer | null>): Resultat =>
+      verifier(pourCli(distPropre(fichiers)), 'production', { logement: 2 }, { typesAutorises: TYPES_AUTORISES });
+
+    it('accepte partage.png à la racine, jusqu’à 100 000 octets', () => {
+      assert.deepEqual(avecTypes({ 'partage.png': image(60_000) }).codes, []);
+      assert.deepEqual(avecTypes({ 'partage.png': image(LIMITES.partage) }).codes, []);
+    });
+
+    it('refuse un PNG ailleurs qu’à la racine, d’un autre nom, ou trop lourd (TYPE_FICHIER_INATTENDU)', () => {
+      for (const rel of ['a/partage.png', 'autre.png', 'img/logo.png']) {
+        const r = avecTypes({ 'partage.png': image(1000), [rel]: image(1000) });
+        assert.deepEqual(r.codes, ['TYPE_FICHIER_INATTENDU'], rel);
+        assert.deepEqual(r.fichiers, [rel]);
+        assert.match(r.messages[0] ?? '', /seul partage\.png à la racine du dist/);
+      }
+      const lourd = avecTypes({ 'partage.png': image(100_001) });
+      assert.deepEqual(lourd.codes, ['TYPE_FICHIER_INATTENDU']);
+      assert.match(lourd.messages[0] ?? '', /100001 octets \(limite 100000\)/);
+    });
+
+    it('un .jpg, un .webp ou un .svg restent refusés', () => {
+      for (const rel of ['partage.jpg', 'partage.webp', 'partage.svg']) {
+        assert.deepEqual(avecTypes({ [rel]: image(100) }).codes, ['TYPE_FICHIER_INATTENDU'], rel);
+      }
+    });
+
+    it('sans .png dans les types permis, partage.png reste un type inattendu', () => {
+      const r = verifier(pourCli(distPropre({ 'partage.png': image(1000) })), 'production', { logement: 2 }, { typesAutorises: ['.html', '.txt', '.xml', '.json', '.ico'] });
+      assert.deepEqual(r.fichiers, ['partage.png']);
+    });
   });
 
   describe('favicon.ico (D-11) : une seule icône, à la racine, 4 096 octets au plus', () => {
@@ -1315,6 +1349,14 @@ describe('CLI scripts/check-dist.ts', () => {
     const ko = lancer(['--dist', ecrireDist({ ...distCli(), 'img/favicon.ico': Buffer.alloc(300, 1) }), '--root', CORPUS, '--mode', 'production']);
     assert.equal(ko.status, 1, ko.out + ko.err);
     assert.match(ko.out, /^TYPE_FICHIER_INATTENDU img\/favicon\.ico : /m);
+  });
+
+  it('09.1 : le CLI accepte partage.png à la racine et refuse img/partage.png (code 1)', () => {
+    const ok = lancer(['--dist', ecrireDist({ ...distCli(), 'partage.png': Buffer.alloc(300, 1) }), '--root', CORPUS, '--mode', 'production']);
+    assert.equal(ok.status, 0, ok.out + ok.err);
+    const ko = lancer(['--dist', ecrireDist({ ...distCli(), 'img/partage.png': Buffer.alloc(300, 1) }), '--root', CORPUS, '--mode', 'production']);
+    assert.equal(ko.status, 1, ko.out + ko.err);
+    assert.match(ko.out, /^TYPE_FICHIER_INATTENDU img\/partage\.png : /m);
   });
 
   it('WR-06 : un lien symbolique dans le dist donne FICHIER_NON_REGULIER (code 1)', () => {
