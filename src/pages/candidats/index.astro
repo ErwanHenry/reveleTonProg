@@ -31,7 +31,7 @@ const k = corpus.nonRelus;
       </>
     ) : (
       <>
-        <p>{production ? 'Les personnalités du jeu de données dont le statut a été relu' : 'Toutes les personnalités du jeu de données'}, dans l'ordre choisi ci-dessus. Le statut est celui de la dernière source consultée.</p>
+        <p>{production ? 'Les personnalités du jeu de données dont le statut a été relu' : 'Toutes les personnalités du jeu de données'}, par ordre alphabétique du nom, ou dans un ordre aléatoire si vous le choisissez ci-dessous. Le statut est celui de la dernière source consultée.</p>
         <OrdreCandidats />
         <ul class="lignes" data-ordonnable>
           {corpus.candidats.map((c) => {

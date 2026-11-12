@@ -65,6 +65,8 @@
   font-size: var(--t-corps);
   font-weight: 400;
   line-height: 1.5;
+  /* Pas de césure : un mot très long passe à la ligne dans la boîte */
+  overflow-wrap: anywhere;
 }
 
 .definition::backdrop {

@@ -75,7 +75,7 @@ export default function candidatsRelus(ctx: ContexteSite): void {
       );
       assert.ok(
         txt(a).includes(
-          "Les personnalités du jeu de données dont le statut a été relu, dans l'ordre choisi ci-dessus. Le statut est celui de la dernière source consultée.",
+          "Les personnalités du jeu de données dont le statut a été relu, par ordre alphabétique du nom, ou dans un ordre aléatoire si vous le choisissez ci-dessous. Le statut est celui de la dernière source consultée.",
         ),
       );
       assert.ok(!txt(a).includes('Toutes les personnalités'), 'intro de preview en production');
@@ -213,7 +213,7 @@ export default function candidatsRelus(ctx: ContexteSite): void {
       const a = analyserHtml(html);
       const lignes = trouver(a, (n) => n.tag === 'li' && n.attrs['data-rang'] !== undefined);
       assert.equal(lignes.length, 6);
-      assert.ok(txt(a).includes("Toutes les personnalités du jeu de données, dans l'ordre choisi ci-dessus. Le statut est celui de la dernière source consultée."));
+      assert.ok(txt(a).includes("Toutes les personnalités du jeu de données, par ordre alphabétique du nom, ou dans un ordre aléatoire si vous le choisissez ci-dessous. Le statut est celui de la dernière source consultée."));
       assert.ok(html.includes('content="Toutes les personnalités du jeu de données, avec leur parti revendiqué et leur statut."'));
       assert.equal(trouver(a, (n) => n.attrs['data-non-relus'] !== undefined).length, 0);
       const m = arbre(outDir, 'methode/index.html');

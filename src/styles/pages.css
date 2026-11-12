@@ -82,6 +82,7 @@
   font-size: var(--t-corps);
   font-weight: 600;
   overflow-wrap: break-word;
+  /* Nom de thème : la césure est permise sur les noms (contrat 04-UI-SPEC) */
   hyphens: auto;
 }
 
@@ -134,6 +135,7 @@
   font-size: var(--t-corps);
   font-weight: 600;
   overflow-wrap: break-word;
+  /* Nom de candidat : la césure est permise sur les noms (contrat 04-UI-SPEC) */
   hyphens: auto;
 }
 
@@ -157,7 +159,6 @@
 }
 
 .statut {
-  max-width: 68ch;
   margin: 0 0 2rem;
   padding: 1rem;
   background: var(--panneau);

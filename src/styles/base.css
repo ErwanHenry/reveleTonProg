@@ -69,6 +69,7 @@ h4 {
   font-weight: 600;
   line-height: 1.2;
   overflow-wrap: break-word;
+  /* Titres : la césure automatique est réservée aux noms, titres et adresses (contrat 04-UI-SPEC) */
   hyphens: auto;
 }
 
@@ -107,8 +108,11 @@ a {
   text-underline-offset: 3px;
 }
 
-a:hover {
-  text-decoration-thickness: 3px;
+/* Survol : seulement là où un pointeur survole vraiment (sinon il reste collé après un toucher) */
+@media (hover: hover) {
+  a:hover {
+    text-decoration-thickness: 3px;
+  }
 }
 
 :focus-visible {
@@ -166,16 +170,14 @@ a:hover {
   text-decoration: none;
 }
 
-.site-nom:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .site-nom:hover {
+    text-decoration: underline;
+  }
 }
 
 main {
   padding-block: 1.5rem 3rem;
-}
-
-main[data-theme] {
-  border-top: 8px solid var(--theme);
 }
 
 .pied {
@@ -234,6 +236,9 @@ main[data-theme] {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem 1rem;
+  /* Barre de 8 px du thème : sur la bande d'en-tête, alignée sur le contenu (pas sur le padding du conteneur) */
+  padding-top: 1rem;
+  border-top: 8px solid var(--theme);
 }
 
 .theme-titre {
@@ -317,7 +322,6 @@ main[data-theme] {
 /* Mesure */
 .mesure {
   overflow-wrap: break-word;
-  hyphens: auto;
 }
 
 .mesure-entete {
@@ -360,6 +364,8 @@ main[data-theme] {
 .redaction {
   max-width: 68ch;
   margin: 0 0 1rem;
+  /* Pas de césure dans le texte lu : un mot très long passe à la ligne sans élargir sa carte (flex ou grille) */
+  overflow-wrap: anywhere;
 }
 
 /* Étiquette de niveau : visible, avec un filet (le plan 04-05 la masque visuellement quand le sélecteur existe) */

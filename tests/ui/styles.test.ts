@@ -386,3 +386,76 @@ describe('styles : pages institutionnelles', () => {
     }
   });
 });
+
+// Finitions 09.1 (lot A) : césure réservée aux noms et titres, survol sous (hover: hover), barre du thème, statut.
+describe('finitions 09.1 : contrat CSS', () => {
+  const decl = (selecteur: string, prop: string): string | undefined =>
+    regles
+      .filter((r) => r.selecteur === selecteur)
+      .flatMap((r) => r.declarations)
+      .find((d) => d.prop === prop)?.valeur;
+
+  it('hyphens: auto seulement sur titres, noms, étiquettes de contrôle (contrat : noms, titres et adresses)', () => {
+    const avecCesure = regles
+      .filter((r) => r.declarations.some((d) => d.prop === 'hyphens' && d.valeur === 'auto'))
+      .map((r) => r.selecteur)
+      .sort();
+    assert.deepEqual(avecCesure, ['.ligne-nom', '.niveau label', '.ordre-option label', '.tuile-lien', 'h1, h2, h3, h4']);
+    for (const s of avecCesure) {
+      assert.ok(!/\.mesure|\.redaction|\.definition|\.mots-expliques|\.vide|\.source/.test(s), `césure sur ${s}`);
+    }
+    for (const r of regles) {
+      if (/\.mesure(?![-\w])|\.redaction|\.definition|\.mots-expliques/.test(r.selecteur)) {
+        assert.ok(
+          !r.declarations.some((d) => d.prop === 'hyphens' && d.valeur !== 'manual'),
+          `${r.selecteur} déclare hyphens`,
+        );
+      }
+    }
+  });
+
+  it('chaque règle :hover est dans @media (hover: hover) (pas de survol collant au toucher)', () => {
+    const trouvees: { selecteur: string; media: boolean }[] = [];
+    for (const { texte } of sourcesCss) {
+      const pile: string[] = [];
+      let prelude = '';
+      for (const c of texte) {
+        if (c === '{') {
+          pile.push(prelude.trim().replace(/\s+/g, ' '));
+          if (/:hover/.test(prelude) && !prelude.trim().startsWith('@')) {
+            trouvees.push({
+              selecteur: prelude.trim().replace(/\s+/g, ' '),
+              media: pile.slice(0, -1).some((p) => /^@media\b/.test(p) && /\(hover:\s*hover\)/.test(p)),
+            });
+          }
+          prelude = '';
+        } else if (c === '}') {
+          pile.pop();
+          prelude = '';
+        } else if (c === ';') {
+          prelude = '';
+        } else prelude += c;
+      }
+    }
+    assert.deepEqual(
+      trouvees.map((t) => t.selecteur).sort(),
+      ['.niveau:hover label', '.ordre-option:hover label', '.site-nom:hover', 'a:hover'],
+    );
+    for (const t of trouvees) assert.ok(t.media, `${t.selecteur} hors @media (hover: hover)`);
+  });
+
+  it('la barre de couleur du thème est sur .theme-entete, pas sur main', () => {
+    assert.equal(decl('main[data-theme]', 'border-top'), undefined);
+    assert.equal(decl('.theme-entete', 'border-top'), '8px solid var(--theme)');
+    assert.ok(ESPACES.has(decl('.theme-entete', 'padding-top') ?? ''), 'padding-top de .theme-entete hors échelle');
+  });
+
+  it('le bloc de statut prend la largeur du contenu', () => {
+    assert.equal(decl('.statut', 'max-width'), undefined);
+  });
+
+  it('.redaction et .definition passent à la ligne sans césure (overflow-wrap: anywhere)', () => {
+    assert.equal(decl('.redaction', 'overflow-wrap'), 'anywhere');
+    assert.equal(decl('.definition', 'overflow-wrap'), 'anywhere');
+  });
+});

@@ -89,6 +89,7 @@ html[data-ordre-js] .ordre-aide-sansjs {
      au lieu de dépasser (« Ordre alphabétique » atteignait 347 px). Même règle que .niveau label. */
   min-inline-size: 0;
   overflow-wrap: anywhere;
+  /* Étiquette de contrôle : doit passer à la ligne à 320 px et 160 % */
   hyphens: auto;
 }
 
@@ -102,8 +103,10 @@ html[data-ordre-js] .ordre-aide-sansjs {
   border-radius: 50%;
 }
 
-.ordre-option:hover label {
-  background: var(--panneau);
+@media (hover: hover) {
+  .ordre-option:hover label {
+    background: var(--panneau);
+  }
 }
 
 .ordre-option input:checked + label {
