@@ -176,7 +176,7 @@ Plans:
 - [x] 09.1-01-PLAN.md — Césure réservée aux noms et titres, mot long sans débordement à 320 px, survol sous (hover: hover), texte de /candidats/, barre de thème alignée, statut pleine largeur (vague 1)
 - [x] 09.1-02-PLAN.md — Page 404 en français, serveur de test et bloc Caddy public (matcher file et status 404, sans handle_errors), preuve Caddy locale jetable, contrôles avant et après pour 09-12 (vague 1)
 - [x] 09.1-03-PLAN.md — Nom du site en un seul endroit (NOM_SITE), pages construites identiques octet pour octet (vague 2)
-- [ ] 09.1-04-PLAN.md — Balises de partage et theme-color, og:url depuis le seul domaine configuré, code check-dist PARTAGE_INCORRECT (vague 3)
+- [x] 09.1-04-PLAN.md — Balises de partage et theme-color, og:url depuis le seul domaine configuré, code check-dist PARTAGE_INCORRECT (vague 3)
 - [ ] 09.1-05-PLAN.md — Plus de rappel du niveau sur l'accueil, gros caractères et niveau mémorisé épinglés sur chaque page candidat, pied de page structuré, gardes complètes et push du lot A (vague 4)
 - [ ] 09.1-06-PLAN.md — Worktree design/finitions, script de mesure et référence, propositions 1 (accueil) et 5 (nom, sous-titre, ligne d'identité) en brouillon (vague 5)
 - [ ] 09.1-07-PLAN.md — Propositions 2 (bloc source compact, variante 2b si la cible de 21 500 px est manquée), 3 (Aller à un candidat), 4 (grille, règle verrouillée M1-08) (vague 6)
