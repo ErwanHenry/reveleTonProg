@@ -92,13 +92,14 @@ export default function source(ctx: ContexteSite): void {
   });
 
   describe('phrase de signalement', () => {
-    it('une seule fois sur une page avec mesures, juste avant le pied de page', () => {
+    it('une seule fois sur une page avec mesures, en tête du pied de page (09.1-05 : elle y a été déplacée), avant ses liens', () => {
       const { html } = page('themes/logement/index.html');
       assert.equal(html.split(INTRO).length - 1, 1);
       const i = html.indexOf(INTRO);
       const pied = html.indexOf('<footer');
-      assert.ok(i > 0 && i < pied, 'avant le pied de page');
-      assert.ok(!html.slice(i, pied).includes('<main'), 'après le contenu principal');
+      assert.ok(pied > 0 && i > pied, 'dans le pied de page');
+      assert.ok(i < html.indexOf('<nav aria-label="Informations sur le site"'), 'avant les liens du pied');
+      assert.ok(html.lastIndexOf('</main>', i) > 0 && html.lastIndexOf('</main>', i) < pied, 'après le contenu principal');
     });
 
     it('absente d’une page sans mesure', () => {
