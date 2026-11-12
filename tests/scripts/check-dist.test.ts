@@ -154,7 +154,9 @@ function distPropre(surcharges: Record<string, string | Buffer | null> = {}, opt
     for (const rel of pages) {
       const html = base[rel];
       if (typeof html === 'string' && html.includes('</head>') && !html.includes('rel="canonical"')) {
-        base[rel] = html.replace('</head>', `<link rel="canonical" href="${origine}${cheminPage(rel)}"></head>`);
+        // og:url partage la valeur de l'URL canonique (09.1-04) ; la page d'erreur n'a ni l'un ni l'autre.
+        const partage = rel === '404.html' ? '' : `<meta property="og:url" content="${origine}${cheminPage(rel)}">`;
+        base[rel] = html.replace('</head>', `<link rel="canonical" href="${origine}${cheminPage(rel)}">${partage}</head>`);
       }
     }
     if (!('sitemap.xml' in surcharges)) base['sitemap.xml'] = xmlSitemap(pages.map((rel) => `${origine}${cheminPage(rel)}`));
@@ -854,7 +856,10 @@ describe('checkDist : domaine, URL canoniques, sitemap et robots (HEB-05, HEB-06
       const avecOption = checkDist(dist, { mode: 'production', domaine: P.toLowerCase(), deploiement: true });
       assert.deepEqual(avecOption.map((c) => [c.code, c.fichier, c.severite]), [['DOMAINE_PROVISOIRE', '.', 'erreur']], P);
       const sansOption = checkDist(dist, { mode: 'production', deploiement: true });
-      assert.ok(sansOption.length > 0 && sansOption.every((c) => c.code === 'DOMAINE_PROVISOIRE' && c.severite === 'erreur'), P);
+      // og:url sur le même hôte provisoire est aussi refusé (PARTAGE_INCORRECT, 09.1-04) : on juge ici les constats de domaine.
+      const domaines = sansOption.filter((c) => c.code === 'DOMAINE_PROVISOIRE');
+      assert.ok(domaines.length > 0 && domaines.every((c) => c.severite === 'erreur'), P);
+      assert.ok(sansOption.every((c) => c.code === 'DOMAINE_PROVISOIRE' || c.code === 'PARTAGE_INCORRECT'), P);
     }
     const contact = ecrireDist(distPropre({ 'index.html': page({ corps: '<a href="mailto:contact@exemple.test">m</a>' }) }));
     assert.deepEqual(checkDist(contact, { mode: 'production', deploiement: true }).map((c) => [c.code, c.severite]), [['CONTACT_PROVISOIRE', 'erreur']]);
@@ -870,14 +875,116 @@ describe('checkDist : domaine, URL canoniques, sitemap et robots (HEB-05, HEB-06
     assert.ok(ailleurs.some((c) => c.code === 'CANONIQUE_ABSENT' && c.fichier === 'a/404.html'), JSON.stringify(ailleurs));
   });
 
+  describe('PARTAGE_INCORRECT : og:url, image de partage (FIN-02, 09.1-04)', () => {
+    const OG_URL = /<meta property="og:url" content="[^"]*">/;
+    const IMAGE = 'partage.png';
+    const og = (url: string): string => `<meta property="og:url" content="${url}">`;
+    const imageOg = (url: string): string => `<meta property="og:image" content="${url}"><meta name="twitter:image" content="${url}">`;
+    const avecImage = (extraIndex: (h: string) => string = (h) => h, extra: Record<string, string> = {}): Fichiers => {
+      const f = distPropre({ [IMAGE]: 'PNG', ...extra }, { domaine: D });
+      return { ...f, 'index.html': extraIndex(String(f['index.html'])) };
+    };
+    const tete = (h: string, balises: string): string => h.replace('</head>', `${balises}</head>`);
+
+    it('og:url égal à l’URL canonique : aucun constat, hôte en majuscules compris', () => {
+      assert.deepEqual(avecDomaine(distPropre({}, { domaine: D })).codes, []);
+      const maj = retoucher(distPropre({}, { domaine: D }), 'index.html', (h) => h.replace(OG_URL, og(`https://${D.toUpperCase()}/`)));
+      assert.deepEqual(avecDomaine(maj).codes, []);
+    });
+
+    it('og:url sur un autre chemin, en http:, sur essai.<domaine>, sur un hôte .invalid, relatif : PARTAGE_INCORRECT sur cette page', () => {
+      for (const url of [`${ORIGINE}/themes/logement/`, `http://${D}/`, `https://essai.${D}/`, 'https://exemple.invalid/', '/', `https://www.${D}/`]) {
+        const r = avecDomaine(retoucher(distPropre({}, { domaine: D }), 'index.html', (h) => h.replace(OG_URL, og(url))));
+        seul(r, 'PARTAGE_INCORRECT');
+        assert.deepEqual(r.fichiers, ['index.html'], url);
+        assert.match(r.messages[0] ?? '', new RegExp(`attendue « ${ORIGINE}/ »`), url);
+      }
+    });
+
+    it('deux og:url, ou aucun en production : PARTAGE_INCORRECT', () => {
+      const deux = retoucher(distPropre({}, { domaine: D }), 'index.html', (h) => h.replace(OG_URL, (m) => m + m));
+      seul(avecDomaine(deux), 'PARTAGE_INCORRECT');
+      const sans = retoucher(distPropre({}, { domaine: D }), 'themes/logement/index.html', (h) => h.replace(OG_URL, ''));
+      const r = avecDomaine(sans);
+      seul(r, 'PARTAGE_INCORRECT');
+      assert.deepEqual(r.fichiers, ['themes/logement/index.html']);
+      assert.match(r.messages[0] ?? '', /0 og:url/);
+    });
+
+    it('404.html avec og:url ou image de partage : PARTAGE_INCORRECT ; sans : aucun constat', () => {
+      const avec404 = (head: string): Fichiers => ({ ...distPropre({ [IMAGE]: 'PNG' }, { domaine: D }), '404.html': page({ head }) });
+      assert.deepEqual(checkDist(ecrireDist(avec404('')), { mode: 'production', domaine: D }), []);
+      for (const head of [og(`${ORIGINE}/404.html`), imageOg(`${ORIGINE}/${IMAGE}`)]) {
+        assert.deepEqual(checkDist(ecrireDist(avec404(head)), { mode: 'production', domaine: D }).map((c) => [c.code, c.fichier]), [['PARTAGE_INCORRECT', '404.html']], head);
+      }
+    });
+
+    it('preview : og:url ou image de partage sur une page : PARTAGE_INCORRECT ; sans balise de partage : aucun constat', () => {
+      assert.deepEqual(avecDomaine(distPropre({}, { preview: true }), 'preview').codes, []);
+      for (const balises of [og(`${ORIGINE}/`), imageOg(`${ORIGINE}/${IMAGE}`)]) {
+        const f = distPropre({ [IMAGE]: 'PNG' }, { preview: true });
+        const r = avecDomaine({ ...f, 'index.html': tete(String(f['index.html']), balises) }, 'preview');
+        seul(r, 'PARTAGE_INCORRECT');
+        assert.deepEqual(r.fichiers, ['index.html'], balises);
+      }
+    });
+
+    it('sans option domaine : seuls le schéma et l’hôte provisoire sont jugés (un hôte .invalid est refusé)', () => {
+      const bon = ecrireDist(distPropre({}, { domaine: D }));
+      assert.deepEqual(checkDist(bon, { mode: 'production' }), []);
+      const invalide = ecrireDist(distPropre({}, { domaine: 'exemple.invalid' }));
+      const codes = checkDist(invalide, { mode: 'production' }).map((c) => c.code);
+      assert.ok(codes.includes('PARTAGE_INCORRECT'), codes.join(', '));
+      const http = retoucher(distPropre({}, { domaine: D }), 'index.html', (h) => h.replace(OG_URL, og(`http://${D}/`)));
+      assert.deepEqual(checkDist(ecrireDist(http), { mode: 'production' }).map((c) => c.code), ['PARTAGE_INCORRECT']);
+    });
+
+    it('image de partage valide (https, domaine configuré, fichier du dist) : aucun constat', () => {
+      assert.deepEqual(avecDomaine(avecImage((h) => tete(h, imageOg(`${ORIGINE}/${IMAGE}`)))).codes, []);
+    });
+
+    it('image relative, sur un autre hôte, en http:, sur un hôte .invalid, ou absente du dist : PARTAGE_INCORRECT', () => {
+      for (const url of [`/${IMAGE}`, IMAGE, `https://autre.test/${IMAGE}`, `http://${D}/${IMAGE}`, `https://essai.${D}/${IMAGE}`, `https://exemple.invalid/${IMAGE}`, `${ORIGINE}/absente.png`]) {
+        const r = avecDomaine(avecImage((h) => tete(h, imageOg(url))));
+        seul(r, 'PARTAGE_INCORRECT');
+        assert.deepEqual(r.fichiers, ['index.html'], url);
+      }
+    });
+
+    it('l’image de partage chargée par la page : img src, img srcset, source srcset, link href, url() d’un style : PARTAGE_INCORRECT', () => {
+      const charges = [
+        `<img src="/${IMAGE}" alt="">`,
+        `<img src="${ORIGINE}/${IMAGE}" alt="">`,
+        `<img src="/autre.png" srcset="/autre.png 1x, /${IMAGE} 2x" alt="">`,
+        `<picture><source srcset="/${IMAGE}"><img src="/autre.png" alt=""></picture>`,
+        `<link rel="preload" as="image" href="/${IMAGE}">`,
+      ];
+      for (const chargee of charges) {
+        const f = avecImage((h) => tete(h, imageOg(`${ORIGINE}/${IMAGE}`)), { 'autre.png': 'PNG' });
+        // la référence est dans une autre page : la règle vaut pour toutes les pages du dist
+        const dist = { ...f, 'themes/logement/index.html': String(f['themes/logement/index.html']).replace('<body>', `<body>${chargee}`) };
+        const r = avecDomaine(dist);
+        // une image absolue est aussi une ressource externe (RESSOURCE_TIERCE) : seul PARTAGE_INCORRECT est jugé ici
+        assert.ok(r.codes.includes('PARTAGE_INCORRECT'), chargee);
+        assert.ok(r.codes.every((c) => c === 'PARTAGE_INCORRECT' || c === 'RESSOURCE_TIERCE'), `${chargee} : ${r.codes.join(', ')}`);
+        assert.ok(r.fichiers.includes('themes/logement/index.html') && r.fichiers.every((f) => f === 'themes/logement/index.html'), chargee);
+        assert.ok(r.messages.some((m) => /jamais être chargée/.test(m)), chargee);
+      }
+      const style = avecImage((h) => tete(h, imageOg(`${ORIGINE}/${IMAGE}`)));
+      const r = avecDomaine({ ...style, 'themes/logement/index.html': String(style['themes/logement/index.html']).replace('</head>', `<style>.x{background:url(/${IMAGE})}</style></head>`) });
+      assert.ok(r.codes.includes('PARTAGE_INCORRECT'), r.messages.join(' | '));
+    });
+  });
+
   it('DOMAINE_PROVISOIRE sans option domaine : une fois par page de production dont l’URL canonique vise un hôte .invalid', () => {
     const dist = ecrireDist(distPropre({}, { domaine: 'exemple.invalid' }));
-    const defaut = checkDist(dist, { mode: 'production' });
+    // og:url sur le même hôte .invalid est aussi refusé (PARTAGE_INCORRECT, 09.1-04) : on juge ici les constats de domaine.
+    const defaut = checkDist(dist, { mode: 'production' }).filter((c) => c.code === 'DOMAINE_PROVISOIRE');
     assert.deepEqual(defaut.map((c) => [c.code, c.fichier, c.severite]), [
       ['DOMAINE_PROVISOIRE', 'index.html', 'avertissement'],
       ['DOMAINE_PROVISOIRE', 'themes/logement/index.html', 'avertissement'],
     ]);
-    assert.deepEqual(new Set(checkDist(dist, { mode: 'production', deploiement: true }).map((c) => c.severite)), new Set(['erreur']));
+    assert.deepEqual(new Set(checkDist(dist, { mode: 'production', deploiement: true }).filter((c) => c.code === 'DOMAINE_PROVISOIRE').map((c) => c.severite)), new Set(['erreur']));
   });
 
   it('option domaine invalide (schéma, port, chemin) : exception, jamais un contrôle silencieusement faux', () => {

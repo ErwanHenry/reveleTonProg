@@ -149,6 +149,12 @@ export default function domaine(ctx: ContexteSite): void {
       assert.deepEqual(nouveaux.map((c) => [c.code, c.fichier]), [['CANONIQUE_INCORRECT', rel]]);
     });
 
+    it('PARTAGE_INCORRECT (partage) : copie du dist, un og:url modifié (autre chemin) donne PARTAGE_INCORRECT sur cette page seulement', () => {
+      const rel = 'themes/logement/index.html';
+      const nouveaux = apres(rel, (html) => html.replace(`property="og:url" content="${origine}/themes/logement/"`, `property="og:url" content="${origine}/themes/autre/"`));
+      assert.deepEqual(nouveaux.map((c) => [c.code, c.fichier]), [['PARTAGE_INCORRECT', rel]]);
+    });
+
     it('HEB-05 : copie du dist, un <loc> retiré de sitemap.xml donne SITEMAP_INCOHERENT', () => {
       // forme écrite par src/lib/sitemap.ts : une ligne « <url><loc>…</loc></url> » par page
       const nouveaux = apres('sitemap.xml', (xml) => xml.replace(`  <url><loc>${origine}/themes/logement/</loc></url>\n`, ''));
