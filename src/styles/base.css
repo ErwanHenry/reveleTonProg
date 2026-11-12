@@ -193,7 +193,13 @@ main {
   margin: 0 0 0.5rem;
 }
 
-/* Pied structuré : phrase de signalement et liens d'abord, puis une règle, puis les informations en petits caractères */
+/* Pied structuré : ligne d'identité (proposition 5 du lot B), phrase de signalement et liens d'abord, puis une règle,
+   puis les informations en petits caractères */
+.pied .pied-identite {
+  margin: 0 0 1rem;
+  color: var(--encre);
+}
+
 .pied .signalement-intro {
   margin: 0 0 1rem;
   color: var(--encre);

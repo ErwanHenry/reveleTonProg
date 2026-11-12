@@ -9,6 +9,7 @@ import path from 'node:path';
 import { analyserHtml, aClasse, texte, trouver } from '../../../scripts/lib/html.ts';
 import type { Noeud } from '../../../scripts/lib/html.ts';
 import { PAGE_ERREUR, candidatsNonRelus, cellulesAttendues, checkDist } from '../../../scripts/lib/check-dist.ts';
+import { NOM_SITE } from '../../../src/lib/identite.ts';
 import { materialiserCorpusM1 } from '../../helpers/corpus-m1.ts';
 import type { ContexteSite } from '../contexte.ts';
 
@@ -50,7 +51,7 @@ export default function introuvable(ctx: ContexteSite): void {
       it('lang="fr", titre, un seul h1 « Page introuvable », en-tête et pied de page du site', () => {
         const a = page(build(mode));
         assert.equal((trouver(a, (n) => n.tag === 'html')[0] as Noeud).attrs.lang, 'fr');
-        assert.deepEqual(trouver(a, (n) => n.tag === 'title').map(txt), ['Page introuvable : reveleTonProg']);
+        assert.deepEqual(trouver(a, (n) => n.tag === 'title').map(txt), [`Page introuvable : ${NOM_SITE}`]);
         assert.deepEqual(trouver(a, (n) => n.tag === 'h1').map(txt), ['Page introuvable']);
         assert.equal(trouver(a, (n) => n.tag === 'header' && aClasse(n, 'entete')).length, 1, 'en-tête du site');
         assert.equal(trouver(a, (n) => n.tag === 'nav' && n.attrs['aria-label'] === 'Navigation principale').length, 1, 'navigation');

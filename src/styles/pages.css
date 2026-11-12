@@ -10,11 +10,40 @@
   - page thème : le h1 à la couleur du thème et le bandeau de couverture (base.css).
 */
 
-/* Navigation principale : site au-dessus, rubriques dessous, puis sur une ligne dès 60em */
+/*
+  En-tête (proposition 5 du lot B) : nom du site et rubriques sur la première ligne, sous-titre sur toute la largeur
+  dessous. .site-identite (nom puis sous-titre dans le DOM) s'efface de la grille. Colonnes « auto » : elles se
+  réduisent jusqu'au mot le plus long, sans défilement horizontal à 320 px ni à 160 %.
+*/
 .entete .entete-ligne {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-content: space-between;
+  align-items: center;
+  column-gap: 0.5rem;
+}
+
+.site-identite {
+  display: contents;
+}
+
+.entete .site-nom {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.entete .nav-principale {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+/* Sous-titre : Label, encre douce, sous le nom */
+.site-sous-titre {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  margin: 0;
+  color: var(--encre-douce);
+  font-size: var(--t-label);
 }
 
 .nav-principale ul {
@@ -38,11 +67,15 @@
   font-weight: 600;
 }
 
-@media (min-width: 60em) {
-  .entete .entete-ligne {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
+/* Nom du site : Body 18/600 sur téléphone (contrat C1, tient sur la ligne des rubriques), Heading 24/600 dès 37.5em,
+   avec 8 px sous le sous-titre (sur téléphone, la hauteur est gardée pour laisser la première tuile au premier écran) */
+@media (min-width: 37.5em) {
+  .entete .site-nom {
+    font-size: var(--t-titre);
+  }
+
+  .site-sous-titre {
+    margin-bottom: 0.5rem;
   }
 }
 
