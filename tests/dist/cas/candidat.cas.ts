@@ -6,6 +6,7 @@ import path from 'node:path';
 import { analyserHtml, aClasse, texte, trouver } from '../../../scripts/lib/html.ts';
 import type { Noeud } from '../../../scripts/lib/html.ts';
 import { cellulesAttendues, checkDist } from '../../../scripts/lib/check-dist.ts';
+import { NOM_SITE } from '../../../src/lib/identite.ts';
 import { materialiserCorpusM1 } from '../../helpers/corpus-m1.ts';
 import type { ContexteSite } from '../contexte.ts';
 
@@ -72,7 +73,7 @@ export default function candidat(ctx: ContexteSite): void {
     it('Marie : nom, parti revendiqué, statut daté avec lien source', () => {
       const { arbre, html } = page(production().outDir, 'candidats/marie-fictive/index.html');
       assert.equal(txt(trouver(arbre, (n) => n.tag === 'h1')[0] as Noeud), 'Marie Fictive');
-      assert.ok(html.includes('<title>Marie Fictive : positions par thème, reveleTonProg</title>'));
+      assert.ok(html.includes(`<title>Marie Fictive : positions par thème, ${NOM_SITE}</title>`));
       assert.ok(norm(texte(arbre)).includes('Parti revendiqué : Parti Imaginaire'));
       const statut = trouver(arbre, (n) => n.tag === 'p' && aClasse(n, 'statut'))[0] as Noeud;
       assert.ok(statut, 'p.statut');
@@ -201,7 +202,7 @@ export default function candidat(ctx: ContexteSite): void {
     it('hall : h1, présentation, quatre niveaux, neutralité, tuiles, lien vers les candidats', () => {
       const { arbre, html } = page(production().outDir, 'index.html');
       assert.equal(txt(trouver(arbre, (n) => n.tag === 'h1')[0] as Noeud), 'Les programmes de la présidentielle 2027, à votre niveau');
-      assert.ok(html.includes('<title>reveleTonProg : les programmes de la présidentielle 2027</title>'));
+      assert.ok(html.includes(`<title>${NOM_SITE} : les programmes de la présidentielle 2027</title>`));
       const t = txt(arbre);
       // Proposition 1 du lot B (09.1) : l'introduction devient une phrase de présentation (texte en brouillon,
       // ordre et contenu vérifiés par tests/dist/cas/accueil.cas.ts).

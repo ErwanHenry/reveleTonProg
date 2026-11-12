@@ -1,5 +1,5 @@
 ---
-import { NOM_SITE } from '../lib/identite.ts';
+import { LIGNE_IDENTITE, MARQUEUR_SONDE, NOM_SITE, SOUS_TITRE } from '../lib/identite.ts';
 import '../styles/base.css';
 import '../styles/pages.css';
 import baseCss from '../styles/base.css?raw';
@@ -40,6 +40,7 @@ const urlCanonique = corpus.mode !== 'preview' && !pageErreur && Astro.site ? ne
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{titre}</title>
     <meta name="description" content={description} />
+    <meta name="generator" content={MARQUEUR_SONDE} />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content={NOM_SITE} />
     <meta property="og:title" content={titre} />
@@ -56,7 +57,11 @@ const urlCanonique = corpus.mode !== 'preview' && !pageErreur && Astro.site ? ne
     <a class="skip-link" href="#contenu">Aller au contenu</a>
     <header class="entete">
       <div class="conteneur entete-ligne">
-        <a class="site-nom" href="/">{NOM_SITE}</a>
+        <div class="site-identite">
+          <a class="site-nom" href="/">{NOM_SITE}</a>
+          {/* BROUILLON 09.1 : texte dans src/lib/identite.ts (SOUS_TITRE) */}
+          <p class="site-sous-titre">{SOUS_TITRE}</p>
+        </div>
         <nav class="nav-principale" aria-label="Navigation principale">
           <ul>
             <li><a href="/themes/" aria-current={courante === 'themes' ? 'page' : undefined}>Thèmes</a></li>
@@ -71,6 +76,8 @@ const urlCanonique = corpus.mode !== 'preview' && !pageErreur && Astro.site ? ne
     <slot />
     <footer class="pied">
       <div class="conteneur">
+        {/* BROUILLON 09.1 : texte dans src/lib/identite.ts (LIGNE_IDENTITE) */}
+        <p class="pied-identite">{LIGNE_IDENTITE}</p>
         {avecSignalement && <p class="signalement-intro">Vous avez repéré une erreur ? Signalez-la : l'identifiant de la mesure est déjà indiqué dans le message.</p>}
         <nav aria-label="Informations sur le site" class="pied-liens">
           <ul>
