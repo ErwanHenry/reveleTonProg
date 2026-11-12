@@ -5,7 +5,7 @@ milestone_name: "Lot 3 : hébergement et mise en ligne"
 status: executing
 stopped_at: Completed 09-09-PLAN.md ; waiting for Erwan (09-10, review of the santé theme)
 last_updated: "2026-11-12T13:40:00.000Z"
-last_activity: "2026-11-12 (10-02 : cohérence instantané data.gouv et fichiers candidats dans npm test, quatre pièges D-05, refus de marquer ; push groupé avec 10-01) (10-01 : lectures YAML de l'import, de l'archivage et de la couverture par l'analyseur plafonné léger yaml-plafonne.ts, test de dépôt à liste blanche de huit fichiers ; commits locaux, push groupé avec 10-02)"
+last_activity: "2026-11-12 (09.1-01 : lot A partie 1, césure réservée aux noms et titres, survol sous (hover: hover), barre de thème, statut pleine largeur, phrase de /candidats/ ; commits locaux, sauvegarde sur sauvegarde/finitions-lot-a, main poussé au 09.1-05) (10-02 : cohérence instantané data.gouv et fichiers candidats dans npm test, quatre pièges D-05, refus de marquer ; push groupé avec 10-01) (10-01 : lectures YAML de l'import, de l'archivage et de la couverture par l'analyseur plafonné léger yaml-plafonne.ts, test de dépôt à liste blanche de huit fichiers ; commits locaux, push groupé avec 10-02)"
 progress:
   total_phases: 5
   completed_phases: 2
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-11-04)
 Phase: 9 of 10 (contenu relu, juridique et ouverture)
 Plan: 09-01 à 09-09, 09-14 et 09-15 done (dernier : 09-09, RUNBOOK, ADR-059 à 062, serveur prêt, override OPS-01 accepté) ; reste 09-10 (relecture santé par Erwan, chemin critique), puis 09-11 à 09-13
 Status: Executing phase 9 (phase 10 en parallèle : 10-01 et 10-02 done, 10-03 ensuite)
-Last activity: 2026-11-12 (10-01 : analyseur YAML plafonné léger pour l'import, l'archivage et la couverture ; alias et clés en double refusés avec fichier, ligne et code ; page Méthode identique à l'octet)
+Last activity: 2026-11-12 (09.1-01 done, lot A en local, main non poussé ; 10-01 : analyseur YAML plafonné léger pour l'import, l'archivage et la couverture ; alias et clés en double refusés avec fichier, ligne et code ; page Méthode identique à l'octet)
 
 Progress v1.1: [..........] 0/5 phases, 0 plans
 
