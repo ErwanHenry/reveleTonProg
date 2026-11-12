@@ -84,7 +84,7 @@ function section(texte: string, titre: string): string {
   const i = texte.indexOf(`${titre}\n`);
   assert.ok(i >= 0, `section absente : ${titre}`);
   const reste = texte.slice(i + titre.length + 1);
-  const j = reste.search(/^## /m);
+  const j = reste.search(/^(## |---$)/m);
   return (j < 0 ? reste : reste.slice(0, j)).trim();
 }
 
