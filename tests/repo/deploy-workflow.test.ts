@@ -777,7 +777,9 @@ describe('sonde.yml : sonde externe de contenu (OPS-01, D-14)', () => {
   });
 
   it('le marqueur de la sonde existe toujours dans la page (src/layouts/Base.astro)', () => {
-    assert.ok(read('src/layouts/Base.astro').includes('>reveleTonProg</a>'));
+    // Le nom vient de NOM_SITE (plan 09.1-03) : l'en-tête l'affiche, et sa valeur est le marqueur grepé par la sonde.
+    assert.ok(read('src/layouts/Base.astro').includes('>{NOM_SITE}</a>'));
+    assert.ok(read('src/lib/identite.ts').includes("export const NOM_SITE = 'reveleTonProg';"));
   });
 
   it('commentaire de tête : succès seul pingué, 3 échecs (période et délai de grâce), planification retardée ou désactivée', () => {
