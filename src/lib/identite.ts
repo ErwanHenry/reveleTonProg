@@ -7,13 +7,13 @@
 // <meta name="generator"> par src/layouts/Base.astro ; ne change qu'avec ces deux contrôles.
 export const MARQUEUR_SONDE = 'reveleTonProg';
 
-// BROUILLON 09.1 : nom lisible du site, forme écrite du nom du dépôt « reveleTonProg ». Le tutoiement du nom de marque
-// est une exception à la règle du vouvoiement, à confirmer par Erwan (il peut garder « reveleTonProg » ou en choisir un autre).
+// Nom lisible du site, forme écrite du nom du dépôt « reveleTonProg ». Le tutoiement du nom de marque
+// est une exception à la règle du vouvoiement, validée par Erwan.
 export const NOM_SITE = 'Révèle ton prog';
 
-// BROUILLON 09.1 : sous-titre d'une ligne sous le nom, dans l'en-tête de chaque page.
+// Sous-titre d'une ligne sous le nom, dans l'en-tête de chaque page.
 export const SOUS_TITRE = 'Présidentielle 2027 : les programmes, expliqués et sourcés';
 
-// BROUILLON 09.1 : ligne d'identité en tête du pied de page. Pas de mot « indépendant » : rien dans le dépôt ne
-// l'établit ; s'il le souhaite, c'est une affirmation d'Erwan, à écrire par lui.
+// Ligne d'identité en tête du pied de page. Pas de mot « indépendant » : rien dans le dépôt ne
+// l'établit ; ce serait une affirmation d'Erwan, à écrire par lui.
 export const LIGNE_IDENTITE = `${NOM_SITE} présente les programmes des candidats sans prendre parti, sans publicité et sans cookie.`;

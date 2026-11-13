@@ -25,14 +25,10 @@ const unSeulTheme = corpus.themes.length === 1;
 >
   <main id="contenu" class="conteneur">
     <h1>Les programmes de la présidentielle 2027, à votre niveau</h1>
-    {/* BROUILLON 09.1 : phrase de présentation, à valider ou réécrire par Erwan (09.1-09) */}
     <p class="hall-presentation">Ce site explique, thème par thème, ce que proposent les candidats à l'élection présidentielle de 2027. Il ne prend jamais parti.</p>
     <ul class="garanties" role="list">
-      {/* BROUILLON 09.1 : garantie 1 (source datée et archivée, sans jugement) */}
       <li>Chaque mesure décrit ce que le candidat propose, sans jugement, et renvoie à son texte, daté et archivé.</li>
-      {/* BROUILLON 09.1 : garantie 2 (ordre alphabétique par défaut, ordre aléatoire au choix) */}
       <li>Par défaut, les candidats sont classés par ordre alphabétique, jamais selon les sondages ; vous pouvez aussi choisir un ordre aléatoire.</li>
-      {/* BROUILLON 09.1 : garantie 3 (vie privée) */}
       <li>Aucun cookie, aucune publicité, aucun service extérieur.</li>
     </ul>
     <h2 class="hall-themes">Les thèmes</h2>
@@ -46,12 +42,11 @@ const unSeulTheme = corpus.themes.length === 1;
         <ul class="tuiles">
           {corpus.themes.map((vue) => <TuileTheme vue={vue} une={unSeulTheme} />)}
         </ul>
-        {/* BROUILLON 09.1 : phrase affichée quand un seul thème est ouvert */}
         {unSeulTheme && <p class="autres-themes">Les autres thèmes seront publiés après relecture.</p>}
         <p><a href="/candidats/">Voir tous les candidats</a></p>
       </>
     )}
-    {/* BROUILLON 09.1 : libellé du lien vers la Méthode. Placé après les thèmes pour que la première tuile reste au
+    {/* Libellé du lien vers la Méthode. Placé après les thèmes pour que la première tuile reste au
         premier écran sur téléphone, y compris avec les polices plus larges de la CI (e2e/accueil.spec.ts). */}
     <p class="hall-methode"><a href="/methode/">Comment nous travaillons</a></p>
     <h2 class="hall-niveaux">Quatre niveaux de lecture</h2>

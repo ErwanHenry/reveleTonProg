@@ -27,8 +27,8 @@ const archive = source.archive;
   ? <p><span data-citation>{source.titre}</span></p>
   : <p>{libelle} : <span data-citation>{source.titre}</span></p>}
 <p>Consultée le <time datetime={source.date_consultation}>{formatDate(source.date_consultation)}</time></p>
-{/* BROUILLON 09.1 (proposition 2, audit B4) : liens du document sur une ligne qui passe à la ligne, libellés
-    raccourcis à valider par Erwan (clés mesure.original, mesure.wayback, mesure.extrait du copy deck, DEFAULT) ;
+{/* Proposition 2 (audit B4), validée par Erwan : liens du document sur une ligne qui passe à la ligne, libellés
+    raccourcis (clés mesure.original, mesure.wayback, mesure.extrait du copy deck, DEFAULT) ;
     avant : « Lire le document original », « Copie archivée (Wayback Machine) », « Extrait archivé, empreinte
     sha256 … ». role="list" : WebKit et VoiceOver retirent la sémantique d'un <ul> en list-style: none. */}
 <ul class="source-liens" role="list">

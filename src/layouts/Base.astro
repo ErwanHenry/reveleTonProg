@@ -67,7 +67,6 @@ const urlImage = urlCanonique !== undefined && Astro.site ? new URL(`/${FICHIER_
       <div class="conteneur entete-ligne">
         <div class="site-identite">
           <a class="site-nom" href="/">{NOM_SITE}</a>
-          {/* BROUILLON 09.1 : texte dans src/lib/identite.ts (SOUS_TITRE) */}
           <p class="site-sous-titre">{SOUS_TITRE}</p>
         </div>
         <nav class="nav-principale" aria-label="Navigation principale">
@@ -84,7 +83,6 @@ const urlImage = urlCanonique !== undefined && Astro.site ? new URL(`/${FICHIER_
     <slot />
     <footer class="pied">
       <div class="conteneur">
-        {/* BROUILLON 09.1 : texte dans src/lib/identite.ts (LIGNE_IDENTITE) */}
         <p class="pied-identite">{LIGNE_IDENTITE}</p>
         {avecSignalement && <p class="signalement-intro">Vous avez repéré une erreur ? Signalez-la : l'identifiant de la mesure est déjà indiqué dans le message.</p>}
         <nav aria-label="Informations sur le site" class="pied-liens">
