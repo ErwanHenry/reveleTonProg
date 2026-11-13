@@ -311,6 +311,16 @@ describe('WR-07 : ajouterStatutYaml conserve commentaires et mise en forme', () 
     assert.match(sortie, /date: 2026-03-15\n/, 'date existante non guillemetée');
   });
 
+  it('IN-01 : ce que dit le commentaire : re-sérialisation complète (CRLF rendu en LF, saut de ligne final ajouté), données intactes', () => {
+    const crlf = 'id: essai-fictif\r\nstatuts:\r\n  - code: declare\r\n    date: 2026-03-15'; // sans saut de ligne final
+    const sortie = ajouterStatutYaml(crlf, { code: 'renonce', date: '2026-10-01', statut_relecture: 'brouillon' });
+    assert.ok(!sortie.includes('\r'), 'fins de ligne rendues en LF');
+    assert.ok(sortie.endsWith('\n'), 'saut de ligne final ajouté');
+    assert.ok(!sortie.startsWith(crlf), 'le texte existant n’est pas toujours un préfixe exact');
+    assert.deepEqual(parse(sortie, { schema: 'core' }), { id: 'essai-fictif', statuts: [{ code: 'declare', date: '2026-03-15' }, { code: 'renonce', date: '2026-10-01', statut_relecture: 'brouillon' }] });
+    assert.match(readFileSync(new URL('../../scripts/lib/datagouv.ts', import.meta.url), 'utf8'), /RE-SÉRIALISÉ en\s*\n?\s*\*?\s*entier/);
+  });
+
   it('refuse un texte sans séquence statuts', () => {
     assert.throws(() => ajouterStatutYaml('id: x\n', { code: 'declare' }), /statuts/);
   });

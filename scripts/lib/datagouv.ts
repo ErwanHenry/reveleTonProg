@@ -280,10 +280,15 @@ export function renderYaml(o: unknown): string {
 }
 
 /**
- * Ajoute un statut en fin de `statuts[]` en éditant le document en place (API Document de `yaml`) :
- * commentaires, ordre des clés et mise en forme du fichier existant sont conservés. Le Document vient de
- * l'analyse plafonnée (IMP-01) : un alias, une clé en double ou une racine non objet lève `YamlRefuse`
- * qui nomme `fichier`. Lève une Error si le texte n'a pas de séquence `statuts`.
+ * Ajoute un statut en fin de `statuts[]` (API Document de `yaml`) : le Document est modifié puis RE-SÉRIALISÉ en
+ * entier par `doc.toString()` (IN-01 de la revue de la phase 10). Les données, l'ordre des clés et les commentaires
+ * sont gardés, mais pas toujours la mise en forme : fins de ligne CRLF rendues en LF, espaces avant un commentaire
+ * de fin de ligne réduites à une, scalaires repliés (`>-`) remis sur une ligne, saut de ligne final ajouté. Les
+ * fiches écrites par l'outil (rendu de renderYaml) restent préfixe exact du texte rendu : c'est le cas des 59
+ * fiches du dépôt (test « garde les octets existants ») ; une fiche retouchée à la main peut voir d'autres lignes
+ * bouger dans le diff, que le contrôle `git diff --numstat` du plan d'import (aucune ligne supprimée) attrape.
+ * Le Document vient de l'analyse plafonnée (IMP-01) : un alias, une clé en double ou une racine non objet lève
+ * `YamlRefuse` qui nomme `fichier`. Lève une Error si le texte n'a pas de séquence `statuts`.
  */
 export function ajouterStatutYaml(texte: string, statut: unknown, fichier = 'fiche candidat'): string {
   const doc = lireDocumentPlafonne(texte, fichier);
