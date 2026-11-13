@@ -14,6 +14,7 @@ import type { Mode } from '../../src/lib/content-core/rules/types.ts';
 import { schemasDirOf } from '../../src/lib/content-core/root.ts';
 import { empreinteCsp, scriptsEnLigne } from '../../src/lib/csp-empreintes.ts';
 import { estOuvert } from '../../src/lib/publication-config.ts';
+import { HAUTEUR_PARTAGE, LARGEUR_PARTAGE } from '../../src/lib/partage.ts';
 import { estHoteProvisoire } from '../../src/lib/site-config.ts';
 import { aClasse, analyserHtml, trouver } from './html.ts';
 
@@ -40,6 +41,40 @@ export const TYPES_AUTORISES = ['.html', '.txt', '.xml', '.json', '.ico', '.png'
 export const FAVICON = 'favicon.ico';
 /** Seul PNG admis, à la racine du dist (copie de public/partage.png, cité par og:image seulement). */
 export const IMAGE_PARTAGE = 'partage.png';
+
+const SIGNATURE_PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+
+/**
+ * Écart d'un fichier avec un PNG de `largeur` x `hauteur` bien formé, ou undefined (IN-02 de la revue 09.1). Règle
+ * étroite : signature, IHDR en premier morceau (13 octets) aux bonnes dimensions, morceaux qui tiennent dans le fichier,
+ * IEND en dernier. Aucune décompression, aucun CRC lu ; chaque tour avance d'au moins 12 octets, la boucle est bornée
+ * par la taille du fichier.
+ */
+export function problemePng(png: Buffer, largeur: number, hauteur: number): string | undefined {
+  if (png.length < 8 || !png.subarray(0, 8).equals(SIGNATURE_PNG)) return 'signature PNG absente';
+  let i = 8;
+  let ihdr = false;
+  let iend = false;
+  while (i < png.length) {
+    if (iend) return 'octets après le morceau IEND';
+    if (png.length - i < 12) return 'morceau tronqué';
+    const longueur = png.readUInt32BE(i);
+    if (longueur > png.length - i - 12) return 'morceau tronqué';
+    const type = png.subarray(i + 4, i + 8).toString('latin1');
+    if (!ihdr) {
+      if (type !== 'IHDR' || longueur !== 13) return `premier morceau « ${type.replace(/[^A-Za-z]/g, '?')} » au lieu de IHDR`;
+      const l = png.readUInt32BE(i + 8);
+      const h = png.readUInt32BE(i + 12);
+      if (l !== largeur || h !== hauteur) return `dimensions ${l} x ${h} au lieu de ${largeur} x ${hauteur}`;
+      ihdr = true;
+    }
+    if (type === 'IEND') iend = true;
+    i += 12 + longueur;
+  }
+  if (!ihdr) return 'IHDR absent';
+  if (!iend) return 'morceau IEND absent';
+  return undefined;
+}
 
 /** Tous les codes que le contrôle peut produire (la page Méthode de la Phase 5 les affichera). */
 export const CODES_CHECK_DIST = [
@@ -984,7 +1019,14 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
           signaler('TYPE_FICHIER_INATTENDU', f, `image refusée : seul partage.png à la racine du dist est permis (public/partage.png, généré par scripts/partage.ts)`);
         } else {
           const taille = fs.statSync(path.join(dist, f)).size;
-          if (taille > LIMITES.partage) signaler('TYPE_FICHIER_INATTENDU', f, `partage.png de ${taille} octets (limite ${LIMITES.partage}) : régénérer par node scripts/partage.ts`);
+          if (taille > LIMITES.partage) {
+            signaler('TYPE_FICHIER_INATTENDU', f, `partage.png de ${taille} octets (limite ${LIMITES.partage}) : régénérer par node scripts/partage.ts`);
+          } else {
+            const ecart = problemePng(fs.readFileSync(path.join(dist, f)), LARGEUR_PARTAGE, HAUTEUR_PARTAGE);
+            if (ecart !== undefined) {
+              signaler('TYPE_FICHIER_INATTENDU', f, `partage.png n'est pas un PNG ${LARGEUR_PARTAGE} x ${HAUTEUR_PARTAGE} bien formé (${ecart}) : régénérer par node scripts/partage.ts`);
+            }
+          }
         }
         continue;
       }

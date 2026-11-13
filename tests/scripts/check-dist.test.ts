@@ -14,6 +14,27 @@ import { empreinteCsp } from '../../src/lib/csp-empreintes.ts';
 import { loadSiteConfig } from '../../src/lib/site-config.ts';
 import type { Mode } from '../../src/lib/content-core/rules/types.ts';
 
+/**
+ * PNG minimal bien formé (signature, IHDR, IDAT de remplissage, IEND) de `taille` octets, aux dimensions données
+ * (IN-02 de la revue 09.1 : check-dist lit la signature, l'IHDR et la suite des morceaux de partage.png). Les CRC ne
+ * sont pas lus par la règle : ils valent zéro ici.
+ */
+function pngDe(taille: number, largeur = 1200, hauteur = 630): Buffer {
+  const morceau = (type: string, donnees: Buffer): Buffer => {
+    const l = Buffer.alloc(4);
+    l.writeUInt32BE(donnees.length);
+    return Buffer.concat([l, Buffer.from(type, 'latin1'), donnees, Buffer.alloc(4)]);
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(largeur, 0);
+  ihdr.writeUInt32BE(hauteur, 4);
+  ihdr.set([8, 2, 0, 0, 0], 8);
+  const tete = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), morceau('IHDR', ihdr)]);
+  const reste = taille - tete.length - 12 - 12;
+  if (reste < 0) throw new Error(`pngDe : ${taille} octets, trop peu`);
+  return Buffer.concat([tete, morceau('IDAT', Buffer.alloc(reste, 1)), morceau('IEND', Buffer.alloc(0))]);
+}
+
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const CORPUS = path.join(REPO_ROOT, 'tests', 'fixtures', 'corpus-valide');
 const CLI = path.join(REPO_ROOT, 'scripts', 'check-dist.ts');
@@ -1080,7 +1101,7 @@ describe('checkDist : version.json (HEB-07, D-12) et types de fichiers du dist (
   });
 
   describe('partage.png (09.1, proposition 6) : un seul PNG, à la racine, 100 000 octets au plus', () => {
-    const image = (n: number): Buffer => Buffer.alloc(n, 1);
+    const image = (n: number): Buffer => pngDe(n);
     const avecTypes = (fichiers: Record<string, string | Buffer | null>): Resultat =>
       verifier(pourCli(distPropre(fichiers)), 'production', { logement: 2 }, { typesAutorises: TYPES_AUTORISES });
 
@@ -1099,6 +1120,34 @@ describe('checkDist : version.json (HEB-07, D-12) et types de fichiers du dist (
       const lourd = avecTypes({ 'partage.png': image(100_001) });
       assert.deepEqual(lourd.codes, ['TYPE_FICHIER_INATTENDU']);
       assert.match(lourd.messages[0] ?? '', /100001 octets \(limite 100000\)/);
+    });
+
+    it('IN-02 (revue 09.1) : partage.png qui n’est pas un PNG 1200 x 630 bien formé : TYPE_FICHIER_INATTENDU', () => {
+      const bon = pngDe(1000);
+      const iend = bon.length - 12;
+      const cas: Array<[string, Buffer, RegExp]> = [
+        ['octets quelconques', Buffer.alloc(1000, 1), /signature PNG absente/],
+        ['HTML renommé', Buffer.from('<!doctype html><title>x</title>'), /signature PNG absente/],
+        ['SVG renommé', Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"/>'), /signature PNG absente/],
+        ['autres dimensions', pngDe(1000, 630, 1200), /dimensions 630 x 1200 au lieu de 1200 x 630/],
+        ['signature seule', bon.subarray(0, 8), /IHDR absent/],
+        ['IHDR tronqué', bon.subarray(0, 20), /morceau tronqué/],
+        ['sans IEND', bon.subarray(0, iend), /IEND absent/],
+        ['octets après IEND', Buffer.concat([bon, Buffer.from('x')]), /après le morceau IEND/],
+        ['longueur de morceau hors du fichier', (() => { const b = Buffer.from(bon); b.writeUInt32BE(0xffffffff, 33); return b; })(), /morceau tronqué/],
+        ['premier morceau autre que IHDR', (() => { const b = Buffer.from(bon); b.write('IDAT', 12, 'latin1'); return b; })(), /premier morceau/],
+      ];
+      for (const [nom, octets, motif] of cas) {
+        const r = avecTypes({ 'partage.png': octets });
+        assert.deepEqual(r.codes, ['TYPE_FICHIER_INATTENDU'], nom);
+        assert.deepEqual(r.fichiers, ['partage.png'], nom);
+        assert.match(r.messages[0] ?? '', motif, nom);
+      }
+    });
+
+    it('IN-02 : le partage.png versionné (public/partage.png) est accepté', () => {
+      const vrai = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'public', 'partage.png'));
+      assert.deepEqual(avecTypes({ 'partage.png': vrai }).codes, []);
     });
 
     it('un .jpg, un .webp ou un .svg restent refusés', () => {
@@ -1351,10 +1400,13 @@ describe('CLI scripts/check-dist.ts', () => {
     assert.match(ko.out, /^TYPE_FICHIER_INATTENDU img\/favicon\.ico : /m);
   });
 
-  it('09.1 : le CLI accepte partage.png à la racine et refuse img/partage.png (code 1)', () => {
-    const ok = lancer(['--dist', ecrireDist({ ...distCli(), 'partage.png': Buffer.alloc(300, 1) }), '--root', CORPUS, '--mode', 'production']);
+  it('09.1 : le CLI accepte un PNG partage.png à la racine, refuse img/partage.png et un partage.png qui n’est pas un PNG (code 1)', () => {
+    const ok = lancer(['--dist', ecrireDist({ ...distCli(), 'partage.png': pngDe(300) }), '--root', CORPUS, '--mode', 'production']);
     assert.equal(ok.status, 0, ok.out + ok.err);
-    const ko = lancer(['--dist', ecrireDist({ ...distCli(), 'img/partage.png': Buffer.alloc(300, 1) }), '--root', CORPUS, '--mode', 'production']);
+    const faux = lancer(['--dist', ecrireDist({ ...distCli(), 'partage.png': Buffer.alloc(300, 1) }), '--root', CORPUS, '--mode', 'production']);
+    assert.equal(faux.status, 1, faux.out + faux.err);
+    assert.match(faux.out, /^TYPE_FICHIER_INATTENDU partage\.png : /m);
+    const ko = lancer(['--dist', ecrireDist({ ...distCli(), 'img/partage.png': pngDe(300) }), '--root', CORPUS, '--mode', 'production']);
     assert.equal(ko.status, 1, ko.out + ko.err);
     assert.match(ko.out, /^TYPE_FICHIER_INATTENDU img\/partage\.png : /m);
   });
