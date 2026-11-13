@@ -640,6 +640,21 @@ describe('import : --format, --dry-run tolérant et --check (IMP-03)', () => {
     identiques(avant, octets(racine));
   });
 
+  it('WR-02 : date amont qui recule pour un statut inchangé : --check code 0 avec une information, la répétition la range en dérive', () => {
+    const source = { type: 'candidat', titre: 'Annonce (fictive)', url: 'https://exemple.test/essai-fictif/annonce', date_publication: '2026-10-15', date_consultation: '2026-11-09' };
+    const racine = copieDepotFictive({}, { date: '2026-10-15', source });
+    const res = importer(['--check', '--root', racine]);
+    assert.equal(res.status, 0, res.stdout + res.stderr);
+    assert.match(res.stdout, /^information : essai-fictif : source : .*\(2026-10-15\) amont=.*\(2026-10-01\) : même statut, date amont antérieure au fichier, source non appliquée$/m);
+    assert.match(res.stdout, /cohérence instantané \/ fiches : 0 écart/);
+    // même verdict côté outil : la fiche reste « inchangée », la ligne est sous « Dérives de source (information) »
+    const snap = readFileSync(path.join(racine, 'data', 'dataset-datagouv.yaml'), 'utf8').match(/^instantane: (.*)$/m)?.[1] as string;
+    const rep = importer(['--file', path.join(racine, snap), '--root', racine, '--dry-run', '--format', 'markdown']);
+    assert.equal(rep.status, 0, rep.stdout + rep.stderr);
+    assert.match(section(rep.stdout, '## Dérives de source (information)'), /^- essai-fictif : declare inchangé ; fichier \S+ du 2026-10-15 ; amont \S+ du 2026-10-01$/m);
+    assert.equal(section(rep.stdout, '## Conflits'), 'aucun');
+  });
+
   it('--check sur une copie dont le pointeur est périmé : code 1', () => {
     const racine = copieDepot();
     const ptr = path.join(racine, 'data', 'dataset-datagouv.yaml');

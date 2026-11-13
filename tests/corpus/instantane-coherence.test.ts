@@ -120,11 +120,15 @@ describe('comparerInstantane : cas synthétiques (D-04)', () => {
     assert.deepEqual(comparerInstantane(etat), { erreurs: [], infos: [] });
   });
 
-  it('E5 date : même statut, date du fichier strictement postérieure à l’amont', () => {
+  it('WR-02 (D-04) : même statut, date amont antérieure à celle du fichier : information I1, jamais une erreur', () => {
     const etat = base();
     etat.fiches.set('alice-test', fiche('alice-test', 'a', 'declare', '2026-10-15'));
     const r = comparerInstantane(etat);
-    assert.deepEqual(champs(r), { e: ['date'], i: [] });
+    assert.deepEqual(champs(r), { e: [], i: ['source'] });
+    assert.equal(
+      formaterEcart(r.infos[0]!),
+      'alice-test : source : fichier=https://exemple.test/a (2026-10-15) amont=https://exemple.test/a (2026-10-01) : même statut, date amont antérieure au fichier, source non appliquée',
+    );
   });
 
   it('E5 date : une date mensuelle contre une date complète ne se compare qu’au mois', () => {

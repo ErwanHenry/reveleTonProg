@@ -8,13 +8,17 @@
 //   E3 `ids_externes`  un fichier dont ids_externes.2027etmoi n'est pas une clé de la table, ou dont
 //                      la table désigne un autre identifiant
 //   E4 `statut`        le couple (code, motif) du statut le plus récent du fichier diffère de l'amont
-//   E5 `date`          même couple, mais la date du fichier est strictement postérieure à l'amont
 //   E6 `instantane`    data/dataset-datagouv.yaml ne pointe pas l'instantané le plus récent
 //                      (par mise_a_jour puis fetched_at : mise_a_jour seule n'est pas un marqueur de fraîcheur)
+//   (E5 `date` n'existe plus : voir I1, WR-02 de la revue de la phase 10.)
 //
 // Ce qui n'est qu'une INFORMATION (jamais un échec) :
-//   I1 `source`          même couple (code, motif), source (URL) ou date différente : l'import garde
-//                        volontairement l'ancienne source d'un statut inchangé (mergeFiche, « inchangé »).
+//   I1 `source`          même couple (code, motif), source (URL) ou date différente, dans les deux sens : l'import
+//                        garde volontairement l'ancienne source d'un statut inchangé (mergeFiche, « inchangé »), et
+//                        la décision D-04 dit qu'une dérive de source ou de date pour un statut inchangé est une
+//                        information. Une date amont qui RECULE (le producteur corrige une date vers le passé) est
+//                        donc nommée ainsi, comme dans la section « Dérives de source » du rapport : l'outil et la CI
+//                        disent la même chose, et la pull request d'import ne devient pas rouge sans issue.
 //                        En faire une erreur rendrait la CI rouge à chaque import et on finirait par l'ignorer.
 //   I2 `absent en amont` un fichier dont la clé amont est dans la table mais plus dans l'instantané : il
 //                        ne cache aucune incohérence, la fiche et son identifiant verrouillé restent.
@@ -107,18 +111,15 @@ export function comparerInstantane(etat: EtatInstantane): { erreurs: Ecart[]; in
     }
     const dateFichier = String(dernier.date);
     const dateAmont = String(amont.date);
-    if (dateAvant(dateAmont, dateFichier)) {
-      erreurs.push({ id, champ: 'date', fichier: dateFichier, amont: dateAmont });
-      continue;
-    }
     const urlFichier = String(((dernier.source ?? {}) as Obj).url);
     const urlAmont = String(((amont.source ?? {}) as Obj).url);
-    if (dateAvant(dateFichier, dateAmont) || urlFichier !== urlAmont) {
+    const recule = dateAvant(dateAmont, dateFichier);
+    if (recule || dateAvant(dateFichier, dateAmont) || urlFichier !== urlAmont) {
       infos.push({
         id,
         champ: 'source',
         fichier: `${urlFichier} (${dateFichier})`,
-        amont: `${urlAmont} (${dateAmont}) : même statut, source non appliquée`,
+        amont: `${urlAmont} (${dateAmont}) : même statut, ${recule ? 'date amont antérieure au fichier, ' : ''}source non appliquée`,
       });
     }
   }

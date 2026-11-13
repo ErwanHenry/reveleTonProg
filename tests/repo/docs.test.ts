@@ -933,6 +933,15 @@ describe('documentation (phase 10) : import de décembre (IMP-03)', () => {
     }
   });
 
+  it('WR-02 : une date amont qui recule pour un statut inchangé est une information, et les écarts restants ont leur issue', () => {
+    const s = sectionRunbook(ANCIEN);
+    for (const needle of ['date amont qui recule', 'information', 'Dérives de source', 'ids_externes.2027etmoi', 'data/dataset-datagouv.yaml']) {
+      assert.ok(s.includes(needle), `« ${needle} » absent de la section « ${ANCIEN} »`);
+    }
+    assert.doesNotMatch(s, /\bE5\b/, 'E5 n’existe plus');
+    assert.doesNotMatch(read('scripts/lib/instantane.ts'), /champ: 'date'/, 'plus aucune erreur « date » dans la cohérence');
+  });
+
   it('aucun tiret long ni demi-long, aucun mot interdit, aucun secret dans les sections de l’import', () => {
     for (const titre of [IMPORT, GEL, ANCIEN]) {
       const s = sectionRunbook(titre);
