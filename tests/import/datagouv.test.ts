@@ -92,6 +92,32 @@ describe('checkUpstream', () => {
     assert.match(res.avertissements.join('\n'), /extra/);
     assert.match(res.avertissements.join('\n'), /nouveau/);
   });
+
+  it('CR-01 : une clé de liens avec saut de ligne, espace ou balise est refusée, son texte neutralisé dans le message', () => {
+    for (const cle of ['campagne\n\n## Conflits\n\naucun\n\n## Faux', 'site web', '<img src=x>', '[@compte](https://exemple.test/x)', '', 'a'.repeat(41)]) {
+      const j = clone(brut) as { candidats: { liens: Record<string, string> }[] };
+      (j.candidats[0] as { liens: Record<string, string> }).liens[cle] = 'https://exemple.test/lien';
+      assert.throws(
+        () => checkUpstream(j),
+        (e: unknown) => e instanceof UpstreamShapeError && /liens : clé .* invalide/.test(e.message) && !/[\n\r\u0000-\u001f]/.test(e.message),
+        JSON.stringify(cle),
+      );
+    }
+    // les clés réelles et une clé neuve ordinaire passent
+    const ok = clone(brut) as { candidats: { liens: Record<string, string> }[] };
+    (ok.candidats[0] as { liens: Record<string, string> }).liens['Bluesky'] = 'https://exemple.test/b';
+    (ok.candidats[0] as { liens: Record<string, string> }).liens['site_web'] = 'https://exemple.test/s';
+    assert.doesNotThrow(() => checkUpstream(ok));
+  });
+
+  it('CR-01 : les avertissements de clés inconnues ne portent aucun caractère de contrôle', () => {
+    const j = clone(brut) as Record<string, unknown> & { candidats: Record<string, unknown>[] };
+    j['extra\n## Faux'] = 1;
+    (j.candidats[0] as Record<string, unknown>)['ligne\r\n# Faux'] = 'x';
+    const res = checkUpstream(j);
+    assert.equal(res.avertissements.length, 2);
+    for (const a of res.avertissements) assert.doesNotMatch(a, /[\u0000-\u001f\u007f-\u009f]/, a);
+  });
 });
 
 describe('mapRow', () => {

@@ -75,10 +75,56 @@ const objet = (v: unknown): Obj => (v !== null && typeof v === 'object' ? (v as 
 const tableau = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
 /** Texte venu de l'amont : aucun tiret long ou demi-long ne traverse (règle de typographie du projet). */
 const propre = (s: string): string => s.replace(/[\u2013\u2014]/g, '-');
-const codeMotif = (s: Obj): string => `${String(s.code)}${s.motif !== undefined ? `/${String(s.motif)}` : ''}`;
+
+// ---- CR-01 : un seul point d'échappement pour tout ce qui entre dans le Markdown -------------------------------
+// Le rapport devient le corps d'une pull request publique. Tout texte venu de l'amont (nom, adresses, clés de
+// `liens`) ou d'un fichier est une donnée tierce : une valeur sûre (liste blanche de caractères stricte) est
+// imprimée telle quelle, si bien qu'une ligne légitime ne change pas ; toute autre valeur est imprimée dans un span
+// de code, où rien n'est interprété (ni titre, ni lien, ni image, ni balise, ni mention, ni tableau). Les caractères
+// de contrôle, séparateurs de ligne, caractères invisibles et de direction deviennent des espaces : aucune valeur
+// ne peut ouvrir une ligne, donc une section.
+// eslint-disable-next-line no-control-regex
+const INVISIBLES = /[\u0000-\u001f\u007f-\u009f\u00ad\u2028\u2029\u200b-\u200f\u202a-\u202e\u2060-\u2069\ufeff]/g;
+/** Span de code CommonMark : la clôture est plus longue que toute suite d'accents graves du texte. */
+function enCode(s: string): string {
+  const t = propre(s).replace(INVISIBLES, ' ');
+  if (t.trim() === '') return '` `';
+  const plusLongue = Math.max(0, ...(t.match(/`+/g) ?? []).map((x) => x.length));
+  if (plusLongue === 0) return `\`${t}\``;
+  const cloture = '`'.repeat(plusLongue + 1);
+  return `${cloture} ${t} ${cloture}`;
+}
+/** Jeton sûr : identifiant, code de statut, motif, date (lettres ASCII, chiffres, « - », « / », « _ », « . »). */
+const JETON_SUR = /^[A-Za-z0-9][A-Za-z0-9/_.-]*$/;
+const jeton = (v: unknown): string => {
+  const s = String(v);
+  return JETON_SUR.test(s) ? s : enCode(s);
+};
+/** Texte libre sûr (nom d'une personne) : lettres, chiffres, espaces simples, apostrophes, point, virgule, tirets, parenthèses. */
+const TEXTE_SUR = /^[\p{L}\p{N}][\p{L}\p{M}\p{N} .,'’()\u2013\u2014-]*$/u;
+const texteAmont = (v: unknown): string => {
+  const s = String(v);
+  return TEXTE_SUR.test(s) ? propre(s) : enCode(s);
+};
+/** Message d'un conflit (écrit par l'outil, cite des identifiants, codes, dates et chemins) : même règle, liste un peu plus large. */
+const MESSAGE_SUR = /^[\p{L}\p{N}][\p{L}\p{M}\p{N} .,:;'’«»()/=+_\u2013\u2014-]*$/u;
+const messageSur = (s: string): string => (MESSAGE_SUR.test(s) ? propre(s) : enCode(s));
+/**
+ * Adresse : imprimée telle quelle seulement si c'est une URL https dont chaque caractère est dans une liste blanche
+ * stricte (ni crochet, ni parenthèse, ni chevron, ni « @ », ni « ! », ni accent grave, ni espace) ; sinon sa forme
+ * normalisée (`URL.href`, qui encode chevrons, guillemets et espaces) dans un span de code, sans lien.
+ */
+const URL_SURE = /^https:\/\/[A-Za-z0-9.-]+(?::\d{1,5})?(?:[/?#][A-Za-z0-9._~:/?#=&%+,;-]*)?$/;
+const urlAmont = (v: unknown): string => {
+  const s = String(v);
+  if (URL_SURE.test(s) && URL.canParse(s) && new URL(s).protocol === 'https:') return s;
+  return enCode(URL.canParse(s) ? new URL(s).href : s);
+};
+
+const codeMotif = (s: Obj): string => `${jeton(s.code)}${s.motif !== undefined ? `/${jeton(s.motif)}` : ''}`;
 const sourceDe = (s: Obj): { url: string; date: string } => {
   const src = objet(s.source);
-  return { url: String(src.url), date: String(src.date_publication ?? s.date) };
+  return { url: urlAmont(src.url), date: jeton(src.date_publication ?? s.date) };
 };
 const memeCodeMotif = (a: Obj, b: Obj): boolean => a.code === b.code && a.motif === b.motif;
 
@@ -104,7 +150,7 @@ export function construireRapport(e: EntreeRapport): Rapport {
     const srcAmont = sourceDe(amont);
     if (p.avant === null) {
       cree += 1;
-      nouveaux.push(`- ${p.id} : ${String(amont.code)} (${String(amont.date)}), source ${srcAmont.url} du ${srcAmont.date}`);
+      nouveaux.push(`- ${jeton(p.id)} : ${jeton(amont.code)} (${jeton(amont.date)}), source ${srcAmont.url} du ${srcAmont.date}`);
       continue;
     }
     const avantStatuts = tableau(p.avant.statuts);
@@ -115,32 +161,32 @@ export function construireRapport(e: EntreeRapport): Rapport {
       ajoutes += 1;
       const nouveau = statutLePlusRecent(apresStatuts) ?? {};
       const src = sourceDe(nouveau);
-      changes.push(`- ${p.id} : statut : ${codeMotif(ancien)} (${String(ancien.date)}) -> ${codeMotif(nouveau)} (${String(nouveau.date)}), source ${src.url} du ${src.date}`);
+      changes.push(`- ${jeton(p.id)} : statut : ${codeMotif(ancien)} (${jeton(ancien.date)}) -> ${codeMotif(nouveau)} (${jeton(nouveau.date)}), source ${src.url} du ${src.date}`);
       const prod = statutRetenu(avantStatuts, 'production');
       if (prod !== undefined && !memeCodeMotif(prod, nouveau)) {
         const a = sourceDe(prod);
-        dejaRelus.push(`- ${p.id} : relu ${codeMotif(prod)} (${String(prod.date)}), source ${a.url} du ${a.date} -> ${codeMotif(nouveau)} (${String(nouveau.date)}), source ${src.url} du ${src.date}`);
+        dejaRelus.push(`- ${jeton(p.id)} : relu ${codeMotif(prod)} (${jeton(prod.date)}), source ${a.url} du ${a.date} -> ${codeMotif(nouveau)} (${jeton(nouveau.date)}), source ${src.url} du ${src.date}`);
         if (dansPerimetre(avantStatuts, 'production')) {
-          for (const t of themesPublies) dejaRelus.push(`  - thème ${t} : ${mesuresPubliees(t, p.id)} mesure(s) publiée(s), case : ${caseDe(t, p.id)}`);
+          for (const t of themesPublies) dejaRelus.push(`  - thème ${jeton(t)} : ${mesuresPubliees(t, p.id)} mesure(s) publiée(s), case : ${jeton(caseDe(t, p.id))}`);
         }
       }
     } else {
       inchanges += 1;
       const srcAncien = sourceDe(ancien);
       if (srcAncien.url !== srcAmont.url || String(ancien.date) !== String(amont.date)) {
-        derives.push(`- ${p.id} : ${String(ancien.code)} inchangé ; fichier ${srcAncien.url} du ${srcAncien.date} ; amont ${srcAmont.url} du ${srcAmont.date}`);
+        derives.push(`- ${jeton(p.id)} : ${jeton(ancien.code)} inchangé ; fichier ${srcAncien.url} du ${srcAncien.date} ; amont ${srcAmont.url} du ${srcAmont.date}`);
       }
     }
     // Champs que l'import ne modifie jamais : signalés, jamais recopiés (aucune étiquette n'est imprimée).
-    if (p.mappe.parti !== null && p.mappe.parti !== undefined && p.mappe.parti !== p.avant.parti) changes.push(`- ${p.id} : parti : différent du fichier (non appliqué)`);
-    if (p.mappe.site_officiel !== undefined && p.mappe.site_officiel !== p.avant.site_officiel) changes.push(`- ${p.id} : site_officiel : différent du fichier (non appliqué)`);
+    if (p.mappe.parti !== null && p.mappe.parti !== undefined && p.mappe.parti !== p.avant.parti) changes.push(`- ${jeton(p.id)} : parti : différent du fichier (non appliqué)`);
+    if (p.mappe.site_officiel !== undefined && p.mappe.site_officiel !== p.avant.site_officiel) changes.push(`- ${jeton(p.id)} : site_officiel : différent du fichier (non appliqué)`);
   }
 
   const aDecider = [...e.inconnus]
     .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
     .map((r) => {
       const liens = trier(Object.keys(r.liens));
-      return `- ${propre(r.id)} : ${propre(r.nom)}, ${r.statut} (${r.source.date}), source ${r.source.url}, vérifié le ${r.verifie_le}, liens : ${liens.length > 0 ? liens.join(', ') : 'aucun'}`;
+      return `- ${jeton(r.id)} : ${texteAmont(r.nom)}, ${jeton(r.statut)} (${jeton(r.source.date)}), source ${urlAmont(r.source.url)}, vérifié le ${jeton(r.verifie_le)}, liens : ${liens.length > 0 ? liens.map(jeton).join(', ') : 'aucun'}`;
     });
 
   // Absents du jeu amont : fiches dont la clé amont a disparu, et lignes du jeu précédent qui ne sont plus là.
@@ -152,7 +198,7 @@ export function construireRapport(e: EntreeRapport): Rapport {
   }
   const absents = trier([...absentsParCle.keys()]).map((cle) => {
     const fiche = absentsParCle.get(cle);
-    return `- ${propre(cle)}${fiche !== null && fiche !== undefined ? ` (fiche ${fiche})` : ''} : absent du jeu amont du ${e.instantane.miseAJour}`;
+    return `- ${jeton(cle)}${fiche !== null && fiche !== undefined ? ` (fiche ${jeton(fiche)})` : ''} : absent du jeu amont du ${jeton(e.instantane.miseAJour)}`;
   });
 
   // Conséquences sur les thèmes publiés : périmètre de production (ce que le site montre) et d'aperçu (ce que verra la relecture).
@@ -172,7 +218,7 @@ export function construireRapport(e: EntreeRapport): Rapport {
     return { theme, cellulesMaintenant: perimetreProd.length, cellulesApres: perimetreApres.length, casAcreer, sortants };
   });
 
-  const conflits = e.conflits.map((c) => `- ${propre(c.replace(/\s[\u2013\u2014]\s/g, ' : '))}`);
+  const conflits = e.conflits.map((c) => `- ${messageSur(c.replace(/\s[\u2013\u2014]\s/g, ' : '))}`);
 
   return {
     entete: { ...e.instantane, cree, ajoutes, inchanges },
@@ -195,11 +241,11 @@ export function rapportMarkdown(r: Rapport): string {
   const out: string[] = [];
   out.push('# Rapport de répétition à blanc de l\'import data.gouv', '');
   out.push('## Instantané', '');
-  out.push(`- instantané : ${h.nom}`);
-  out.push(`- empreinte SHA-256 : ${h.sha256}`);
-  out.push(`- mise à jour amont : ${h.miseAJour}`);
-  out.push(`- lignes amont : ${h.lignes}`);
-  out.push(h.precedent === null ? '- aucun instantané précédent référencé' : `- instantané précédent : ${h.precedent}`);
+  out.push(`- instantané : ${jeton(h.nom)}`);
+  out.push(`- empreinte SHA-256 : ${jeton(h.sha256)}`);
+  out.push(`- mise à jour amont : ${jeton(h.miseAJour)}`);
+  out.push(`- lignes amont : ${jeton(h.lignes)}`);
+  out.push(h.precedent === null ? '- aucun instantané précédent référencé' : `- instantané précédent : ${jeton(h.precedent)}`);
   out.push(`- fiches : ${h.cree} créée(s), ${h.ajoutes} statut(s) ajouté(s), ${h.inchanges} inchangée(s)`);
   out.push('');
   out.push('Vocabulaire : « absents du jeu amont » correspond aux « retirés » de la feuille de route ; une absence du jeu ne vaut pas retrait de candidature.');
@@ -211,11 +257,11 @@ export function rapportMarkdown(r: Rapport): string {
   out.push('## Conséquences sur les thèmes publiés', '');
   if (r.consequences.length === 0) out.push('aucun thème publié', '');
   for (const c of r.consequences) {
-    out.push(`### ${c.theme}`, '');
+    out.push(`### ${jeton(c.theme)}`, '');
     out.push(`- cellules attendues : ${c.cellulesMaintenant} maintenant, ${c.cellulesApres} après relecture de tous les statuts importés`);
-    out.push(`- case de couverture à créer avant de relire le statut : ${c.casAcreer.length > 0 ? c.casAcreer.map((x) => `${x.id} (${x.code})`).join(', ') : 'aucun'}`);
+    out.push(`- case de couverture à créer avant de relire le statut : ${c.casAcreer.length > 0 ? c.casAcreer.map((x) => `${jeton(x.id)} (${jeton(x.code)})`).join(', ') : 'aucun'}`);
     out.push(
-      `- sort du périmètre après relecture : ${c.sortants.length > 0 ? c.sortants.map((x) => `${x.id} (${x.code}), ${x.mesures} mesure(s) publiée(s), case : ${x.cas}`).join(' ; ') : 'aucun'}`,
+      `- sort du périmètre après relecture : ${c.sortants.length > 0 ? c.sortants.map((x) => `${jeton(x.id)} (${jeton(x.code)}), ${x.mesures} mesure(s) publiée(s), case : ${jeton(x.cas)}`).join(' ; ') : 'aucun'}`,
     );
     out.push('');
   }

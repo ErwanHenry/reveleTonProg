@@ -54,6 +54,16 @@ const ID_AMONT = /^[a-z0-9][a-z0-9-]{0,79}$/;
 const ID_CANDIDAT = /^[a-z][a-z0-9]*(-[a-z0-9]+)+$/;
 // eslint-disable-next-line no-control-regex
 const CONTROLE = /[\u0000-\u001f\u007f-\u009f]/;
+// eslint-disable-next-line no-control-regex
+const CONTROLE_TOUS = /[\u0000-\u001f\u007f-\u009f\u2028\u2029]/g;
+/**
+ * CR-01 : une clé de `liens` est imprimée dans le rapport, corps de la pull request. Lettres ASCII, chiffres, `_`,
+ * `.` et `-` seulement (les sept clés réelles et une clé neuve ordinaire passent) : un saut de ligne, une espace,
+ * une balise ou une syntaxe Markdown dans une clé est refusé à la lecture.
+ */
+const CLE_LIEN = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,39}$/;
+/** Texte amont cité dans un message ou un avertissement : 40 caractères au plus, contrôles remplacés par « ? ». */
+const cite = (k: string): string => k.slice(0, 40).replace(CONTROLE_TOUS, '?');
 
 const estObjet = (v: unknown): v is Record<string, unknown> => v !== null && typeof v === 'object' && !Array.isArray(v);
 
@@ -90,7 +100,7 @@ export function checkUpstream(json: unknown): { miseAJour: string; rows: Upstrea
   if (!estObjet(json)) throw new UpstreamShapeError('racine : objet attendu');
   const avertissements: string[] = [];
   for (const k of Object.keys(json)) {
-    if (!(CLES_HAUT as readonly string[]).includes(k)) avertissements.push(`clé de premier niveau inconnue ignorée : « ${k.slice(0, 40)} »`);
+    if (!(CLES_HAUT as readonly string[]).includes(k)) avertissements.push(`clé de premier niveau inconnue ignorée : « ${cite(k)} »`);
   }
   const miseAJour = dateValide(json.mise_a_jour, 'mise_a_jour', false);
   const liste = json.candidats;
@@ -104,7 +114,7 @@ export function checkUpstream(json: unknown): { miseAJour: string; rows: Upstrea
       if (!(k in brut)) throw new UpstreamShapeError(`${at} : clé « ${k} » absente`);
     }
     for (const k of Object.keys(brut)) {
-      if (!(CLES_RANG as readonly string[]).includes(k)) inconnues.add(k.slice(0, 40));
+      if (!(CLES_RANG as readonly string[]).includes(k)) inconnues.add(cite(k));
     }
     const id = chaine(brut.id, `${at}.id`);
     if (!ID_AMONT.test(id)) throw new UpstreamShapeError(`${at}.id : identifiant amont invalide (minuscules, chiffres, tirets)`);
@@ -126,7 +136,10 @@ export function checkUpstream(json: unknown): { miseAJour: string; rows: Upstrea
     };
     if (!estObjet(brut.liens)) throw new UpstreamShapeError(`${at}.liens : objet attendu`);
     const liens: Record<string, string> = {};
-    for (const [k, v] of Object.entries(brut.liens)) liens[k] = urlHttps(v, `${at}.liens.${k}`);
+    for (const [k, v] of Object.entries(brut.liens)) {
+      if (!CLE_LIEN.test(k)) throw new UpstreamShapeError(`${at}.liens : clé « ${cite(k)} » invalide (lettres, chiffres, « _ », « . » ou « - », 40 caractères au plus)`);
+      liens[k] = urlHttps(v, `${at}.liens.${k}`);
+    }
     const verifie_le = dateValide(brut.verifie_le, `${at}.verifie_le`, false);
     return { id, nom, parti, statut, source, liens, verifie_le };
   });

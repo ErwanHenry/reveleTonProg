@@ -278,3 +278,124 @@ describe('rapport de répétition à blanc (D-06)', () => {
     assert.ok(!t.includes('Parti Fictif'));
   });
 });
+
+/** Texte hors des spans de code (CommonMark : une suite de N accents graves ferme la suite de même longueur). */
+function horsCode(texte: string): string {
+  let out = '';
+  let i = 0;
+  while (i < texte.length) {
+    const m = /`+/.exec(texte.slice(i));
+    if (m === null) return out + texte.slice(i);
+    const debut = i + m.index;
+    out += texte.slice(i, debut);
+    const fence = m[0];
+    let j = debut + fence.length;
+    let fin = -1;
+    while (j < texte.length) {
+      const k = texte.indexOf(fence, j);
+      if (k < 0) break;
+      if (texte[k + fence.length] !== '`' && texte[k - 1] !== '`') {
+        fin = k;
+        break;
+      }
+      j = k + 1;
+      while (texte[j] === '`') j += 1;
+    }
+    if (fin < 0) return out + texte.slice(debut);
+    out += ' ';
+    i = fin + fence.length;
+  }
+  return out;
+}
+
+describe('CR-01 : texte amont hostile dans le corps de la pull request', () => {
+  const HOSTILES = [
+    'Nom\n\n## Conflits\n\naucun\n\n## Faux',
+    '<img src=https://traceur.exemple.test/p.png>',
+    '[@compte](https://exemple.test/piege)',
+    'Salut @compte et @org/equipe',
+    '![image](https://traceur.exemple.test/i.png)',
+    '| a | b |\n|---|---|\n| c | d |',
+    '# Faux titre',
+    '`code` et ``double``',
+    'Nom ## Faux suite',
+    'Nom <script>alert(1)</script> &amp;',
+  ];
+  const URLS_HOSTILES = [
+    'https://exemple.test/a<img src=https://traceur.exemple.test/p.png>',
+    'https://exemple.test/[lien](https://piege.exemple.test)',
+    'https://exemple.test/@compte',
+    'https://exemple.test/a`b`c',
+    'https://exemple.test/!%5Bx%5D(https://traceur.exemple.test/i.png)',
+  ];
+
+  function rapportHostile(): string {
+    const inconnus = HOSTILES.map((nom, i) =>
+      ligne(`hostile-${i}`, {
+        nom,
+        source: { titre: 'Titre', url: URLS_HOSTILES[i % URLS_HOSTILES.length] as string, date: '2026-11-02' },
+        liens: { [`campagne\n\n## Conflits\n\naucun\n\n## Faux ${i}`]: 'https://exemple.test/c', '<b>gras</b>': 'https://exemple.test/b', '@compte': 'https://exemple.test/m' },
+      }),
+    );
+    const ancien = statut('declare', '2026-09-01', URLS_HOSTILES[0] as string);
+    const nouveau = statut('renonce', '2026-11-20', URLS_HOSTILES[1] as string, { motif: 'retrait' }, 'brouillon');
+    return md(
+      entree({
+        ...CORPUS,
+        plans: [
+          plan('alice-test', A_RELU, [ancien, nouveau]),
+          plan('zoe-test', null, [statut('declare', '2026-11-01', URLS_HOSTILES[2] as string, {}, 'brouillon')]),
+        ],
+        inconnus,
+        conflits: ['bob-test — conflit\n## Faux conflit\n<img src=https://traceur.exemple.test/c.png> @compte'],
+        precedent: { miseAJour: '2026-10-28', ids: ['x\n## Faux absent'] },
+        idsAmont: [],
+      }),
+    );
+  }
+
+  it('aucun titre fabriqué : seuls les titres du rapport et des thèmes commencent une ligne par #', () => {
+    const t = rapportHostile();
+    const titres = t.split('\n').filter((l) => /^\s{0,3}#/.test(l));
+    assert.deepEqual(titres, ['# Rapport de répétition à blanc de l\'import data.gouv', ...TITRES.slice(0, 7), '### logement', ...TITRES.slice(7)]);
+  });
+
+  it('une ligne par personne à décider, aucune ligne de tableau, aucune ligne vide inventée dans une section', () => {
+    const t = rapportHostile();
+    const s = section(t, '## Nouveaux à décider (absents de correspondances.yaml)');
+    assert.equal(s.split('\n').length, HOSTILES.length, s);
+    for (const l of s.split('\n')) assert.match(l, /^- hostile-\d : /, l);
+    assert.equal(section(t, '## Conflits').split('\n').length, 1);
+    assert.equal(section(t, '## Absents du jeu amont').split('\n').length, 1);
+    for (const l of t.split('\n')) assert.doesNotMatch(l, /^\s*\|/, l);
+  });
+
+  it('hors des spans de code : ni balise, ni lien, ni image, ni mention, ni barre verticale, ni caractère de contrôle', () => {
+    const t = rapportHostile();
+    const libre = horsCode(t);
+    assert.doesNotMatch(libre.replace(/ -> /g, ' '), /[<>]/, 'balise HTML (la flèche « -> » du rapport mise à part)');
+    assert.doesNotMatch(libre, /[[\]]/, 'crochet de lien ou d’image');
+    assert.doesNotMatch(libre, /!\[/, 'image');
+    assert.doesNotMatch(libre, /(^|[^\w/])@\w/, 'mention');
+    assert.doesNotMatch(libre, /\|/, 'tableau');
+    assert.doesNotMatch(libre, /&\w+;/, 'entité HTML');
+    assert.doesNotMatch(t, /[\u0000-\u0009\u000b-\u001f\u007f-\u009f\u2028\u2029]/, 'caractère de contrôle');
+  });
+
+  it('le texte hostile reste lisible, entier, dans un span de code', () => {
+    const t = rapportHostile();
+    assert.ok(t.includes('`<img src=https://traceur.exemple.test/p.png>`'), 'balise montée en texte');
+    assert.ok(t.includes('`[@compte](https://exemple.test/piege)`'));
+    assert.ok(t.includes('`` `code` et ``double`` ``') || t.includes('``` `code` et ``double`` ```'), 'accents graves gardés par une clôture plus longue');
+  });
+
+  it('une ligne légitime est rendue sans aucun changement', () => {
+    const t = md(entree({ inconnus: [ligne('inconnu-un', { statut: 'renonce', source: { titre: 'T', url: 'https://exemple.test/inconnu_2026/article-1.html?a=1&b=2', date: '2026-11-02' } })] }));
+    assert.equal(
+      section(t, '## Nouveaux à décider (absents de correspondances.yaml)'),
+      '- inconnu-un : Prénom Fictif, renonce (2026-11-02), source https://exemple.test/inconnu_2026/article-1.html?a=1&b=2, vérifié le 2026-11-09, liens : campagne, parti',
+    );
+    const n = md(entree({ inconnus: [ligne('inconnu-deux', { nom: "Jeanne d'Arc-Exemple O’Fictive" })] }));
+    assert.match(section(n, '## Nouveaux à décider (absents de correspondances.yaml)'), /^- inconnu-deux : Jeanne d'Arc-Exemple O’Fictive, declare /);
+  });
+});
