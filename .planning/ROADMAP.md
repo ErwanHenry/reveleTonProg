@@ -26,7 +26,7 @@ Détail complet : [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) ; exi
 - [x] **Phase 7: Domaine paramétré, inlining et dette** : domaine unique en configuration, CSS et scripts dans la page avec CSP à empreintes, dette W3, W4, W10, W7 (completed 2026-11-07)
 - [x] **Phase 8: Serveur, pipeline, supervision et sauvegardes** : Caddy en HTTPS, déploiement atomique avec retour arrière, hôte technique protégé, alertes, restauration réelle (completed 2026-11-10)
 - [ ] **Phase 9: Contenu relu, juridique et ouverture** : un thème relu publié, Mentions légales finales, journal d'audit refait, ouverture publique vers le 5 décembre
-- [ ] **Phase 9.1: Finitions visuelles avant l'ouverture** (INSÉRÉE le 2026-11-12) : défauts de l'audit visuel corrigés, page 404, balises et image de partage, accueil, en-tête, pied de page et page thème retouchés avec validation d'Erwan sur un aperçu ; à faire entrer avant la publication (09-11)
+- [x] **Phase 9.1: Finitions visuelles avant l'ouverture** (INSÉRÉE le 2026-11-12) : défauts de l'audit visuel corrigés, page 404, balises et image de partage, accueil, en-tête, pied de page et page thème retouchés avec validation d'Erwan sur un aperçu ; fusionnée le 2026-11-13, avant la publication (09-11)
 - [ ] **Phase 10: Import de décembre** : analyseur plafonné, cohérence de l'instantané, import des statuts en pull request relue (10 au 13 décembre, gel du 13 au 15)
 
 ## Piste 0 (Erwan, hors code)
@@ -181,7 +181,7 @@ Plans:
 - [x] 09.1-06-PLAN.md — Worktree design/finitions, script de mesure et référence, propositions 1 (accueil) et 5 (nom, sous-titre, ligne d'identité) en brouillon (vague 5)
 - [x] 09.1-07-PLAN.md — Propositions 2 (bloc source compact, variante 2b si la cible de 21 500 px est manquée), 3 (Aller à un candidat), 4 (grille, règle verrouillée M1-08) (vague 6)
 - [x] 09.1-08-PLAN.md — Proposition 6 (image de partage, seul PNG admis), indépendance de chaque commit, gardes sur la branche, aperçu 4331/4332, carte de partage locale et fiche pour Erwan (vague 7)
-- [ ] 09.1-09-PLAN.md — Réponse d'Erwan proposition par proposition et sur les deux textes du lot A, intégration des seuls commits acceptés avec ses textes, gardes, push, mesure finale avant l'import de décembre, nettoyage (vague 8, validation d'Erwan)
+- [x] 09.1-09-PLAN.md — Réponse d'Erwan proposition par proposition et sur les deux textes du lot A, intégration des seuls commits acceptés avec ses textes, gardes, push, mesure finale avant l'import de décembre, nettoyage (vague 8, validation d'Erwan)
 
 ### Phase 10: Import de décembre
 
@@ -218,5 +218,5 @@ Plans:
 | 7. Domaine paramétré, inlining et dette | v1.1 | 8/8 | Complete    | 2026-11-07 |
 | 8. Serveur, pipeline, supervision et sauvegardes | v1.1 | 15/15 | Complete    | 2026-11-10 |
 | 9. Contenu relu, juridique et ouverture | v1.1 | 11/15 | In Progress|  |
-| 9.1 Finitions visuelles avant l'ouverture | v1.1 | 7/9 | In Progress|  |
+| 9.1 Finitions visuelles avant l'ouverture | v1.1 | 9/9 | Complete | 2026-11-13 |
 | 10. Import de décembre | v1.1 | 1/6 | In Progress|  |
