@@ -98,7 +98,10 @@ export default function accueil(ctx: ContexteSite): void {
         const t = lis.map(txt).join(' ');
         // Les deux faits de l'ancien paragraphe de neutralité restent dits.
         assert.match(t, /ordre alphabétique, jamais selon les sondages/);
-        assert.match(t, /ordre aléatoire/);
+        // Texte validé par Erwan le 2026-11-13 : la garantie ne promet plus l'ordre aléatoire, qui demande JavaScript
+        // (revue 09.1, IN-10). Le sélecteur d'ordre l'annonce lui-même là où il existe.
+        assert.doesNotMatch(t, /ordre aléatoire/);
+        assert.match(t, /Par défaut, les candidats sont classés par ordre alphabétique, jamais selon les sondages\./);
         assert.match(t, /sans jugement/);
         assert.match(t, /daté et archivé/);
         assert.match(t, /cookie/);
@@ -106,7 +109,24 @@ export default function accueil(ctx: ContexteSite): void {
         const a = trouver(methode, (n) => n.tag === 'a')[0] as Noeud;
         assert.equal(a.attrs.href, '/methode/');
         assert.ok(txt(a).length > 0);
-        assert.ok(txt(trouver(m, (n) => aClasse(n, 'hall-presentation'))[0] as Noeud).length > 0);
+        // Texte validé par Erwan le 2026-11-13 (revue 09.1, WR-02) : pas de « thème par thème », le site ouvre
+        // avec un seul thème publié.
+        const presentation = txt(trouver(m, (n) => aClasse(n, 'hall-presentation'))[0] as Noeud).replace(/\s+/g, ' ').trim();
+        assert.equal(
+          presentation,
+          "Ce site explique ce que proposent les candidats à l'élection présidentielle de 2027, un thème à la fois. Il ne prend jamais parti.",
+        );
+        // La description de l'accueil sert aussi de description de partage (og:description).
+        const html = fs.readFileSync(path.join(outDir, 'index.html'), 'utf8');
+        assert.ok(
+          html.includes('content="Les propositions des candidats, à quatre niveaux de lecture, avec leur source."'),
+          "description de l'accueil validée par Erwan",
+        );
+        assert.ok(!/thème par thème/.test(html), "plus de « thème par thème » sur l'accueil");
+        // Même règle sur tout le site (Méthode et pages candidat alignées le 2026-11-13, accord d'Erwan).
+        for (const f of ctx.pagesHtml(outDir)) {
+          assert.ok(!/thème par thème/.test(fs.readFileSync(f, 'utf8')), `« thème par thème » dans ${path.relative(outDir, f)}`);
+        }
       });
 
       it(`${cle} : .lecteur enfant direct de main, fieldset puis la liste des quatre niveaux, plus de paragraphe de neutralité séparé`, () => {

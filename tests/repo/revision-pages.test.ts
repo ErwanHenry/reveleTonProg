@@ -26,8 +26,9 @@ const PAGES: Page[] = [
   // Texte modifié le 2026-11-12 (09.1, proposition 2 : noms des liens « Signaler une erreur : par courriel / sur GitHub »).
   { fichier: 'src/pages/mentions-legales.astro', revision: '2026-11-12', empreinte: '5cc6f01f34941a2c' },
   // Texte modifié le 2026-11-12 (09.1, proposition 2 : « Copie archivée ») et le 2026-11-13 (Phase 10, ligne
-  // STATUT_PLUS_RECENT_NON_RELU du catalogue affiché).
-  { fichier: 'src/pages/methode.astro', revision: '2026-11-13', empreinte: 'bd045f84dfec94e0', extra: () => JSON.stringify(CATALOGUE) },
+  // STATUT_PLUS_RECENT_NON_RELU du catalogue affiché ; puis « un thème à la fois » à la place de « thème par
+  // thème », texte validé par Erwan le même jour).
+  { fichier: 'src/pages/methode.astro', revision: '2026-11-13', empreinte: '5135ab4fa21cefee', extra: () => JSON.stringify(CATALOGUE) },
 ];
 
 /** Gabarit sans commentaires JSX ({/* … *\/}), sans commentaires de ligne du frontmatter et sans la ligne REVISION. */
