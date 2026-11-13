@@ -13,6 +13,12 @@
 // porte Cache-Control no-cache, ETag et Last-Modified, et comme le bloc (CR-01 de la revue 09.1 : `request_header -If-*`
 // et `-Range` dans la route), préconditions et Range n'y changent rien : WebKit revalide une 404 gardée en cache et
 // doit recevoir la page entière, jamais un corps vide.
+// Parité avec Caddy (IN-04 de la revue 09.1) : un dossier qui a son index.html, demandé sans barre finale (/methode),
+// reçoit 308 vers /methode/ comme sous Caddy. Écarts voulus ou connus : les vrais fichiers partent en no-store, sans
+// ETag ni Last-Modified, sans 304 ni plages (chaque chargement de la mesure 4G part à froid) ; seuls gzip et identité
+// (Caddy propose aussi zstd) ; un dossier sans index.html reçoit ici la page 404, alors que Caddy, dont le filtre
+// `{path}/` le reconnaît comme dossier, laisse son file_server de premier niveau répondre 404 (non vérifié en conteneur,
+// le dist n'a pas de tel dossier). La preuve de la revalidation de la 404 réelle reste le contrôle du RUNBOOK (CR-01).
 import { createServer, type Server } from 'node:http';
 import { readFileSync, realpathSync, statSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
@@ -70,6 +76,13 @@ export function creerServeur(racineArg: string, options: OptionsServeur = {}): S
       rel = decodeURIComponent(new URL(req.url ?? '/', 'http://x').pathname);
     } catch {
       res.writeHead(400).end('400');
+      return;
+    }
+    // Dossier de la release demandé sans sa barre finale : 308 vers le chemin avec barre, requête gardée, comme le
+    // file_server de Caddy (IN-04 de la revue 09.1) ; seulement si le dossier a son index.html sous le dist.
+    if (!rel.endsWith('/') && cheminReel(racine, path.resolve(racine, `.${rel}`, 'index.html')) !== null) {
+      const url = new URL(req.url ?? '/', 'http://x');
+      res.writeHead(308, { location: `${url.pathname}/${url.search}` }).end();
       return;
     }
     if (rel.endsWith('/')) rel += 'index.html';

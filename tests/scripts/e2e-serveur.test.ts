@@ -150,6 +150,21 @@ describe('e2e/serveur.ts', () => {
     }
   });
 
+  // IN-04 (revue 09.1) : comme Caddy (prouvé sur 2.11.2), un dossier servi sans sa barre finale est redirigé en 308.
+  it('IN-04 : dossier avec index.html demandé sans barre finale : 308 vers le chemin avec barre, requête gardée', async () => {
+    const r = await get('/a');
+    assert.equal(r.status, 308);
+    assert.equal(r.headers['location'], '/a/');
+    const q = await get('/a?x=1');
+    assert.equal(q.status, 308);
+    assert.equal(q.headers['location'], '/a/?x=1');
+    assert.equal((await get('/a/')).status, 200);
+    // un dossier sans index.html, un lien vers l'extérieur ou un fichier ne sont pas redirigés
+    assert.equal((await get('/vide')).status, 404);
+    assert.equal((await get('/dehors')).status, 404);
+    assert.equal((await get('/version.json')).status, 200);
+  });
+
   it('400 sur un encodage malformé', async () => {
     assert.equal((await get('/%E0%A4%A')).status, 400);
   });
