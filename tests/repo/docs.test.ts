@@ -1027,6 +1027,17 @@ describe('documentation (phase 10) : import de décembre (IMP-03)', () => {
     assert.ok(s.includes('npm run -s import:datagouv -- --dry-run --format markdown > /tmp/rapport-matin.md'));
   });
 
+  it('IN-08 : aucun compte de lignes en dur dans la liste de contrôle de l’audit, et l’étape 8 n’annonce pas un nombre périmé', () => {
+    // les critères R1 à R11 servent à chaque audit : aucun compte de lignes en dur (le journal daté garde les siens)
+    const criteres = read('docs/AUDIT-TEST-CROISE.md').split('\n').filter((l) => /^\| R\d+ \|/.test(l));
+    assert.ok(criteres.length >= 11);
+    for (const l of criteres) assert.doesNotMatch(l, /\b\d+ sur \d+\b/, l);
+    const s = sectionRunbook(IMPORT);
+    const etape8 = s.split('\n').find((l) => l.startsWith('8. **Preuves en local**')) ?? '';
+    assert.doesNotMatch(etape8, /trois avertissements/);
+    assert.match(etape8, /avant l'import/);
+  });
+
   it('WR-02 : une date amont qui recule pour un statut inchangé est une information, et les écarts restants ont leur issue', () => {
     const s = sectionRunbook(ANCIEN);
     for (const needle of ['date amont qui recule', 'information', 'Dérives de source', 'ids_externes.2027etmoi', 'data/dataset-datagouv.yaml']) {
