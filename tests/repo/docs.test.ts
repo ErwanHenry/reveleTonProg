@@ -957,6 +957,20 @@ describe('documentation (phase 10) : import de décembre (IMP-03)', () => {
     assert.ok(plan.includes('gh pr list --head relecture/sante --state merged --json number --jq length'), 'même commande que le plan 10-05');
   });
 
+  it('WR-08 : une date au mois seulement (refus de marquer, conflit de l’import) a sa conduite, décidée par Erwan seul', () => {
+    const s = sectionRunbook(IMPORT);
+    const debut = s.indexOf('**Date au mois seulement.**');
+    assert.ok(debut >= 0, 'paragraphe « Date au mois seulement » absent');
+    const p = s.slice(debut, s.indexOf('**Liste de contrôle', debut));
+    for (const needle of ['un statut relu exige une date complète', 'au mois seulement, dans le mois du dernier statut', 'source primaire', 'ajoutée par cet import', 'marquer statut', 'STATUT_PLUS_RECENT_NON_RELU', 'reporter']) {
+      assert.ok(p.includes(needle), `« ${needle} » absent du paragraphe`);
+    }
+    assert.match(p, /aucun agent ne complète/i);
+    // le message que cite le RUNBOOK est bien celui de l'outil (scripts/lib/relecture/commandes/marquer.ts, lu seulement)
+    assert.ok(read('scripts/lib/relecture/commandes/marquer.ts').includes('un statut relu exige une date complète'));
+    assert.ok(read('scripts/lib/datagouv.ts').includes('au mois seulement, dans le mois du dernier statut'));
+  });
+
   it('WR-06 : la commande range-diff du RUNBOOK, rejouée sur une branche jetable, apparie les seuls commits d’import', () => {
     const s = sectionRunbook(IMPORT);
     const commande = /git range-diff ([^`\n]+)/.exec(s)?.[1]?.trim();
