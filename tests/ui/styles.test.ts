@@ -477,4 +477,17 @@ describe('styles : grille M1-08 09.1, cartes à leur hauteur', () => {
     assert.equal(valeur('.cellule', 'display'), 'flex');
     assert.equal(valeur('.cellule', 'flex-direction'), 'column');
   });
+
+  // IN-05 (revue 09.1) : la carte a la hauteur de son contenu, une marge automatique ne pousse plus le pied en bas.
+  it('IN-05 : .cellule-pied sans marge automatique, marges à zéro', () => {
+    assert.equal(valeur('.cellule-pied', 'margin'), '0');
+  });
+
+  // IN-05 : la phrase de signalement n'est plus rendue que dans le pied, où .pied .signalement-intro fixe marge et couleur.
+  it('IN-05 : .signalement-intro ne garde que sa taille ; marge et couleur viennent de .pied .signalement-intro', () => {
+    const base = regles.filter((r) => r.fichier === 'base.css' && r.selecteur === '.signalement-intro').flatMap((r) => r.declarations);
+    assert.deepEqual(base.map((d) => d.prop), ['font-size']);
+    assert.equal(valeur('.pied .signalement-intro', 'margin'), '0 0 1rem');
+    assert.equal(valeur('.pied .signalement-intro', 'color'), 'var(--encre)');
+  });
 });

@@ -355,8 +355,9 @@ main:has(> .lecteur > .niveaux #niv-aine:checked) details.acces-candidats :is(a,
   overflow-wrap: anywhere;
 }
 
+/* Carte à la hauteur de son contenu (proposition 4) : plus de marge automatique, le pied suit le texte */
 .cellule-pied {
-  margin: auto 0 0;
+  margin: 0;
   color: var(--encre-douce);
   font-size: var(--t-label);
 }
@@ -487,9 +488,8 @@ blockquote[data-citation] p {
   margin: 0;
 }
 
+/* Rendue seulement dans le pied : marge et couleur dans .pied .signalement-intro */
 .signalement-intro {
-  margin: 1.5rem 0;
-  color: var(--encre-douce);
   font-size: var(--t-label);
 }
 
