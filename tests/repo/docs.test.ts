@@ -1021,6 +1021,12 @@ describe('documentation (phase 10) : import de décembre (IMP-03)', () => {
     assert.match(ligne, /un agent n'ajoute jamais cette option/);
   });
 
+  it('IN-07 : la répétition du matin capte le rapport sans l’en-tête de npm (npm run -s)', () => {
+    const s = sectionRunbook(IMPORT);
+    for (const m of s.matchAll(/npm run (-s )?import:datagouv[^`\n]* > /g)) assert.equal(m[1], '-s ', `redirection sans -s : ${m[0]}`);
+    assert.ok(s.includes('npm run -s import:datagouv -- --dry-run --format markdown > /tmp/rapport-matin.md'));
+  });
+
   it('WR-02 : une date amont qui recule pour un statut inchangé est une information, et les écarts restants ont leur issue', () => {
     const s = sectionRunbook(ANCIEN);
     for (const needle of ['date amont qui recule', 'information', 'Dérives de source', 'ids_externes.2027etmoi', 'data/dataset-datagouv.yaml']) {
