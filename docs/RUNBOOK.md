@@ -336,7 +336,7 @@ git commit -m "chore(import): instantané data.gouv et fiches, sortie de l'outil
 git cherry-pick <sha des mises à jour à la main> <sha des relectures>
 ```
 
-Tout conflit d'un `cherry-pick` arrête la procédure : `git cherry-pick --abort`, ne rien improviser, montrer le conflit à Erwan. Après la recréation, rejouer les preuves de l'étape 8, montrer `git range-diff origin/main...import/statuts-2026-12-ancienne import/statuts-2026-12` à Erwan, puis seulement avec son accord `git push --force-with-lease origin import/statuts-2026-12` (la pull request se met à jour). **Après le dimanche 13 décembre 2026 à 12:00, plus aucune recréation** : l'import attend la fin du gel (« Gel d'import (13 au 15 décembre 2026) »).
+Tout conflit d'un `cherry-pick` arrête la procédure : `git cherry-pick --abort`, ne rien improviser, montrer le conflit à Erwan. Après la recréation, rejouer les preuves de l'étape 8 ; vérifier que `git log --oneline origin/main..import/statuts-2026-12 | wc -l` donne le nombre de commits noté au `git log --reverse` ; montrer `git range-diff origin/main import/statuts-2026-12-ancienne import/statuts-2026-12` à Erwan (forme à trois arguments : les commits d'import de l'ancienne branche contre ceux de la nouvelle, chacun au-dessus de `origin/main` ; chaque ligne doit apparier un ancien commit et un nouveau, une ligne avec `<` ou `>` est un commit perdu ou en trop), puis seulement avec son accord `git push --force-with-lease origin import/statuts-2026-12` (la pull request se met à jour). **Après le dimanche 13 décembre 2026 à 12:00, plus aucune recréation** : l'import attend la fin du gel (« Gel d'import (13 au 15 décembre 2026) »).
 
 **Replis (décidés par Erwan : reporter).**
 

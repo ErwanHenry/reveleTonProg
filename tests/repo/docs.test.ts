@@ -1,6 +1,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CATALOGUE, HYPOTHESES } from '../../src/lib/content-core/rules/config.ts';
@@ -944,6 +946,46 @@ describe('documentation (phase 10) : import de décembre (IMP-03)', () => {
     assert.ok(iDiff > iDecisions && iAdd > iDiff, 'git diff --stat avant le commit de la table');
     const decisions = deroule.slice(iDecisions, deroule.indexOf('\n', iDecisions));
     assert.ok(decisions.includes('../reveleTonProg-import/data/import/correspondances.yaml'), 'la table est écrite dans le worktree d’import');
+  });
+
+  it('WR-06 : la commande range-diff du RUNBOOK, rejouée sur une branche jetable, apparie les seuls commits d’import', () => {
+    const s = sectionRunbook(IMPORT);
+    const commande = /git range-diff ([^`\n]+)/.exec(s)?.[1]?.trim();
+    assert.ok(commande, 'commande git range-diff absente');
+    assert.ok(s.includes('git log --oneline origin/main..import/statuts-2026-12 | wc -l'), 'compte des commits recréés absent');
+    const depot = fs.mkdtempSync(path.join(os.tmpdir(), 'rtp-range-diff-'));
+    try {
+      const git = (...args: string[]): string => {
+        const r = spawnSync('git', args, { cwd: depot, encoding: 'utf8' });
+        assert.equal(r.status, 0, `git ${args.join(' ')} : ${r.stderr}`);
+        return r.stdout;
+      };
+      const commit = (fichier: string, message: string): void => {
+        fs.writeFileSync(path.join(depot, fichier), `${message}\n`);
+        git('add', fichier);
+        git('commit', '-q', '-m', message);
+      };
+      git('init', '-q', '-b', 'main');
+      git('config', 'user.name', 'Essai');
+      git('config', 'user.email', 'essai@exemple.test');
+      git('config', 'commit.gpgsign', 'false');
+      commit('a.txt', 'main initial');
+      git('switch', '-q', '-c', 'import/statuts-2026-12-ancienne');
+      commit('table.txt', 'table');
+      commit('outil.txt', 'sortie de l’outil');
+      commit('relecture.txt', 'relecture');
+      git('switch', '-q', 'main');
+      commit('b.txt', 'main avance');
+      git('update-ref', 'refs/remotes/origin/main', 'main');
+      git('switch', '-q', '-c', 'import/statuts-2026-12', 'origin/main');
+      for (const sha of git('log', '--format=%H', '--reverse', 'origin/main..import/statuts-2026-12-ancienne').trim().split('\n')) git('cherry-pick', sha);
+      const sortie = git('range-diff', ...commande.split(/\s+/)).trim().split('\n');
+      assert.equal(sortie.length, 3, sortie.join('\n'));
+      for (const l of sortie) assert.match(l, /^\s*\d+:\s+[0-9a-f]+ = \s*\d+:\s+[0-9a-f]+ /, `commit non apparié : ${l}`);
+      assert.equal(git('log', '--oneline', 'origin/main..import/statuts-2026-12').trim().split('\n').length, 3);
+    } finally {
+      fs.rmSync(depot, { recursive: true, force: true });
+    }
   });
 
   it('WR-02 : une date amont qui recule pour un statut inchangé est une information, et les écarts restants ont leur issue', () => {
