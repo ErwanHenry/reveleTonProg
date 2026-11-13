@@ -43,7 +43,7 @@ Actions humaines qui conditionnent le code. Dates proposées pour tenir le 2026-
 | Solliciter un juriste (régime d'éditeur, base du droit de réponse, journaux, localStorage) | LEG-02 | demande 2026-11-13, avis 2026-12-02 | À défaut d'avis à temps, consigner par écrit le risque accepté au plus tard le 2026-12-03 |
 | Tester l'adresse de contact réelle de bout en bout | LEG-01 | 2026-11-27 | Envoi et réponse depuis l'extérieur |
 | Approuver le premier déploiement sur l'hôte technique, puis chaque déploiement en production | HEB-12, HEB-14 | essai technique vers 2026-11-27 ; ouverture vers 2026-12-05 | Approbation dans GitHub, un clic par déploiement |
-| Répondre aux sept questions de la procédure d'import (D-08, D-09, bornes du gel, fusion en brouillon, repli, ouverture tardive, relecture non fusionnée) | Phase 10 (10-04) | 2026-11-28 | Réponse possible dès la lecture des plans ; défauts de procédure seulement en cas de silence au 2026-12-07 |
+| Fait : répondre aux sept questions de la procédure d'import (D-08, D-09, bornes du gel, fusion en brouillon, repli, ouverture tardive, relecture non fusionnée) | Phase 10 (10-04) | 2026-11-28 | Répondu le 2026-11-13 (« Tout par défaut ») ; décisions enregistrées dans 10-04-SUMMARY.md |
 | Relire le diff d'import des statuts et l'approuver | Phase 10 | 2026-12-13 | Gel des changements du 13 au 15 |
 
 ## Phase Details
@@ -201,7 +201,7 @@ Plans:
 - [x] 10-01-PLAN.md — Analyseur YAML plafonné léger (équivalent à content-core, sans load.ts) pour l'import, l'archivage et la couverture, test de dépôt avec liste blanche de huit fichiers (vague 1)
 - [x] 10-02-PLAN.md — Cohérence instantané data.gouv / fiches candidats dans npm test, pièges d'une personne déclarée ajoutée à un thème publié (vague 2)
 - [x] 10-03-PLAN.md — Rapport de répétition à blanc (nouveaux, absents du jeu amont, changés avec leurs sources, conséquences sur les thèmes publiés), option --check, répétition sur le jeu en ligne dans un worktree jetable (vague 3)
-- [ ] 10-04-PLAN.md — Décisions d'Erwan (D-08, D-09, bornes du gel, fusion en brouillon, repli, ouverture tardive, relecture non fusionnée), avertissement STATUT_PLUS_RECENT_NON_RELU, procédure d'import et gel au RUNBOOK (vague 4)
+- [x] 10-04-PLAN.md — Décisions d'Erwan (D-08, D-09, bornes du gel, fusion en brouillon, repli, ouverture tardive, relecture non fusionnée), avertissement STATUT_PLUS_RECENT_NON_RELU, procédure d'import et gel au RUNBOOK (vague 4)
 - [ ] 10-05-PLAN.md — Import réel sur import/statuts-2026-12 : répétition du matin, correspondances validées par Erwan, pull request avec le rapport (vague 5, 10 au 11 décembre)
 - [ ] 10-06-PLAN.md — Relecture et fusion par Erwan, déploiement approuvé avant le gel, vérifications en production, relevé du gel (vague 6, 11 au 16 décembre)
 
