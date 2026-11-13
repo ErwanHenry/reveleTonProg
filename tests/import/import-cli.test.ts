@@ -253,6 +253,46 @@ describe('npm run import:datagouv (scripts/import-datagouv.ts)', () => {
     for (const [name, buf] of avant) assert.ok(buf.equals(apres.get(name) as Buffer), `${name} modifié malgré le conflit`);
   });
 
+  it('WR-01 : un statut amont daté au mois dans le mois du dernier statut est un conflit, deux passages n’écrivent rien', () => {
+    const root = tmpRoot();
+    const base = baseFictive(root, newestSnapshot());
+    assert.equal(importer(['--file', base, '--root', root]).status, 0);
+    ajouterMotif(root, FICTIF, 'retrait');
+    const modif = muter(root, base, (j) => {
+      const r = j.candidats.find((x) => x.id === FICTIF) as Record<string, any>;
+      r.statut = 'renonce';
+      r.source.date = '2026-10';
+    });
+    const avant = fichiers(root);
+    for (const passage of [1, 2]) {
+      const res = importer(['--file', modif, '--root', root]);
+      assert.equal(res.status, 1, `passage ${passage} : ${res.stdout}${res.stderr}`);
+      assert.match(res.stdout, /conflit : essai-fictif — date amont 2026-10 au mois seulement/);
+      const apres = fichiers(root);
+      for (const [name, buf] of avant) assert.ok(buf.equals(apres.get(name) as Buffer), `${name} modifié au passage ${passage}`);
+    }
+  });
+
+  it('WR-01 : un statut amont de même date que le dernier est ajouté une fois, le second passage ne change rien', () => {
+    const root = tmpRoot();
+    const base = baseFictive(root, newestSnapshot());
+    assert.equal(importer(['--file', base, '--root', root]).status, 0);
+    ajouterMotif(root, FICTIF, 'retrait');
+    const modif = muter(root, base, (j) => {
+      const r = j.candidats.find((x) => x.id === FICTIF) as Record<string, any>;
+      r.statut = 'renonce';
+    });
+    const un = importer(['--file', modif, '--root', root]);
+    assert.equal(un.status, 0, un.stdout + un.stderr);
+    assert.match(un.stdout, /1 statut\(s\) ajouté\(s\)/);
+    const avant = fichiers(root);
+    const deux = importer(['--file', modif, '--root', root]);
+    assert.equal(deux.status, 0, deux.stdout + deux.stderr);
+    assert.match(deux.stdout, /0 statut\(s\) ajouté\(s\)/);
+    const apres = fichiers(root);
+    for (const [name, buf] of avant) assert.ok(buf.equals(apres.get(name) as Buffer), `${name} modifié au second passage`);
+  });
+
   it('un id amont absent de la table : code 1, tous les ids listés, aucun fichier écrit', () => {
     const snap = newestSnapshot();
     const root = tmpRoot();

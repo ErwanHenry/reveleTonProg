@@ -7,6 +7,7 @@
 // l'instantané brut sous data/import/).
 import { isSeq, stringify } from 'yaml';
 import { lireDocumentPlafonne } from '../../src/lib/content-core/yaml-plafonne.ts';
+import { comparerDatesStatut, statutLePlusRecent } from '../../src/lib/content-core/rules/equite.ts';
 
 export interface UpstreamRow {
   id: string;
@@ -216,21 +217,7 @@ export function mapRow(row: UpstreamRow, corr: Record<string, Correspondance>): 
   return fiche;
 }
 
-/** Date complète ou partielle -> chaîne comparable (AAAA-MM vaut le premier du mois). */
-export function dateComparable(d: string): string {
-  return d.length === 7 ? `${d}-01` : d;
-}
-
 type Obj = Record<string, unknown>;
-
-/** Statut le plus récent par date (à date égale, le dernier de la liste) : même règle que la règle d'équité (A6). */
-export function statutLePlusRecent(statuts: unknown[]): Obj {
-  let meilleur = statuts[0] as Obj;
-  for (const st of statuts) {
-    if (dateComparable(String((st as Obj).date)) >= dateComparable(String(meilleur.date))) meilleur = st as Obj;
-  }
-  return meilleur;
-}
 
 /** Vrai si `a` est strictement antérieure à `b`, au niveau de précision commun (une date AAAA-MM ne se compare qu'au mois). */
 export function dateAvant(a: string, b: string): boolean {
@@ -242,6 +229,12 @@ export function dateAvant(a: string, b: string): boolean {
  * Fusion append-only : une fiche absente est créée ; une fiche présente garde son identité, son
  * historique et ses relectures. Un changement de (code, motif) AJOUTE une entrée à `statuts[]`
  * (jamais de modification ni de retrait) ; une date qui recule est un conflit.
+ *
+ * WR-01 : « le plus récent » est celui de la règle d'équité (statutLePlusRecent, comparerDatesStatut), aucune
+ * seconde définition. Une entrée n'est ajoutée que si elle devient le statut le plus récent ; sinon elle resterait
+ * invisible (équité, avertissement, cohérence) et serait rajoutée à chaque import. Le seul cas où ce n'est ni un
+ * ajout ni une régression : une date amont au mois seulement (AAAA-MM) dans le mois du dernier statut, daté au
+ * jour. L'ordre des deux est inconnu : conflit nommé, arbitré par le relecteur (RUNBOOK), jamais deviné.
  */
 export function mergeFiche(
   existing: Obj | undefined,
@@ -253,7 +246,7 @@ export function mergeFiche(
   if (!Array.isArray(anciens) || anciens.length === 0 || !Array.isArray(nouveaux) || nouveaux.length === 0) {
     return { conflit: 'fichier existant sans statuts[] lisible : corriger à la main' };
   }
-  const dernier = statutLePlusRecent(anciens);
+  const dernier = statutLePlusRecent(anciens) as Obj;
   const amont = nouveaux[0] as Obj;
   const notes: string[] = [];
   if (existing.id !== mapped.id) return { conflit: `identifiant « ${String(existing.id)} » différent de la table (« ${String(mapped.id)} »)` };
@@ -272,6 +265,11 @@ export function mergeFiche(
   }
   if (dateAvant(String(amont.date), String(dernier.date))) {
     return { conflit: `régression de date : amont ${String(amont.code)} du ${String(amont.date)} antérieur au dernier statut ${String(dernier.code)} du ${String(dernier.date)}` };
+  }
+  if (comparerDatesStatut(amont.date, dernier.date) < 0) {
+    return {
+      conflit: `date amont ${String(amont.date)} au mois seulement, dans le mois du dernier statut ${String(dernier.code)} du ${String(dernier.date)} : ordre des deux statuts inconnu, à arbitrer par le relecteur (RUNBOOK, date au mois seulement)`,
+    };
   }
   return { fiche: { ...existing, statuts: [...anciens, amont] }, action: 'statut_ajoute', notes };
 }

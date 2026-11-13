@@ -134,6 +134,17 @@ describe('comparerInstantane : cas synthétiques (D-04)', () => {
     assert.deepEqual(comparerInstantane(etat), { erreurs: [], infos: [] });
   });
 
+  it('WR-01 : même définition du plus récent que la règle d’équité (une date au mois vient avant le premier du mois)', () => {
+    const etat = base();
+    const f = fiche('alice-test', 'a', 'pressenti', '2026-10-01');
+    (f.statuts as unknown[]).push({ code: 'declare', date: '2026-10', source: { type: 'presse', url: 'https://exemple.test/a' } });
+    etat.fiches.set('alice-test', f);
+    // equite.statutLePlusRecent retient pressenti (2026-10-01 vient après 2026-10) : la cohérence doit dire pareil
+    const r = comparerInstantane(etat);
+    assert.deepEqual(champs(r).e, ['statut']);
+    assert.equal(formaterEcart(r.erreurs[0]!), 'alice-test : statut : fichier=pressenti amont=declare');
+  });
+
   it('E6 instantane : le pointeur ne désigne pas le plus récent (import sans mise à jour du pointeur)', () => {
     const etat = base();
     etat.instantanes = [SNAP, { chemin: 'data/import/s-2026-11-09.json', miseAJour: '2026-11-09', fetchedAt: '2026-11-12T10:00:00+01:00' }];

@@ -20,9 +20,10 @@
 //                        ne cache aucune incohérence, la fiche et son identifiant verrouillé restent.
 //   I3 `hors import`     un fichier sans ids_externes.2027etmoi : une personne ajoutée à la main.
 //
-// Le mapping et la règle du statut le plus récent sont ceux de l'import (datagouv.ts) : aucune seconde
-// définition.
-import { dateAvant, mapRow, statutLePlusRecent } from './datagouv.ts';
+// Le mapping est celui de l'import (datagouv.ts) ; le statut le plus récent est celui de la règle d'équité
+// (equite.ts, statutLePlusRecent), que l'import utilise aussi : aucune seconde définition (WR-01).
+import { statutLePlusRecent } from '../../src/lib/content-core/rules/equite.ts';
+import { dateAvant, mapRow } from './datagouv.ts';
 import type { Correspondance, UpstreamRow } from './datagouv.ts';
 
 type Obj = Record<string, unknown>;
@@ -99,7 +100,7 @@ export function comparerInstantane(etat: EtatInstantane): { erreurs: Ecart[]; in
       continue;
     }
     const amont = (mapRow(row, etat.table).statuts as Obj[])[0]!;
-    const dernier = statutLePlusRecent(statuts);
+    const dernier = statutLePlusRecent(statuts) as Obj;
     if (couple(dernier) !== couple(amont)) {
       erreurs.push({ id, champ: 'statut', fichier: couple(dernier), amont: couple(amont) });
       continue;

@@ -11,16 +11,28 @@ const tableau = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
 const objet = (v: unknown): Record<string, unknown> => (v !== null && typeof v === 'object' ? (v as Record<string, unknown>) : {});
 
 /**
+ * Ordre des dates de statut, SEULE définition du projet (WR-01 de la revue de la phase 10) : la règle d'équité,
+ * l'avertissement STATUT_PLUS_RECENT_NON_RELU, la vue des pages, l'import (scripts/lib/datagouv.ts), la cohérence
+ * de l'instantané (scripts/lib/instantane.ts) et le rapport d'import passent tous par ici.
+ * Les dates ISO (AAAA-MM ou AAAA-MM-JJ) se comparent comme des chaînes : une date au mois seulement (AAAA-MM)
+ * vient avant tous les jours de ce mois, premier compris. Négatif si `a` vient avant `b`, 0 si égales.
+ */
+export function comparerDatesStatut(a: unknown, b: unknown): number {
+  const x = String(a ?? '');
+  const y = String(b ?? '');
+  return x < y ? -1 : x > y ? 1 : 0;
+}
+
+/**
  * Statut le plus récent par date, pas le dernier de la liste (WR-12) : ni le schéma ni une règle
  * n'imposent l'ordre chronologique, et en insérer un en tête ou en fin ne doit pas changer le
- * périmètre en silence. Les dates ISO (AAAA-MM ou AAAA-MM-JJ) se comparent comme des chaînes ; à date
- * égale, le dernier de la liste l'emporte.
+ * périmètre en silence. Ordre : comparerDatesStatut ; à date égale, le dernier de la liste l'emporte.
  */
 export function statutLePlusRecent(statuts: unknown): Record<string, unknown> | undefined {
   let meilleur: Record<string, unknown> | undefined;
   for (const brut of tableau(statuts)) {
     const s = objet(brut);
-    if (meilleur === undefined || String(s.date ?? '') >= String(meilleur.date ?? '')) meilleur = s;
+    if (meilleur === undefined || comparerDatesStatut(s.date, meilleur.date) >= 0) meilleur = s;
   }
   return meilleur;
 }

@@ -7,7 +7,6 @@ import {
   UnknownUpstreamIdsError,
   UpstreamShapeError,
   checkUpstream,
-  dateComparable,
   lireCorrespondances,
   mapRow,
   ajouterStatutYaml,
@@ -18,6 +17,7 @@ import {
 } from '../../scripts/lib/datagouv.ts';
 import type { Correspondance, UpstreamRow } from '../../scripts/lib/datagouv.ts';
 import { definirChamps } from '../../scripts/lib/relecture/editer.ts';
+import { comparerDatesStatut } from '../../src/lib/content-core/rules/equite.ts';
 import { YamlRefuse } from '../../src/lib/content-core/yaml-plafonne.ts';
 import { validateYamlText } from '../../src/lib/content-core/load.ts';
 import { REPO_ROOT, SCHEMAS_DIR } from '../helpers/validate-yaml.ts';
@@ -239,8 +239,11 @@ describe('mergeFiche', () => {
     assert.match(r.conflit, /régression de date/);
   });
 
-  it('une date partielle compte comme le premier du mois', () => {
-    assert.equal(dateComparable('2026-07'), '2026-07-01');
+  it('une date partielle vient avant le premier du mois (ordre unique de la règle d’équité)', () => {
+    // WR-01 : ordre unique (equite.ts) ; une date au mois vient avant le premier du mois
+    assert.ok(comparerDatesStatut('2026-07', '2026-07-01') < 0);
+    assert.ok(comparerDatesStatut('2026-07-01', '2026-07') > 0);
+    assert.equal(comparerDatesStatut('2026-07', '2026-07'), 0);
     const existant = avec([{ ...clone(dernier), date: '2026-07' }]);
     const amont = avec([{ ...clone(dernier), code: 'declare', date: '2026-07-01' }]);
     delete (amont.statuts[0] as Record<string, unknown>).motif;
@@ -378,7 +381,7 @@ describe('WR-09 : statut courant et régression de date', () => {
     assert.ok('action' in r && r.action === 'inchange', JSON.stringify(r));
   });
 
-  it('une date partielle amont ne crée pas de régression dans le même mois', () => {
+  it('une date partielle amont du même mois n’est pas une régression de date, mais un ordre indécidable (WR-01)', () => {
     assert.equal(dateAvant('2026-03', '2026-03-15'), false);
     assert.equal(dateAvant('2026-02', '2026-03-15'), true);
     assert.equal(dateAvant('2026-03-14', '2026-03-15'), true);
@@ -386,6 +389,29 @@ describe('WR-09 : statut courant et régression de date', () => {
     delete (existant.statuts[0] as Record<string, unknown>).motif;
     const amont = { ...clone(base), statuts: [st('renonce', '2026-03')] };
     const r = mergeFiche(existant, amont);
-    assert.ok('action' in r && r.action === 'statut_ajoute', JSON.stringify(r));
+    // Ajoutée, l'entrée au mois resterait invisible (le statut du 15 reste le plus récent) et serait rajoutée à
+    // chaque import : c'est un conflit nommé, que le relecteur arbitre, jamais une régression de date.
+    assert.ok('conflit' in r, JSON.stringify(r));
+    assert.doesNotMatch(r.conflit, /régression de date/);
+    assert.match(r.conflit, /date amont 2026-03 au mois seulement.*declare du 2026-03-15/);
+  });
+
+  it('WR-01 : le même cas aussi quand le dernier statut est daté du premier du mois', () => {
+    const existant = { ...clone(base), statuts: [st('declare', '2026-03-01')] };
+    delete (existant.statuts[0] as Record<string, unknown>).motif;
+    const r = mergeFiche(existant, { ...clone(base), statuts: [st('renonce', '2026-03')] });
+    assert.ok('conflit' in r, JSON.stringify(r));
+  });
+
+  it('WR-01 : fusionner deux fois la même ligne amont ne rajoute jamais l’entrée (date égale, date au jour, date au mois suivant)', () => {
+    for (const date of ['2026-03-15', '2026-03-20', '2026-04']) {
+      const existant = { ...clone(base), statuts: [st('declare', '2026-03-15')] };
+      delete (existant.statuts[0] as Record<string, unknown>).motif;
+      const amont = { ...clone(base), statuts: [st('renonce', date)] };
+      const un = mergeFiche(existant, amont);
+      assert.ok('action' in un && un.action === 'statut_ajoute', `${date} : ${JSON.stringify(un)}`);
+      const deux = mergeFiche(un.fiche, clone(amont));
+      assert.ok('action' in deux && deux.action === 'inchange', `${date} : ${JSON.stringify(deux)}`);
+    }
   });
 });

@@ -88,6 +88,19 @@ describe('D-08 option B : STATUT_PLUS_RECENT_NON_RELU (règle)', () => {
     assert.deepEqual(alertes([entree('renonce', '2026-09-01')], 'preview'), []);
   });
 
+  it('WR-01 : à date égale, l’entrée ajoutée après l’emporte : l’avertissement s’allume (même ordre que l’import)', () => {
+    for (const mode of ['production', 'preview'] as const) {
+      assert.equal(alertes([entree('renonce', '2026-10-12')], mode).length, 1, mode);
+    }
+  });
+
+  it('WR-01 : une entrée datée au mois seulement, dans le mois du statut relu, vient avant lui : aucun avertissement', () => {
+    // l'import refuse de produire cet état (conflit « date amont … au mois seulement ») : l'ordre reste le même partout
+    assert.deepEqual(alertes([entree('renonce', '2026-10')], 'production'), []);
+    assert.deepEqual(alertes([entree('renonce', '2026-10')], 'preview'), []);
+    assert.equal(alertes([entree('renonce', '2026-11')], 'production').length, 1, 'un mois plus tard : avertissement');
+  });
+
   it('une personne sans aucun statut relu (nouvelle personne) : aucun avertissement', () => {
     const toutBrouillon: Remplacement = { fichier: JEAN, de: 'statut_relecture: relu\n    relecteur: Erwan Henry\n    date_relecture: 2026-10-14\n', par: 'statut_relecture: brouillon\n' };
     assert.deepEqual(alertes([toutBrouillon], 'production'), []);
