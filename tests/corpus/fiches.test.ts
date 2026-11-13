@@ -6,18 +6,15 @@ import path from 'node:path';
 import { parse } from 'yaml';
 import { statutLePlusRecent } from '../../src/lib/content-core/rules/equite.ts';
 import { REPO_ROOT } from '../helpers/validate-yaml.ts';
+import { instantanePlusRecent } from '../../scripts/lib/instantane-depot.ts';
 
 const IMPORT_DIR = path.join(REPO_ROOT, 'data', 'import');
 const CANDIDATS_DIR = path.join(REPO_ROOT, 'src', 'content', 'candidats');
 const INTERDITS = new Set(['bloc', 'propositions', 'statut_detail', 'extdroite']);
 
+/** Instantané le plus récent par (mise_a_jour, fetched_at), le même ordre que le contrôle E6 (WR-04 : jamais par nom). */
 function newestSnapshot(): string {
-  const names = readdirSync(IMPORT_DIR)
-    .filter((n) => /^2027etmoi-candidats-.*\.json$/.test(n) && !n.endsWith('.meta.json'))
-    .sort();
-  const last = names[names.length - 1];
-  assert.ok(last, 'aucun instantané data/import/2027etmoi-candidats-*.json');
-  return path.join(IMPORT_DIR, last);
+  return instantanePlusRecent(REPO_ROOT);
 }
 
 type Fiche = {

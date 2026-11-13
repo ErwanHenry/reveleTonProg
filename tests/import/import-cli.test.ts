@@ -11,6 +11,7 @@ import type { UpstreamRow } from '../../scripts/lib/datagouv.ts';
 import { loadAll } from '../../src/lib/content-core/load.ts';
 import { EN_TETE_IDS_LOCK } from '../../src/lib/content-core/ids-lock.ts';
 import { REPO_ROOT, SCHEMAS_DIR } from '../helpers/validate-yaml.ts';
+import { instantanePlusRecent } from '../../scripts/lib/instantane-depot.ts';
 
 const IMPORT_DIR = path.join(REPO_ROOT, 'data', 'import');
 const tmpDirs: string[] = [];
@@ -18,14 +19,9 @@ after(() => {
   for (const d of tmpDirs) rmSync(d, { recursive: true, force: true });
 });
 
-/** Instantané le plus récent (mise_a_jour décroissante), hors .meta.json. */
+/** Instantané le plus récent par (mise_a_jour, fetched_at), le même ordre que le contrôle E6 (WR-04 : jamais par nom). */
 function newestSnapshot(): string {
-  const names = readdirSync(IMPORT_DIR)
-    .filter((n) => /^2027etmoi-candidats-.*\.json$/.test(n) && !n.endsWith('.meta.json'))
-    .sort();
-  const last = names[names.length - 1];
-  assert.ok(last, 'aucun instantané data/import/2027etmoi-candidats-*.json');
-  return path.join(IMPORT_DIR, last);
+  return instantanePlusRecent(REPO_ROOT);
 }
 
 /** Racine temporaire : src/content vide, ids.lock réduit à son en-tête, data/import copié. */

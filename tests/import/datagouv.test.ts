@@ -21,13 +21,11 @@ import { comparerDatesStatut } from '../../src/lib/content-core/rules/equite.ts'
 import { YamlRefuse } from '../../src/lib/content-core/yaml-plafonne.ts';
 import { validateYamlText } from '../../src/lib/content-core/load.ts';
 import { REPO_ROOT, SCHEMAS_DIR } from '../helpers/validate-yaml.ts';
+import { instantanePlusRecent } from '../../scripts/lib/instantane-depot.ts';
 
 const IMPORT_DIR = path.join(REPO_ROOT, 'data', 'import');
-const snapName = readdirSync(IMPORT_DIR)
-  .filter((n) => /^2027etmoi-candidats-.*\.json$/.test(n) && !n.endsWith('.meta.json'))
-  .sort()
-  .pop() as string;
-const brut: unknown = JSON.parse(readFileSync(path.join(IMPORT_DIR, snapName), 'utf8'));
+// WR-04 : le plus récent par (mise_a_jour, fetched_at), le même ordre que le contrôle E6, jamais par nom.
+const brut: unknown = JSON.parse(readFileSync(instantanePlusRecent(REPO_ROOT), 'utf8'));
 const corr: Record<string, Correspondance> = lireCorrespondances(parse(readFileSync(path.join(IMPORT_DIR, 'correspondances.yaml'), 'utf8'), { schema: 'core' }));
 const { rows, miseAJour } = checkUpstream(brut);
 const clone = <T>(o: T): T => structuredClone(o);

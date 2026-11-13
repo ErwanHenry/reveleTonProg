@@ -11,7 +11,7 @@ import path from 'node:path';
 import type { Correspondance, UpstreamRow } from '../../scripts/lib/datagouv.ts';
 import { comparerInstantane, formaterEcart } from '../../scripts/lib/instantane.ts';
 import type { EtatInstantane } from '../../scripts/lib/instantane.ts';
-import { chargerEtatDepot } from '../../scripts/lib/instantane-depot.ts';
+import { chargerEtatDepot, instantanePlusRecent } from '../../scripts/lib/instantane-depot.ts';
 import { REPO_ROOT } from '../helpers/validate-yaml.ts';
 
 const temporaires: string[] = [];
@@ -282,12 +282,46 @@ describe('dépôt réel : instantané et fichiers candidats cohérents (D-04)', 
     assert.ok(true);
   });
 
-  it('le plus récent par nom de fichier est aussi le plus récent par (mise_a_jour, fetched_at)', () => {
-    const parNom = etat.instantanes.map((s) => s.chemin).sort();
-    const parNomPlusRecent = parNom[parNom.length - 1];
+  it('WR-04 : le pointeur désigne le plus récent par (mise_a_jour, fetched_at), le seul ordre des instantanés', () => {
     const parDate = [...etat.instantanes].sort((a, b) => a.miseAJour.localeCompare(b.miseAJour) || Date.parse(a.fetchedAt) - Date.parse(b.fetchedAt));
     const parDatePlusRecent = parDate[parDate.length - 1]?.chemin;
-    assert.equal(parNomPlusRecent, parDatePlusRecent, `deux définitions du plus récent divergent : par nom ${parNomPlusRecent}, par date ${parDatePlusRecent}`);
     assert.equal(etat.pointeur, parDatePlusRecent);
+    assert.equal(instantanePlusRecent(REPO_ROOT), path.join(REPO_ROOT, parDatePlusRecent as string));
+  });
+});
+
+describe('WR-04 : deux instantanés de même mise_a_jour (import relancé sur la même branche)', () => {
+  /** data/import jetable : deux instantanés de même mise_a_jour, l'ordre des noms inverse de celui des fetched_at. */
+  function deuxInstantanes(fetchedPremier: string, fetchedSecond: string): string {
+    const racine = mkdtempSync(path.join(os.tmpdir(), 'rtp-instantanes-'));
+    temporaires.push(racine);
+    const dossier = path.join(racine, 'data', 'import');
+    mkdirSync(dossier, { recursive: true });
+    for (const [sha, fetched] of [['ffffffffffff', fetchedPremier], ['000000000000', fetchedSecond]] as const) {
+      const nom = `2027etmoi-candidats-2026-12-10-${sha}`;
+      writeFileSync(path.join(dossier, `${nom}.json`), '{}');
+      writeFileSync(path.join(dossier, `${nom}.meta.json`), JSON.stringify({ mise_a_jour: '2026-12-10', fetched_at: fetched }));
+    }
+    return racine;
+  }
+
+  it('le plus récent est celui du fetched_at le plus tard, quel que soit l’ordre des noms (hachage)', () => {
+    const r1 = deuxInstantanes('2026-12-10T08:00:00Z', '2026-12-10T09:00:00Z');
+    assert.equal(path.basename(instantanePlusRecent(r1)), '2027etmoi-candidats-2026-12-10-000000000000.json');
+    const r2 = deuxInstantanes('2026-12-10T09:00:00Z', '2026-12-10T08:00:00Z');
+    assert.equal(path.basename(instantanePlusRecent(r2)), '2027etmoi-candidats-2026-12-10-ffffffffffff.json');
+  });
+
+  it('à égalité totale, toujours le même (le dernier par chemin) : jamais un résultat qui dépend du système de fichiers', () => {
+    const r = deuxInstantanes('2026-12-10T08:00:00Z', '2026-12-10T08:00:00Z');
+    for (let i = 0; i < 3; i += 1) assert.equal(path.basename(instantanePlusRecent(r)), '2027etmoi-candidats-2026-12-10-ffffffffffff.json');
+  });
+
+  it('les tests qui prennent « l’instantané le plus récent » passent par ce même ordre, jamais par le nom seul', () => {
+    for (const f of ['tests/import/import-cli.test.ts', 'tests/import/datagouv.test.ts', 'tests/corpus/fiches.test.ts']) {
+      const texte = readFileSync(path.join(REPO_ROOT, f), 'utf8');
+      assert.ok(texte.includes('instantanePlusRecent('), `${f} : instantanePlusRecent attendu`);
+      assert.doesNotMatch(texte, /2027etmoi-candidats-\.\*\\\.json\$\/\.test\(n\)[^\n]*\n\s*\.sort\(\)/, `${f} : tri par nom`);
+    }
   });
 });
