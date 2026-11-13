@@ -181,7 +181,8 @@ export default function finitions(ctx: ContexteSite): void {
         const positions = [
           ...(aMesure ? [['signalement', brut.indexOf('class="signalement-intro"')] as const] : []),
           ['liens', brut.indexOf('<nav aria-label="Informations sur le site"')],
-          ['mise à jour', brut.indexOf('<p data-mise-a-jour>')],
+          // Page d'erreur (nom exact) : aucune ligne de mise à jour, vérifiée absente ci-dessous (IN-09 de la revue 09.1).
+          ...(rel === '404.html' ? [] : [['mise à jour', brut.indexOf('<p data-mise-a-jour>')] as const]),
           ['cookie', brut.indexOf('<p><span>Ce site</span>')],
           ['tours', brut.indexOf('<p>Élection présidentielle')],
         ] as const;
@@ -193,7 +194,8 @@ export default function finitions(ctx: ContexteSite): void {
           const d = brut.indexOf(marque);
           return brut.slice(d, brut.indexOf('</p>', d) + 4);
         };
-        assert.match(para('<p data-mise-a-jour>'), MISE_A_JOUR, `${rel} : ligne de mise à jour`);
+        if (rel === '404.html') assert.ok(!brut.includes('data-mise-a-jour'), `${rel} : ligne de mise à jour sur la page d'erreur`);
+        else assert.match(para('<p data-mise-a-jour>'), MISE_A_JOUR, `${rel} : ligne de mise à jour`);
         assert.equal(para('<p><span>Ce site</span>'), COOKIE, `${rel} : phrase sur les cookies`);
         assert.ok(para('<p>Élection présidentielle').startsWith(TOURS), `${rel} : dates des deux tours`);
         assert.ok(trouver(arbre, (n) => aClasse(n, 'signalement-intro')).every((n) => {

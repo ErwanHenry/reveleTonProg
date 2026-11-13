@@ -107,6 +107,11 @@ export default function integration(ctx: ContexteSite): void {
           assert.equal(html.attrs.lang, 'fr', rel);
           assert.equal(trouver(a, (n) => n.tag === 'h1').length, 1, `${rel} : un seul h1`);
           const maj = trouver(a, (n) => n.attrs['data-mise-a-jour'] !== undefined);
+          // Page d'erreur (nom exact) : aucun contenu daté, donc aucune ligne de mise à jour (IN-09 de la revue 09.1).
+          if (rel === '404.html') {
+            assert.equal(maj.length, 0, `${rel} : [data-mise-a-jour] sur la page d'erreur`);
+            continue;
+          }
           assert.equal(maj.length, 1, `${rel} : [data-mise-a-jour]`);
           const t = trouver(maj[0] as Noeud, (n) => n.tag === 'time' && /^\d{4}-\d{2}-\d{2}/.test(n.attrs.datetime ?? ''));
           // Une page sans aucune mesure publiée n'a pas de date à afficher : Base.astro le dit explicitement.
