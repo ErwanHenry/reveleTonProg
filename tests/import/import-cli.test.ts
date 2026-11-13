@@ -610,11 +610,22 @@ describe('import : --format, --dry-run tolérant et --check (IMP-03)', () => {
     assert.match(section(res.stdout, '## Conflits'), /^- essai-fictif : régression de date/);
   });
 
+  it('WR-03 : un fichier candidat refusé par le chargeur est nommé dans l’en-tête du rapport', () => {
+    const root = tmpRoot();
+    const snap = path.join(root, 'data', 'import', path.basename(newestSnapshot()));
+    mkdirSync(path.join(root, 'src', 'content', 'candidats'), { recursive: true });
+    writeFileSync(path.join(root, 'src', 'content', 'candidats', 'hors-amont.yaml'), 'id: hors-amont\nchamp_inconnu: 1\n');
+    const res = importer(['--file', snap, '--root', root, '--dry-run', '--format', 'markdown']);
+    assert.equal(res.status, 0, res.stdout + res.stderr);
+    assert.match(section(res.stdout, '## Instantané'), /^- fichiers refusés par le chargeur, absents du calcul des conséquences .* : src\/content\/candidats\/hors-amont\.yaml$/m);
+  });
+
   it('dépôt réel en markdown : aucun nouveau, changé ni conflit, sections dans l’ordre, aucun tiret long', () => {
     const res = importer(['--file', newestSnapshot(), '--dry-run', '--format', 'markdown']);
     assert.equal(res.status, 0, res.stdout + res.stderr);
     for (const t of ['## Nouveaux', '## Changés', '## Conflits']) assert.equal(section(res.stdout, t), 'aucun', t);
     assert.match(res.stdout, /^## Absents du jeu amont$/m);
+    assert.match(res.stdout, /^- fichiers refusés par le chargeur : aucun$/m);
     assert.doesNotMatch(res.stdout, /[–—]/);
   });
 

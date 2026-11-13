@@ -48,10 +48,19 @@ export interface EntreeRapport {
   mesures: { theme: string; candidat: string; statutRelecture: string }[];
   couvertures: { theme: string; candidat: string; etat: string }[];
   themesOuverts: string[];
+  /**
+   * Fichiers refusés par le chargeur (diagnostic d'erreur) : absents de `candidats`, `themes`, `mesures` et
+   * `couvertures`, donc du calcul des conséquences (WR-03). Facultatif : absent, rien n'est signalé.
+   */
+  fichiersRefuses?: string[];
 }
 
 export interface ConsequenceTheme {
   theme: string;
+  /** Vrai si le thème est publié mais absent de themes_ouverts : la règle d'équité le contrôle quand même. */
+  horsListeBlanche: boolean;
+  /** Personnes à décider (absentes de la table) dont le statut amont est dans le périmètre d'équité. */
+  aDeciderDansPerimetre: { id: string; code: string }[];
   cellulesMaintenant: number;
   cellulesApres: number;
   casAcreer: { id: string; code: string }[];
@@ -59,7 +68,7 @@ export interface ConsequenceTheme {
 }
 
 export interface Rapport {
-  entete: { nom: string; sha256: string; miseAJour: string; lignes: number; precedent: string | null; cree: number; ajoutes: number; inchanges: number };
+  entete: { nom: string; sha256: string; miseAJour: string; lignes: number; precedent: string | null; cree: number; ajoutes: number; inchanges: number; fichiersRefuses: string[] | null };
   nouveaux: string[];
   aDecider: string[];
   absents: string[];
@@ -132,7 +141,8 @@ const memeCodeMotif = (a: Obj, b: Obj): boolean => a.code === b.code && a.motif 
 export function construireRapport(e: EntreeRapport): Rapport {
   const plans = [...e.plans].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
   const themesOuverts = new Set(e.themesOuverts);
-  const themesPublies = trier(e.themes.filter((t) => t.statutRelecture === 'publie' && themesOuverts.has(t.id)).map((t) => t.id));
+  // WR-03 : mêmes thèmes que la règle d'équité (regleEquite contrôle tout thème publié, liste blanche ou non).
+  const themesPublies = trier(e.themes.filter((t) => t.statutRelecture === 'publie').map((t) => t.id));
 
   const nouveaux: string[] = [];
   const changes: string[] = [];
@@ -207,6 +217,11 @@ export function construireRapport(e: EntreeRapport): Rapport {
   const perimetreProd = trier(e.candidats.filter((c) => dansPerimetre(c.statuts, 'production')).map((c) => c.id));
   const perimetreApres = trier([...apres.entries()].filter(([, s]) => dansPerimetre(s, 'preview')).map(([id]) => id));
   const prod = new Set(perimetreProd);
+  // WR-03 : une ligne à décider qui entrerait dans le périmètre une fois sa ligne de table écrite et son statut relu.
+  const aDeciderDansPerimetre = [...e.inconnus]
+    .filter((r) => dansPerimetre([{ code: r.statut }], 'preview'))
+    .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+    .map((r) => ({ id: r.id, code: r.statut }));
   const consequences: ConsequenceTheme[] = themesPublies.map((theme) => {
     const casAcreer = perimetreApres
       .filter((id) => !prod.has(id) && mesuresPubliees(theme, id) === 0 && caseDe(theme, id) === 'aucune')
@@ -215,13 +230,21 @@ export function construireRapport(e: EntreeRapport): Rapport {
     const sortants = perimetreProd
       .filter((id) => !nouveauSet.has(id))
       .map((id) => ({ id, code: String(statutRetenu(apres.get(id), 'preview')?.code), mesures: mesuresPubliees(theme, id), cas: caseDe(theme, id) }));
-    return { theme, cellulesMaintenant: perimetreProd.length, cellulesApres: perimetreApres.length, casAcreer, sortants };
+    return {
+      theme,
+      horsListeBlanche: !themesOuverts.has(theme),
+      cellulesMaintenant: perimetreProd.length,
+      cellulesApres: perimetreApres.length,
+      casAcreer,
+      sortants,
+      aDeciderDansPerimetre,
+    };
   });
 
   const conflits = e.conflits.map((c) => `- ${messageSur(c.replace(/\s[\u2013\u2014]\s/g, ' : '))}`);
 
   return {
-    entete: { ...e.instantane, cree, ajoutes, inchanges },
+    entete: { ...e.instantane, cree, ajoutes, inchanges, fichiersRefuses: e.fichiersRefuses === undefined ? null : trier(e.fichiersRefuses) },
     nouveaux,
     aDecider,
     absents,
@@ -247,6 +270,13 @@ export function rapportMarkdown(r: Rapport): string {
   out.push(`- lignes amont : ${jeton(h.lignes)}`);
   out.push(h.precedent === null ? '- aucun instantané précédent référencé' : `- instantané précédent : ${jeton(h.precedent)}`);
   out.push(`- fiches : ${h.cree} créée(s), ${h.ajoutes} statut(s) ajouté(s), ${h.inchanges} inchangée(s)`);
+  if (h.fichiersRefuses !== null) {
+    out.push(
+      h.fichiersRefuses.length === 0
+        ? '- fichiers refusés par le chargeur : aucun'
+        : `- fichiers refusés par le chargeur, absents du calcul des conséquences (la règle d’équité se tait tant qu’il en reste) : ${h.fichiersRefuses.map(jeton).join(', ')}`,
+    );
+  }
   out.push('');
   out.push('Vocabulaire : « absents du jeu amont » correspond aux « retirés » de la feuille de route ; une absence du jeu ne vaut pas retrait de candidature.');
   out.push('', '## Nouveaux', '', liste(r.nouveaux), '');
@@ -257,12 +287,15 @@ export function rapportMarkdown(r: Rapport): string {
   out.push('## Conséquences sur les thèmes publiés', '');
   if (r.consequences.length === 0) out.push('aucun thème publié', '');
   for (const c of r.consequences) {
-    out.push(`### ${jeton(c.theme)}`, '');
-    out.push(`- cellules attendues : ${c.cellulesMaintenant} maintenant, ${c.cellulesApres} après relecture de tous les statuts importés`);
+    out.push(`### ${jeton(c.theme)}${c.horsListeBlanche ? ' (hors liste blanche)' : ''}`, '');
+    out.push(`- cellules attendues : ${c.cellulesMaintenant} maintenant, ${c.cellulesApres} après relecture de tous les statuts en attente (importés ou déjà en brouillon)`);
     out.push(`- case de couverture à créer avant de relire le statut : ${c.casAcreer.length > 0 ? c.casAcreer.map((x) => `${jeton(x.id)} (${jeton(x.code)})`).join(', ') : 'aucun'}`);
     out.push(
       `- sort du périmètre après relecture : ${c.sortants.length > 0 ? c.sortants.map((x) => `${jeton(x.id)} (${jeton(x.code)}), ${x.mesures} mesure(s) publiée(s), case : ${jeton(x.cas)}`).join(' ; ') : 'aucun'}`,
     );
+    if (c.aDeciderDansPerimetre.length > 0) {
+      out.push(`- à décider, entreraient dans le périmètre une fois la table écrite et le statut relu : ${c.aDeciderDansPerimetre.map((x) => `${jeton(x.id)} (${jeton(x.code)})`).join(', ')}`);
+    }
     out.push('');
   }
   out.push('## Dérives de source (information)', '', liste(r.derives), '');

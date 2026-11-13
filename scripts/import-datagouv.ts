@@ -301,7 +301,13 @@ function rapportDeCetteExecution(): string {
   } catch (e) {
     return fail(e instanceof Error ? e.message : String(e));
   }
-  const corpus = loadAll(root, { schemasDir, mode: 'preview' }).entries;
+  const charge = loadAll(root, { schemasDir, mode: 'preview' });
+  const corpus = charge.entries;
+  // WR-03 : un fichier refusé (diagnostic d'erreur, absent des entrées) est nommé dans l'en-tête du rapport.
+  const charges = new Set(corpus.map((e) => e.file));
+  const fichiersRefuses = [
+    ...new Set(charge.diagnostics.filter((d) => d.severity === 'error' && !charges.has(d.file)).map((d) => path.relative(root, d.file).split(path.sep).join('/'))),
+  ];
   const chaine = (v: unknown): string => String(v);
   const casDeCouverture: EntreeRapport['couvertures'] = [];
   for (const c of corpus.filter((e) => e.collection === 'couverture')) {
@@ -324,6 +330,7 @@ function rapportDeCetteExecution(): string {
       .map((e) => ({ theme: chaine(e.data.theme), candidat: chaine(e.data.candidat), statutRelecture: chaine(e.data.statut_relecture) })),
     couvertures: casDeCouverture,
     themesOuverts,
+    fichiersRefuses,
   };
   return rapportMarkdown(construireRapport(entree));
 }

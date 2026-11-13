@@ -216,16 +216,35 @@ describe('rapport de répétition à blanc (D-06)', () => {
     const t = md(entree({ ...CORPUS, plans: [plan('zoe-test', null, [nouveau])], candidats: [...CORPUS.candidats] }));
     const c = section(t, '## Conséquences sur les thèmes publiés');
     assert.match(c, /### logement/);
-    assert.match(c, /cellules attendues : 2 maintenant, 3 après relecture de tous les statuts importés/);
+    assert.match(c, /cellules attendues : 2 maintenant, 3 après relecture de tous les statuts en attente \(importés ou déjà en brouillon\)/);
     assert.match(c, /case de couverture à créer avant de relire le statut : zoe-test \(declare\)/);
     assert.match(c, /sort du périmètre après relecture : aucun/);
   });
 
-  it('Conséquences : thème publié mais non ouvert, ou ouvert mais en brouillon, n’est pas listé', () => {
-    const t1 = md(entree({ ...CORPUS, themesOuverts: [] }));
-    assert.match(section(t1, '## Conséquences sur les thèmes publiés'), /aucun thème publié/);
+  it('Conséquences : un thème ouvert mais en brouillon n’est pas listé', () => {
     const t2 = md(entree({ ...CORPUS, themes: [{ id: 'logement', statutRelecture: 'brouillon' }] }));
     assert.match(section(t2, '## Conséquences sur les thèmes publiés'), /aucun thème publié/);
+  });
+
+  it('WR-03 : un thème publié mais hors liste blanche est compté comme la règle d’équité le compte, marqué « (hors liste blanche) »', () => {
+    const nouveau = statut('declare', '2026-11-01', 'https://exemple.test/zoe', {}, 'brouillon');
+    const t1 = md(entree({ ...CORPUS, themesOuverts: [], plans: [plan('zoe-test', null, [nouveau])] }));
+    const c = section(t1, '## Conséquences sur les thèmes publiés');
+    assert.match(c, /^### logement \(hors liste blanche\)$/m);
+    assert.match(c, /case de couverture à créer avant de relire le statut : zoe-test \(declare\)/);
+  });
+
+  it('WR-03 : une personne à décider dont le statut amont est dans le périmètre est annoncée par thème', () => {
+    const t = md(entree({ ...CORPUS, inconnus: [ligne('inconnu-un'), ligne('inconnu-deux', { statut: 'renonce' })] }));
+    const c = section(t, '## Conséquences sur les thèmes publiés');
+    assert.match(c, /- à décider, entreraient dans le périmètre une fois la table écrite et le statut relu : inconnu-un \(declare\)$/m);
+    assert.doesNotMatch(c, /inconnu-deux/);
+  });
+
+  it('WR-03 : des fichiers refusés par le chargeur sont nommés dans l’en-tête, le calcul des conséquences les ignore', () => {
+    const t = md(entree({ ...CORPUS, fichiersRefuses: ['src/content/candidats/zoe-test.yaml'] }));
+    assert.match(section(t, '## Instantané'), /^- fichiers refusés par le chargeur, absents du calcul des conséquences \(la règle d’équité se tait tant qu’il en reste\) : src\/content\/candidats\/zoe-test\.yaml$/m);
+    assert.match(section(md(entree({ ...CORPUS, fichiersRefuses: [] })), '## Instantané'), /^- fichiers refusés par le chargeur : aucun$/m);
   });
 
   it('Dérives de source : même statut, adresse ou date différente, les deux adresses', () => {
