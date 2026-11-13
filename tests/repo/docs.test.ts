@@ -948,6 +948,15 @@ describe('documentation (phase 10) : import de décembre (IMP-03)', () => {
     assert.ok(decisions.includes('../reveleTonProg-import/data/import/correspondances.yaml'), 'la table est écrite dans le worktree d’import');
   });
 
+  it('WR-07 : « relecture santé fusionnée » se vérifie par la pull request fusionnée, comme le plan 10-05', () => {
+    const s = sectionRunbook(IMPORT);
+    const condition = s.split('\n').find((l) => /^1\. La branche `relecture\/sante`/.test(l)) ?? '';
+    assert.ok(condition.includes('gh pr list --head relecture/sante --state merged --json number --jq length'), condition);
+    assert.doesNotMatch(condition.replace(/[^.]*information[^.]*\./g, ''), /--is-ancestor/, '--is-ancestor ne décide pas de la condition');
+    const plan = read('.planning/phases/10-import-de-d-cembre/10-05-PLAN.md');
+    assert.ok(plan.includes('gh pr list --head relecture/sante --state merged --json number --jq length'), 'même commande que le plan 10-05');
+  });
+
   it('WR-06 : la commande range-diff du RUNBOOK, rejouée sur une branche jetable, apparie les seuls commits d’import', () => {
     const s = sectionRunbook(IMPORT);
     const commande = /git range-diff ([^`\n]+)/.exec(s)?.[1]?.trim();

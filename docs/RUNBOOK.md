@@ -292,7 +292,7 @@ Un statut qui change s'ajoute à la fin de `statuts[]` (historique en ajout seul
 
 **Conditions de départ.** Toutes doivent être vraies avant l'étape 1, sinon l'import ne commence pas.
 
-1. La branche `relecture/sante` est fusionnée dans `main` : `git fetch origin && git merge-base --is-ancestor origin/relecture/sante origin/main && echo fusionnée`. Sinon, l'import est reporté (« Replis » plus bas). Jamais de fusion à la main avec la branche de relecture.
+1. La branche `relecture/sante` est fusionnée dans `main`, preuve par sa pull request : `gh pr list --head relecture/sante --state merged --json number --jq length` affiche 1 ou plus. Sinon, l'import est reporté (« Replis » plus bas). `git merge-base --is-ancestor origin/relecture/sante origin/main` ne sert que d'information : il répond faux après une fusion en squash ou en rebase, ou si la branche a reçu des commits après la fusion, et échoue si la branche distante a été supprimée. Jamais de fusion à la main avec la branche de relecture.
 2. Le thème santé est publié dans `main`. Si l'ouverture au public a pris du retard, l'import peut commencer quand même (réponse d'Erwan), mais aucun push d'import n'a lieu pendant qu'une étape de « Ouverture publique (Phase 9) » est en cours.
 3. `main` local égale `origin/main` et l'arbre est propre : `git fetch origin && git switch main && git pull --ff-only && git status --short` (rien d'affiché).
 4. Aucun déploiement en attente : `gh run list --branch main --status waiting`. Pour chaque run listé, Erwan l'approuve ou le rejette lui-même dans l'interface GitHub (« Review deployments ») avant de commencer ; relancer la commande jusqu'à une liste vide. Un agent n'approuve ni ne rejette jamais un déploiement.
