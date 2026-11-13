@@ -933,6 +933,19 @@ describe('documentation (phase 10) : import de décembre (IMP-03)', () => {
     }
   });
 
+  it('WR-05 : le worktree d’import existe avant que la table soit écrite, et la table est écrite dans ce worktree', () => {
+    const s = sectionRunbook(IMPORT);
+    const deroule = s.slice(s.indexOf('**Déroulé.**'), s.indexOf('**Si `main` avance'));
+    const iWorktree = deroule.indexOf('git worktree add -b import/statuts-2026-12 ../reveleTonProg-import origin/main');
+    const iDecisions = deroule.indexOf("**Décisions d'Erwan**");
+    const iDiff = deroule.indexOf('git diff --stat data/import/correspondances.yaml');
+    const iAdd = deroule.indexOf('git add data/import/correspondances.yaml');
+    assert.ok(iWorktree >= 0 && iDecisions > iWorktree, 'le worktree doit précéder les décisions');
+    assert.ok(iDiff > iDecisions && iAdd > iDiff, 'git diff --stat avant le commit de la table');
+    const decisions = deroule.slice(iDecisions, deroule.indexOf('\n', iDecisions));
+    assert.ok(decisions.includes('../reveleTonProg-import/data/import/correspondances.yaml'), 'la table est écrite dans le worktree d’import');
+  });
+
   it('WR-02 : une date amont qui recule pour un statut inchangé est une information, et les écarts restants ont leur issue', () => {
     const s = sectionRunbook(ANCIEN);
     for (const needle of ['date amont qui recule', 'information', 'Dérives de source', 'ids_externes.2027etmoi', 'data/dataset-datagouv.yaml']) {

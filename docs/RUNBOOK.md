@@ -301,9 +301,9 @@ Un statut qui change s'ajoute à la fin de `statuts[]` (historique en ajout seul
 **Déroulé.**
 
 1. **Répétition du matin** sur le jeu en ligne, depuis `main` : `npm run import:datagouv -- --dry-run --format markdown > /tmp/rapport-matin.md`, puis lire le rapport, en particulier « Nouveaux à décider » et « Absents du jeu amont » (une absence du jeu n'est pas un retrait de candidature). Vérifier aussi que la ressource n'a pas changé : `curl -s https://www.data.gouv.fr/api/1/datasets/6abf8836bbebbc5488a27e4e/ | grep -o '06237c53-76bd-4224-9805-418e125f0493'` doit afficher l'identifiant `06237c53-76bd-4224-9805-418e125f0493`. S'il n'apparaît pas, ou si l'outil répond « jeu amont invalide », s'arrêter et prévenir Erwan.
-2. **Décisions d'Erwan** : pour chaque nom listé sous « Nouveaux à décider », Erwan écrit l'entrée de `data/import/correspondances.yaml` (prénom, nom, `nom_tri`, `type_source_statut`, motif seulement pour un statut `renonce`). Si une entrée manque, voir « Replis ».
-3. **Worktree et branche**, depuis le dossier du dépôt : `git worktree add -b import/statuts-2026-12 ../reveleTonProg-import origin/main`, puis `cd ../reveleTonProg-import && fnm exec --using=24 npm ci`. La commande échoue si la branche existe déjà : c'est voulu (voir « recréer la branche »).
-4. **Premier commit, la table** : `git add data/import/correspondances.yaml && git commit -m "chore(import): table de correspondances de décembre, décidée par Erwan"`.
+2. **Worktree et branche**, depuis le dossier du dépôt : `git worktree add -b import/statuts-2026-12 ../reveleTonProg-import origin/main`, puis `cd ../reveleTonProg-import && fnm exec --using=24 npm ci`. La commande échoue si la branche existe déjà : c'est voulu (voir « recréer la branche »). Toutes les étapes suivantes, jusqu'à l'étape 12, se font dans ce worktree ; l'arbre principal reste propre.
+3. **Décisions d'Erwan**, dans le worktree d'import : pour chaque nom listé sous « Nouveaux à décider », Erwan écrit l'entrée de `../reveleTonProg-import/data/import/correspondances.yaml` (prénom, nom, `nom_tri`, `type_source_statut`, motif seulement pour un statut `renonce`), jamais dans l'arbre principal. Si une entrée manque, voir « Replis ».
+4. **Premier commit, la table** : `git diff --stat data/import/correspondances.yaml` doit afficher le fichier (sinon l'édition est ailleurs : la retrouver avant d'aller plus loin ; si aucune personne n'était à décider, il n'y a pas de premier commit, passer à l'étape 5), puis `git add data/import/correspondances.yaml && git commit -m "chore(import): table de correspondances de décembre, décidée par Erwan"`.
 5. **Deuxième commit, la sortie de l'outil** : `npm run import:datagouv`, puis `git status --short` (seuls `data/import/`, `src/content/candidats/` et `ids.lock` ont changé), `git add data/import src/content/candidats ids.lock` et `git commit -m "chore(import): instantané data.gouv et fiches, sortie de l'outil"`.
 6. **Rapport, calculé depuis le commit parent** (la table, avant la sortie de l'outil), dans un worktree jetable ; remplacer `<instantané>` par le nom du nouveau fichier de `data/import/` :
    ```bash
@@ -328,7 +328,7 @@ ANCIEN=$(git rev-parse origin/import/statuts-2026-12)
 git log --oneline --reverse origin/main..$ANCIEN        # noter les commits : table, sortie de l'outil, mises à jour à la main, relectures
 git branch import/statuts-2026-12-ancienne $ANCIEN      # trace locale de l'ancienne branche
 git switch -C import/statuts-2026-12 origin/main
-git cherry-pick <sha de la table>
+git cherry-pick <sha de la table>                      # s'il y a un commit de table (étape 4)
 git checkout $ANCIEN -- data/import/<instantané>.json data/import/<instantané>.meta.json
 npm run import:datagouv -- --file data/import/<instantané>.json
 git add data/import src/content/candidats ids.lock
@@ -340,7 +340,7 @@ Tout conflit d'un `cherry-pick` arrête la procédure : `git cherry-pick --abort
 
 **Replis (décidés par Erwan : reporter).**
 
-- Une nouvelle personne n'a pas d'entrée validée par Erwan à l'heure de la fusion : on **reporte l'import entier** après le gel, à partir du 16 décembre 2026. La production garde les statuts relus de novembre. Noter ici et dans la pull request que la part « import » de l'échéance du cahier des charges (15 décembre 2026) a bougé. Seule autre issue, qui est celle d'Erwan seul : écrire lui-même chaque entrée manquante, puis reprendre à l'étape 3 (nouvelle branche) ou à l'étape 7.
+- Une nouvelle personne n'a pas d'entrée validée par Erwan à l'heure de la fusion : on **reporte l'import entier** après le gel, à partir du 16 décembre 2026. La production garde les statuts relus de novembre. Noter ici et dans la pull request que la part « import » de l'échéance du cahier des charges (15 décembre 2026) a bougé. Seule autre issue, qui est celle d'Erwan seul : écrire lui-même chaque entrée manquante, puis reprendre à l'étape 2 (nouvelle branche) ou à l'étape 7.
 - La relecture santé n'est pas fusionnée le 10 décembre : on **reporte**. L'import ne commence jamais sur un `main` sans cette relecture et n'est jamais fusionné à la main avec sa branche. Il reprend après le gel, ou dès la fusion de la relecture si elle a lieu avant le 13 décembre 2026 à 12:00 et qu'Erwan le dit.
 - Nouvelles personnes encore en `brouillon` au moment de la fusion : fusion permise (D-07), sous la règle D-08 de l'étape 10 pour les statuts qui changent.
 
