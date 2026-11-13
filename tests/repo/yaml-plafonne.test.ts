@@ -12,7 +12,12 @@
 //
 // Formes détectées (chacune par un auto-contrôle) : import nommé (guillemets simples ou doubles, renommage `as`,
 // sur plusieurs lignes), tout sous-chemin `yaml/…`, ré-export (`export { parse } from`, `export * from`), import
-// par défaut, import d'espace de noms, `require('yaml')`, `import('yaml')` dynamique.
+// par défaut, import d'espace de noms, `require('yaml')`, `import('yaml')` dynamique. Depuis WR-09 (revue de la
+// phase 10) : l'analyseur bas niveau (`Parser`, `Composer`, `Lexer`, `parseCST`), tout paquet dont le nom finit
+// par `/yaml` ou contient `yaml` (`@astrojs/internal-helpers/yaml`, `js-yaml`, sauf `yaml-lint`), tout appel avec
+// un spécificateur YAML littéral (`createRequire(import.meta.url)('yaml')`), toute mention de `createRequire`,
+// et les extensions .mts, .cts, .cjs, .tsx, .jsx. Les exports de valeur des huit fichiers de la liste blanche sont
+// épinglés : une enveloppe générique nouvelle ne passe pas sans relecture.
 // Non détecté (voulu) : `import type`, `stringify`, `isMap`, `visit` et les autres utilitaires sans lecture, une
 // fonction locale nommée `parse` (scripts/lib/fetch-safe.ts), le mot parse dans un commentaire.
 // Hors périmètre : tests/** (les tests lisent des fixtures de confiance avec `parse`).
@@ -112,7 +117,19 @@ export function sansCommentaires(texte: string): string {
   return out.join('');
 }
 
-const API_LECTURE = new Set(['parse', 'parseDocument', 'parseAllDocuments', 'Document']);
+const API_LECTURE = new Set(['parse', 'parseDocument', 'parseAllDocuments', 'Document', 'Parser', 'Composer', 'Lexer', 'parseCST']);
+/** Paquets dont le nom contient « yaml » mais qui ne lisent pas de YAML en valeur (aucun aujourd'hui dans le code livré). */
+const PAQUETS_YAML_PERMIS = new Set(['yaml-lint']);
+
+/**
+ * Vrai pour un spécificateur de paquet qui lit du YAML hors de l'API filtrée de « yaml » : sous-chemin `yaml/…`,
+ * enveloppe d'un autre paquet (`…/yaml`, comme `@astrojs/internal-helpers/yaml`), ou autre analyseur (`js-yaml`).
+ * Jamais un chemin relatif (l'analyseur plafonné s'importe par `./…/yaml-plafonne.ts`) ni un module `node:`.
+ */
+function moduleYamlLarge(spec: string): boolean {
+  if (spec === 'yaml' || spec.startsWith('.') || spec.startsWith('/') || spec.startsWith('node:') || PAQUETS_YAML_PERMIS.has(spec)) return false;
+  return /(^|[/@-])yaml($|[/.-])/i.test(spec);
+}
 const ligneDe = (texte: string, index: number): number => texte.slice(0, index).split('\n').length;
 
 /** Noms lus dans une clause d'import ou de ré-export (`X`, `{ a, b as c }`, `* as Y`, `*`). */
@@ -139,21 +156,33 @@ export function trouverLecturesYamlDirectes(fichiers: { chemin: string; contenu:
   for (const { chemin, contenu } of fichiers) {
     const t = sansCommentaires(contenu);
     const trouves: { index: number; api: string }[] = [];
-    const statique = /(^|[^.\w$])(import|export)\s+(type\s+)?([\w$\s,{}*]*?)\s*\bfrom\s*(['"])(yaml(?:\/[^'"]*)?)\5/g;
+    const statique = /(^|[^.\w$])(import|export)\s+(type\s+)?([\w$\s,{}*]*?)\s*\bfrom\s*(['"])([^'"\n]+)\5/g;
     for (const m of t.matchAll(statique)) {
       if (m[3] !== undefined) continue;
       const index = (m.index ?? 0) + (m[1] ?? '').length;
       const module = m[6] as string;
-      const apis = apisDeClause(m[4] ?? '', m[2] === 'export');
-      if (module !== 'yaml') {
+      if (module === 'yaml') {
+        for (const api of apisDeClause(m[4] ?? '', m[2] === 'export')) trouves.push({ index, api });
+      } else if (moduleYamlLarge(module)) {
         if ((m[4] ?? '').trim().startsWith('type ')) continue;
         trouves.push({ index, api: module });
-      } else for (const api of apis) trouves.push({ index, api });
+      }
     }
-    const appel = /(^|[^.\w$])(require|import)\s*\(\s*(['"`])(yaml(?:\/[^'"`]*)?)\3\s*\)/g;
+    const appel = /(^|[^.\w$])(require|import)\s*\(\s*(['"`])([^'"`\n]+)\3\s*\)/g;
     for (const m of t.matchAll(appel)) {
-      trouves.push({ index: (m.index ?? 0) + (m[1] ?? '').length, api: `${m[2]}('${m[4]}')` });
+      const module = m[4] as string;
+      if (module === 'yaml' || moduleYamlLarge(module)) trouves.push({ index: (m.index ?? 0) + (m[1] ?? '').length, api: `${m[2]}('${module}')` });
     }
+    // WR-09 : tout autre appel avec un spécificateur YAML littéral (un require obtenu par createRequire, ou renommé).
+    const autreAppel = /([\w$]+|\))\s*\(\s*(['"`])([^'"`\n]+)\2\s*\)/g;
+    for (const m of t.matchAll(autreAppel)) {
+      const module = m[3] as string;
+      if (m[1] === 'require' || m[1] === 'import') continue;
+      if (module === 'yaml' || module.startsWith('yaml/') || moduleYamlLarge(module)) trouves.push({ index: (m.index ?? 0) + (m[1] ?? '').length, api: `appel('${module}')` });
+    }
+    // WR-09 : createRequire permet un require('yaml') que rien d'autre ne verrait (spécificateur calculé) : signalé tel quel.
+    const cr = /(^|[^.\w$])createRequire\b/.exec(t);
+    if (cr !== null) trouves.push({ index: cr.index + (cr[1] ?? '').length, api: 'createRequire' });
     for (const f of trouves.sort((a, b) => a.index - b.index)) out.push({ chemin, ligne: ligneDe(t, f.index), api: f.api });
   }
   return out;
@@ -198,6 +227,15 @@ describe('trouverLecturesYamlDirectes : formes détectées', () => {
     ['require', "const y = require('yaml');\n", "require('yaml')"],
     ['import dynamique', "const y = import('yaml');\n", "import('yaml')"],
     ['await import guillemets doubles', 'const { parse } = await import("yaml");\n', "import('yaml')"],
+    // WR-09 (revue de la phase 10) : analyseur bas niveau, enveloppes d'autres paquets, extensions de module.
+    ['Parser (analyseur bas niveau)', "import { Parser } from 'yaml';\n", 'Parser'],
+    ['Composer', "import { Composer, isMap } from 'yaml';\n", 'Composer'],
+    ['Lexer', "import { Lexer } from 'yaml';\n", 'Lexer'],
+    ['parseCST (ancienne API)', "import { parseCST } from 'yaml';\n", 'parseCST'],
+    ['enveloppe @astrojs/internal-helpers/yaml', "import { parseFrontmatter } from '@astrojs/internal-helpers/yaml';\n", '@astrojs/internal-helpers/yaml'],
+    ['autre analyseur YAML (js-yaml)', "import jsyaml from 'js-yaml';\n", 'js-yaml'],
+    ['require d’une enveloppe', "const h = require('@astrojs/internal-helpers/yaml');\n", "require('@astrojs/internal-helpers/yaml')"],
+    ['appel d’un require obtenu ailleurs', "const y = req('yaml');\n", "appel('yaml')"],
   ];
   for (const [nom, contenu, api] of detectes) {
     it(nom, () => {
@@ -207,6 +245,18 @@ describe('trouverLecturesYamlDirectes : formes détectées', () => {
       assert.equal(r[0]?.chemin, 'x.ts');
     });
   }
+
+  it('createRequire : l’import de createRequire et l’appel avec « yaml » sont signalés', () => {
+    const r = un("import { createRequire } from 'node:module';\nconst y = createRequire(import.meta.url)('yaml');\n");
+    assert.deepEqual(
+      r.map((x) => [x.ligne, x.api]),
+      [
+        [1, 'createRequire'],
+        [2, "appel('yaml')"],
+      ],
+    );
+    assert.deepEqual(un("const { createRequire } = require('module');\n").map((x) => x.api), ['createRequire']);
+  });
 
   it('ligne de l’import, après d’autres lignes et un autre import', () => {
     const r = un("import path from 'node:path';\n// commentaire\n\nimport { isMap, parse } from 'yaml';\n");
@@ -239,6 +289,9 @@ describe('trouverLecturesYamlDirectes : formes non détectées', () => {
     ['le mot parse dans un commentaire', "// on parse le YAML avec parseDocument de 'yaml'\n/* import { parse } from 'yaml' */\nconst a = 1;\n"],
     ['autre paquet nommé yaml-…', "import { parse } from 'yaml-lint';\n"],
     ['export type', "export type { Document } from 'yaml';\n"],
+    ['l’analyseur plafonné lui-même, par chemin relatif', "import { lireYamlPlafonne } from '../src/lib/content-core/yaml-plafonne.ts';\n"],
+    ['LineCounter seul (positions, aucune lecture)', "import { LineCounter, isSeq } from 'yaml';\n"],
+    ['un module node: qui n’est pas createRequire', "import { builtinModules } from 'node:module';\n"],
   ];
   for (const [nom, contenu] of ignores) {
     it(nom, () => assert.deepEqual(un(contenu), []));
@@ -261,16 +314,95 @@ describe('fermetureImports : résolveur des imports relatifs (valeurs seulement)
   });
 });
 
-/** Fichiers suivis par Git sous scripts/, src/, e2e/ plus astro.config.mjs, extensions .ts .mjs .js .astro. */
+/** Vrai pour un fichier de code livré : sous scripts/, src/, e2e/, ou astro.config.*, toute extension de module JS ou TS. */
+export function estCodeLivre(f: string): boolean {
+  return (/^(scripts|src|e2e)\//.test(f) || /^astro\.config\.[cm]?[jt]s$/.test(f)) && /\.(ts|mts|cts|tsx|js|mjs|cjs|jsx|astro)$/.test(f);
+}
+
+/** Fichiers suivis par Git que estCodeLivre retient. */
 function codeLivre(): { chemin: string; contenu: string }[] {
   const git = spawnSync('git', ['ls-files', '-z'], { cwd: REPO, encoding: 'utf8' });
   assert.equal(git.status, 0, git.stderr);
   return git.stdout
     .split('\u0000')
-    .filter((f) => (/^(scripts|src|e2e)\//.test(f) || f === 'astro.config.mjs') && /\.(ts|mjs|js|astro)$/.test(f))
+    .filter(estCodeLivre)
     .filter((f) => fs.existsSync(path.join(REPO, f)))
     .map((chemin) => ({ chemin, contenu: fs.readFileSync(path.join(REPO, chemin), 'utf8') }));
 }
+
+describe('estCodeLivre : extensions et dossiers balayés (WR-09)', () => {
+  it('toutes les extensions de module JS et TS, sous scripts/, src/, e2e/, et astro.config', () => {
+    for (const f of ['scripts/a.ts', 'scripts/a.mts', 'scripts/a.cts', 'src/a.tsx', 'src/a.js', 'src/a.mjs', 'src/a.cjs', 'e2e/a.jsx', 'src/pages/a.astro', 'astro.config.mjs', 'astro.config.ts']) {
+      assert.ok(estCodeLivre(f), f);
+    }
+    for (const f of ['tests/a.ts', 'docs/a.md', 'src/a.yaml', 'scripts/a.json', 'node_modules/yaml/a.js']) assert.ok(!estCodeLivre(f), f);
+  });
+});
+
+/**
+ * WR-09 : un fichier de la liste blanche pourrait exporter une enveloppe générique (texte -> Document ou objet) que
+ * le reste du code appellerait sans être vu. Les exports de valeur de chaque fichier sont épinglés : un export
+ * nouveau demande une relecture (est-ce une lecture YAML générique ?) et la mise à jour de cette liste.
+ */
+const EXPORTS_LISTE_BLANCHE: Readonly<Record<string, readonly string[]>> = Object.freeze({
+  'src/lib/content-core/yaml-plafonne.ts': ['YamlRefuse', 'analyserYamlPlafonne', 'lireDocumentPlafonne', 'lireYamlPlafonne', 'messageRefus'],
+  'src/lib/content-core/load.ts': ['PARSE_OPTIONS', 'TO_JS_OPTIONS', 'checkContained', 'listContentFiles', 'loadAll', 'parseYaml', 'readContained', 'validateYamlText'],
+  'src/lib/content-core/migrate.ts': ['TO_STRING_OPTS', 'inspectVersions', 'migrateText', 'runMigrations'],
+  'scripts/lib/relecture/editer.ts': [
+    'CLES_ECRIVIBLES',
+    'ETATS_CASE',
+    'EditionRefusee',
+    'RE_DATE',
+    'RE_RELECTEUR',
+    'RE_SLUG',
+    'STATUTS_RELECTURE',
+    'comparerLignes',
+    'dateValide',
+    'definirChamps',
+    'ecrireAtomique',
+    'relecteurValide',
+    'verifierSeulesCles',
+  ],
+  'src/lib/site-config.ts': ['TLD_PROVISOIRES', 'estDomaineValide', 'estHoteProvisoire', 'loadSiteConfig'],
+  'src/lib/hebergeur-config.ts': ['loadHebergeurConfig'],
+  'src/lib/publication-config.ts': ['estOuvert', 'loadPublicationConfig'],
+  'src/lib/dataset-datagouv.ts': ['ecartAnnonce', 'loadDatasetDatagouv'],
+});
+
+/** Noms exportés en valeur (fonction, classe, constante, ré-export nommé) ; `export type` et `export interface` ignorés. */
+export function exportsDeValeur(contenu: string): string[] {
+  const t = sansCommentaires(contenu);
+  const noms = new Set<string>();
+  for (const m of t.matchAll(/^export\s+(?:default\s+)?(?:async\s+)?(?:function\*?|class|const|let|var)\s+([\w$]+)/gm)) noms.add(m[1] as string);
+  for (const m of t.matchAll(/^export\s+\{([^}]*)\}/gm)) {
+    for (const spec of (m[1] ?? '').split(',')) {
+      const s = spec.trim();
+      if (s === '' || s.startsWith('type ')) continue;
+      noms.add((s.split(/\s+as\s+/)[1] ?? s).trim());
+    }
+  }
+  if (/^export\s+\*/m.test(t)) noms.add('*');
+  if (/^export\s+default\b(?!\s+(?:async\s+)?(?:function|class)\s+[\w$])/m.test(t)) noms.add('default');
+  return [...noms].sort();
+}
+
+describe('exportsDeValeur : auto-contrôle (WR-09)', () => {
+  it('fonctions, classes, constantes, ré-exports nommés, étoile et défaut ; jamais les types', () => {
+    const texte = [
+      'export function a() {}',
+      'export async function b() {}',
+      'export class C {}',
+      'export const D = 1;',
+      "export { e, f as g, type H } from './x.ts';",
+      "export * from './y.ts';",
+      'export default 3;',
+      'export type T = string;',
+      'export interface I { x: number }',
+      '// export function commentee() {}',
+    ].join('\n');
+    assert.deepEqual(exportsDeValeur(texte), ['*', 'C', 'D', 'a', 'b', 'default', 'e', 'g']);
+  });
+});
 
 describe('dépôt réel (IMP-01, D-03)', () => {
   it('aucune lecture YAML directe dans le code livré hors LISTE_BLANCHE', () => {
@@ -294,6 +426,13 @@ describe('dépôt réel (IMP-01, D-03)', () => {
       assert.ok(fs.existsSync(abs), `entrée de liste blanche périmée : ${chemin} n'existe plus`);
       const r = trouverLecturesYamlDirectes([{ chemin, contenu: fs.readFileSync(abs, 'utf8') }]);
       assert.ok(r.length > 0, `entrée de liste blanche périmée : ${chemin} ne lit plus le YAML directement`);
+    }
+  });
+
+  it('WR-09 : les fichiers de la liste blanche n’exportent que les valeurs épinglées (aucune enveloppe de lecture nouvelle)', () => {
+    assert.deepEqual(Object.keys(EXPORTS_LISTE_BLANCHE).sort(), Object.keys(LISTE_BLANCHE).sort());
+    for (const [chemin, attendus] of Object.entries(EXPORTS_LISTE_BLANCHE)) {
+      assert.deepEqual(exportsDeValeur(fs.readFileSync(path.join(REPO, chemin), 'utf8')), [...attendus].sort(), `${chemin} : export nouveau ou retiré, relire puis mettre à jour EXPORTS_LISTE_BLANCHE`);
     }
   });
 
