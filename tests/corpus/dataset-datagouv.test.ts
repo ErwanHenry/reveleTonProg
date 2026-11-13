@@ -113,6 +113,10 @@ describe('loadDatasetDatagouv', () => {
     echoue(projet(yml({ description_consultee_le: 'hier' })), /description_consultee_le/);
   });
 
+  it('IN-05 : une balise inconnue (avertissement de l’analyseur) est refusée, comme dans yaml-plafonne.ts', () => {
+    echoue(projet(yml({ producteur: '!inconnue 2027 et moi (https://2027etmoi.fr)' })), /YAML invalide/);
+  });
+
   it('fichier absent', () => {
     const dir = mkdtempSync(path.join(os.tmpdir(), 'rtp-dsg-'));
     dossiers.push(dir);

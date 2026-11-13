@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { analyserHtml, aClasse, texte, trouver } from '../../../scripts/lib/html.ts';
 import type { Noeud } from '../../../scripts/lib/html.ts';
-import { cellulesAttendues, checkDist } from '../../../scripts/lib/check-dist.ts';
+import { PAGE_ERREUR, cellulesAttendues, checkDist } from '../../../scripts/lib/check-dist.ts';
 import { TRAPPE_BROUILLON, materialiserCorpusM1 } from '../../helpers/corpus-m1.ts';
 import type { ContexteSite } from '../contexte.ts';
 
@@ -113,11 +113,16 @@ export default function modes(ctx: ContexteSite): void {
       }
     });
 
-    it('aucune page rendue par Base n’est noindex', () => {
+    it('aucune page rendue par Base n’est noindex, sauf la page d’erreur 404.html qui l’est', () => {
       const { outDir } = production();
+      // Seule exception, un fichier nommé (plan 09.1-02) : la page d'erreur n'a pas d'URL publique à indexer.
+      const estErreur = (f: string): boolean => path.relative(outDir, f).split(path.sep).join('/') === PAGE_ERREUR;
       const pages = ctx.pagesHtml(outDir).filter((f) => !estAccueilHistorique(outDir, f));
       assert.ok(pages.length >= 2);
-      for (const f of pages) assert.equal(noindex(arbreDe(f)).length, 0, `${path.relative(outDir, f)} est noindex en production`);
+      const erreurs = pages.filter(estErreur);
+      assert.equal(erreurs.length, 1, `${PAGE_ERREUR} absent du dist de production`);
+      assert.equal(noindex(arbreDe(erreurs[0] as string)).length, 1, `${PAGE_ERREUR} sans noindex`);
+      for (const f of pages.filter((p) => !estErreur(p))) assert.equal(noindex(arbreDe(f)).length, 0, `${path.relative(outDir, f)} est noindex en production`);
     });
 
     it('robots.txt autorise l’indexation', () => {

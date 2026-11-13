@@ -14,6 +14,27 @@ import { empreinteCsp } from '../../src/lib/csp-empreintes.ts';
 import { loadSiteConfig } from '../../src/lib/site-config.ts';
 import type { Mode } from '../../src/lib/content-core/rules/types.ts';
 
+/**
+ * PNG minimal bien formé (signature, IHDR, IDAT de remplissage, IEND) de `taille` octets, aux dimensions données
+ * (IN-02 de la revue 09.1 : check-dist lit la signature, l'IHDR et la suite des morceaux de partage.png). Les CRC ne
+ * sont pas lus par la règle : ils valent zéro ici.
+ */
+function pngDe(taille: number, largeur = 1200, hauteur = 630): Buffer {
+  const morceau = (type: string, donnees: Buffer): Buffer => {
+    const l = Buffer.alloc(4);
+    l.writeUInt32BE(donnees.length);
+    return Buffer.concat([l, Buffer.from(type, 'latin1'), donnees, Buffer.alloc(4)]);
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(largeur, 0);
+  ihdr.writeUInt32BE(hauteur, 4);
+  ihdr.set([8, 2, 0, 0, 0], 8);
+  const tete = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), morceau('IHDR', ihdr)]);
+  const reste = taille - tete.length - 12 - 12;
+  if (reste < 0) throw new Error(`pngDe : ${taille} octets, trop peu`);
+  return Buffer.concat([tete, morceau('IDAT', Buffer.alloc(reste, 1)), morceau('IEND', Buffer.alloc(0))]);
+}
+
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const CORPUS = path.join(REPO_ROOT, 'tests', 'fixtures', 'corpus-valide');
 const CLI = path.join(REPO_ROOT, 'scripts', 'check-dist.ts');
@@ -154,7 +175,9 @@ function distPropre(surcharges: Record<string, string | Buffer | null> = {}, opt
     for (const rel of pages) {
       const html = base[rel];
       if (typeof html === 'string' && html.includes('</head>') && !html.includes('rel="canonical"')) {
-        base[rel] = html.replace('</head>', `<link rel="canonical" href="${origine}${cheminPage(rel)}"></head>`);
+        // og:url partage la valeur de l'URL canonique (09.1-04) ; la page d'erreur n'a ni l'un ni l'autre.
+        const partage = rel === '404.html' ? '' : `<meta property="og:url" content="${origine}${cheminPage(rel)}">`;
+        base[rel] = html.replace('</head>', `<link rel="canonical" href="${origine}${cheminPage(rel)}">${partage}</head>`);
       }
     }
     if (!('sitemap.xml' in surcharges)) base['sitemap.xml'] = xmlSitemap(pages.map((rel) => `${origine}${cheminPage(rel)}`));
@@ -250,7 +273,7 @@ describe('checkDist : dist propre', () => {
   });
 
   it('expose les limites et la liste des codes', () => {
-    assert.deepEqual(LIMITES, { brut: 500_000, gzip: 100_000, script: 2048, favicon: 4096 });
+    assert.deepEqual(LIMITES, { brut: 500_000, gzip: 100_000, script: 2048, favicon: 4096, partage: 100_000 });
     for (const code of ['POIDS_BRUT', 'POIDS_GZIP', 'MOT_INTERDIT', 'BROUILLON_EN_PRODUCTION', 'CELLULES_INCOHERENTES']) {
       assert.ok((CODES_CHECK_DIST as readonly string[]).includes(code), `${code} absent de CODES_CHECK_DIST`);
     }
@@ -854,7 +877,10 @@ describe('checkDist : domaine, URL canoniques, sitemap et robots (HEB-05, HEB-06
       const avecOption = checkDist(dist, { mode: 'production', domaine: P.toLowerCase(), deploiement: true });
       assert.deepEqual(avecOption.map((c) => [c.code, c.fichier, c.severite]), [['DOMAINE_PROVISOIRE', '.', 'erreur']], P);
       const sansOption = checkDist(dist, { mode: 'production', deploiement: true });
-      assert.ok(sansOption.length > 0 && sansOption.every((c) => c.code === 'DOMAINE_PROVISOIRE' && c.severite === 'erreur'), P);
+      // og:url sur le même hôte provisoire est aussi refusé (PARTAGE_INCORRECT, 09.1-04) : on juge ici les constats de domaine.
+      const domaines = sansOption.filter((c) => c.code === 'DOMAINE_PROVISOIRE');
+      assert.ok(domaines.length > 0 && domaines.every((c) => c.severite === 'erreur'), P);
+      assert.ok(sansOption.every((c) => c.code === 'DOMAINE_PROVISOIRE' || c.code === 'PARTAGE_INCORRECT'), P);
     }
     const contact = ecrireDist(distPropre({ 'index.html': page({ corps: '<a href="mailto:contact@exemple.test">m</a>' }) }));
     assert.deepEqual(checkDist(contact, { mode: 'production', deploiement: true }).map((c) => [c.code, c.severite]), [['CONTACT_PROVISOIRE', 'erreur']]);
@@ -870,14 +896,153 @@ describe('checkDist : domaine, URL canoniques, sitemap et robots (HEB-05, HEB-06
     assert.ok(ailleurs.some((c) => c.code === 'CANONIQUE_ABSENT' && c.fichier === 'a/404.html'), JSON.stringify(ailleurs));
   });
 
+  describe('PARTAGE_INCORRECT : og:url, image de partage (FIN-02, 09.1-04)', () => {
+    const OG_URL = /<meta property="og:url" content="[^"]*">/;
+    const IMAGE = 'partage.png';
+    const og = (url: string): string => `<meta property="og:url" content="${url}">`;
+    const imageOg = (url: string): string => `<meta property="og:image" content="${url}"><meta name="twitter:image" content="${url}">`;
+    const avecImage = (extraIndex: (h: string) => string = (h) => h, extra: Record<string, string> = {}): Fichiers => {
+      const f = distPropre({ [IMAGE]: 'PNG', ...extra }, { domaine: D });
+      return { ...f, 'index.html': extraIndex(String(f['index.html'])) };
+    };
+    const tete = (h: string, balises: string): string => h.replace('</head>', `${balises}</head>`);
+
+    it('og:url égal à l’URL canonique : aucun constat, hôte en majuscules compris', () => {
+      assert.deepEqual(avecDomaine(distPropre({}, { domaine: D })).codes, []);
+      const maj = retoucher(distPropre({}, { domaine: D }), 'index.html', (h) => h.replace(OG_URL, og(`https://${D.toUpperCase()}/`)));
+      assert.deepEqual(avecDomaine(maj).codes, []);
+    });
+
+    it('og:url sur un autre chemin, en http:, sur essai.<domaine>, sur un hôte .invalid, relatif : PARTAGE_INCORRECT sur cette page', () => {
+      for (const url of [`${ORIGINE}/themes/logement/`, `http://${D}/`, `https://essai.${D}/`, 'https://exemple.invalid/', '/', `https://www.${D}/`]) {
+        const r = avecDomaine(retoucher(distPropre({}, { domaine: D }), 'index.html', (h) => h.replace(OG_URL, og(url))));
+        seul(r, 'PARTAGE_INCORRECT');
+        assert.deepEqual(r.fichiers, ['index.html'], url);
+        assert.match(r.messages[0] ?? '', new RegExp(`attendue « ${ORIGINE}/ »`), url);
+      }
+    });
+
+    it('deux og:url, ou aucun en production : PARTAGE_INCORRECT', () => {
+      const deux = retoucher(distPropre({}, { domaine: D }), 'index.html', (h) => h.replace(OG_URL, (m) => m + m));
+      seul(avecDomaine(deux), 'PARTAGE_INCORRECT');
+      const sans = retoucher(distPropre({}, { domaine: D }), 'themes/logement/index.html', (h) => h.replace(OG_URL, ''));
+      const r = avecDomaine(sans);
+      seul(r, 'PARTAGE_INCORRECT');
+      assert.deepEqual(r.fichiers, ['themes/logement/index.html']);
+      assert.match(r.messages[0] ?? '', /0 og:url/);
+    });
+
+    it('404.html avec og:url ou image de partage : PARTAGE_INCORRECT ; sans : aucun constat', () => {
+      const avec404 = (head: string): Fichiers => ({ ...distPropre({ [IMAGE]: 'PNG' }, { domaine: D }), '404.html': page({ head }) });
+      assert.deepEqual(checkDist(ecrireDist(avec404('')), { mode: 'production', domaine: D }), []);
+      for (const head of [og(`${ORIGINE}/404.html`), imageOg(`${ORIGINE}/${IMAGE}`)]) {
+        assert.deepEqual(checkDist(ecrireDist(avec404(head)), { mode: 'production', domaine: D }).map((c) => [c.code, c.fichier]), [['PARTAGE_INCORRECT', '404.html']], head);
+      }
+    });
+
+    it('preview : og:url ou image de partage sur une page : PARTAGE_INCORRECT ; sans balise de partage : aucun constat', () => {
+      assert.deepEqual(avecDomaine(distPropre({}, { preview: true }), 'preview').codes, []);
+      for (const balises of [og(`${ORIGINE}/`), imageOg(`${ORIGINE}/${IMAGE}`)]) {
+        const f = distPropre({ [IMAGE]: 'PNG' }, { preview: true });
+        const r = avecDomaine({ ...f, 'index.html': tete(String(f['index.html']), balises) }, 'preview');
+        seul(r, 'PARTAGE_INCORRECT');
+        assert.deepEqual(r.fichiers, ['index.html'], balises);
+      }
+    });
+
+    it('sans option domaine : seuls le schéma et l’hôte provisoire sont jugés (un hôte .invalid est refusé)', () => {
+      const bon = ecrireDist(distPropre({}, { domaine: D }));
+      assert.deepEqual(checkDist(bon, { mode: 'production' }), []);
+      const invalide = ecrireDist(distPropre({}, { domaine: 'exemple.invalid' }));
+      const codes = checkDist(invalide, { mode: 'production' }).map((c) => c.code);
+      assert.ok(codes.includes('PARTAGE_INCORRECT'), codes.join(', '));
+      const http = retoucher(distPropre({}, { domaine: D }), 'index.html', (h) => h.replace(OG_URL, og(`http://${D}/`)));
+      assert.deepEqual(checkDist(ecrireDist(http), { mode: 'production' }).map((c) => c.code), ['PARTAGE_INCORRECT']);
+    });
+
+    it('image de partage valide (https, domaine configuré, fichier du dist) : aucun constat', () => {
+      assert.deepEqual(avecDomaine(avecImage((h) => tete(h, imageOg(`${ORIGINE}/${IMAGE}`)))).codes, []);
+    });
+
+    it('image relative, sur un autre hôte, en http:, sur un hôte .invalid, ou absente du dist : PARTAGE_INCORRECT', () => {
+      for (const url of [`/${IMAGE}`, IMAGE, `https://autre.test/${IMAGE}`, `http://${D}/${IMAGE}`, `https://essai.${D}/${IMAGE}`, `https://exemple.invalid/${IMAGE}`, `${ORIGINE}/absente.png`]) {
+        const r = avecDomaine(avecImage((h) => tete(h, imageOg(url))));
+        seul(r, 'PARTAGE_INCORRECT');
+        assert.deepEqual(r.fichiers, ['index.html'], url);
+      }
+    });
+
+    it('l’image de partage chargée par la page : img src, img srcset, source srcset, link href, url() d’un style : PARTAGE_INCORRECT', () => {
+      const charges = [
+        `<img src="/${IMAGE}" alt="">`,
+        `<img src="${ORIGINE}/${IMAGE}" alt="">`,
+        `<img src="/autre.png" srcset="/autre.png 1x, /${IMAGE} 2x" alt="">`,
+        `<picture><source srcset="/${IMAGE}"><img src="/autre.png" alt=""></picture>`,
+        `<link rel="preload" as="image" href="/${IMAGE}">`,
+      ];
+      for (const chargee of charges) {
+        const f = avecImage((h) => tete(h, imageOg(`${ORIGINE}/${IMAGE}`)), { 'autre.png': 'PNG' });
+        // la référence est dans une autre page : la règle vaut pour toutes les pages du dist
+        const dist = { ...f, 'themes/logement/index.html': String(f['themes/logement/index.html']).replace('<body>', `<body>${chargee}`) };
+        const r = avecDomaine(dist);
+        // une image absolue est aussi une ressource externe (RESSOURCE_TIERCE) : seul PARTAGE_INCORRECT est jugé ici
+        assert.ok(r.codes.includes('PARTAGE_INCORRECT'), chargee);
+        assert.ok(r.codes.every((c) => c === 'PARTAGE_INCORRECT' || c === 'RESSOURCE_TIERCE'), `${chargee} : ${r.codes.join(', ')}`);
+        assert.ok(r.fichiers.includes('themes/logement/index.html') && r.fichiers.every((f) => f === 'themes/logement/index.html'), chargee);
+        assert.ok(r.messages.some((m) => /jamais être chargée/.test(m)), chargee);
+      }
+      const style = avecImage((h) => tete(h, imageOg(`${ORIGINE}/${IMAGE}`)));
+      const r = avecDomaine({ ...style, 'themes/logement/index.html': String(style['themes/logement/index.html']).replace('</head>', `<style>.x{background:url(/${IMAGE})}</style></head>`) });
+      assert.ok(r.codes.includes('PARTAGE_INCORRECT'), r.messages.join(' | '));
+    });
+
+    // IN-03 (revue 09.1) : URL absolue avec requête ou fragment, quatre attributs de plus, et préversion.
+    it('IN-03 : URL absolue avec requête, video poster, input image, object data, image SVG : PARTAGE_INCORRECT', () => {
+      const charges = [
+        `<img src="${ORIGINE}/${IMAGE}?v=1" alt="">`,
+        `<img src="${ORIGINE}/${IMAGE}?v=1#x" alt="">`,
+        `<img src="/${IMAGE}?v=2" alt="">`,
+        `<video poster="/${IMAGE}"></video>`,
+        `<form><input type="image" src="/${IMAGE}" alt="Envoyer"></form>`,
+        `<object data="/${IMAGE}" type="image/png"></object>`,
+        `<svg><image href="/${IMAGE}"></image></svg>`,
+        `<svg><image xlink:href="/${IMAGE}"></image></svg>`,
+      ];
+      for (const chargee of charges) {
+        const f = avecImage((h) => tete(h, imageOg(`${ORIGINE}/${IMAGE}`)));
+        const dist = { ...f, 'themes/logement/index.html': String(f['themes/logement/index.html']).replace('<body>', `<body>${chargee}`) };
+        const r = avecDomaine(dist);
+        assert.ok(r.messages.some((m) => /jamais être chargée/.test(m)), `${chargee} : ${r.messages.join(' | ')}`);
+        assert.ok(r.fichiers.every((x) => x === 'themes/logement/index.html'), chargee);
+      }
+    });
+
+    it('IN-03 : en préversion aussi, partage.png du dist chargé par une page : PARTAGE_INCORRECT ; non chargé : aucun constat', () => {
+      assert.deepEqual(avecDomaine(distPropre({ [IMAGE]: 'PNG' }, { preview: true }), 'preview').codes, []);
+      const f = distPropre({ [IMAGE]: 'PNG' }, { preview: true });
+      const r = avecDomaine({ ...f, 'index.html': String(f['index.html']).replace('<body>', `<body><img src="/${IMAGE}" alt="">`) }, 'preview');
+      seul(r, 'PARTAGE_INCORRECT');
+      assert.match(r.messages[0] ?? '', /jamais être chargée/);
+    });
+
+    it('IN-03 : une autre image du même nom sur un autre chemin, ou partage.png d’un autre hôte, ne sont pas l’image de partage', () => {
+      const f = avecImage((h) => tete(h, imageOg(`${ORIGINE}/${IMAGE}`)), { 'a/partage.html': page() });
+      for (const lien of [`<a href="/a/partage.html">x</a>`]) {
+        const r = avecDomaine({ ...f, 'themes/logement/index.html': String(f['themes/logement/index.html']).replace('<body>', `<body>${lien}`) });
+        assert.ok(!r.messages.some((m) => /jamais être chargée/.test(m)), `${lien} : ${r.messages.join(' | ')}`);
+      }
+    });
+  });
+
   it('DOMAINE_PROVISOIRE sans option domaine : une fois par page de production dont l’URL canonique vise un hôte .invalid', () => {
     const dist = ecrireDist(distPropre({}, { domaine: 'exemple.invalid' }));
-    const defaut = checkDist(dist, { mode: 'production' });
+    // og:url sur le même hôte .invalid est aussi refusé (PARTAGE_INCORRECT, 09.1-04) : on juge ici les constats de domaine.
+    const defaut = checkDist(dist, { mode: 'production' }).filter((c) => c.code === 'DOMAINE_PROVISOIRE');
     assert.deepEqual(defaut.map((c) => [c.code, c.fichier, c.severite]), [
       ['DOMAINE_PROVISOIRE', 'index.html', 'avertissement'],
       ['DOMAINE_PROVISOIRE', 'themes/logement/index.html', 'avertissement'],
     ]);
-    assert.deepEqual(new Set(checkDist(dist, { mode: 'production', deploiement: true }).map((c) => c.severite)), new Set(['erreur']));
+    assert.deepEqual(new Set(checkDist(dist, { mode: 'production', deploiement: true }).filter((c) => c.code === 'DOMAINE_PROVISOIRE').map((c) => c.severite)), new Set(['erreur']));
   });
 
   it('option domaine invalide (schéma, port, chemin) : exception, jamais un contrôle silencieusement faux', () => {
@@ -968,8 +1133,70 @@ describe('checkDist : version.json (HEB-07, D-12) et types de fichiers du dist (
     assert.deepEqual(verifier(distPropre()).codes, []);
   });
 
-  it('TYPES_AUTORISES : html, txt, xml, json et ico (pour le seul favicon.ico)', () => {
-    assert.deepEqual([...TYPES_AUTORISES], ['.html', '.txt', '.xml', '.json', '.ico']);
+  it('TYPES_AUTORISES : html, txt, xml, json, ico (pour le seul favicon.ico) et png (pour le seul partage.png)', () => {
+    assert.deepEqual([...TYPES_AUTORISES], ['.html', '.txt', '.xml', '.json', '.ico', '.png']);
+  });
+
+  describe('partage.png (09.1, proposition 6) : un seul PNG, à la racine, 100 000 octets au plus', () => {
+    const image = (n: number): Buffer => pngDe(n);
+    const avecTypes = (fichiers: Record<string, string | Buffer | null>): Resultat =>
+      verifier(pourCli(distPropre(fichiers)), 'production', { logement: 2 }, { typesAutorises: TYPES_AUTORISES });
+
+    it('accepte partage.png à la racine, jusqu’à 100 000 octets', () => {
+      assert.deepEqual(avecTypes({ 'partage.png': image(60_000) }).codes, []);
+      assert.deepEqual(avecTypes({ 'partage.png': image(LIMITES.partage) }).codes, []);
+    });
+
+    it('refuse un PNG ailleurs qu’à la racine, d’un autre nom, ou trop lourd (TYPE_FICHIER_INATTENDU)', () => {
+      for (const rel of ['a/partage.png', 'autre.png', 'img/logo.png']) {
+        const r = avecTypes({ 'partage.png': image(1000), [rel]: image(1000) });
+        assert.deepEqual(r.codes, ['TYPE_FICHIER_INATTENDU'], rel);
+        assert.deepEqual(r.fichiers, [rel]);
+        assert.match(r.messages[0] ?? '', /seul partage\.png à la racine du dist/);
+      }
+      const lourd = avecTypes({ 'partage.png': image(100_001) });
+      assert.deepEqual(lourd.codes, ['TYPE_FICHIER_INATTENDU']);
+      assert.match(lourd.messages[0] ?? '', /100001 octets \(limite 100000\)/);
+    });
+
+    it('IN-02 (revue 09.1) : partage.png qui n’est pas un PNG 1200 x 630 bien formé : TYPE_FICHIER_INATTENDU', () => {
+      const bon = pngDe(1000);
+      const iend = bon.length - 12;
+      const cas: Array<[string, Buffer, RegExp]> = [
+        ['octets quelconques', Buffer.alloc(1000, 1), /signature PNG absente/],
+        ['HTML renommé', Buffer.from('<!doctype html><title>x</title>'), /signature PNG absente/],
+        ['SVG renommé', Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"/>'), /signature PNG absente/],
+        ['autres dimensions', pngDe(1000, 630, 1200), /dimensions 630 x 1200 au lieu de 1200 x 630/],
+        ['signature seule', bon.subarray(0, 8), /IHDR absent/],
+        ['IHDR tronqué', bon.subarray(0, 20), /morceau tronqué/],
+        ['sans IEND', bon.subarray(0, iend), /IEND absent/],
+        ['octets après IEND', Buffer.concat([bon, Buffer.from('x')]), /après le morceau IEND/],
+        ['longueur de morceau hors du fichier', (() => { const b = Buffer.from(bon); b.writeUInt32BE(0xffffffff, 33); return b; })(), /morceau tronqué/],
+        ['premier morceau autre que IHDR', (() => { const b = Buffer.from(bon); b.write('IDAT', 12, 'latin1'); return b; })(), /premier morceau/],
+      ];
+      for (const [nom, octets, motif] of cas) {
+        const r = avecTypes({ 'partage.png': octets });
+        assert.deepEqual(r.codes, ['TYPE_FICHIER_INATTENDU'], nom);
+        assert.deepEqual(r.fichiers, ['partage.png'], nom);
+        assert.match(r.messages[0] ?? '', motif, nom);
+      }
+    });
+
+    it('IN-02 : le partage.png versionné (public/partage.png) est accepté', () => {
+      const vrai = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'public', 'partage.png'));
+      assert.deepEqual(avecTypes({ 'partage.png': vrai }).codes, []);
+    });
+
+    it('un .jpg, un .webp ou un .svg restent refusés', () => {
+      for (const rel of ['partage.jpg', 'partage.webp', 'partage.svg']) {
+        assert.deepEqual(avecTypes({ [rel]: image(100) }).codes, ['TYPE_FICHIER_INATTENDU'], rel);
+      }
+    });
+
+    it('sans .png dans les types permis, partage.png reste un type inattendu', () => {
+      const r = verifier(pourCli(distPropre({ 'partage.png': image(1000) })), 'production', { logement: 2 }, { typesAutorises: ['.html', '.txt', '.xml', '.json', '.ico'] });
+      assert.deepEqual(r.fichiers, ['partage.png']);
+    });
   });
 
   describe('favicon.ico (D-11) : une seule icône, à la racine, 4 096 octets au plus', () => {
@@ -1208,6 +1435,17 @@ describe('CLI scripts/check-dist.ts', () => {
     const ko = lancer(['--dist', ecrireDist({ ...distCli(), 'img/favicon.ico': Buffer.alloc(300, 1) }), '--root', CORPUS, '--mode', 'production']);
     assert.equal(ko.status, 1, ko.out + ko.err);
     assert.match(ko.out, /^TYPE_FICHIER_INATTENDU img\/favicon\.ico : /m);
+  });
+
+  it('09.1 : le CLI accepte un PNG partage.png à la racine, refuse img/partage.png et un partage.png qui n’est pas un PNG (code 1)', () => {
+    const ok = lancer(['--dist', ecrireDist({ ...distCli(), 'partage.png': pngDe(300) }), '--root', CORPUS, '--mode', 'production']);
+    assert.equal(ok.status, 0, ok.out + ok.err);
+    const faux = lancer(['--dist', ecrireDist({ ...distCli(), 'partage.png': Buffer.alloc(300, 1) }), '--root', CORPUS, '--mode', 'production']);
+    assert.equal(faux.status, 1, faux.out + faux.err);
+    assert.match(faux.out, /^TYPE_FICHIER_INATTENDU partage\.png : /m);
+    const ko = lancer(['--dist', ecrireDist({ ...distCli(), 'img/partage.png': pngDe(300) }), '--root', CORPUS, '--mode', 'production']);
+    assert.equal(ko.status, 1, ko.out + ko.err);
+    assert.match(ko.out, /^TYPE_FICHIER_INATTENDU img\/partage\.png : /m);
   });
 
   it('WR-06 : un lien symbolique dans le dist donne FICHIER_NON_REGULIER (code 1)', () => {

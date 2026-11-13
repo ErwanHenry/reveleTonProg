@@ -1,0 +1,20 @@
+version_schema: 1
+id: nouvelle-personne
+prenom: Camille
+nom: Exemplaire
+nom_tri: Exemplaire
+parti: null
+ids_externes:
+  2027etmoi: nouvelle-personne
+statuts:
+  - code: declare
+    date: 2026-12-10
+    source:
+      type: presse
+      titre: Annonce de candidature (fictive)
+      url: https://exemple.test/nouvelle-personne/candidature
+      date_publication: 2026-12-10
+      date_consultation: 2026-12-11
+    statut_relecture: relu
+    relecteur: Erwan Henry
+    date_relecture: 2026-12-12

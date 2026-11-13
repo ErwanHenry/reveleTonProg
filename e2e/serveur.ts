@@ -7,6 +7,18 @@
 // `cache-control: no-store` : chaque chargement (mesure 4G) part à froid, à la différence de Caddy.
 // Liens symboliques : le chemin réel (realpath) de la cible doit rester sous le chemin réel du dist,
 // sinon 404 ; un lien qui pointe vers un autre fichier du dist est servi.
+// Adresse inconnue (plan 09.1-02) : comme le bloc Caddy public (`@introuvable not file {path} {path}/`, puis
+// `rewrite * /404.html` et `file_server { status 404 }`), le serveur répond 404 avec <dist>/404.html et les en-têtes
+// d'une page (même contrôle de chemin réel) ; sans 404.html dans le dist, le corps reste « 404 ». Comme Caddy, la 404
+// porte Cache-Control no-cache, ETag et Last-Modified, et comme le bloc (CR-01 de la revue 09.1 : `request_header -If-*`
+// et `-Range` dans la route), préconditions et Range n'y changent rien : WebKit revalide une 404 gardée en cache et
+// doit recevoir la page entière, jamais un corps vide.
+// Parité avec Caddy (IN-04 de la revue 09.1) : un dossier qui a son index.html, demandé sans barre finale (/methode),
+// reçoit 308 vers /methode/ comme sous Caddy. Écarts voulus ou connus : les vrais fichiers partent en no-store, sans
+// ETag ni Last-Modified, sans 304 ni plages (chaque chargement de la mesure 4G part à froid) ; seuls gzip et identité
+// (Caddy propose aussi zstd) ; un dossier sans index.html reçoit ici la page 404, alors que Caddy, dont le filtre
+// `{path}/` le reconnaît comme dossier, laisse son file_server de premier niveau répondre 404 (non vérifié en conteneur,
+// le dist n'a pas de tel dossier). La preuve de la revalidation de la 404 réelle reste le contrôle du RUNBOOK (CR-01).
 import { createServer, type Server } from 'node:http';
 import { readFileSync, realpathSync, statSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
@@ -35,6 +47,7 @@ const TYPES: Record<string, string> = {
   '.xml': 'application/xml; charset=utf-8',
   '.json': 'application/json; charset=utf-8', // version.json (HEB-07)
   '.ico': 'image/x-icon', // favicon.ico (D-11)
+  '.png': 'image/png', // partage.png (09.1, proposition 6) : jamais chargé par une page, servi comme le bloc Caddy
 };
 
 /**
@@ -65,28 +78,49 @@ export function creerServeur(racineArg: string, options: OptionsServeur = {}): S
       res.writeHead(400).end('400');
       return;
     }
-    if (rel.endsWith('/')) rel += 'index.html';
-    const abs = path.resolve(racine, `.${rel}`);
-    const reel = cheminReel(racine, abs);
-    if (reel === null) {
-      res.writeHead(404).end('404');
+    // Dossier de la release demandé sans sa barre finale : 308 vers le chemin avec barre, requête gardée, comme le
+    // file_server de Caddy (IN-04 de la revue 09.1) ; seulement si le dossier a son index.html sous le dist.
+    if (!rel.endsWith('/') && cheminReel(racine, path.resolve(racine, `.${rel}`, 'index.html')) !== null) {
+      const url = new URL(req.url ?? '/', 'http://x');
+      res.writeHead(308, { location: `${url.pathname}/${url.search}` }).end();
       return;
+    }
+    if (rel.endsWith('/')) rel += 'index.html';
+    let abs = path.resolve(racine, `.${rel}`);
+    let reel = cheminReel(racine, abs);
+    let status = 200;
+    if (reel === null) {
+      abs = path.join(racine, '404.html');
+      reel = cheminReel(racine, abs);
+      status = 404;
+      if (reel === null) {
+        res.writeHead(404).end('404');
+        return;
+      }
     }
     const ext = path.extname(abs);
     const brut = readFileSync(reel);
     // L'icône reçoit la valeur du bloc Caddy (Cache-Control "no-cache", deploy/caddy/site.caddy) : servie en
     // no-store, Chromium ne garde plus la page dans le bfcache (vérifié par e2e/parcours.spec.ts, D-11).
-    const cache = ext === '.ico' ? 'no-cache' : 'no-store';
+    // La 404 aussi, avec ETag et Last-Modified comme file_server : un navigateur la garde et la revalide (CR-01).
+    const cache = status === 404 || ext === '.ico' || ext === '.png' ? 'no-cache' : 'no-store';
     const h: Record<string, string> = { 'content-type': TYPES[ext] ?? 'application/octet-stream', 'cache-control': cache };
+    if (status === 404) {
+      // Préconditions (If-None-Match, If-Modified-Since...) et Range ignorés ici, comme le bloc Caddy les retire
+      // (`request_header -If-*`, `request_header -Range`) : la 404 part toujours entière.
+      const st = statSync(reel);
+      h['etag'] = `"${Math.floor(st.mtimeMs).toString(36)}${st.size.toString(36)}"`;
+      h['last-modified'] = st.mtime.toUTCString();
+    }
     if (csp !== null) h['content-security-policy'] = csp;
-    if (ext in TYPES && /\bgzip\b/.test(String(req.headers['accept-encoding'] ?? ''))) {
+    if (ext in TYPES && ext !== '.png' && /\bgzip\b/.test(String(req.headers['accept-encoding'] ?? ''))) {
       let gz = memo.get(reel);
       if (!gz) memo.set(reel, (gz = gzipSync(brut, { level: 6 })));
       res
-        .writeHead(200, { ...h, 'content-encoding': 'gzip', vary: 'Accept-Encoding', 'content-length': String(gz.length) })
+        .writeHead(status, { ...h, 'content-encoding': 'gzip', vary: 'Accept-Encoding', 'content-length': String(gz.length) })
         .end(gz);
     } else {
-      res.writeHead(200, { ...h, 'content-length': String(brut.length) }).end(brut);
+      res.writeHead(status, { ...h, 'content-length': String(brut.length) }).end(brut);
     }
   });
 }

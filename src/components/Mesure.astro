@@ -54,9 +54,15 @@ const manque = "Cette version n'est pas encore rédigée ; voici la version En b
   {relue && <p class="relecture" data-relecture>Relue par {mesure.relecteur} le <time datetime={mesure.date_relecture}>{formatDate(mesure.date_relecture as string)}</time>.</p>}
   <div class="source">
     <BlocSource source={source} libelle="Source primaire" />
+    {/* Proposition 2 (audit B4), validée par Erwan : une ligne « Signaler une erreur : par courriel, sur GitHub »,
+        libellés (clés mesure.signaler.*, DEFAULT ; avant : « Signaler une erreur (courriel) » et
+        « Signaler une erreur (GitHub) »). Nom accessible complet de chaque lien, libellé visible compris (WCAG 2.5.3) :
+        « Signaler une erreur par courriel sur la mesure « titre » ». Le préfixe visible est masqué aux lecteurs
+        d'écran, qui l'entendent déjà dans le nom de chaque lien. */}
     <p class="signaler">
-      <a href={lienMail}>Signaler une erreur (courriel)<span class="sr-only"> sur la mesure « {mesure.titre} »</span></a>
-      <a href={lienGithub} rel="noopener noreferrer">Signaler une erreur (GitHub)<span class="sr-only"> sur la mesure « {mesure.titre} »</span></a>
+      <span aria-hidden="true">Signaler une erreur :</span>
+      <a href={lienMail}><span class="sr-only">Signaler une erreur </span>par courriel<span class="sr-only"> sur la mesure « {mesure.titre} »</span></a>
+      <a href={lienGithub} rel="noopener noreferrer"><span class="sr-only">Signaler une erreur </span>sur GitHub<span class="sr-only"> sur la mesure « {mesure.titre} »</span></a>
     </p>
   </div>
 </article>

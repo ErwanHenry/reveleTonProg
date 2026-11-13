@@ -46,6 +46,7 @@ describe('e2e/serveur.ts', () => {
     writeFileSync(path.join(dist, '_astro', 'x.css'), 'body{color:red}');
     writeFileSync(path.join(dist, 'version.json'), VERSION);
     writeFileSync(path.join(dist, 'favicon.ico'), ICONE);
+    writeFileSync(path.join(dist, 'partage.png'), ICONE);
     writeFileSync(path.join(tmp, 'secret.txt'), 'SECRET');
     // WR-01 : liens symboliques vers l'extérieur du dist (fichier et dossier) et vers l'intérieur.
     symlinkSync(path.join(tmp, 'secret.txt'), path.join(dist, 'lien.txt'));
@@ -105,6 +106,15 @@ describe('e2e/serveur.ts', () => {
     assert.ok(r.corps.equals(ICONE));
   });
 
+  it('09.1 : sert /partage.png en image/png, no-cache, sans compression', async () => {
+    const r = await get('/partage.png', { 'accept-encoding': 'gzip' });
+    assert.equal(r.status, 200);
+    assert.equal(r.headers['content-type'], 'image/png');
+    assert.equal(r.headers['cache-control'], 'no-cache', 'comme le bloc Caddy : en no-store, Chromium refuse le bfcache');
+    assert.equal(r.headers['content-encoding'], undefined, 'Caddy ne compresse pas les PNG');
+    assert.ok(r.corps.equals(ICONE));
+  });
+
   for (const chemin of ['/%2e%2e/secret.txt', '/../secret.txt', '/..%2fsecret.txt']) {
     it(`refuse la traversée ${chemin}`, async () => {
       const r = await get(chemin);
@@ -132,7 +142,196 @@ describe('e2e/serveur.ts', () => {
     assert.equal((await get('/absent.html')).status, 404);
   });
 
+  it('introuvable 404 : sans 404.html dans le dist, le corps reste « 404 »', async () => {
+    for (const chemin of ['/nexistepas/', '/absent.html', '/vide/']) {
+      const r = await get(chemin, { 'accept-encoding': 'identity' });
+      assert.equal(r.status, 404, chemin);
+      assert.equal(r.corps.toString('utf8'), '404', chemin);
+    }
+  });
+
+  // IN-04 (revue 09.1) : comme Caddy (prouvé sur 2.11.2), un dossier servi sans sa barre finale est redirigé en 308.
+  it('IN-04 : dossier avec index.html demandé sans barre finale : 308 vers le chemin avec barre, requête gardée', async () => {
+    const r = await get('/a');
+    assert.equal(r.status, 308);
+    assert.equal(r.headers['location'], '/a/');
+    const q = await get('/a?x=1');
+    assert.equal(q.status, 308);
+    assert.equal(q.headers['location'], '/a/?x=1');
+    assert.equal((await get('/a/')).status, 200);
+    // un dossier sans index.html, un lien vers l'extérieur ou un fichier ne sont pas redirigés
+    assert.equal((await get('/vide')).status, 404);
+    assert.equal((await get('/dehors')).status, 404);
+    assert.equal((await get('/version.json')).status, 200);
+  });
+
   it('400 sur un encodage malformé', async () => {
     assert.equal((await get('/%E0%A4%A')).status, 400);
+  });
+});
+
+// Page 404 du site (plan 09.1-02) : même comportement que le bloc Caddy public (`@introuvable not file {path} {path}/`,
+// `rewrite * /404.html`, `file_server { status 404 }`) : toute adresse qui n'est pas un fichier servi reçoit 404.html
+// avec le code 404 et les en-têtes d'une page.
+describe('e2e/serveur.ts, introuvable 404 : page 404.html du dist', () => {
+  let port: number;
+  let tmp: string;
+  let serveur: ReturnType<typeof creerServeur>;
+  const HTML = '<!doctype html><title>x</title><p>bonjour</p>';
+  const PAGE_404 = '<!doctype html><html lang="fr"><title>Page introuvable</title><h1>Page introuvable</h1></html>';
+  const CSP = "default-src 'none'";
+
+  function get(chemin: string, headers: Record<string, string> = {}): Promise<Reponse> {
+    return new Promise((ok, ko) => {
+      const req = request({ host: '127.0.0.1', port, path: chemin, method: 'GET', headers }, (res) => {
+        const morceaux: Buffer[] = [];
+        res.on('data', (c: Buffer) => morceaux.push(c));
+        res.on('end', () => ok({ status: res.statusCode, headers: res.headers, corps: Buffer.concat(morceaux) }));
+      });
+      req.on('error', ko);
+      req.end();
+    });
+  }
+
+  before(async () => {
+    tmp = mkdtempSync(path.join(os.tmpdir(), 'rtp-serveur-404-'));
+    const dist = path.join(tmp, 'dist');
+    mkdirSync(path.join(dist, 'vide'), { recursive: true });
+    writeFileSync(path.join(dist, 'index.html'), HTML);
+    writeFileSync(path.join(dist, '404.html'), PAGE_404);
+    writeFileSync(path.join(tmp, 'secret.txt'), 'SECRET');
+    symlinkSync(path.join(tmp, 'secret.txt'), path.join(dist, 'lien.txt'));
+    symlinkSync(tmp, path.join(dist, 'dehors'));
+    serveur = creerServeur(dist, { csp: CSP });
+    await new Promise<void>((ok) => serveur.listen(0, '127.0.0.1', ok));
+    port = (serveur.address() as AddressInfo).port;
+  });
+
+  after(() => {
+    serveur.close();
+    rmSync(tmp, { recursive: true, force: true });
+  });
+
+  for (const chemin of ['/nexistepas/', '/absent.html', '/vide/']) {
+    it(`${chemin} : code 404, octets exacts de 404.html, en-têtes d'une page`, async () => {
+      const r = await get(chemin, { 'accept-encoding': 'identity' });
+      assert.equal(r.status, 404);
+      assert.equal(r.corps.toString('utf8'), PAGE_404);
+      assert.equal(r.headers['content-type'], 'text/html; charset=utf-8');
+      assert.equal(r.headers['content-security-policy'], CSP);
+      // Comme le bloc Caddy (Cache-Control "no-cache", ETag, Last-Modified) : la 404 est gardée et revalidée (CR-01).
+      assert.equal(r.headers['cache-control'], 'no-cache');
+      assert.match(String(r.headers['etag']), /^"[0-9a-z]+"$/);
+      assert.ok(!Number.isNaN(Date.parse(String(r.headers['last-modified']))), 'last-modified lisible');
+      assert.equal(r.headers['content-length'], String(Buffer.byteLength(PAGE_404)));
+    });
+  }
+
+  // CR-01 (revue 09.1) : le bloc Caddy retire préconditions et Range dans la route de la 404. WebKit revalide une 404
+  // gardée en cache (If-None-Match, If-Modified-Since) : la seconde visite doit recevoir la page entière, jamais un
+  // corps vide ou tronqué.
+  it('CR-01 : seconde requête avec les validateurs de la première, puis chaque précondition et Range : page 404 entière', async () => {
+    const premiere = await get('/nexistepas/', { 'accept-encoding': 'identity' });
+    const etag = String(premiere.headers['etag']);
+    const date = String(premiere.headers['last-modified']);
+    assert.match(etag, /^"/);
+    const variantes: Record<string, string>[] = [
+      { 'if-none-match': etag },
+      { 'if-none-match': '*' },
+      { 'if-modified-since': date },
+      { 'if-modified-since': new Date(Date.now() + 86_400_000).toUTCString() },
+      { 'if-match': '"zzz"' },
+      { 'if-unmodified-since': 'Thu, 01 Jan 1970 00:00:00 GMT' },
+      { range: 'bytes=0-5' },
+      { range: 'bytes=0-5', 'if-range': etag },
+      { 'if-none-match': etag, 'if-modified-since': date },
+    ];
+    for (const entetes of variantes) {
+      for (const encodage of ['identity', 'gzip']) {
+        const r = await get('/nexistepas/', { 'accept-encoding': encodage, ...entetes });
+        const corps = r.headers['content-encoding'] === 'gzip' ? gunzipSync(r.corps).toString('utf8') : r.corps.toString('utf8');
+        assert.equal(r.status, 404, JSON.stringify(entetes));
+        assert.equal(corps, PAGE_404, `${JSON.stringify(entetes)} ${encodage}`);
+        assert.equal(r.headers['content-range'], undefined, JSON.stringify(entetes));
+      }
+    }
+  });
+
+  it('CR-01 : HEAD sur une adresse inconnue, 404 et longueur de la page entière, même avec If-None-Match', async () => {
+    const premiere = await get('/nexistepas/', { 'accept-encoding': 'identity' });
+    for (const entetes of [{}, { 'if-none-match': String(premiere.headers['etag']) }]) {
+      const r: Reponse = await new Promise((ok, ko) => {
+        const req = request(
+          { host: '127.0.0.1', port, path: '/nexistepas/', method: 'HEAD', headers: { 'accept-encoding': 'identity', ...entetes } },
+          (res) => {
+            res.resume();
+            res.on('end', () => ok({ status: res.statusCode, headers: res.headers, corps: Buffer.alloc(0) }));
+          },
+        );
+        req.on('error', ko);
+        req.end();
+      });
+      assert.equal(r.status, 404);
+      assert.equal(r.headers['content-length'], String(Buffer.byteLength(PAGE_404)));
+    }
+  });
+
+  it('gzip si demandé, avec le code 404', async () => {
+    const r = await get('/nexistepas/', { 'accept-encoding': 'gzip' });
+    assert.equal(r.status, 404);
+    assert.equal(r.headers['content-encoding'], 'gzip');
+    assert.equal(gunzipSync(r.corps).toString('utf8'), PAGE_404);
+  });
+
+  it('une page existante reste servie en 200', async () => {
+    const r = await get('/', { 'accept-encoding': 'identity' });
+    assert.equal(r.status, 200);
+    assert.equal(r.corps.toString('utf8'), HTML);
+  });
+
+  for (const chemin of ['/%2e%2e/secret.txt', '/../secret.txt', '/..%2fsecret.txt', '/lien.txt', '/dehors/secret.txt']) {
+    it(`traversée ou lien vers l'extérieur ${chemin} : 404 avec la page 404, jamais le secret`, async () => {
+      const r = await get(chemin, { 'accept-encoding': 'identity' });
+      assert.equal(r.status, 404);
+      assert.ok(!r.corps.toString('utf8').includes('SECRET'));
+      assert.equal(r.corps.toString('utf8'), PAGE_404);
+    });
+  }
+});
+
+describe('e2e/serveur.ts, introuvable 404 : 404.html lien symbolique vers l\'extérieur', () => {
+  let port: number;
+  let tmp: string;
+  let serveur: ReturnType<typeof creerServeur>;
+
+  before(async () => {
+    tmp = mkdtempSync(path.join(os.tmpdir(), 'rtp-serveur-404-lien-'));
+    const dist = path.join(tmp, 'dist');
+    mkdirSync(dist, { recursive: true });
+    writeFileSync(path.join(dist, 'index.html'), '<!doctype html><title>x</title>');
+    writeFileSync(path.join(tmp, 'secret.txt'), 'SECRET');
+    symlinkSync(path.join(tmp, 'secret.txt'), path.join(dist, '404.html'));
+    serveur = creerServeur(dist, { csp: null });
+    await new Promise<void>((ok) => serveur.listen(0, '127.0.0.1', ok));
+    port = (serveur.address() as AddressInfo).port;
+  });
+
+  after(() => {
+    serveur.close();
+    rmSync(tmp, { recursive: true, force: true });
+  });
+
+  it('la page 404 hors du dist n\'est jamais servie : corps « 404 »', async () => {
+    const r: Reponse = await new Promise((ok, ko) => {
+      const req = request({ host: '127.0.0.1', port, path: '/nexistepas/', method: 'GET' }, (res) => {
+        const morceaux: Buffer[] = [];
+        res.on('data', (c: Buffer) => morceaux.push(c));
+        res.on('end', () => ok({ status: res.statusCode, headers: res.headers, corps: Buffer.concat(morceaux) }));
+      });
+      req.on('error', ko);
+      req.end();
+    });
+    assert.equal(r.status, 404);
+    assert.equal(r.corps.toString('utf8'), '404');
   });
 });

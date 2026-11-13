@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: "Lot 3 : hébergement et mise en ligne"
 status: executing
-stopped_at: Completed 09-09-PLAN.md ; waiting for Erwan (09-10, review of the santé theme)
-last_updated: "2026-11-11T00:53:59.447Z"
-last_activity: "2026-11-11 (09-15 : filtre de production des personnes sans statut relu, comptes honnêtes sur /candidats/ et la Méthode, code check-dist CANDIDAT_NON_RELU_EN_PRODUCTION ; production réelle : aucune personne affichée tant que 09-10 n'a relu aucun statut)"
+stopped_at: Completed 10-04-PLAN.md ; waiting for Erwan (09-10, review of the santé theme)
+last_updated: "2026-11-13T12:30:00.000Z"
+last_activity: "2026-11-13 (10-04 : réponse d'Erwan « Tout par défaut » aux sept questions de l'import (D-08 option B, D-09 runbook, gel du 13 décembre 18:00 au 15 décembre 23:59, limite de recréation 13 décembre 12:00) ; avertissement STATUT_PLUS_RECENT_NON_RELU, jamais bloquant, 0 cas sur le corpus réel ; RUNBOOK : import de décembre et gel d'import ; poussé, déploiement en attente d'Erwan) (09.1-09 : réponse d'Erwan « Suis ton avis » (2026-11-13) : P1, P5, P2, P3, P4, P6 repris sur main par cherry-pick, 2b refusée, accord sur la règle M1-08 enregistré (ADR-034) ; santé à 375 px En bref 24 038 px, cible FIN-04 abaissée à cette valeur, première tuile à 713 px ; gardes vertes, poussé, déploiement en attente d'Erwan ; phase 9.1 terminée) (10-03 : rapport de répétition à blanc (module pur rapport-import.ts), --format markdown, --dry-run tolérant aux identifiants inconnus, --check ; répétition réelle sur le jeu en ligne (61 lignes, 2 nouveaux, 6 dérives de source) dans un worktree jetable supprimé, liste des mises à jour à la main pour 10-05 ; poussé, déploiement en attente d'Erwan) (09.1-08 : P6 image de partage 1200 x 630 (171d4af) sur design/finitions, seul PNG admis par check-dist, jamais chargée ; sept commits rejouables seuls sur main (P2b après P2), gardes vertes sur la pointe, CI de la pull request #5 verte ; aperçus avant et après, carte de partage locale et fiche 09.1-APERCU.md prêts pour Erwan ; rien du lot B sur main) (09.1-07 : propositions P2 (bloc source compact), P2b (liens du document repliés, touche C5), P3 (Aller à un candidat), P4 (grille, touche M1-08) sur design/finitions, chacune rejouable seule sur main ; FIN-04 non atteint, 22 542 px pour 21 500 ; rien du lot B sur main) (09.1-06 : lot B ouvert, worktree ../reveleTonProg-design sur design/finitions, mesurer.mjs et 09.1-MESURES.md, propositions P1 (accueil) et P5 (nom, sous-titre, ligne d'identité) en brouillon, pull request brouillon #5, rien du lot B sur main) (09.1-05 : accueil sans rappel du niveau, sélecteur et gros caractères épinglés sur chaque page candidat avec et sans JavaScript, pied de page structuré ; lot A poussé sur main) (09.1-04 : balises de partage et theme-color, og:url depuis le seul domaine configuré, check-dist PARTAGE_INCORRECT ; main non poussé) (09.1-03 : NOM_SITE en un seul endroit, 79 pages comparées avant et après sans une différence ; main non poussé) (09.1-02 : page 404 en français noindex sans canonique, serveur de test et bloc Caddy public en 404 sans handle_errors, preuve Caddy 2.11.2 locale jetable, contrôles 09-12 au RUNBOOK ; main non poussé, sauvegarde sur sauvegarde/finitions-lot-a) (09.1-01 : lot A partie 1, césure réservée aux noms et titres, survol sous (hover: hover), barre de thème, statut pleine largeur, phrase de /candidats/ ; commits locaux, sauvegarde sur sauvegarde/finitions-lot-a, main poussé au 09.1-05) (10-02 : cohérence instantané data.gouv et fichiers candidats dans npm test, quatre pièges D-05, refus de marquer ; push groupé avec 10-01) (10-01 : lectures YAML de l'import, de l'archivage et de la couverture par l'analyseur plafonné léger yaml-plafonne.ts, test de dépôt à liste blanche de huit fichiers ; commits locaux, push groupé avec 10-02)"
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 38
-  completed_plans: 34
+  total_plans: 44
+  completed_plans: 38
   percent: 40
 ---
 
@@ -28,8 +28,8 @@ See: .planning/PROJECT.md (updated 2026-11-04)
 
 Phase: 9 of 10 (contenu relu, juridique et ouverture)
 Plan: 09-01 à 09-09, 09-14 et 09-15 done (dernier : 09-09, RUNBOOK, ADR-059 à 062, serveur prêt, override OPS-01 accepté) ; reste 09-10 (relecture santé par Erwan, chemin critique), puis 09-11 à 09-13
-Status: Executing phase 9
-Last activity: 2026-11-11 (09-15 : filtre de production des personnes sans statut relu, comptes honnêtes sur /candidats/ et la Méthode, code check-dist CANDIDAT_NON_RELU_EN_PRODUCTION ; production réelle : aucune personne affichée tant que 09-10 n'a relu aucun statut)
+Status: Executing phase 9 (phase 10 en parallèle : 10-01 à 10-04 done, 10-05 du 10 au 11 décembre)
+Last activity: 2026-11-13 (10-04 : réponse d'Erwan « Tout par défaut » aux sept questions de l'import (D-08 option B, D-09 runbook, gel du 13 décembre 18:00 au 15 décembre 23:59, limite de recréation 13 décembre 12:00) ; avertissement STATUT_PLUS_RECENT_NON_RELU, jamais bloquant, 0 cas sur le corpus réel ; RUNBOOK : import de décembre et gel d'import ; poussé, déploiement en attente d'Erwan) (09.1-09 : réponse d'Erwan « Suis ton avis » (2026-11-13) : P1, P5, P2, P3, P4, P6 repris sur main par cherry-pick, 2b refusée, accord sur la règle M1-08 enregistré (ADR-034) ; santé à 375 px En bref 24 038 px, cible FIN-04 abaissée à cette valeur, première tuile à 713 px ; gardes vertes, poussé, déploiement en attente d'Erwan ; phase 9.1 terminée) (10-03 done : rapport D-06, --format, --dry-run tolérant, --check, répétition réelle jetable ; la liste de contrôle de 10-05 est dans 10-03-SUMMARY.md ; 09.1-08 done : proposition 6 (image de partage), indépendance prouvée, gardes vertes, aperçus et fiche d'Erwan prêts, réponse attendue en 09.1-09 ; 09.1-05 done : lot A complet et poussé sur main, déploiement en attente d'Erwan ; 09.1-04 done : balises de partage, PARTAGE_INCORRECT, image en 09.1-08 ; 09.1-03 done : NOM_SITE, pages construites identiques ; 09.1-02 done : page 404 et bloc Caddy public prêts, rien appliqué au serveur ; 09.1-01 done, lot A en local, main non poussé ; 10-01 : analyseur YAML plafonné léger pour l'import, l'archivage et la couverture ; alias et clés en double refusés avec fichier, ligne et code ; page Méthode identique à l'octet)
 
 Progress v1.1: [..........] 0/5 phases, 0 plans
 
@@ -72,8 +72,17 @@ Recent decisions affecting current work:
 - [Roadmap v1.1]: déploiement par releases datées + lien `current`, job dans `ci.yml`, build de production reconstruite, jamais d'artefact preview
 - [Roadmap v1.1]: dépôt public depuis le 2026-11-04 : réviser l'ADR-051, la preview n'est jamais servie
 - [09-05]: page de relecture locale = node:http sur 127.0.0.1 seulement, Host exact, Origin, jeton par lancement ; « Valider » appelle le même `marquer` que la ligne de commande ; un refus répond 409 avec le message, jamais d'écriture
+- [10-04]: Erwan (2026-11-13, « Tout par défaut ») : D-08 option B (avertissement STATUT_PLUS_RECENT_NON_RELU, statuts qui changent relus dans la pull request avant fusion), D-09 règle au RUNBOOK seule, gel du 2026-12-13 18:00 au 2026-12-15 23:59, aucune recréation de la branche d'import après le 2026-12-13 12:00, fusion avec nouvelles personnes en brouillon permise, repli et relecture non fusionnée : reporter, import avant la fin de l'ouverture permis ; bloc « Décisions enregistrées » dans 10-04-SUMMARY.md
+- [09.1-09]: Erwan (2026-11-13, « Suis ton avis ») a gardé P1, P5, P2, P3, P4 et P6 avec les textes du brouillon, refusé P2b et accepté la modification de M1-08 (hauteur égale des cartes) ; santé 375 px En bref 24 038 px, cible FIN-04 abaissée à cette valeur (21 500 px non atteints)
+- [09.1-06]: marqueur de la sonde et du battement séparé du nom affiché (MARQUEUR_SONDE dans <meta name="generator">, proposition 5) ; premier écran de l'accueil testé avec la police large de la CI et sans le bandeau de préversion, lien vers la Méthode après les thèmes (proposition 1)
+- [09.1-07]: bloc source compact (P2) garde titre et date en texte visible, liens du document en ligne, signalements « Signaler une erreur : par courriel, sur GitHub » (libellés en brouillon, mentions légales et Méthode alignées) ; P2 manque FIN-04 de 2 478 px, variante 2b construite (liens repliés derrière « Vérifier la source », touche C5) et manque encore de 982 px ; P4 (align-items: start) touche M1-08 ; décisions d'Erwan en 09.1-09
+- [09.1-05]: le sélecteur de niveau reste sur toute page candidat, même sans mesure (M1-09 : gros caractères et niveau mémorisé en dépendent) ; seul l'accueil perd le rappel « Changer le niveau de lecture » ; pied : signalement, liens, puis informations, textes inchangés
+- [09.1-04]: og:url et le lien canonique partagent une seule valeur (production, hors 404, depuis Astro.site) ; PARTAGE_INCORRECT refuse aussi toute image de partage qui serait chargée par une page ; aucune image avant 09.1-08
+- [09.1-03]: nom du site dans `NOM_SITE` (src/lib/identite.ts), valeur inchangée ; la changer est la décision d'Erwan (lot B, proposition 5)
+- [09.1-02]: page 404 publique par `@introuvable not file {path} {path}/` puis `rewrite * /404.html` et `file_server { status 404 }`, jamais `handle_errors` (aucune route d'erreur, niveau du journal des autres sites inchangé) ; 09-12 compare les drapeaux `errors` de `caddy adapt` avant et après
 - [09-07]: le bloc public n'arrive sur le serveur que par l'étape site-public (codes 6 et 7) ; après le retrait de l'hôte technique, le marqueur /opt/rtp/essai-retire neutralise site-essai ; le test de restauration déduit ses étapes des blocs restaurés ; favicon.ico généré par scripts/favicon.ts, seul .ico admis par check-dist, servi en no-cache (no-store casse le bfcache)
 - [Phase 9]: 09-15 : en production, une personne sans statut relu ou publié est absente (filtre statutAffiche === null dans construireCorpus, CANDIDAT_NON_RELU_EN_PRODUCTION dans check-dist, même définition ADR-041)
+- [10-01]: les scripts lisent le YAML du dépôt par src/lib/content-core/yaml-plafonne.ts (copie légère de parseYaml, load.ts non importé pour garder ajv hors de la page Méthode, équivalence testée) ; liste blanche de huit fichiers dans tests/repo/yaml-plafonne.test.ts ; --wayback-missing s'arrête sur une source refusée
 
 ### Pending Todos
 
@@ -101,8 +110,8 @@ Items acknowledged and deferred at v1.0 close on 2026-11-04 (Erwan: « Fix, then
 
 ## Session Continuity
 
-Last session: 2026-11-11T00:53:33.709Z
-Stopped at: Completed 09-15-PLAN.md
+Last session: 2026-11-12T18:00:00.000Z
+Stopped at: Completed 10-01-PLAN.md (commits locaux, non poussés : push groupé avec 10-02)
 Resume file: None
 
 ## Operator Next Steps

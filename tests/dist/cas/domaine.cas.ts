@@ -6,18 +6,25 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { cellulesAttendues, checkDist } from '../../../scripts/lib/check-dist.ts';
+import { PAGE_ERREUR, cellulesAttendues, checkDist } from '../../../scripts/lib/check-dist.ts';
 import type { Constat } from '../../../scripts/lib/check-dist.ts';
 import { analyserHtml, trouver } from '../../../scripts/lib/html.ts';
 import { loadSiteConfig } from '../../../src/lib/site-config.ts';
 import { materialiserCorpusM1 } from '../../helpers/corpus-m1.ts';
 import type { ContexteSite } from '../contexte.ts';
 
-/** `index.html` → `/`, `x/y/index.html` → `/x/y/` (trailingSlash 'always', aucune autre page HTML). */
+/** `index.html` → `/`, `x/y/index.html` → `/x/y/` (trailingSlash 'always') ; seule autre page HTML admise : la page
+ * d'erreur `404.html` à la racine (PAGE_ERREUR, plan 09.1-02), rendue telle quelle (`/404.html`). */
 function cheminDePage(outDir: string, fichier: string): string {
   const rel = path.relative(outDir, fichier).split(path.sep).join('/');
+  if (rel === PAGE_ERREUR) return `/${rel}`;
   assert.ok(rel === 'index.html' || rel.endsWith('/index.html'), `page HTML inattendue : ${rel}`);
   return `/${rel.slice(0, -'index.html'.length)}`;
+}
+
+/** La page d'erreur, exclue des canoniques et du sitemap (IN-07) : on vérifie ici qu'elle n'a pas d'URL canonique. */
+function estPageErreur(outDir: string, fichier: string): boolean {
+  return path.relative(outDir, fichier).split(path.sep).join('/') === PAGE_ERREUR;
 }
 
 function canoniques(html: string): string[] {
@@ -44,9 +51,14 @@ export default function domaine(ctx: ContexteSite): void {
       const { outDir } = build('production');
       const pages = ctx.pagesHtml(outDir);
       assert.ok(pages.length > 5, `trop peu de pages : ${pages.length}`);
+      assert.equal(pages.filter((f) => estPageErreur(outDir, f)).length, 1, `${PAGE_ERREUR} absent du dist`);
       for (const f of pages) {
         const liens = canoniques(fs.readFileSync(f, 'utf8'));
         const chemin = cheminDePage(outDir, f);
+        if (estPageErreur(outDir, f)) {
+          assert.deepEqual(liens, [], `${PAGE_ERREUR} : aucune URL canonique attendue (IN-07)`);
+          continue;
+        }
         assert.equal(liens.length, 1, `${chemin} : ${liens.length} lien(s) canonique(s)`);
         assert.equal(liens[0], `${origine}${chemin}`, chemin);
       }
@@ -54,7 +66,11 @@ export default function domaine(ctx: ContexteSite): void {
 
     it('HEB-05 : production, sitemap.xml liste exactement les pages construites (ensemble des <loc> = ensemble des canoniques)', () => {
       const { outDir } = build('production');
-      const attendues = ctx.pagesHtml(outDir).map((f) => canoniques(fs.readFileSync(f, 'utf8'))[0]);
+      const pages = ctx.pagesHtml(outDir);
+      const erreur = pages.filter((f) => estPageErreur(outDir, f));
+      assert.equal(erreur.length, 1, `${PAGE_ERREUR} absent du dist`);
+      assert.deepEqual(canoniques(fs.readFileSync(erreur[0] as string, 'utf8')), [], `${PAGE_ERREUR} : aucune URL canonique (IN-07)`);
+      const attendues = pages.filter((f) => !estPageErreur(outDir, f)).map((f) => canoniques(fs.readFileSync(f, 'utf8'))[0]);
       const xml = ctx.lire(outDir, 'sitemap.xml');
       assert.ok(xml.startsWith('<?xml version="1.0" encoding="UTF-8"?>'), xml.slice(0, 80));
       assert.match(xml, /<urlset xmlns="http:\/\/www\.sitemaps\.org\/schemas\/sitemap\/0\.9">/);
@@ -131,6 +147,12 @@ export default function domaine(ctx: ContexteSite): void {
       const rel = 'themes/logement/index.html';
       const nouveaux = apres(rel, (html) => html.replace(`href="${origine}/themes/logement/"`, `href="${origine}/themes/autre/"`));
       assert.deepEqual(nouveaux.map((c) => [c.code, c.fichier]), [['CANONIQUE_INCORRECT', rel]]);
+    });
+
+    it('PARTAGE_INCORRECT (partage) : copie du dist, un og:url modifié (autre chemin) donne PARTAGE_INCORRECT sur cette page seulement', () => {
+      const rel = 'themes/logement/index.html';
+      const nouveaux = apres(rel, (html) => html.replace(`property="og:url" content="${origine}/themes/logement/"`, `property="og:url" content="${origine}/themes/autre/"`));
+      assert.deepEqual(nouveaux.map((c) => [c.code, c.fichier]), [['PARTAGE_INCORRECT', rel]]);
     });
 
     it('HEB-05 : copie du dist, un <loc> retiré de sitemap.xml donne SITEMAP_INCOHERENT', () => {

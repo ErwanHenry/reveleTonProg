@@ -74,7 +74,7 @@ export default defineConfig({
           timeout: 15_000,
         },
         projects: [
-          { name: 'avec-js', testIgnore: /sans-js|4g|parcours/ },
+          { name: 'avec-js', testIgnore: /sans-js|4g|parcours|relecture/ },
           projet4g,
           { name: 'sans-js', testMatch: /sans-js\.spec\.ts/, use: { javaScriptEnabled: false } },
           // Retour arrière restauré du bfcache (DETTE-02) : le headless shell par défaut refuse le bfcache et Playwright

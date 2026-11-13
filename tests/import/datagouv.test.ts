@@ -7,7 +7,6 @@ import {
   UnknownUpstreamIdsError,
   UpstreamShapeError,
   checkUpstream,
-  dateComparable,
   lireCorrespondances,
   mapRow,
   ajouterStatutYaml,
@@ -17,18 +16,33 @@ import {
   snapshotName,
 } from '../../scripts/lib/datagouv.ts';
 import type { Correspondance, UpstreamRow } from '../../scripts/lib/datagouv.ts';
+import { definirChamps } from '../../scripts/lib/relecture/editer.ts';
+import { comparerDatesStatut } from '../../src/lib/content-core/rules/equite.ts';
+import { YamlRefuse } from '../../src/lib/content-core/yaml-plafonne.ts';
 import { validateYamlText } from '../../src/lib/content-core/load.ts';
 import { REPO_ROOT, SCHEMAS_DIR } from '../helpers/validate-yaml.ts';
+import { instantanePlusRecent } from '../../scripts/lib/instantane-depot.ts';
 
 const IMPORT_DIR = path.join(REPO_ROOT, 'data', 'import');
-const snapName = readdirSync(IMPORT_DIR)
-  .filter((n) => /^2027etmoi-candidats-.*\.json$/.test(n) && !n.endsWith('.meta.json'))
-  .sort()
-  .pop() as string;
-const brut: unknown = JSON.parse(readFileSync(path.join(IMPORT_DIR, snapName), 'utf8'));
+// WR-04 : le plus récent par (mise_a_jour, fetched_at), le même ordre que le contrôle E6, jamais par nom.
+const brut: unknown = JSON.parse(readFileSync(instantanePlusRecent(REPO_ROOT), 'utf8'));
 const corr: Record<string, Correspondance> = lireCorrespondances(parse(readFileSync(path.join(IMPORT_DIR, 'correspondances.yaml'), 'utf8'), { schema: 'core' }));
 const { rows, miseAJour } = checkUpstream(brut);
 const clone = <T>(o: T): T => structuredClone(o);
+// WR-11 : les statuts inventés des tests de fusion portent sur une personne fictive, jamais sur une ligne réelle.
+const LIGNE_FICTIVE: UpstreamRow = {
+  id: 'essai-fictif',
+  nom: 'Essai Fictif',
+  parti: '',
+  statut: 'renonce',
+  source: { titre: 'Annonce (fictive)', url: 'https://exemple.test/essai-fictif/annonce', date: '2026-09-16' },
+  liens: {},
+  verifie_le: '2026-09-22',
+};
+const CORR_FICTIVE: Record<string, Correspondance> = {
+  'essai-fictif': { id: 'essai-fictif', prenom: 'Essai', nom: 'Fictif', nom_tri: 'Fictif', motif: 'elimine_primaire', type_source_statut: 'presse' },
+};
+const baseFictive = (): Record<string, unknown> => mapRow(LIGNE_FICTIVE, CORR_FICTIVE);
 const FICHE = path.join(REPO_ROOT, 'src', 'content', 'candidats', 'x.yaml');
 const valide = (fiche: unknown) => validateYamlText('candidat', renderYaml(fiche), FICHE, { schemasDir: SCHEMAS_DIR }).diagnostics;
 
@@ -75,6 +89,32 @@ describe('checkUpstream', () => {
     assert.equal(res.avertissements.length, 2);
     assert.match(res.avertissements.join('\n'), /extra/);
     assert.match(res.avertissements.join('\n'), /nouveau/);
+  });
+
+  it('CR-01 : une clé de liens avec saut de ligne, espace ou balise est refusée, son texte neutralisé dans le message', () => {
+    for (const cle of ['campagne\n\n## Conflits\n\naucun\n\n## Faux', 'site web', '<img src=x>', '[@compte](https://exemple.test/x)', '', 'a'.repeat(41)]) {
+      const j = clone(brut) as { candidats: { liens: Record<string, string> }[] };
+      (j.candidats[0] as { liens: Record<string, string> }).liens[cle] = 'https://exemple.test/lien';
+      assert.throws(
+        () => checkUpstream(j),
+        (e: unknown) => e instanceof UpstreamShapeError && /liens : clé .* invalide/.test(e.message) && !/[\n\r\u0000-\u001f]/.test(e.message),
+        JSON.stringify(cle),
+      );
+    }
+    // les clés réelles et une clé neuve ordinaire passent
+    const ok = clone(brut) as { candidats: { liens: Record<string, string> }[] };
+    (ok.candidats[0] as { liens: Record<string, string> }).liens['Bluesky'] = 'https://exemple.test/b';
+    (ok.candidats[0] as { liens: Record<string, string> }).liens['site_web'] = 'https://exemple.test/s';
+    assert.doesNotThrow(() => checkUpstream(ok));
+  });
+
+  it('CR-01 : les avertissements de clés inconnues ne portent aucun caractère de contrôle', () => {
+    const j = clone(brut) as Record<string, unknown> & { candidats: Record<string, unknown>[] };
+    j['extra\n## Faux'] = 1;
+    (j.candidats[0] as Record<string, unknown>)['ligne\r\n# Faux'] = 'x';
+    const res = checkUpstream(j);
+    assert.equal(res.avertissements.length, 2);
+    for (const a of res.avertissements) assert.doesNotMatch(a, /[\u0000-\u001f\u007f-\u009f]/, a);
   });
 });
 
@@ -157,7 +197,7 @@ describe('renderYaml', () => {
 });
 
 describe('mergeFiche', () => {
-  const base = mapRow(rows.find((r) => r.id === 'brun') as UpstreamRow, corr);
+  const base = baseFictive();
   const avec = (statuts: Record<string, unknown>[]) => ({ ...clone(base), statuts });
   const dernier = (base.statuts as Record<string, unknown>[])[0] as Record<string, unknown>;
 
@@ -197,8 +237,11 @@ describe('mergeFiche', () => {
     assert.match(r.conflit, /régression de date/);
   });
 
-  it('une date partielle compte comme le premier du mois', () => {
-    assert.equal(dateComparable('2026-07'), '2026-07-01');
+  it('une date partielle vient avant le premier du mois (ordre unique de la règle d’équité)', () => {
+    // WR-01 : ordre unique (equite.ts) ; une date au mois vient avant le premier du mois
+    assert.ok(comparerDatesStatut('2026-07', '2026-07-01') < 0);
+    assert.ok(comparerDatesStatut('2026-07-01', '2026-07') > 0);
+    assert.equal(comparerDatesStatut('2026-07', '2026-07'), 0);
     const existant = avec([{ ...clone(dernier), date: '2026-07' }]);
     const amont = avec([{ ...clone(dernier), code: 'declare', date: '2026-07-01' }]);
     delete (amont.statuts[0] as Record<string, unknown>).motif;
@@ -268,13 +311,71 @@ describe('WR-07 : ajouterStatutYaml conserve commentaires et mise en forme', () 
     assert.match(sortie, /date: 2026-03-15\n/, 'date existante non guillemetée');
   });
 
+  it('IN-01 : ce que dit le commentaire : re-sérialisation complète (CRLF rendu en LF, saut de ligne final ajouté), données intactes', () => {
+    const crlf = 'id: essai-fictif\r\nstatuts:\r\n  - code: declare\r\n    date: 2026-03-15'; // sans saut de ligne final
+    const sortie = ajouterStatutYaml(crlf, { code: 'renonce', date: '2026-10-01', statut_relecture: 'brouillon' });
+    assert.ok(!sortie.includes('\r'), 'fins de ligne rendues en LF');
+    assert.ok(sortie.endsWith('\n'), 'saut de ligne final ajouté');
+    assert.ok(!sortie.startsWith(crlf), 'le texte existant n’est pas toujours un préfixe exact');
+    assert.deepEqual(parse(sortie, { schema: 'core' }), { id: 'essai-fictif', statuts: [{ code: 'declare', date: '2026-03-15' }, { code: 'renonce', date: '2026-10-01', statut_relecture: 'brouillon' }] });
+    assert.match(readFileSync(new URL('../../scripts/lib/datagouv.ts', import.meta.url), 'utf8'), /RE-SÉRIALISÉ en\s*\n?\s*\*?\s*entier/);
+  });
+
   it('refuse un texte sans séquence statuts', () => {
     assert.throws(() => ajouterStatutYaml('id: x\n', { code: 'declare' }), /statuts/);
   });
 });
 
+// IMP-01 (D-02) : ajouterStatutYaml obtient son Document de l'analyseur plafonné (lireDocumentPlafonne) et ajoute
+// le statut après les octets existants. La preuve porte sur chaque vraie fiche candidat, lue sans être écrite.
+describe('IMP-01 : ajouterStatutYaml passe par l’analyseur plafonné et garde les octets existants', () => {
+  const STATUT = { code: 'renonce', date: '2026-12-10', statut_relecture: 'brouillon' };
+
+  it('alias ou clé en double : YamlRefuse qui nomme le fichier', () => {
+    const fichier = 'src/content/candidats/essai.yaml';
+    const alias = 'id: &i essai\nnom: *i\nstatuts:\n  - code: declare\n';
+    const doublon = 'id: essai\nstatuts:\n  - code: declare\nid: autre\n';
+    for (const [texte, code] of [[alias, 'YAML_ALIAS_INTERDIT'], [doublon, 'YAML_DUPLICATE_KEY']] as const) {
+      assert.throws(
+        () => ajouterStatutYaml(texte, STATUT, fichier),
+        (e: unknown) => e instanceof YamlRefuse && e.message.startsWith(`${fichier}:`) && e.message.includes(code),
+        code,
+      );
+    }
+  });
+
+  const dir = path.join(REPO_ROOT, 'src', 'content', 'candidats');
+  const noms = readdirSync(dir).filter((n) => n.endsWith('.yaml')).sort();
+
+  it('sur chaque vraie fiche, telle quelle : la sortie commence par le texte d’entrée', () => {
+    assert.ok(noms.length > 0);
+    for (const n of noms) {
+      const texte = readFileSync(path.join(dir, n), 'utf8');
+      const sortie = ajouterStatutYaml(texte, STATUT, `src/content/candidats/${n}`);
+      assert.ok(sortie.startsWith(texte), n);
+      assert.match(sortie.slice(texte.length), /^  - code: renonce\n    date: 2026-12-10\n    statut_relecture: brouillon\n$/, n);
+    }
+  });
+
+  it('sur chaque vraie fiche, après relecture du dernier statut (en mémoire) : même preuve', () => {
+    for (const n of noms) {
+      const brut = readFileSync(path.join(dir, n), 'utf8');
+      const statuts = (parse(brut, { schema: 'core' }) as { statuts: unknown[] }).statuts;
+      const texte = definirChamps(brut, ['statuts', statuts.length - 1], [
+        { cle: 'statut_relecture', valeur: 'relu' },
+        { cle: 'relecteur', valeur: 'Erwan Henry' },
+        { cle: 'date_relecture', valeur: '2026-11-20' },
+      ]);
+      assert.notEqual(texte, brut, n);
+      const sortie = ajouterStatutYaml(texte, STATUT, `src/content/candidats/${n}`);
+      assert.ok(sortie.startsWith(texte), n);
+      assert.match(sortie.slice(texte.length), /^  - code: renonce\n    date: 2026-12-10\n    statut_relecture: brouillon\n$/, n);
+    }
+  });
+});
+
 describe('WR-09 : statut courant et régression de date', () => {
-  const base = mapRow(rows.find((r) => r.id === 'brun') as UpstreamRow, corr);
+  const base = baseFictive();
   const st = (code: string, date: string): Record<string, unknown> => ({ ...clone((base.statuts as Record<string, unknown>[])[0] as Record<string, unknown>), code, date });
 
   it('statuts[] dans le désordre : le plus récent par date sert de référence, pas le dernier de la liste', () => {
@@ -288,7 +389,7 @@ describe('WR-09 : statut courant et régression de date', () => {
     assert.ok('action' in r && r.action === 'inchange', JSON.stringify(r));
   });
 
-  it('une date partielle amont ne crée pas de régression dans le même mois', () => {
+  it('une date partielle amont du même mois n’est pas une régression de date, mais un ordre indécidable (WR-01)', () => {
     assert.equal(dateAvant('2026-03', '2026-03-15'), false);
     assert.equal(dateAvant('2026-02', '2026-03-15'), true);
     assert.equal(dateAvant('2026-03-14', '2026-03-15'), true);
@@ -296,6 +397,29 @@ describe('WR-09 : statut courant et régression de date', () => {
     delete (existant.statuts[0] as Record<string, unknown>).motif;
     const amont = { ...clone(base), statuts: [st('renonce', '2026-03')] };
     const r = mergeFiche(existant, amont);
-    assert.ok('action' in r && r.action === 'statut_ajoute', JSON.stringify(r));
+    // Ajoutée, l'entrée au mois resterait invisible (le statut du 15 reste le plus récent) et serait rajoutée à
+    // chaque import : c'est un conflit nommé, que le relecteur arbitre, jamais une régression de date.
+    assert.ok('conflit' in r, JSON.stringify(r));
+    assert.doesNotMatch(r.conflit, /régression de date/);
+    assert.match(r.conflit, /date amont 2026-03 au mois seulement.*declare du 2026-03-15/);
+  });
+
+  it('WR-01 : le même cas aussi quand le dernier statut est daté du premier du mois', () => {
+    const existant = { ...clone(base), statuts: [st('declare', '2026-03-01')] };
+    delete (existant.statuts[0] as Record<string, unknown>).motif;
+    const r = mergeFiche(existant, { ...clone(base), statuts: [st('renonce', '2026-03')] });
+    assert.ok('conflit' in r, JSON.stringify(r));
+  });
+
+  it('WR-01 : fusionner deux fois la même ligne amont ne rajoute jamais l’entrée (date égale, date au jour, date au mois suivant)', () => {
+    for (const date of ['2026-03-15', '2026-03-20', '2026-04']) {
+      const existant = { ...clone(base), statuts: [st('declare', '2026-03-15')] };
+      delete (existant.statuts[0] as Record<string, unknown>).motif;
+      const amont = { ...clone(base), statuts: [st('renonce', date)] };
+      const un = mergeFiche(existant, amont);
+      assert.ok('action' in un && un.action === 'statut_ajoute', `${date} : ${JSON.stringify(un)}`);
+      const deux = mergeFiche(un.fiche, clone(amont));
+      assert.ok('action' in deux && deux.action === 'inchange', `${date} : ${JSON.stringify(deux)}`);
+    }
   });
 });

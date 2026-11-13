@@ -1,4 +1,5 @@
 ---
+import { NOM_SITE } from '../lib/identite.ts';
 import Base from '../layouts/Base.astro';
 import couvertureBrute from '../../data/couverture-themes.yaml?raw';
 import schemaSource from '../../schemas/source.schema.json';
@@ -14,7 +15,7 @@ import { TOURS } from '../lib/dates-tours.ts';
 import { MESURE_SERVEUR_4G, PROFILS_4G } from '../lib/profil-4g.ts';
 
 // Date de dernière révision de cette page (à mettre à jour à chaque modification du texte).
-const REVISION = '2026-11-11';
+const REVISION = '2026-11-13';
 
 // Fail closed : une couverture illisible ne produit pas une page Méthode approximative.
 const lue = lireCouverture(couvertureBrute);
@@ -70,7 +71,7 @@ const sansMarqueur = (t: string): string => t.replaceAll('[[', '[ [').replaceAll
 const SEV: Record<string, string> = { erreur: 'erreur', avertissement: 'avertissement', selon_mode: 'selon le mode', selon_statut: 'selon le statut' };
 ---
 <Base
-  titre="Méthode : reveleTonProg"
+  titre={`Méthode : ${NOM_SITE}`}
   description="Comment les sources sont choisies, les règles de neutralité, les longueurs de texte, les thèmes pilotes et les limites connues de ce site."
   miseAJour={REVISION}
 >
@@ -84,12 +85,13 @@ const SEV: Record<string, string> = { erreur: 'erreur', avertissement: 'avertiss
     <h1>Méthode</h1>
 
     <p>
-      Ce site explique ce que proposent les candidats à l'élection présidentielle, thème par thème, en quatre façons de lire : en bref, en détail, pour les enfants et en gros caractères. Il ne prend jamais parti. Chaque mesure renvoie à un texte du candidat, daté et archivé. Les deux tours ont lieu le dimanche <time datetime={TOURS[0].date}>{formatDate(TOURS[0].date)}</time> et le dimanche <time datetime={TOURS[1].date}>{formatDate(TOURS[1].date)}</time>.
+      Ce site explique ce que proposent les candidats à l'élection présidentielle, un thème à la fois, en quatre façons de lire : en bref, en détail, pour les enfants et en gros caractères. Il ne prend jamais parti. Chaque mesure renvoie à un texte du candidat, daté et archivé. Les deux tours ont lieu le dimanche <time datetime={TOURS[0].date}>{formatDate(TOURS[0].date)}</time> et le dimanche <time datetime={TOURS[1].date}>{formatDate(TOURS[1].date)}</time>.
     </p>
 
     <h2>D'où viennent les informations</h2>
     <p>Une mesure n'est affichée que si elle s'appuie sur une source primaire, c'est-à-dire un texte publié par le candidat ou sa candidature, jamais un article de presse. Les sources acceptées sont : {typesSource.join(', ')}.</p>
-    <p>Chaque source porte la date à laquelle elle a été consultée. Une copie est conservée dans le dépôt du site, avec son empreinte SHA-256 pour prouver qu'elle n'a pas changé, dans la limite de {tailleArchive} Mio par fichier. Quand la capture a réussi, une copie existe aussi sur les archives Wayback Machine d'Internet Archive : le lien « Copie archivée (Wayback Machine) » n'apparaît que dans ce cas. Une page qui publie des données personnelles de particuliers n'y est jamais envoyée. Le lien « Extrait archivé » mène au texte conservé dans le dépôt ; il affiche les 12 premiers caractères de l'empreinte, l'empreinte complète figure dans la fiche de la source du dépôt.</p>
+    {/* Nom du lien « Copie archivée » aligné sur le bloc source compact (avant : « Copie archivée (Wayback Machine) »). */}
+    <p>Chaque source porte la date à laquelle elle a été consultée. Une copie est conservée dans le dépôt du site, avec son empreinte SHA-256 pour prouver qu'elle n'a pas changé, dans la limite de {tailleArchive} Mio par fichier. Quand la capture a réussi, une copie existe aussi sur les archives Wayback Machine d'Internet Archive : le lien « Copie archivée » n'apparaît que dans ce cas. Une page qui publie des données personnelles de particuliers n'y est jamais envoyée. Le lien « Extrait archivé » mène au texte conservé dans le dépôt ; il affiche les 12 premiers caractères de l'empreinte, l'empreinte complète figure dans la fiche de la source du dépôt.</p>
     <div data-dataset>
       <p>
         La liste des personnalités vient du jeu de données public « Candidatures à l'élection présidentielle 2027, statuts sourcés ». Sa description annonce {dataset.annonce} personnes (lue le <time datetime={dataset.descriptionConsulteeLe}>{formatDate(dataset.descriptionConsulteeLe)}</time>){ecart ? ', alors que' : ' et'} le fichier mis à jour le <time datetime={dataset.instantane.miseAJour}>{formatDate(dataset.instantane.miseAJour)}</time> en contient {ecart ? dataset.instantane.total : `le même nombre, ${dataset.instantane.total}`} : {Object.entries(dataset.instantane.parStatut).map(([statut, n], i, tout) => (

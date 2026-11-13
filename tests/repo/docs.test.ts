@@ -1,6 +1,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CATALOGUE, HYPOTHESES } from '../../src/lib/content-core/rules/config.ts';
@@ -840,5 +842,236 @@ describe('documentation (phase 9) : ADR', () => {
   it('le schéma Mermaid reste fermé et unique', () => {
     assert.equal((architecture.match(/^```mermaid$/gm) ?? []).length, 1);
     assert.equal((architecture.match(/^```$/gm) ?? []).length, 1);
+  });
+});
+
+describe('documentation (phase 10) : import de décembre (IMP-03)', () => {
+  const IMPORT = 'Import de décembre (10 au 13 décembre 2026)';
+  const GEL = "Gel d'import (13 au 15 décembre 2026)";
+  const ANCIEN = 'Importer les statuts data.gouv';
+  const script = read('scripts/import-datagouv.ts');
+  const scriptsNpm = (JSON.parse(read('package.json')) as { scripts: Record<string, string> }).scripts;
+
+  it("section « Gel d'import » : bornes décidées, interdits, seule exception, run en attente rejeté, fenêtres de 2027 inchangées", () => {
+    const s = sectionRunbook(GEL);
+    for (const needle of ['13 décembre 2026', '15 décembre 2026', '18:00', '23:59', 'retrait_urgence', 'justification', 'scripts/garde-gel.ts']) {
+      assert.ok(s.includes(needle), `« ${needle} » absent de la section « ${GEL} »`);
+    }
+    assert.match(s, /rejet/);
+    assert.match(s, /fusion/);
+  });
+
+  it('le gel d’import suit immédiatement « Gel des scrutins et retrait d’urgence »', () => {
+    const iGel = runbook.search(/^### Gel des scrutins et retrait d'urgence$/m);
+    const iImport = runbook.search(new RegExp(`^### ${GEL.replace(/[()]/g, '\\$&')}$`, 'm'));
+    assert.ok(iGel >= 0 && iImport > iGel);
+    assert.equal(runbook.slice(iGel, iImport).match(/^### /gm)?.length, 1, 'une seule section entre les deux');
+  });
+
+  it('les fenêtres de gel de 2027 restent exactement les deux fenêtres des tours (D-09 : règle écrite, pas de garde technique)', () => {
+    assert.deepEqual(FENETRES_GEL.map((f) => [f.debut, f.fin]), [['2027-04-17', '2027-04-19'], ['2027-05-01', '2027-05-03']]);
+  });
+
+  it("section « Import de décembre » : branche, ordre de fusion, recréation, preuve d'ancêtre, options, vocabulaire, règle D-08", () => {
+    const s = sectionRunbook(IMPORT);
+    for (const needle of [
+      'import/statuts-2026-12',
+      'relecture/sante',
+      'recréer la branche',
+      '--is-ancestor',
+      '--dry-run',
+      '--format markdown',
+      '--check',
+      'Absents du jeu amont',
+      'STATUT_PLUS_RECENT_NON_RELU',
+      '06237c53-76bd-4224-9805-418e125f0493',
+      '13 décembre 2026 à 12:00',
+      'reporter',
+      'jamais fusionner',
+      'marquer statut',
+      '--hors-perimetre',
+      'data/couverture-themes.yaml',
+      'src/content/couverture/',
+      'gh run list --branch main --status waiting',
+    ]) {
+      assert.ok(s.includes(needle), `« ${needle} » absent de la section « ${IMPORT} »`);
+    }
+    assert.match(s, /aucun agent/i);
+  });
+
+  it('la liste de contrôle des mises à jour à la main compte huit points et nomme les deux décisions de l’éditeur', () => {
+    const s = sectionRunbook(IMPORT);
+    const debut = s.indexOf('Liste de contrôle');
+    assert.ok(debut >= 0, 'liste de contrôle absente');
+    const liste = s.slice(debut);
+    const points = [...liste.matchAll(/^\s*(\d+)\.\s+`/gm)].map((m) => Number(m[1]));
+    assert.deepEqual(points.slice(0, 8), [1, 2, 3, 4, 5, 6, 7, 8]);
+    assert.ok((liste.match(/Décision d'Erwan/g) ?? []).length >= 2, 'les points 6 et 7 doivent nommer la décision d’Erwan');
+    for (const f of ['data/dataset-datagouv.yaml', 'data/import/ATTRIBUTION.md', 'LICENSE', 'tests/corpus/dataset-datagouv.test.ts', 'tests/dist/cas/methode.cas.ts', 'README.md', 'docs/COUVERTURE-THEMES.md']) {
+      assert.ok(liste.includes(f), `${f} absent de la liste de contrôle`);
+    }
+  });
+
+  it('chaque option et chaque script cités dans l’import existent dans le code', () => {
+    for (const titre of [IMPORT, ANCIEN]) {
+      const s = sectionRunbook(titre);
+      // Les options qui suivent la commande, jusqu'à la fin du bloc de code en ligne ou de la ligne.
+      for (const cmd of s.matchAll(/import:datagouv([^`\n>)]*)/g)) {
+        for (const o of (cmd[1] ?? '').matchAll(/(?<![\w-])--([a-z][a-z-]*)/g)) {
+          assert.ok(new RegExp(`['\\s{,]${o[1]}'?\\s*:\\s*\\{ type:`).test(script), `option --${o[1]} (section « ${titre} ») absente de scripts/import-datagouv.ts`);
+        }
+      }
+      for (const m of s.matchAll(/npm run (?:-s )?([a-z:-]+)/g)) assert.ok(m[1] !== undefined && m[1] in scriptsNpm, `script npm inconnu : ${m[1]}`);
+      for (const m of s.matchAll(/npm run relecture -- (?:--[a-z-]+ \S+ )?([a-z]+)/g)) {
+        assert.ok((COMMANDES as readonly string[]).includes(m[1] as string), `commande de relecture inconnue : ${m[1]}`);
+      }
+    }
+  });
+
+  it("l'ancienne section décrit l'outil actuel : --dry-run, --format markdown, --check, « Nouveaux à décider », « Absents du jeu amont »", () => {
+    const s = sectionRunbook(ANCIEN);
+    for (const needle of ['--dry-run', '--format markdown', '--check', 'Nouveaux à décider', 'Absents du jeu amont']) {
+      assert.ok(s.includes(needle), `« ${needle} » absent de la section « ${ANCIEN} »`);
+    }
+  });
+
+  it('WR-05 : le worktree d’import existe avant que la table soit écrite, et la table est écrite dans ce worktree', () => {
+    const s = sectionRunbook(IMPORT);
+    const deroule = s.slice(s.indexOf('**Déroulé.**'), s.indexOf('**Si `main` avance'));
+    const iWorktree = deroule.indexOf('git worktree add -b import/statuts-2026-12 ../reveleTonProg-import origin/main');
+    const iDecisions = deroule.indexOf("**Décisions d'Erwan**");
+    const iDiff = deroule.indexOf('git diff --stat data/import/correspondances.yaml');
+    const iAdd = deroule.indexOf('git add data/import/correspondances.yaml');
+    assert.ok(iWorktree >= 0 && iDecisions > iWorktree, 'le worktree doit précéder les décisions');
+    assert.ok(iDiff > iDecisions && iAdd > iDiff, 'git diff --stat avant le commit de la table');
+    const decisions = deroule.slice(iDecisions, deroule.indexOf('\n', iDecisions));
+    assert.ok(decisions.includes('../reveleTonProg-import/data/import/correspondances.yaml'), 'la table est écrite dans le worktree d’import');
+  });
+
+  it('WR-07 : « relecture santé fusionnée » se vérifie par la pull request fusionnée, comme le plan 10-05', () => {
+    const s = sectionRunbook(IMPORT);
+    const condition = s.split('\n').find((l) => /^1\. La branche `relecture\/sante`/.test(l)) ?? '';
+    assert.ok(condition.includes('gh pr list --head relecture/sante --state merged --json number --jq length'), condition);
+    assert.doesNotMatch(condition.replace(/[^.]*information[^.]*\./g, ''), /--is-ancestor/, '--is-ancestor ne décide pas de la condition');
+    const plan = read('.planning/phases/10-import-de-d-cembre/10-05-PLAN.md');
+    assert.ok(plan.includes('gh pr list --head relecture/sante --state merged --json number --jq length'), 'même commande que le plan 10-05');
+  });
+
+  it('WR-08 : une date au mois seulement (refus de marquer, conflit de l’import) a sa conduite, décidée par Erwan seul', () => {
+    const s = sectionRunbook(IMPORT);
+    const debut = s.indexOf('**Date au mois seulement.**');
+    assert.ok(debut >= 0, 'paragraphe « Date au mois seulement » absent');
+    const p = s.slice(debut, s.indexOf('**Liste de contrôle', debut));
+    for (const needle of ['un statut relu exige une date complète', 'au mois seulement, dans le mois du dernier statut', 'source primaire', 'ajoutée par cet import', 'marquer statut', 'STATUT_PLUS_RECENT_NON_RELU', 'reporter']) {
+      assert.ok(p.includes(needle), `« ${needle} » absent du paragraphe`);
+    }
+    assert.match(p, /aucun agent ne complète/i);
+    // le message que cite le RUNBOOK est bien celui de l'outil (scripts/lib/relecture/commandes/marquer.ts, lu seulement)
+    assert.ok(read('scripts/lib/relecture/commandes/marquer.ts').includes('un statut relu exige une date complète'));
+    assert.ok(read('scripts/lib/datagouv.ts').includes('au mois seulement, dans le mois du dernier statut'));
+  });
+
+  it('WR-06 : la commande range-diff du RUNBOOK, rejouée sur une branche jetable, apparie les seuls commits d’import', () => {
+    const s = sectionRunbook(IMPORT);
+    const commande = /git range-diff ([^`\n]+)/.exec(s)?.[1]?.trim();
+    assert.ok(commande, 'commande git range-diff absente');
+    assert.ok(s.includes('git log --oneline origin/main..import/statuts-2026-12 | wc -l'), 'compte des commits recréés absent');
+    const depot = fs.mkdtempSync(path.join(os.tmpdir(), 'rtp-range-diff-'));
+    try {
+      const git = (...args: string[]): string => {
+        const r = spawnSync('git', args, { cwd: depot, encoding: 'utf8' });
+        assert.equal(r.status, 0, `git ${args.join(' ')} : ${r.stderr}`);
+        return r.stdout;
+      };
+      const commit = (fichier: string, message: string): void => {
+        fs.writeFileSync(path.join(depot, fichier), `${message}\n`);
+        git('add', fichier);
+        git('commit', '-q', '-m', message);
+      };
+      git('init', '-q', '-b', 'main');
+      git('config', 'user.name', 'Essai');
+      git('config', 'user.email', 'essai@exemple.test');
+      git('config', 'commit.gpgsign', 'false');
+      commit('a.txt', 'main initial');
+      git('switch', '-q', '-c', 'import/statuts-2026-12-ancienne');
+      commit('table.txt', 'table');
+      commit('outil.txt', 'sortie de l’outil');
+      commit('relecture.txt', 'relecture');
+      git('switch', '-q', 'main');
+      commit('b.txt', 'main avance');
+      git('update-ref', 'refs/remotes/origin/main', 'main');
+      git('switch', '-q', '-c', 'import/statuts-2026-12', 'origin/main');
+      for (const sha of git('log', '--format=%H', '--reverse', 'origin/main..import/statuts-2026-12-ancienne').trim().split('\n')) git('cherry-pick', sha);
+      const sortie = git('range-diff', ...commande.split(/\s+/)).trim().split('\n');
+      assert.equal(sortie.length, 3, sortie.join('\n'));
+      for (const l of sortie) assert.match(l, /^\s*\d+:\s+[0-9a-f]+ = \s*\d+:\s+[0-9a-f]+ /, `commit non apparié : ${l}`);
+      assert.equal(git('log', '--oneline', 'origin/main..import/statuts-2026-12').trim().split('\n').length, 3);
+    } finally {
+      fs.rmSync(depot, { recursive: true, force: true });
+    }
+  });
+
+  it('WR-10 : la garde de volume et son option --accepter-absents sont documentées, décision d’Erwan seul', () => {
+    const ancien = sectionRunbook(ANCIEN);
+    for (const needle of ['--accepter-absents', '20 %', 'jeu vide', 'garde de volume']) assert.ok(ancien.includes(needle), `« ${needle} » absent de « ${ANCIEN} »`);
+    const imp = sectionRunbook(IMPORT);
+    assert.ok(imp.includes('--accepter-absents'), `--accepter-absents absent de « ${IMPORT} »`);
+    const ligne = imp.split('\n').find((l) => l.includes('--accepter-absents')) ?? '';
+    assert.match(ligne, /Erwan/);
+    assert.match(ligne, /un agent n'ajoute jamais cette option/);
+  });
+
+  it('IN-07 : la répétition du matin capte le rapport sans l’en-tête de npm (npm run -s)', () => {
+    const s = sectionRunbook(IMPORT);
+    for (const m of s.matchAll(/npm run (-s )?import:datagouv[^`\n]* > /g)) assert.equal(m[1], '-s ', `redirection sans -s : ${m[0]}`);
+    assert.ok(s.includes('npm run -s import:datagouv -- --dry-run --format markdown > /tmp/rapport-matin.md'));
+  });
+
+  it('IN-08 : aucun compte de lignes en dur dans la liste de contrôle de l’audit, et l’étape 8 n’annonce pas un nombre périmé', () => {
+    // les critères R1 à R11 servent à chaque audit : aucun compte de lignes en dur (le journal daté garde les siens)
+    const criteres = read('docs/AUDIT-TEST-CROISE.md').split('\n').filter((l) => /^\| R\d+ \|/.test(l));
+    assert.ok(criteres.length >= 11);
+    for (const l of criteres) assert.doesNotMatch(l, /\b\d+ sur \d+\b/, l);
+    const s = sectionRunbook(IMPORT);
+    const etape8 = s.split('\n').find((l) => l.startsWith('8. **Preuves en local**')) ?? '';
+    assert.doesNotMatch(etape8, /trois avertissements/);
+    assert.match(etape8, /avant l'import/);
+  });
+
+  it('WR-02 : une date amont qui recule pour un statut inchangé est une information, et les écarts restants ont leur issue', () => {
+    const s = sectionRunbook(ANCIEN);
+    for (const needle of ['date amont qui recule', 'information', 'Dérives de source', 'ids_externes.2027etmoi', 'data/dataset-datagouv.yaml']) {
+      assert.ok(s.includes(needle), `« ${needle} » absent de la section « ${ANCIEN} »`);
+    }
+    assert.doesNotMatch(s, /\bE5\b/, 'E5 n’existe plus');
+    assert.doesNotMatch(read('scripts/lib/instantane.ts'), /champ: 'date'/, 'plus aucune erreur « date » dans la cohérence');
+  });
+
+  it('aucun tiret long ni demi-long, aucun mot interdit, aucun secret dans les sections de l’import', () => {
+    for (const titre of [IMPORT, GEL, ANCIEN]) {
+      const s = sectionRunbook(titre);
+      assert.doesNotMatch(s, /[–—]/, `tiret long ou demi-long dans « ${titre} »`);
+      assert.deepEqual(motsInterdits(s, { exempterCitations: false }), [], `mot interdit dans « ${titre} »`);
+      assert.doesNotMatch(s, /ghp_|github_pat_|-----BEGIN|password\s*[:=]/i);
+    }
+  });
+});
+
+// IN-08 (revue 09.1) : l'amendement d'ADR-034 nomme la règle qu'il modifie, celle de 04-UI-SPEC (§C4, « equal height
+// within a row »), et ne l'attribue pas au texte de M1-08, qui ne parle que de « taille fixe ».
+describe('docs/ARCHITECTURE.md : amendement d’ADR-034 (IN-08, revue 09.1)', () => {
+  const debut = architecture.indexOf('- **Amendement du 2026-11-13');
+  const amendement = architecture.slice(debut, architecture.indexOf('\n', debut));
+
+  it('nomme la règle de hauteur égale de 04-UI-SPEC et dit qu’elle est remplacée', () => {
+    assert.ok(debut > 0, 'amendement absent');
+    assert.match(amendement, /04-UI-SPEC/);
+    assert.match(amendement, /equal height within a row/);
+    assert.match(amendement, /remplacée/);
+  });
+
+  it('n’attribue pas la hauteur égale au texte de M1-08', () => {
+    assert.doesNotMatch(amendement, /l'exigence M1-08, verrouillée à l'origine, est modifiée/);
+    assert.match(amendement, /M1-08[^.]*ne parle que de « taille fixe »/);
   });
 });

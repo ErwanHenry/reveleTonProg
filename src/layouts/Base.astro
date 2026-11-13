@@ -1,9 +1,12 @@
 ---
+import { LIGNE_IDENTITE, MARQUEUR_SONDE, NOM_SITE, SOUS_TITRE } from '../lib/identite.ts';
 import '../styles/base.css';
 import '../styles/pages.css';
+import baseCss from '../styles/base.css?raw';
 import ordreSource from '../scripts/ordre.js?raw';
 import { formatDate, getCorpus } from '../lib/corpus/index.ts';
 import { SOURCE_DATES, TOURS } from '../lib/dates-tours.ts';
+import { ALT_PARTAGE, FICHIER_PARTAGE, HAUTEUR_PARTAGE, LARGEUR_PARTAGE } from '../lib/partage.ts';
 
 interface Props {
   titre: string;
@@ -12,9 +15,11 @@ interface Props {
   miseAJour: string | undefined;
   /** Vrai si la page affiche au moins une mesure : ajoute la phrase de signalement avant le pied de page. */
   avecSignalement?: boolean;
+  /** Vrai pour la page d'erreur (404.astro) : noindex dans les deux modes et aucune URL canonique (IN-07). */
+  pageErreur?: boolean;
 }
 
-const { titre, description, miseAJour, avecSignalement = false } = Astro.props;
+const { titre, description, miseAJour, avecSignalement = false, pageErreur = false } = Astro.props;
 const corpus = await getCorpus();
 // Rubrique courante, déduite du chemin (trailingSlash: 'always') : aucun paramètre de page nécessaire.
 const chemin = Astro.url.pathname;
@@ -22,6 +27,15 @@ const institutionnelle = /^\/(methode|mentions-legales|qui-sommes-nous)\/?$/.exe
 const courante = /^\/themes(\/|$)/.test(chemin) ? 'themes' : /^\/candidats(\/|$)/.test(chemin) ? 'candidats' : undefined;
 // URL canonique (HEB-05) : https://<domaine de config/site.yml> + chemin, seulement quand corpus.mode !== 'preview'.
 // Astro.site vaut https://<domaine> dans les deux modes : la build preview (artefact public) ne doit jamais revendiquer le domaine.
+// Couleur de la barre du navigateur (theme-color) = --fond de base.css, lue dans la feuille : une seule valeur.
+const couleurBarre = /--fond:\s*(#[0-9A-Fa-f]{6})\s*;/.exec(baseCss)?.[1];
+// Balises de partage (FIN-02, 09.1-04) : mêmes textes que le titre et la description de la page. og:url et le lien
+// canonique partagent cette seule valeur, donc la même condition : jamais en préversion, jamais sur la page d'erreur, jamais un autre hôte
+// que le domaine configuré (Astro.site).
+const urlCanonique = corpus.mode !== 'preview' && !pageErreur && Astro.site ? new URL(Astro.url.pathname, Astro.site).href : undefined;
+// Image de partage (proposition 6, public/partage.png) : même condition que og:url, donc jamais en préversion ni sur la
+// page d'erreur ; URL absolue sur le domaine configuré. Citée par ces seules balises : aucune page ne la charge.
+const urlImage = urlCanonique !== undefined && Astro.site ? new URL(`/${FICHIER_PARTAGE}`, Astro.site).href : undefined;
 ---
 <!doctype html>
 <html lang="fr">
@@ -30,15 +44,31 @@ const courante = /^\/themes(\/|$)/.test(chemin) ? 'themes' : /^\/candidats(\/|$)
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{titre}</title>
     <meta name="description" content={description} />
-    {corpus.mode === 'preview' && <meta name="robots" content="noindex" />}
-    {corpus.mode !== 'preview' && Astro.site && <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site).href} />}
+    <meta name="generator" content={MARQUEUR_SONDE} />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={NOM_SITE} />
+    <meta property="og:title" content={titre} />
+    <meta property="og:description" content={description} />
+    <meta property="og:locale" content="fr_FR" />
+    {urlCanonique && <meta property="og:url" content={urlCanonique} />}
+    {urlImage && <meta property="og:image" content={urlImage} />}
+    {urlImage && <meta property="og:image:width" content={String(LARGEUR_PARTAGE)} />}
+    {urlImage && <meta property="og:image:height" content={String(HAUTEUR_PARTAGE)} />}
+    {urlImage && <meta property="og:image:alt" content={ALT_PARTAGE} />}
+    <meta name="twitter:card" content={urlImage ? 'summary_large_image' : 'summary'} />
+    {couleurBarre && <meta name="theme-color" content={couleurBarre} />}
+    {(corpus.mode === 'preview' || pageErreur) && <meta name="robots" content="noindex" />}
+    {urlCanonique && <link rel="canonical" href={urlCanonique} />}
     <script is:inline set:html={ordreSource}></script>
   </head>
   <body>
     <a class="skip-link" href="#contenu">Aller au contenu</a>
     <header class="entete">
       <div class="conteneur entete-ligne">
-        <a class="site-nom" href="/">reveleTonProg</a>
+        <div class="site-identite">
+          <a class="site-nom" href="/">{NOM_SITE}</a>
+          <p class="site-sous-titre">{SOUS_TITRE}</p>
+        </div>
         <nav class="nav-principale" aria-label="Navigation principale">
           <ul>
             <li><a href="/themes/" aria-current={courante === 'themes' ? 'page' : undefined}>Thèmes</a></li>
@@ -51,14 +81,19 @@ const courante = /^\/themes(\/|$)/.test(chemin) ? 'themes' : /^\/candidats(\/|$)
       <div class="banniere-preview bandeau-apercu">Version de prévisualisation : contenus non relus, ne pas diffuser.</div>
     )}
     <slot />
-    {avecSignalement && (
-      <div class="conteneur">
-        <p class="signalement-intro">Vous avez repéré une erreur ? Signalez-la : l'identifiant de la mesure est déjà indiqué dans le message.</p>
-      </div>
-    )}
     <footer class="pied">
       <div class="conteneur">
-        {miseAJour === undefined ? (
+        <p class="pied-identite">{LIGNE_IDENTITE}</p>
+        {avecSignalement && <p class="signalement-intro">Vous avez repéré une erreur ? Signalez-la : l'identifiant de la mesure est déjà indiqué dans le message.</p>}
+        <nav aria-label="Informations sur le site" class="pied-liens">
+          <ul>
+            <li><a href="/methode/" aria-current={institutionnelle === 'methode' ? 'page' : undefined}>Méthode</a></li>
+            <li><a href="/mentions-legales/" aria-current={institutionnelle === 'mentions-legales' ? 'page' : undefined}>Mentions légales</a></li>
+            <li><a href="/qui-sommes-nous/" aria-current={institutionnelle === 'qui-sommes-nous' ? 'page' : undefined}>Qui sommes-nous</a></li>
+          </ul>
+        </nav>
+        {/* Page d'erreur : aucun contenu daté, donc aucune ligne de mise à jour (IN-09 de la revue 09.1). */}
+        {pageErreur ? null : miseAJour === undefined ? (
           <p data-mise-a-jour>Aucun contenu publié pour le moment.</p>
         ) : (
           <p data-mise-a-jour>Dernière mise à jour des contenus de cette page : <time datetime={miseAJour}>{formatDate(miseAJour)}</time>.</p>
@@ -67,13 +102,6 @@ const courante = /^\/themes(\/|$)/.test(chemin) ? 'themes' : /^\/candidats(\/|$)
 n'utilise aucun cookie et n'appelle aucun service extérieur.</p>
         <p>Élection présidentielle : premier tour le dimanche <time datetime={TOURS[0].date}>{formatDate(TOURS[0].date)}</time>, second tour le dimanche <time datetime={TOURS[1].date}>{formatDate(TOURS[1].date)}</time>.{SOURCE_DATES !== null && (<>
 {' '}(<a href={SOURCE_DATES.url} rel="noopener noreferrer">source officielle</a>)</>)}</p>
-        <nav aria-label="Informations sur le site" class="pied-liens">
-          <ul>
-            <li><a href="/methode/" aria-current={institutionnelle === 'methode' ? 'page' : undefined}>Méthode</a></li>
-            <li><a href="/mentions-legales/" aria-current={institutionnelle === 'mentions-legales' ? 'page' : undefined}>Mentions légales</a></li>
-            <li><a href="/qui-sommes-nous/" aria-current={institutionnelle === 'qui-sommes-nous' ? 'page' : undefined}>Qui sommes-nous</a></li>
-          </ul>
-        </nav>
       </div>
     </footer>
   </body>

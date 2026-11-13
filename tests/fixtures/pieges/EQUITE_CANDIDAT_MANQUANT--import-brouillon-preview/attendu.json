@@ -1,0 +1,15 @@
+{
+  "piege": "D-05 : même ajout, statut brouillon, en aperçu : la personne compte et le thème publié n'a ni mesure ni case pour elle, avertissement",
+  "regle": "REGLE-08",
+  "mode": "preview",
+  "remplacer": [],
+  "supprimer": [],
+  "attendu": [
+    {
+      "code": "EQUITE_CANDIDAT_MANQUANT",
+      "severite": "warning",
+      "fichier": "src/content/themes/logement.yaml",
+      "pointer": "/statut_relecture"
+    }
+  ]
+}

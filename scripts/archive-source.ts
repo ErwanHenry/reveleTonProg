@@ -9,9 +9,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs, promisify } from 'node:util';
-import { parse as parseYamlText } from 'yaml';
 import { readContained, validateYamlText } from '../src/lib/content-core/load.ts';
 import { schemasDirOf } from '../src/lib/content-core/root.ts';
+import { YamlRefuse, lireYamlPlafonne } from '../src/lib/content-core/yaml-plafonne.ts';
 import {
   TAILLE_MAX_BINAIRE,
   buildSourceYaml,
@@ -501,24 +501,34 @@ async function modeRefresh(ctx: Contexte, id: string, file: string | undefined, 
   resume(ctx, p, analyse, prise);
 }
 
-/** Sources sans wayback_url ; celles qui portent une exception motivée sont listées à part, jamais soumises. */
+/**
+ * Sources sans wayback_url ; celles qui portent une exception motivée sont listées à part, jamais soumises.
+ * IMP-01 : chaque fichier passe par la lecture plafonnée ; une source refusée (alias, clé en double, racine non
+ * objet) n'est plus écartée en silence : les refus sont réunis puis l'outil s'arrête (code 1) avant toute soumission.
+ */
 function sourcesSansWayback(racine: string, candidat: string | undefined): { ids: string[]; exceptions: string[] } {
   const dossier = path.join(racine, 'src', 'content', 'sources');
   const ids: string[] = [];
   const exceptions: string[] = [];
+  const refus: string[] = [];
   if (!existsSync(dossier)) return { ids, exceptions };
   for (const nom of readdirSync(dossier).sort()) {
     if (!nom.endsWith('.yaml')) continue;
     const id = nom.slice(0, -5);
+    let doc: Partial<DonneesSource>;
     try {
-      const doc = parseYamlText(readFileSync(path.join(dossier, nom), 'utf8'), { schema: 'core' }) as Partial<DonneesSource> | null;
-      if (doc?.archive?.wayback_url !== undefined) continue;
-      if (candidat !== undefined && !(doc?.candidats?.includes(candidat) ?? false)) continue;
-      if (doc?.archive?.wayback_exception !== undefined) exceptions.push(id);
-      else ids.push(id);
-    } catch {
-      avertir(`${nom} illisible : ignorée`);
+      doc = lireYamlPlafonne(readFileSync(path.join(dossier, nom), 'utf8'), `src/content/sources/${nom}`) as Partial<DonneesSource>;
+    } catch (e) {
+      refus.push(e instanceof YamlRefuse ? e.message : `src/content/sources/${nom} illisible (${e instanceof Error ? e.message : String(e)})`);
+      continue;
     }
+    if (doc.archive?.wayback_url !== undefined) continue;
+    if (candidat !== undefined && !(doc.candidats?.includes(candidat) ?? false)) continue;
+    if (doc.archive?.wayback_exception !== undefined) exceptions.push(id);
+    else ids.push(id);
+  }
+  if (refus.length > 0) {
+    throw new Sortie(1, `${refus.length} source(s) au YAML refusé : ${refus.join(' ; ')}. Corriger le fichier puis relancer ; rien n'a été soumis.`);
   }
   return { ids, exceptions };
 }

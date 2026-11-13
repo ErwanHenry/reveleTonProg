@@ -5,7 +5,9 @@
 // Le jeu amont est une entrée non fiable : sa forme est vérifiée explicitement avant tout mapping, et
 // `bloc`, `propositions`, `statut_detail` ne sont jamais lus par `mapRow` (ils ne survivent que dans
 // l'instantané brut sous data/import/).
-import { isSeq, parseDocument, stringify } from 'yaml';
+import { isSeq, stringify } from 'yaml';
+import { lireDocumentPlafonne } from '../../src/lib/content-core/yaml-plafonne.ts';
+import { comparerDatesStatut, statutLePlusRecent } from '../../src/lib/content-core/rules/equite.ts';
 
 export interface UpstreamRow {
   id: string;
@@ -53,6 +55,16 @@ const ID_AMONT = /^[a-z0-9][a-z0-9-]{0,79}$/;
 const ID_CANDIDAT = /^[a-z][a-z0-9]*(-[a-z0-9]+)+$/;
 // eslint-disable-next-line no-control-regex
 const CONTROLE = /[\u0000-\u001f\u007f-\u009f]/;
+// eslint-disable-next-line no-control-regex
+const CONTROLE_TOUS = /[\u0000-\u001f\u007f-\u009f\u2028\u2029]/g;
+/**
+ * CR-01 : une clé de `liens` est imprimée dans le rapport, corps de la pull request. Lettres ASCII, chiffres, `_`,
+ * `.` et `-` seulement (les sept clés réelles et une clé neuve ordinaire passent) : un saut de ligne, une espace,
+ * une balise ou une syntaxe Markdown dans une clé est refusé à la lecture.
+ */
+const CLE_LIEN = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,39}$/;
+/** Texte amont cité dans un message ou un avertissement : 40 caractères au plus, contrôles remplacés par « ? ». */
+const cite = (k: string): string => k.slice(0, 40).replace(CONTROLE_TOUS, '?');
 
 const estObjet = (v: unknown): v is Record<string, unknown> => v !== null && typeof v === 'object' && !Array.isArray(v);
 
@@ -89,7 +101,7 @@ export function checkUpstream(json: unknown): { miseAJour: string; rows: Upstrea
   if (!estObjet(json)) throw new UpstreamShapeError('racine : objet attendu');
   const avertissements: string[] = [];
   for (const k of Object.keys(json)) {
-    if (!(CLES_HAUT as readonly string[]).includes(k)) avertissements.push(`clé de premier niveau inconnue ignorée : « ${k.slice(0, 40)} »`);
+    if (!(CLES_HAUT as readonly string[]).includes(k)) avertissements.push(`clé de premier niveau inconnue ignorée : « ${cite(k)} »`);
   }
   const miseAJour = dateValide(json.mise_a_jour, 'mise_a_jour', false);
   const liste = json.candidats;
@@ -103,7 +115,7 @@ export function checkUpstream(json: unknown): { miseAJour: string; rows: Upstrea
       if (!(k in brut)) throw new UpstreamShapeError(`${at} : clé « ${k} » absente`);
     }
     for (const k of Object.keys(brut)) {
-      if (!(CLES_RANG as readonly string[]).includes(k)) inconnues.add(k.slice(0, 40));
+      if (!(CLES_RANG as readonly string[]).includes(k)) inconnues.add(cite(k));
     }
     const id = chaine(brut.id, `${at}.id`);
     if (!ID_AMONT.test(id)) throw new UpstreamShapeError(`${at}.id : identifiant amont invalide (minuscules, chiffres, tirets)`);
@@ -125,7 +137,10 @@ export function checkUpstream(json: unknown): { miseAJour: string; rows: Upstrea
     };
     if (!estObjet(brut.liens)) throw new UpstreamShapeError(`${at}.liens : objet attendu`);
     const liens: Record<string, string> = {};
-    for (const [k, v] of Object.entries(brut.liens)) liens[k] = urlHttps(v, `${at}.liens.${k}`);
+    for (const [k, v] of Object.entries(brut.liens)) {
+      if (!CLE_LIEN.test(k)) throw new UpstreamShapeError(`${at}.liens : clé « ${cite(k)} » invalide (lettres, chiffres, « _ », « . » ou « - », 40 caractères au plus)`);
+      liens[k] = urlHttps(v, `${at}.liens.${k}`);
+    }
     const verifie_le = dateValide(brut.verifie_le, `${at}.verifie_le`, false);
     return { id, nom, parti, statut, source, liens, verifie_le };
   });
@@ -202,21 +217,7 @@ export function mapRow(row: UpstreamRow, corr: Record<string, Correspondance>): 
   return fiche;
 }
 
-/** Date complète ou partielle -> chaîne comparable (AAAA-MM vaut le premier du mois). */
-export function dateComparable(d: string): string {
-  return d.length === 7 ? `${d}-01` : d;
-}
-
 type Obj = Record<string, unknown>;
-
-/** Statut le plus récent par date (à date égale, le dernier de la liste) : même règle que la règle d'équité (A6). */
-export function statutLePlusRecent(statuts: unknown[]): Obj {
-  let meilleur = statuts[0] as Obj;
-  for (const st of statuts) {
-    if (dateComparable(String((st as Obj).date)) >= dateComparable(String(meilleur.date))) meilleur = st as Obj;
-  }
-  return meilleur;
-}
 
 /** Vrai si `a` est strictement antérieure à `b`, au niveau de précision commun (une date AAAA-MM ne se compare qu'au mois). */
 export function dateAvant(a: string, b: string): boolean {
@@ -228,6 +229,12 @@ export function dateAvant(a: string, b: string): boolean {
  * Fusion append-only : une fiche absente est créée ; une fiche présente garde son identité, son
  * historique et ses relectures. Un changement de (code, motif) AJOUTE une entrée à `statuts[]`
  * (jamais de modification ni de retrait) ; une date qui recule est un conflit.
+ *
+ * WR-01 : « le plus récent » est celui de la règle d'équité (statutLePlusRecent, comparerDatesStatut), aucune
+ * seconde définition. Une entrée n'est ajoutée que si elle devient le statut le plus récent ; sinon elle resterait
+ * invisible (équité, avertissement, cohérence) et serait rajoutée à chaque import. Le seul cas où ce n'est ni un
+ * ajout ni une régression : une date amont au mois seulement (AAAA-MM) dans le mois du dernier statut, daté au
+ * jour. L'ordre des deux est inconnu : conflit nommé, arbitré par le relecteur (RUNBOOK), jamais deviné.
  */
 export function mergeFiche(
   existing: Obj | undefined,
@@ -239,7 +246,7 @@ export function mergeFiche(
   if (!Array.isArray(anciens) || anciens.length === 0 || !Array.isArray(nouveaux) || nouveaux.length === 0) {
     return { conflit: 'fichier existant sans statuts[] lisible : corriger à la main' };
   }
-  const dernier = statutLePlusRecent(anciens);
+  const dernier = statutLePlusRecent(anciens) as Obj;
   const amont = nouveaux[0] as Obj;
   const notes: string[] = [];
   if (existing.id !== mapped.id) return { conflit: `identifiant « ${String(existing.id)} » différent de la table (« ${String(mapped.id)} »)` };
@@ -259,6 +266,11 @@ export function mergeFiche(
   if (dateAvant(String(amont.date), String(dernier.date))) {
     return { conflit: `régression de date : amont ${String(amont.code)} du ${String(amont.date)} antérieur au dernier statut ${String(dernier.code)} du ${String(dernier.date)}` };
   }
+  if (comparerDatesStatut(amont.date, dernier.date) < 0) {
+    return {
+      conflit: `date amont ${String(amont.date)} au mois seulement, dans le mois du dernier statut ${String(dernier.code)} du ${String(dernier.date)} : ordre des deux statuts inconnu, à arbitrer par le relecteur (RUNBOOK, date au mois seulement)`,
+    };
+  }
   return { fiche: { ...existing, statuts: [...anciens, amont] }, action: 'statut_ajoute', notes };
 }
 
@@ -268,13 +280,18 @@ export function renderYaml(o: unknown): string {
 }
 
 /**
- * Ajoute un statut en fin de `statuts[]` en éditant le document en place (API Document de `yaml`) :
- * commentaires, ordre des clés et mise en forme du fichier existant sont conservés. Lève une Error
- * si le texte n'a pas de séquence `statuts`.
+ * Ajoute un statut en fin de `statuts[]` (API Document de `yaml`) : le Document est modifié puis RE-SÉRIALISÉ en
+ * entier par `doc.toString()` (IN-01 de la revue de la phase 10). Les données, l'ordre des clés et les commentaires
+ * sont gardés, mais pas toujours la mise en forme : fins de ligne CRLF rendues en LF, espaces avant un commentaire
+ * de fin de ligne réduites à une, scalaires repliés (`>-`) remis sur une ligne, saut de ligne final ajouté. Les
+ * fiches écrites par l'outil (rendu de renderYaml) restent préfixe exact du texte rendu : c'est le cas des 59
+ * fiches du dépôt (test « garde les octets existants ») ; une fiche retouchée à la main peut voir d'autres lignes
+ * bouger dans le diff, que le contrôle `git diff --numstat` du plan d'import (aucune ligne supprimée) attrape.
+ * Le Document vient de l'analyse plafonnée (IMP-01) : un alias, une clé en double ou une racine non objet lève
+ * `YamlRefuse` qui nomme `fichier`. Lève une Error si le texte n'a pas de séquence `statuts`.
  */
-export function ajouterStatutYaml(texte: string, statut: unknown): string {
-  const doc = parseDocument(texte, { schema: 'core', uniqueKeys: true });
-  if (doc.errors.length > 0) throw new Error(`YAML illisible : ${doc.errors[0]?.message ?? ''}`);
+export function ajouterStatutYaml(texte: string, statut: unknown, fichier = 'fiche candidat'): string {
+  const doc = lireDocumentPlafonne(texte, fichier);
   const seq = doc.get('statuts', true);
   if (!isSeq(seq)) throw new Error('séquence statuts absente');
   seq.add(doc.createNode(statut));

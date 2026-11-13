@@ -6,6 +6,7 @@ import path from 'node:path';
 import { analyserHtml, aClasse, texte, trouver } from '../../../scripts/lib/html.ts';
 import type { Noeud } from '../../../scripts/lib/html.ts';
 import { cellulesAttendues, checkDist } from '../../../scripts/lib/check-dist.ts';
+import { NOM_SITE } from '../../../src/lib/identite.ts';
 import { materialiserCorpusM1 } from '../../helpers/corpus-m1.ts';
 import type { ContexteSite } from '../contexte.ts';
 
@@ -18,7 +19,7 @@ const ECARTES = ['nina-pressentie', 'paul-de-villefranche'];
 const SANS_MESURE = "Aucune mesure n'est présentée pour cette personnalité : les thèmes couvrent les candidatures déclarées et les candidatures à une primaire.";
 const STATUT_A_VERIFIER = "Aucune mesure n'est présentée pour cette personnalité tant que son statut est en cours de vérification.";
 const INTRO_CANDIDATS =
-  "Les personnalités du jeu de données dont le statut a été relu, dans l'ordre choisi ci-dessus. Le statut est celui de la dernière source consultée.";
+  "Les personnalités du jeu de données dont le statut a été relu, par ordre alphabétique du nom, ou dans un ordre aléatoire si vous le choisissez ci-dessous. Le statut est celui de la dernière source consultée.";
 const NIVEAUX_HALL = [
   ['En bref', 'Une phrase par mesure.'],
   ['En détail', 'Le coût annoncé, le calendrier, ce qui existe déjà dans la loi et la citation du programme.'],
@@ -72,7 +73,7 @@ export default function candidat(ctx: ContexteSite): void {
     it('Marie : nom, parti revendiqué, statut daté avec lien source', () => {
       const { arbre, html } = page(production().outDir, 'candidats/marie-fictive/index.html');
       assert.equal(txt(trouver(arbre, (n) => n.tag === 'h1')[0] as Noeud), 'Marie Fictive');
-      assert.ok(html.includes('<title>Marie Fictive : positions par thème, reveleTonProg</title>'));
+      assert.ok(html.includes(`<title>Marie Fictive : positions par thème, ${NOM_SITE}</title>`));
       assert.ok(norm(texte(arbre)).includes('Parti revendiqué : Parti Imaginaire'));
       const statut = trouver(arbre, (n) => n.tag === 'p' && aClasse(n, 'statut'))[0] as Noeud;
       assert.ok(statut, 'p.statut');
@@ -198,12 +199,14 @@ export default function candidat(ctx: ContexteSite): void {
       );
     });
 
-    it('hall : h1, intro, quatre niveaux, neutralité, tuiles, lien vers les candidats', () => {
+    it('hall : h1, présentation, quatre niveaux, neutralité, tuiles, lien vers les candidats', () => {
       const { arbre, html } = page(production().outDir, 'index.html');
       assert.equal(txt(trouver(arbre, (n) => n.tag === 'h1')[0] as Noeud), 'Les programmes de la présidentielle 2027, à votre niveau');
-      assert.ok(html.includes('<title>reveleTonProg : les programmes de la présidentielle 2027</title>'));
+      assert.ok(html.includes(`<title>${NOM_SITE} : les programmes de la présidentielle 2027</title>`));
       const t = txt(arbre);
-      assert.ok(t.includes('Choisissez un thème : vous lirez la position de chaque candidat, avec sa source. Choisissez aussi votre niveau de lecture.'));
+      // Proposition 1 du lot B (09.1) : l'introduction devient une phrase de présentation (texte en brouillon,
+      // ordre et contenu vérifiés par tests/dist/cas/accueil.cas.ts).
+      assert.equal(trouver(arbre, (n) => n.tag === 'p' && aClasse(n, 'hall-presentation')).length, 1);
       const dl = trouver(arbre, (n) => n.tag === 'dl')[0] as Noeud;
       assert.ok(dl, 'dl des niveaux');
       assert.deepEqual(
@@ -215,11 +218,9 @@ export default function candidat(ctx: ContexteSite): void {
         NIVEAUX_HALL.map(([, d]) => d),
       );
       assert.ok(t.includes('Quatre niveaux de lecture'));
-      assert.ok(
-        t.includes(
-          "Les candidats sont classés par ordre alphabétique, jamais selon les sondages. Chaque mesure vient d'une source primaire datée et décrit ce que le candidat propose, sans jugement.",
-        ),
-      );
+      // Les deux faits de l'ancien paragraphe de neutralité passent dans les garanties (proposition 1 du lot B).
+      assert.match(t, /ordre alphabétique, jamais selon les sondages/);
+      assert.match(t, /sans jugement/);
       assert.ok(trouver(arbre, (n) => n.tag === 'h2').some((h) => txt(h) === 'Les thèmes'));
       assert.deepEqual(
         trouver(arbre, (n) => n.tag === 'li' && n.attrs['data-theme'] !== undefined && aClasse(n, 'tuile')).map((x) => x.attrs['data-theme']),
@@ -258,7 +259,7 @@ export default function candidat(ctx: ContexteSite): void {
 
     it('/candidats/ : six lignes, Paul sans étiquette de parti, intro de preview', () => {
       const { arbre } = page(preview().outDir, 'candidats/index.html');
-      assert.ok(txt(arbre).includes("Toutes les personnalités du jeu de données, dans l'ordre choisi ci-dessus. Le statut est celui de la dernière source consultée."));
+      assert.ok(txt(arbre).includes("Toutes les personnalités du jeu de données, par ordre alphabétique du nom, ou dans un ordre aléatoire si vous le choisissez ci-dessous. Le statut est celui de la dernière source consultée."));
       const lignes = trouver(arbre, (n) => n.tag === 'li' && n.attrs['data-rang'] !== undefined);
       assert.deepEqual(
         lignes.map((l) => lien(l, /./).attrs.href),

@@ -1,0 +1,27 @@
+---
+import { NOM_SITE } from '../lib/identite.ts';
+// Page 404 (FIN-01, D-05, plan 09.1-02) : servie avec le code 404 pour toute adresse qui n'est ni un fichier ni un
+// dossier de la release (bloc Caddy public, e2e/serveur.ts). Même page et même code pour toute adresse inconnue, y
+// compris une personne non relue écartée de la production (plan 09-15) : le texte ne parle d'aucune personne.
+// Tous les textes de la page sont ici, en un seul endroit, pour la reformulation d'Erwan (09.1-08, 09.1-09).
+import Base from '../layouts/Base.astro';
+
+const TITRE = 'Page introuvable';
+const EXPLICATION = "Cette adresse ne correspond à aucune page du site. La page a peut-être changé d'adresse, ou elle n'est pas encore publiée.";
+const LIENS = [
+  { href: '/', libelle: "Revenir à l'accueil" },
+  { href: '/themes/', libelle: 'Voir les thèmes' },
+  { href: '/candidats/', libelle: 'Voir la liste des candidats' },
+];
+---
+<Base titre={`${TITRE} : ${NOM_SITE}`} description={EXPLICATION} miseAJour={undefined} pageErreur>
+  <main id="contenu" class="conteneur">
+    <h1>{TITRE}</h1>
+    <p>{EXPLICATION}</p>
+    <ul>
+      {LIENS.map((l) => (
+        <li><p class="section-lien"><a href={l.href}>{l.libelle}</a></p></li>
+      ))}
+    </ul>
+  </main>
+</Base>

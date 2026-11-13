@@ -777,7 +777,11 @@ describe('sonde.yml : sonde externe de contenu (OPS-01, D-14)', () => {
   });
 
   it('le marqueur de la sonde existe toujours dans la page (src/layouts/Base.astro)', () => {
-    assert.ok(read('src/layouts/Base.astro').includes('>reveleTonProg</a>'));
+    // Proposition 5 du lot B (09.1) : le nom affiché (NOM_SITE) peut changer ; le marqueur grepé par la sonde est une
+    // constante à part, MARQUEUR_SONDE, émise dans <meta name="generator"> de chaque page. Le cas dist
+    // « identite 09.1 » vérifie aussi la page d'accueil construite.
+    assert.ok(read('src/layouts/Base.astro').includes('<meta name="generator" content={MARQUEUR_SONDE} />'));
+    assert.ok(read('src/lib/identite.ts').includes("export const MARQUEUR_SONDE = 'reveleTonProg';"));
   });
 
   it('commentaire de tête : succès seul pingué, 3 échecs (période et délai de grâce), planification retardée ou désactivée', () => {

@@ -10,11 +10,40 @@
   - page thème : le h1 à la couleur du thème et le bandeau de couverture (base.css).
 */
 
-/* Navigation principale : site au-dessus, rubriques dessous, puis sur une ligne dès 60em */
+/*
+  En-tête (proposition 5 du lot B) : nom du site et rubriques sur la première ligne, sous-titre sur toute la largeur
+  dessous. .site-identite (nom puis sous-titre dans le DOM) s'efface de la grille. Colonnes « auto » : elles se
+  réduisent jusqu'au mot le plus long, sans défilement horizontal à 320 px ni à 160 %.
+*/
 .entete .entete-ligne {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-content: space-between;
+  align-items: center;
+  column-gap: 0.5rem;
+}
+
+.site-identite {
+  display: contents;
+}
+
+.entete .site-nom {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.entete .nav-principale {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+/* Sous-titre : Label, encre douce, sous le nom */
+.site-sous-titre {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  margin: 0;
+  color: var(--encre-douce);
+  font-size: var(--t-label);
 }
 
 .nav-principale ul {
@@ -38,11 +67,15 @@
   font-weight: 600;
 }
 
-@media (min-width: 60em) {
-  .entete .entete-ligne {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
+/* Nom du site : Body 18/600 sur téléphone (contrat C1, tient sur la ligne des rubriques), Heading 24/600 dès 37.5em,
+   avec 8 px sous le sous-titre (sur téléphone, la hauteur est gardée pour laisser la première tuile au premier écran) */
+@media (min-width: 37.5em) {
+  .entete .site-nom {
+    font-size: var(--t-titre);
+  }
+
+  .site-sous-titre {
+    margin-bottom: 0.5rem;
   }
 }
 
@@ -56,6 +89,54 @@
 }
 
 .hall-themes {
+  margin-top: 2rem;
+}
+
+/* Accueil (proposition 1 du lot B) : présentation, trois garanties, les thèmes, puis le lien vers la Méthode */
+.hall-presentation,
+.garanties {
+  max-width: 68ch;
+}
+
+.hall-presentation {
+  margin: 0 0 0.5rem;
+}
+
+/* Liste sans puces (role="list" garde la sémantique de liste dans Safari), en Label pour rester au premier écran */
+.garanties {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--t-label);
+}
+
+.garanties li {
+  margin: 0 0 0.25rem;
+}
+
+/* Liens autonomes de l'accueil, hors de .lecteur depuis la proposition 1 : ils portent eux-mêmes leur cible de 44 px,
+   et de 48 px en « Gros caractères » comme la règle .lecteur de niveaux.css (WR-01 de la revue 09.1) */
+.hall-candidats a,
+.hall-methode a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+}
+
+main:has(> .lecteur > .niveaux #niv-aine:checked) :is(.hall-candidats, .hall-methode) a {
+  min-height: 3rem;
+}
+
+.hall-themes + .tuiles {
+  margin-top: 1rem;
+}
+
+/* Un seul thème ouvert : la tuile occupe toute la ligne, même habillage */
+.tuile-une {
+  grid-column: 1 / -1;
+}
+
+.hall-niveaux {
   margin-top: 3rem;
 }
 
@@ -82,6 +163,7 @@
   font-size: var(--t-corps);
   font-weight: 600;
   overflow-wrap: break-word;
+  /* Nom de thème : la césure est permise sur les noms (contrat 04-UI-SPEC) */
   hyphens: auto;
 }
 
@@ -134,6 +216,7 @@
   font-size: var(--t-corps);
   font-weight: 600;
   overflow-wrap: break-word;
+  /* Nom de candidat : la césure est permise sur les noms (contrat 04-UI-SPEC) */
   hyphens: auto;
 }
 
@@ -157,7 +240,6 @@
 }
 
 .statut {
-  max-width: 68ch;
   margin: 0 0 2rem;
   padding: 1rem;
   background: var(--panneau);

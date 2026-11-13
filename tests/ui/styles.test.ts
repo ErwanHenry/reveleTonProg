@@ -386,3 +386,108 @@ describe('styles : pages institutionnelles', () => {
     }
   });
 });
+
+// Finitions 09.1 (lot A) : césure réservée aux noms et titres, survol sous (hover: hover), barre du thème, statut.
+describe('finitions 09.1 : contrat CSS', () => {
+  const decl = (selecteur: string, prop: string): string | undefined =>
+    regles
+      .filter((r) => r.selecteur === selecteur)
+      .flatMap((r) => r.declarations)
+      .find((d) => d.prop === prop)?.valeur;
+
+  it('hyphens: auto seulement sur titres, noms, étiquettes de contrôle (contrat : noms, titres et adresses)', () => {
+    const avecCesure = regles
+      .filter((r) => r.declarations.some((d) => d.prop === 'hyphens' && d.valeur === 'auto'))
+      .map((r) => r.selecteur)
+      .sort();
+    assert.deepEqual(avecCesure, ['.ligne-nom', '.niveau label', '.ordre-option label', '.tuile-lien', 'h1, h2, h3, h4']);
+    for (const s of avecCesure) {
+      assert.ok(!/\.mesure|\.redaction|\.definition|\.mots-expliques|\.vide|\.source/.test(s), `césure sur ${s}`);
+    }
+    for (const r of regles) {
+      if (/\.mesure(?![-\w])|\.redaction|\.definition|\.mots-expliques/.test(r.selecteur)) {
+        assert.ok(
+          !r.declarations.some((d) => d.prop === 'hyphens' && d.valeur !== 'manual'),
+          `${r.selecteur} déclare hyphens`,
+        );
+      }
+    }
+  });
+
+  it('chaque règle :hover est dans @media (hover: hover) (pas de survol collant au toucher)', () => {
+    const trouvees: { selecteur: string; media: boolean }[] = [];
+    for (const { texte } of sourcesCss) {
+      const pile: string[] = [];
+      let prelude = '';
+      for (const c of texte) {
+        if (c === '{') {
+          pile.push(prelude.trim().replace(/\s+/g, ' '));
+          if (/:hover/.test(prelude) && !prelude.trim().startsWith('@')) {
+            trouvees.push({
+              selecteur: prelude.trim().replace(/\s+/g, ' '),
+              media: pile.slice(0, -1).some((p) => /^@media\b/.test(p) && /\(hover:\s*hover\)/.test(p)),
+            });
+          }
+          prelude = '';
+        } else if (c === '}') {
+          pile.pop();
+          prelude = '';
+        } else if (c === ';') {
+          prelude = '';
+        } else prelude += c;
+      }
+    }
+    assert.deepEqual(
+      trouvees.map((t) => t.selecteur).sort(),
+      ['.niveau:hover label', '.ordre-option:hover label', '.site-nom:hover', 'a:hover'],
+    );
+    for (const t of trouvees) assert.ok(t.media, `${t.selecteur} hors @media (hover: hover)`);
+  });
+
+  it('la barre de couleur du thème est sur .theme-entete, pas sur main', () => {
+    assert.equal(decl('main[data-theme]', 'border-top'), undefined);
+    assert.equal(decl('.theme-entete', 'border-top'), '8px solid var(--theme)');
+    assert.ok(ESPACES.has(decl('.theme-entete', 'padding-top') ?? ''), 'padding-top de .theme-entete hors échelle');
+  });
+
+  it('le bloc de statut prend la largeur du contenu', () => {
+    assert.equal(decl('.statut', 'max-width'), undefined);
+  });
+
+  it('.redaction et .definition passent à la ligne sans césure (overflow-wrap: anywhere)', () => {
+    assert.equal(decl('.redaction', 'overflow-wrap'), 'anywhere');
+    assert.equal(decl('.definition', 'overflow-wrap'), 'anywhere');
+  });
+});
+
+// Finitions visuelles 09.1, proposition 4 (audit B6) : grille sans grands vides. Remplace la hauteur égale par rangée de
+// 04-UI-SPEC §C4 (verrouillé ; M1-08 ne dit que « taille fixe ») : acceptée par Erwan le 2026-11-13 (amendement d'ADR-034). Chaque carte garde sa structure en colonne (C4).
+describe('styles : grille M1-08 09.1, cartes à leur hauteur', () => {
+  const valeur = (selecteur: string, prop: string): string | undefined =>
+    regles
+      .filter((r) => r.fichier === 'base.css' && r.selecteur === selecteur)
+      .flatMap((r) => r.declarations)
+      .find((d) => d.prop === prop)?.valeur;
+
+  it('.cellules aligne les cartes en haut de leur rangée (align-items: start)', () => {
+    assert.equal(valeur('.cellules', 'align-items'), 'start');
+  });
+
+  it('.cellule reste une colonne flex (zones de la carte inchangées)', () => {
+    assert.equal(valeur('.cellule', 'display'), 'flex');
+    assert.equal(valeur('.cellule', 'flex-direction'), 'column');
+  });
+
+  // IN-05 (revue 09.1) : la carte a la hauteur de son contenu, une marge automatique ne pousse plus le pied en bas.
+  it('IN-05 : .cellule-pied sans marge automatique, marges à zéro', () => {
+    assert.equal(valeur('.cellule-pied', 'margin'), '0');
+  });
+
+  // IN-05 : la phrase de signalement n'est plus rendue que dans le pied, où .pied .signalement-intro fixe marge et couleur.
+  it('IN-05 : .signalement-intro ne garde que sa taille ; marge et couleur viennent de .pied .signalement-intro', () => {
+    const base = regles.filter((r) => r.fichier === 'base.css' && r.selecteur === '.signalement-intro').flatMap((r) => r.declarations);
+    assert.deepEqual(base.map((d) => d.prop), ['font-size']);
+    assert.equal(valeur('.pied .signalement-intro', 'margin'), '0 0 1rem');
+    assert.equal(valeur('.pied .signalement-intro', 'color'), 'var(--encre)');
+  });
+});

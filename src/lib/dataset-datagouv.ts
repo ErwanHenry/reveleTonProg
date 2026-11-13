@@ -49,7 +49,10 @@ export function loadDatasetDatagouv(projectRoot: string = process.cwd()): Datase
   if (!existsSync(fichier)) throw erreur(`fichier introuvable (${fichier})`);
 
   const doc = parseDocument(readFileSync(fichier, 'utf8'), { schema: 'core', uniqueKeys: true, merge: false });
-  if (doc.errors.length > 0) throw erreur(`YAML invalide (${(doc.errors[0]?.message ?? '').split('\n')[0]})`);
+  // IN-05 (revue de la phase 10) : un avertissement de l'analyseur (balise inconnue…) est refusé comme une erreur,
+  // comme dans yaml-plafonne.ts : c'est ce que dit la raison de ce fichier dans la liste blanche du test de dépôt.
+  const probleme = doc.errors[0] ?? doc.warnings[0];
+  if (probleme !== undefined) throw erreur(`YAML invalide (${(probleme.message ?? '').split('\n')[0]})`);
   let alias = false;
   visit(doc, {
     Alias: () => {

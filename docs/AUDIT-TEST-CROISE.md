@@ -49,7 +49,7 @@ Les paramètres entre accolades sont lus dans `src/lib/content-core/rules/config
 | R5 | Les longueurs des rédactions respectent `{LONGUEURS}` : résumé 25 mots au plus, détaillé 80 à 200, enfant 40 à 60, aîné 60 à 120. | voir ci-contre |
 | R6 | Chaque mot difficile du niveau enfant est expliqué (définition en pop-up ou dans les mots expliqués). | |
 | R7 | Aucune ressource tierce : pas de script, police, image ou feuille de style chargés depuis un autre domaine. | |
-| R8 | Les pages Méthode, Mentions légales et Qui sommes-nous décrivent ce que le dépôt contient réellement (règle de choix des thèmes pilotes, écart 59 sur 51 compris, contact, hébergeur). | |
+| R8 | Les pages Méthode, Mentions légales et Qui sommes-nous décrivent ce que le dépôt contient réellement (règle de choix des thèmes pilotes, écart entre le nombre de lignes de l'instantané et le nombre annoncé par la description du jeu compris, contact, hébergeur). | |
 | R9 | Les dates des deux tours (18 avril et 2 mai 2027) sont visibles là où le site parle de l'élection. | |
 | R10 | Un contenu brouillon n'apparaît jamais dans une build de production. Un candidat pressenti ou qui a renoncé est présenté comme tel, jamais comme un candidat déclaré. | |
 | R11 | Aucun mot interdit dans les quatre rédactions et le titre (la citation verbatim d'un candidat est exemptée). | |

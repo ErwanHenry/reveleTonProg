@@ -1,5 +1,5 @@
-import { parseDocument } from 'yaml';
 import { foldKey } from '../../src/lib/content-core/rules/text/normalize.ts';
+import { analyserYamlPlafonne, messageRefus } from '../../src/lib/content-core/yaml-plafonne.ts';
 
 // Tableau de couverture des thèmes (CONT-04). Module PUR : aucun import node:, aucune lecture
 // disque. Il valide la forme de data/couverture-themes.yaml et recalcule, à partir des seules cases
@@ -82,17 +82,19 @@ const DATE_JOUR = /^\d{4}-\d{2}-\d{2}$/;
 /**
  * Lit et valide data/couverture-themes.yaml. Ne lève jamais : toute anomalie devient un message
  * français dans `problemes`. Quand `problemes` n'est pas vide, `data` est partiel et ne doit pas être classé.
+ * IMP-01 : lecture plafonnée (yaml-plafonne.ts) ; un refus donne une entrée par diagnostic, trois au plus,
+ * chacune avec fichier, ligne, colonne et code, la dernière suivie de « (+N autre(s)) ».
  */
-export function lireCouverture(texte: string): { data: CouvertureThemes; problemes: string[] } {
+export function lireCouverture(texte: string, fichier = 'data/couverture-themes.yaml'): { data: CouvertureThemes; problemes: string[] } {
   const problemes: string[] = [];
-  const doc = parseDocument(texte, { schema: 'core', uniqueKeys: true, merge: false });
-  for (const e of [...doc.errors, ...doc.warnings]) problemes.push(`YAML illisible : ${(e.message.split('\n')[0] ?? e.message).trim()}`);
-  let brut: unknown;
-  try {
-    brut = doc.errors.length === 0 ? doc.toJS({ maxAliasCount: 0 }) : undefined;
-  } catch (e) {
-    problemes.push(`YAML illisible : ${e instanceof Error ? e.message : String(e)}`);
-  }
+  const analyse = analyserYamlPlafonne(texte, fichier);
+  const refus = analyse.diagnostics.filter((d) => d.code !== 'YAML_RACINE_NON_OBJET');
+  const montres = refus.slice(0, 3);
+  montres.forEach((d, i) => {
+    const reste = i === montres.length - 1 ? refus.length - montres.length : 0;
+    problemes.push(`YAML illisible : ${messageRefus([d])}${reste > 0 ? ` (+${reste} autre(s))` : ''}`);
+  });
+  const brut: unknown = analyse.data;
   const vide: CouvertureThemes = {
     version: 1,
     mesure_le: '',

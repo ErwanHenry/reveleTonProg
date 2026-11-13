@@ -14,6 +14,7 @@ import type { Mode } from '../../src/lib/content-core/rules/types.ts';
 import { schemasDirOf } from '../../src/lib/content-core/root.ts';
 import { empreinteCsp, scriptsEnLigne } from '../../src/lib/csp-empreintes.ts';
 import { estOuvert } from '../../src/lib/publication-config.ts';
+import { HAUTEUR_PARTAGE, LARGEUR_PARTAGE } from '../../src/lib/partage.ts';
 import { estHoteProvisoire } from '../../src/lib/site-config.ts';
 import { aClasse, analyserHtml, trouver } from './html.ts';
 
@@ -27,15 +28,53 @@ export const LIMITES = {
   gzip: 100_000, // 100 Ko compressés par page : c'est cette limite qui mord en premier
   script: 2048, // un script classique du site pèse moins de 2 Ko
   favicon: 4096, // public/favicon.ico (D-11) : l'icône générée par scripts/favicon.ts pèse quelques centaines d'octets
+  partage: 100_000, // public/partage.png (09.1, proposition 6) : image de partage 1200 x 630 générée par scripts/partage.ts
 } as const;
 
 /**
  * Extensions permises dans le dist (HEB-08), passées par le CLI à `typesAutorises`. `.ico` ne couvre que
  * favicon.ico à la racine, 4 096 octets au plus (D-11) : toute autre icône reste TYPE_FICHIER_INATTENDU.
+ * `.png` ne couvre que partage.png à la racine, 100 000 octets au plus (09.1) : tout autre PNG reste refusé.
  */
-export const TYPES_AUTORISES = ['.html', '.txt', '.xml', '.json', '.ico'] as const;
+export const TYPES_AUTORISES = ['.html', '.txt', '.xml', '.json', '.ico', '.png'] as const;
 /** Seule icône admise, à la racine du dist (copie de public/favicon.ico). */
 export const FAVICON = 'favicon.ico';
+/** Seul PNG admis, à la racine du dist (copie de public/partage.png, cité par og:image seulement). */
+export const IMAGE_PARTAGE = 'partage.png';
+
+const SIGNATURE_PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+
+/**
+ * Écart d'un fichier avec un PNG de `largeur` x `hauteur` bien formé, ou undefined (IN-02 de la revue 09.1). Règle
+ * étroite : signature, IHDR en premier morceau (13 octets) aux bonnes dimensions, morceaux qui tiennent dans le fichier,
+ * IEND en dernier. Aucune décompression, aucun CRC lu ; chaque tour avance d'au moins 12 octets, la boucle est bornée
+ * par la taille du fichier.
+ */
+export function problemePng(png: Buffer, largeur: number, hauteur: number): string | undefined {
+  if (png.length < 8 || !png.subarray(0, 8).equals(SIGNATURE_PNG)) return 'signature PNG absente';
+  let i = 8;
+  let ihdr = false;
+  let iend = false;
+  while (i < png.length) {
+    if (iend) return 'octets après le morceau IEND';
+    if (png.length - i < 12) return 'morceau tronqué';
+    const longueur = png.readUInt32BE(i);
+    if (longueur > png.length - i - 12) return 'morceau tronqué';
+    const type = png.subarray(i + 4, i + 8).toString('latin1');
+    if (!ihdr) {
+      if (type !== 'IHDR' || longueur !== 13) return `premier morceau « ${type.replace(/[^A-Za-z]/g, '?')} » au lieu de IHDR`;
+      const l = png.readUInt32BE(i + 8);
+      const h = png.readUInt32BE(i + 12);
+      if (l !== largeur || h !== hauteur) return `dimensions ${l} x ${h} au lieu de ${largeur} x ${hauteur}`;
+      ihdr = true;
+    }
+    if (type === 'IEND') iend = true;
+    i += 12 + longueur;
+  }
+  if (!ihdr) return 'IHDR absent';
+  if (!iend) return 'morceau IEND absent';
+  return undefined;
+}
 
 /** Tous les codes que le contrôle peut produire (la page Méthode de la Phase 5 les affichera). */
 export const CODES_CHECK_DIST = [
@@ -76,6 +115,7 @@ export const CODES_CHECK_DIST = [
   'STYLE_SANS_EMPREINTE',
   'CANONIQUE_ABSENT',
   'CANONIQUE_INCORRECT',
+  'PARTAGE_INCORRECT',
   'SITEMAP_INCOHERENT',
   'ROBOTS_SANS_SITEMAP',
   'DOMAINE_PROVISOIRE',
@@ -242,6 +282,19 @@ function ressourcesCss(css: string): string[] {
 
 /** Valeurs `rel` d'un <link> qui le désignent comme URL canonique de la page. */
 const estCanonique = (n: Noeud): boolean => n.tag === 'link' && (n.attrs.rel ?? '').toLowerCase().split(/\s+/).includes('canonical');
+
+/** Balise d'image de partage (Open Graph ou carte Twitter) : og:image, og:image:url, og:image:secure_url, twitter:image. */
+const estImagePartage = (n: Noeud): boolean =>
+  n.tag === 'meta' && /^(og:image(:url|:secure_url)?|twitter:image(:src)?)$/i.test((n.attrs.property ?? n.attrs.name ?? '').trim());
+/** Balise og:url. */
+const estUrlPartage = (n: Noeud): boolean => n.tag === 'meta' && (n.attrs.property ?? '').trim().toLowerCase() === 'og:url';
+
+/** Premières URL d'un attribut srcset (« a.png 1x, b.png 2x » donne a.png et b.png). */
+const urlsSrcset = (v: string): string[] =>
+  v
+    .split(',')
+    .map((c) => c.trim().split(/\s+/)[0] ?? '')
+    .filter((u) => u !== '');
 
 /** Chemin public d'une page du dist : `index.html` → `/`, `a/index.html` → `/a/`, `a.html` → `/a.html`. */
 function cheminPublic(rel: string): string {
@@ -421,6 +474,54 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
     }
     if (f.endsWith('.css')) {
       for (const message of ressourcesCss(fs.readFileSync(path.join(racineDist, f), 'utf8'))) signaler('RESSOURCE_TIERCE', f, message);
+    }
+  }
+
+  // --- image de partage (PARTAGE_INCORRECT) -------------------------------
+  /** Problème d'une URL d'image de partage, ou undefined si elle est valide : https, domaine configuré, fichier du dist. */
+  const problemeImage = (url: string): string | undefined => {
+    const v = nettoyerUrl(url);
+    const abs = SCHEMA.test(v) ? urlAbsolue(v) : undefined;
+    if (abs === undefined) return `URL d'image relative ou invalide (https://<domaine>/... attendu) : ${v.slice(0, 80)}`;
+    const u = new URL(abs);
+    if (u.protocol !== 'https:') return `image de partage non servie en https : ${v.slice(0, 80)}`;
+    if (estHoteProvisoire(u.hostname)) return `image de partage sur un hôte provisoire : ${v.slice(0, 80)}`;
+    if (origine !== undefined && u.origin !== new URL(origine).origin) return `image de partage hors du domaine configuré : ${v.slice(0, 80)}`;
+    let chemin = u.pathname;
+    try {
+      chemin = decodeURIComponent(chemin);
+    } catch {
+      // pourcentage mal formé : on garde le chemin brut
+    }
+    if (!fichiers.includes(chemin.slice(1))) return `image de partage absente du dist : ${chemin.slice(0, 80)}`;
+    return undefined;
+  };
+  /**
+   * Images de partage, pour la règle « jamais chargée » : fichier du dist et origine + chemin de son URL absolue (sans
+   * requête ni fragment). partage.png du dist y est toujours, préversion comprise (IN-03 de la revue 09.1), avec les
+   * images valides citées par og:image et twitter:image en production.
+   */
+  const imagesPartage = new Map<string, Set<string>>();
+  if (fichiers.includes(IMAGE_PARTAGE)) imagesPartage.set(IMAGE_PARTAGE, new Set<string>());
+  const origineEtChemin = (u: URL): string => {
+    let chemin = u.pathname;
+    try {
+      chemin = decodeURIComponent(chemin);
+    } catch {
+      // pourcentage mal formé : on garde le chemin brut
+    }
+    return `${u.origin}${chemin}`;
+  };
+  for (const p of pages) {
+    if (opts.mode === 'preview' || p.rel === PAGE_ERREUR) continue;
+    for (const n of trouver(p.racine, estImagePartage)) {
+      const url = n.attrs.content ?? '';
+      if (problemeImage(url) !== undefined) continue;
+      const abs = new URL(nettoyerUrl(url));
+      const cle = origineEtChemin(abs).slice(abs.origin.length + 1);
+      const hrefs = imagesPartage.get(cle) ?? new Set<string>();
+      hrefs.add(origineEtChemin(abs));
+      imagesPartage.set(cle, hrefs);
     }
   }
 
@@ -607,6 +708,75 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
           if (vue !== undefined && estHoteProvisoire(new URL(vue).hostname)) {
             signaler('DOMAINE_PROVISOIRE', rel, `URL canonique vers un domaine provisoire (TLD réservé) : ${vue.slice(0, 80)}`, severiteDeploiement);
           }
+        }
+      }
+    }
+
+    // Balises de partage (FIN-02, 09.1-04) : og:url seulement en production, sur les pages qui ont une URL canonique,
+    // et égal à elle ; jamais d'image de partage en preview ni sur la page d'erreur ; une image de partage valide est
+    // un fichier du dist sur le domaine configuré, cité seulement par og:image et twitter:image (jamais chargée).
+    const urlsOg = tous.filter(estUrlPartage);
+    const imagesOg = tous.filter(estImagePartage);
+    const lirePartage = (n: Noeud): string => nettoyerUrl(n.attrs.content ?? '');
+    if (opts.mode === 'preview') {
+      if (urlsOg.length > 0) signaler('PARTAGE_INCORRECT', rel, `${urlsOg.length} og:url en preview (la preview n'a pas d'URL publique)`);
+      if (imagesOg.length > 0) signaler('PARTAGE_INCORRECT', rel, `${imagesOg.length} image(s) de partage en preview (la preview n'a pas d'URL publique)`);
+    } else if (rel === PAGE_ERREUR) {
+      if (urlsOg.length > 0) signaler('PARTAGE_INCORRECT', rel, `${urlsOg.length} og:url sur la page d'erreur (aucun attendu, comme pour l'URL canonique)`);
+      if (imagesOg.length > 0) signaler('PARTAGE_INCORRECT', rel, `${imagesOg.length} image(s) de partage sur la page d'erreur`);
+    } else {
+      if (origine !== undefined) {
+        const attendue = new URL(cheminPublic(rel), origine).href;
+        if (urlsOg.length !== 1) {
+          signaler('PARTAGE_INCORRECT', rel, `${urlsOg.length} og:url (exactement un attendu, égal à l'URL canonique : ${attendue})`);
+        } else if (urlAbsolue(lirePartage(urlsOg[0] as Noeud)) !== attendue) {
+          signaler('PARTAGE_INCORRECT', rel, `og:url « ${lirePartage(urlsOg[0] as Noeud).slice(0, 80)} », attendue « ${attendue} » (l'URL canonique)`);
+        }
+      } else {
+        // Sans domaine (dist construit avant, appel direct) : seuls le nombre, le schéma et l'hôte provisoire sont jugés.
+        if (urlsOg.length > 1) signaler('PARTAGE_INCORRECT', rel, `${urlsOg.length} og:url (un seul au plus)`);
+        for (const n of urlsOg) {
+          const vue = urlAbsolue(lirePartage(n));
+          if (vue === undefined || new URL(vue).protocol !== 'https:' || estHoteProvisoire(new URL(vue).hostname)) {
+            signaler('PARTAGE_INCORRECT', rel, `og:url « ${lirePartage(n).slice(0, 80)} » : https et un hôte non provisoire attendus`);
+          }
+        }
+      }
+      for (const n of imagesOg) {
+        const probleme = problemeImage(n.attrs.content ?? '');
+        if (probleme !== undefined) signaler('PARTAGE_INCORRECT', rel, probleme);
+      }
+    }
+    // L'image de partage ne doit jamais être chargée par le visiteur : aucune autre référence qu'og:image et twitter:image.
+    if (imagesPartage.size > 0) {
+      const refs: string[] = [];
+      for (const n of tous) {
+        if ((n.tag === 'img' || n.tag === 'source') && n.attrs.srcset !== undefined) refs.push(...urlsSrcset(n.attrs.srcset));
+        if (n.tag === 'img' && n.attrs.src !== undefined) refs.push(n.attrs.src);
+        if (n.tag === 'link' && n.attrs.href !== undefined) refs.push(n.attrs.href);
+        // IN-03 : autres attributs qui font charger une image
+        if (n.tag === 'video' && n.attrs.poster !== undefined) refs.push(n.attrs.poster);
+        if (n.tag === 'input' && n.attrs.src !== undefined) refs.push(n.attrs.src);
+        if (n.tag === 'object' && n.attrs.data !== undefined) refs.push(n.attrs.data);
+        if (n.tag === 'image') {
+          if (n.attrs.href !== undefined) refs.push(n.attrs.href);
+          if (n.attrs['xlink:href'] !== undefined) refs.push(n.attrs['xlink:href']);
+        }
+        if (n.tag === 'style') {
+          const css = n.enfants.filter((e): e is string => typeof e === 'string').join('');
+          for (const m of css.matchAll(/url\(\s*["']?([^"')]+)/gi)) refs.push(m[1] ?? '');
+        }
+      }
+      for (const ref of refs) {
+        const v = nettoyerUrl(ref);
+        if (v === '') continue;
+        const abs = SCHEMA.test(v) ? urlAbsolue(v) : undefined;
+        const fichier = abs !== undefined ? [...imagesPartage].find(([, hrefs]) => hrefs.has(origineEtChemin(new URL(abs))))?.[0] : (() => {
+          const c = cible(rel, v);
+          return c !== undefined && imagesPartage.has(c.rel) ? c.rel : undefined;
+        })();
+        if (fichier !== undefined) {
+          signaler('PARTAGE_INCORRECT', rel, `l'image de partage ne doit jamais être chargée par le visiteur : ${fichier.slice(0, 80)} est aussi référencée ici (${v.slice(0, 60)})`);
         }
       }
     }
@@ -863,6 +1033,23 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
         } else {
           const taille = fs.statSync(path.join(dist, f)).size;
           if (taille > LIMITES.favicon) signaler('TYPE_FICHIER_INATTENDU', f, `favicon.ico de ${taille} octets (limite ${LIMITES.favicon}) : régénérer par node scripts/favicon.ts`);
+        }
+        continue;
+      }
+      if (ext === '.png' && permis.has(ext)) {
+        // Image de partage (09.1) : un seul PNG, à la racine, sous LIMITES.partage ; jamais chargée par une page (PARTAGE_INCORRECT).
+        if (f !== IMAGE_PARTAGE) {
+          signaler('TYPE_FICHIER_INATTENDU', f, `image refusée : seul partage.png à la racine du dist est permis (public/partage.png, généré par scripts/partage.ts)`);
+        } else {
+          const taille = fs.statSync(path.join(dist, f)).size;
+          if (taille > LIMITES.partage) {
+            signaler('TYPE_FICHIER_INATTENDU', f, `partage.png de ${taille} octets (limite ${LIMITES.partage}) : régénérer par node scripts/partage.ts`);
+          } else {
+            const ecart = problemePng(fs.readFileSync(path.join(dist, f)), LARGEUR_PARTAGE, HAUTEUR_PARTAGE);
+            if (ecart !== undefined) {
+              signaler('TYPE_FICHIER_INATTENDU', f, `partage.png n'est pas un PNG ${LARGEUR_PARTAGE} x ${HAUTEUR_PARTAGE} bien formé (${ecart}) : régénérer par node scripts/partage.ts`);
+            }
+          }
         }
         continue;
       }

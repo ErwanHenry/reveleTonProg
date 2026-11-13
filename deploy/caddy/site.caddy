@@ -10,6 +10,21 @@ reveletonprog.fr {
 	encode zstd gzip
 	file_server
 
+	# Adresse inconnue (ni un fichier ni un dossier de la release) : 404.html du site avec le code 404 ; une release
+	# sans ce fichier répond 404 sans corps. Pas de handle_errors : sur le serveur partagé, il ferait passer le journal
+	# des erreurs de tous les sites au niveau debug (Caddy 2.11.2). Le journal d'accès note ces requêtes comme les autres.
+	# Préconditions (If-None-Match, If-Modified-Since, If-Match...) et Range retirés dans cette route seulement : sinon
+	# Caddy 2.11.2 répond 404 sans corps, ou tronqué pour Range, et Safari revalide une 404 (page blanche).
+	@introuvable not file {path} {path}/
+	handle @introuvable {
+		rewrite * /404.html
+		request_header -If-*
+		request_header -Range
+		file_server {
+			status 404
+		}
+	}
+
 	header {
 		-Server
 		# HSTS court la première semaine, à relever (max-age=31536000) une fois le domaine stable (Phase 8).

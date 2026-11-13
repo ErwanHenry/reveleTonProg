@@ -1,4 +1,5 @@
 ---
+import { NOM_SITE } from '../lib/identite.ts';
 import Base from '../layouts/Base.astro';
 import { formatDate } from '../lib/corpus/index.ts';
 import { loadHebergeurConfig } from '../lib/hebergeur-config.ts';
@@ -7,12 +8,12 @@ import { loadSiteConfig } from '../lib/site-config.ts';
 import { CLES_STOCKAGE } from '../lib/stockage-local.ts';
 
 // Date de dernière révision de cette page (à mettre à jour à chaque modification du texte).
-const REVISION = '2026-11-10';
+const REVISION = '2026-11-12';
 const heb = loadHebergeurConfig();
 const site = loadSiteConfig();
 ---
 <Base
-  titre="Mentions légales : reveleTonProg"
+  titre={`Mentions légales : ${NOM_SITE}`}
   description="Qui édite ce site, qui l'héberge, comment exercer un droit de réponse et ce que le site fait de vos données."
   miseAJour={REVISION}
 >
@@ -85,8 +86,10 @@ const site = loadSiteConfig();
         Ils ne quittent jamais votre appareil et n'identifient personne.
       </li>
       <li>Vous pouvez les effacer à tout moment dans les réglages de votre navigateur.</li>
-      <li>Le lien « Signaler une erreur (courriel) » ouvre votre logiciel de courrier : c'est une action volontaire. Votre adresse n'est connue de l'éditeur que si vous envoyez le message.</li>
-      <li>Le lien « Signaler une erreur (GitHub) » mène au site GitHub : c'est aussi une action volontaire, et GitHub applique alors sa propre politique de confidentialité.</li>
+      {/* Noms des liens alignés sur les nouveaux libellés du bloc source (avant :
+          « Signaler une erreur (courriel) » et « Signaler une erreur (GitHub) »), validés par Erwan. */}
+      <li>Le lien « Signaler une erreur : par courriel » ouvre votre logiciel de courrier : c'est une action volontaire. Votre adresse n'est connue de l'éditeur que si vous envoyez le message.</li>
+      <li>Le lien « Signaler une erreur : sur GitHub » mène au site GitHub : c'est aussi une action volontaire, et GitHub applique alors sa propre politique de confidentialité.</li>
     </ul>
     <p>
       Ces réglages relèvent des traceurs de personnalisation de l'interface, exemptés de consentement par la CNIL lorsqu'ils sont un élément intrinsèque et attendu du service (<a href="https://www.cnil.fr/fr/cookies-et-autres-traceurs/regles/cookies/que-dit-la-loi" rel="noopener noreferrer">règles de la CNIL</a>).

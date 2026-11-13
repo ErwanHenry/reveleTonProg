@@ -60,9 +60,16 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 
 ### Import de décembre
 
-- [ ] **IMP-01**: Les lectures YAML des outils d'import et d'archivage passent par un analyseur plafonné (alias, clés en double), comme content-core
-- [ ] **IMP-02**: La CI vérifie la cohérence entre l'instantané data.gouv et les fichiers candidats, et un piège couvre « l'import ajoute un candidat déclaré à un thème publié »
+- [x] **IMP-01**: Les lectures YAML des outils d'import et d'archivage passent par un analyseur plafonné (alias, clés en double), comme content-core
+- [x] **IMP-02**: La CI vérifie la cohérence entre l'instantané data.gouv et les fichiers candidats, et un piège couvre « l'import ajoute un candidat déclaré à un thème publié »
 - [ ] **IMP-03**: L'import des statuts de décembre passe par une répétition à blanc puis une pull request dédiée dont le diff (nouveaux, retirés, changés) est relu par Erwan ; la production n'en est affectée qu'après relecture
+
+### Finitions visuelles (ajoutées le 2026-11-12, décision d'Erwan « Audit puis finitions »)
+
+- [x] **FIN-01**: Les défauts de l'audit visuel sont corrigés : page 404 en français dans la mise en page du site, plus de césure automatique dans les textes des mesures et du glossaire, survol non collant sur écran tactile, texte et barre de thème corrigés
+- [x] **FIN-02**: Un lien partagé affiche titre, description et image du site (balises de partage, couleur de barre du navigateur, image de partage admise par check-dist et jamais chargée par le visiteur)
+- [x] **FIN-03**: L'accueil, l'en-tête et le pied de page disent en quelques secondes ce qu'est le site et pourquoi lui faire confiance ; leurs textes sont validés par Erwan sur un aperçu avant fusion
+- [x] **FIN-04** (atteint avec la cible abaissée : 24 038 px au lieu de 21 500 px, variante 2b refusée, décision d'Erwan du 2026-11-13 « Suis ton avis » ; la cible d'origine n'est pas atteinte) : La page d'un thème est plus courte et plus facile à parcourir (bloc source compact, accès direct à un candidat, grille sans grands vides), sans perdre la source ni la date, avec la validation d'Erwan pour toute règle verrouillée du contrat de design, et tous les garde-fous restent verts (accessibilité AA, 320 px, sans JS, poids, 4G, check-dist)
 
 ### Dette de l'audit v1.0
 
@@ -128,14 +135,18 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 | PUB-02 | Phase 9 | Pending |
 | PUB-03 | Phase 9 | Complete |
 | PUB-04 | Phase 9 | Pending |
-| IMP-01 | Phase 10 | Pending |
-| IMP-02 | Phase 10 | Pending |
+| FIN-01 | Phase 9.1 | Complete |
+| FIN-02 | Phase 9.1 | Complete |
+| FIN-03 | Phase 9.1 | Complete |
+| FIN-04 | Phase 9.1 | Complete |
+| IMP-01 | Phase 10 | Complete |
+| IMP-02 | Phase 10 | Complete |
 | IMP-03 | Phase 10 | Pending |
 
 **Coverage:**
 
-- v1.1 requirements: 34 total
-- Mapped to phases: 34
+- v1.1 requirements: 38 total (34 at definition, 4 added on 2026-11-12 for Phase 9.1)
+- Mapped to phases: 38
 - Unmapped: 0
 
 ---

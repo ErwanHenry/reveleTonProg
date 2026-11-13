@@ -26,6 +26,7 @@ Détail complet : [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) ; exi
 - [x] **Phase 7: Domaine paramétré, inlining et dette** : domaine unique en configuration, CSS et scripts dans la page avec CSP à empreintes, dette W3, W4, W10, W7 (completed 2026-11-07)
 - [x] **Phase 8: Serveur, pipeline, supervision et sauvegardes** : Caddy en HTTPS, déploiement atomique avec retour arrière, hôte technique protégé, alertes, restauration réelle (completed 2026-11-10)
 - [ ] **Phase 9: Contenu relu, juridique et ouverture** : un thème relu publié, Mentions légales finales, journal d'audit refait, ouverture publique vers le 5 décembre
+- [x] **Phase 9.1: Finitions visuelles avant l'ouverture** (INSÉRÉE le 2026-11-12) : défauts de l'audit visuel corrigés, page 404, balises et image de partage, accueil, en-tête, pied de page et page thème retouchés avec validation d'Erwan sur un aperçu ; fusionnée le 2026-11-13, avant la publication (09-11)
 - [ ] **Phase 10: Import de décembre** : analyseur plafonné, cohérence de l'instantané, import des statuts en pull request relue (10 au 13 décembre, gel du 13 au 15)
 
 ## Piste 0 (Erwan, hors code)
@@ -42,6 +43,7 @@ Actions humaines qui conditionnent le code. Dates proposées pour tenir le 2026-
 | Solliciter un juriste (régime d'éditeur, base du droit de réponse, journaux, localStorage) | LEG-02 | demande 2026-11-13, avis 2026-12-02 | À défaut d'avis à temps, consigner par écrit le risque accepté au plus tard le 2026-12-03 |
 | Tester l'adresse de contact réelle de bout en bout | LEG-01 | 2026-11-27 | Envoi et réponse depuis l'extérieur |
 | Approuver le premier déploiement sur l'hôte technique, puis chaque déploiement en production | HEB-12, HEB-14 | essai technique vers 2026-11-27 ; ouverture vers 2026-12-05 | Approbation dans GitHub, un clic par déploiement |
+| Fait : répondre aux sept questions de la procédure d'import (D-08, D-09, bornes du gel, fusion en brouillon, repli, ouverture tardive, relecture non fusionnée) | Phase 10 (10-04) | 2026-11-28 | Répondu le 2026-11-13 (« Tout par défaut ») ; décisions enregistrées dans 10-04-SUMMARY.md |
 | Relire le diff d'import des statuts et l'approuver | Phase 10 | 2026-12-13 | Gel des changements du 13 au 15 |
 
 ## Phase Details
@@ -155,6 +157,32 @@ Plans:
 - [x] 09-14-PLAN.md — Relecteur et date affichés sur chaque mesure publiée (PUB-03), code check-dist RELECTURE_ABSENTE (vague 3)
 - [x] 09-15-PLAN.md — Personnes sans statut relu absentes de la production (D-06, décision 2a), comptes honnêtes, code check-dist CANDIDAT_NON_RELU_EN_PRODUCTION (vague 4)
 
+### Phase 9.1: Finitions visuelles avant l'ouverture (INSÉRÉE)
+
+**Goal**: Le site qui ouvre au public n'a plus les défauts relevés par l'audit visuel du 2026-11-12 et donne une première impression claire, sans changer d'identité : les retouches restent dans le système de design existant et dans toutes les contraintes du projet (accessibilité AA, zéro JS par défaut, poids et 4G, CSP à empreintes, neutralité).
+**Depends on**: Phase 7 (inlining, check-dist) ; doit être fusionnée avant la publication du thème santé (plan 09-11), pour que l'audit final (09-13) porte sur le site retouché
+**Requirements**: FIN-01, FIN-02, FIN-03, FIN-04
+**Success Criteria** (what must be TRUE):
+
+  1. Une adresse inconnue affiche une page 404 en français, dans la mise en page du site, avec un retour vers l'accueil ; les textes des mesures et du glossaire ne sont plus coupés par césure automatique ; le survol ne reste plus collé au doigt sur un écran tactile ; les petits défauts de l'audit (texte « ci-dessus », barre de thème décalée) sont corrigés.
+  2. Un lien partagé affiche un titre, une description et une image du site ; la page porte ses balises de partage et sa couleur de barre de navigateur ; l'image ne pèse rien pour le visiteur (elle n'est chargée que par les robots de partage) et check-dist l'admet comme seul fichier de ce type.
+  3. Erwan a vu sur un aperçu, avant toute fusion, les propositions qui touchent ses textes ou des règles verrouillées du contrat de design (accueil, en-tête, pied de page, bloc source compact, liste d'accès aux candidats, alignement de la grille) et n'entrent sur `main` que celles qu'il a validées, avec ses corrections de texte.
+  4. Tous les garde-fous restent verts après les retouches : axe AA, lecture à 320 px et à 160 %, fonctionnement sans JS, budget de poids et « Slow 4G simulé » sous 1 s, check-dist (empreintes CSP), et la page santé est moins haute sur téléphone qu'à l'audit (26 800 px en « En bref » à 375 px). Résultat mesuré le 2026-11-13 : 24 038 px, soit environ 10 % de moins ; la cible de 21 500 px n'est pas atteinte et Erwan a accepté ce résultat (variante 2b refusée).
+
+**Plans**: 9 plans (8 waves; lot A 09.1-01 to 09.1-05 on main, one push and one deployment request at 09.1-05; lot B 09.1-06 to 09.1-08 on branch design/finitions in ../reveleTonProg-design; single checkpoint with Erwan at 09.1-09 around 20 November, merged before 09-11 and measured before the December import)
+
+Plans:
+
+- [x] 09.1-01-PLAN.md — Césure réservée aux noms et titres, mot long sans débordement à 320 px, survol sous (hover: hover), texte de /candidats/, barre de thème alignée, statut pleine largeur (vague 1)
+- [x] 09.1-02-PLAN.md — Page 404 en français, serveur de test et bloc Caddy public (matcher file et status 404, sans handle_errors), preuve Caddy locale jetable, contrôles avant et après pour 09-12 (vague 1)
+- [x] 09.1-03-PLAN.md — Nom du site en un seul endroit (NOM_SITE), pages construites identiques octet pour octet (vague 2)
+- [x] 09.1-04-PLAN.md — Balises de partage et theme-color, og:url depuis le seul domaine configuré, code check-dist PARTAGE_INCORRECT (vague 3)
+- [x] 09.1-05-PLAN.md — Plus de rappel du niveau sur l'accueil, gros caractères et niveau mémorisé épinglés sur chaque page candidat, pied de page structuré, gardes complètes et push du lot A (vague 4)
+- [x] 09.1-06-PLAN.md — Worktree design/finitions, script de mesure et référence, propositions 1 (accueil) et 5 (nom, sous-titre, ligne d'identité) en brouillon (vague 5)
+- [x] 09.1-07-PLAN.md — Propositions 2 (bloc source compact, variante 2b si la cible de 21 500 px est manquée), 3 (Aller à un candidat), 4 (grille, règle verrouillée M1-08) (vague 6)
+- [x] 09.1-08-PLAN.md — Proposition 6 (image de partage, seul PNG admis), indépendance de chaque commit, gardes sur la branche, aperçu 4331/4332, carte de partage locale et fiche pour Erwan (vague 7)
+- [x] 09.1-09-PLAN.md — Réponse d'Erwan proposition par proposition et sur les deux textes du lot A, intégration des seuls commits acceptés avec ses textes, gardes, push, mesure finale avant l'import de décembre, nettoyage (vague 8, validation d'Erwan)
+
 ### Phase 10: Import de décembre
 
 **Goal**: Les statuts de candidats de décembre entrent dans le dépôt par une pull request relue, sans jamais modifier la production avant relecture d'Erwan.
@@ -166,7 +194,16 @@ Plans:
   2. La CI échoue si l'instantané data.gouv et les fichiers candidats sont incohérents, et un piège prouve que « l'import ajoute un candidat déclaré à un thème publié » est détecté.
   3. Une répétition à blanc produit un diff (nouveaux, retirés, changés) puis l'import réel du 10 au 13 décembre passe par une pull request dédiée qu'Erwan relit ; la production n'est affectée qu'après cette relecture, avant le gel du 13 au 15.
 
-**Plans**: TBD
+**Plans**: 6 plans (une chaîne stricte de 6 vagues ; 10-01 à 10-04 avant l'ouverture, 10-05 et 10-06 du 10 au 16 décembre ; points de validation d'Erwan en 10-04, 10-05 et 10-06)
+
+Plans:
+
+- [x] 10-01-PLAN.md — Analyseur YAML plafonné léger (équivalent à content-core, sans load.ts) pour l'import, l'archivage et la couverture, test de dépôt avec liste blanche de huit fichiers (vague 1)
+- [x] 10-02-PLAN.md — Cohérence instantané data.gouv / fiches candidats dans npm test, pièges d'une personne déclarée ajoutée à un thème publié (vague 2)
+- [x] 10-03-PLAN.md — Rapport de répétition à blanc (nouveaux, absents du jeu amont, changés avec leurs sources, conséquences sur les thèmes publiés), option --check, répétition sur le jeu en ligne dans un worktree jetable (vague 3)
+- [x] 10-04-PLAN.md — Décisions d'Erwan (D-08, D-09, bornes du gel, fusion en brouillon, repli, ouverture tardive, relecture non fusionnée), avertissement STATUT_PLUS_RECENT_NON_RELU, procédure d'import et gel au RUNBOOK (vague 4)
+- [ ] 10-05-PLAN.md — Import réel sur import/statuts-2026-12 : répétition du matin, correspondances validées par Erwan, pull request avec le rapport (vague 5, 10 au 11 décembre)
+- [ ] 10-06-PLAN.md — Relecture et fusion par Erwan, déploiement approuvé avant le gel, vérifications en production, relevé du gel (vague 6, 11 au 16 décembre)
 
 ## Progress
 
@@ -180,5 +217,6 @@ Plans:
 | 6. Diagnostic du VPS et décision | v1.1 | 1/0 | Complete    | 2026-11-08 |
 | 7. Domaine paramétré, inlining et dette | v1.1 | 8/8 | Complete    | 2026-11-07 |
 | 8. Serveur, pipeline, supervision et sauvegardes | v1.1 | 15/15 | Complete    | 2026-11-10 |
-| 9. Contenu relu, juridique et ouverture | v1.1 | 10/15 | In Progress|  |
-| 10. Import de décembre | v1.1 | 0/0 | Not started | - |
+| 9. Contenu relu, juridique et ouverture | v1.1 | 11/15 | In Progress|  |
+| 9.1 Finitions visuelles avant l'ouverture | v1.1 | 9/9 | Complete | 2026-11-13 |
+| 10. Import de décembre | v1.1 | 1/6 | In Progress|  |

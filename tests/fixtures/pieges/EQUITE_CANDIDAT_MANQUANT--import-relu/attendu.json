@@ -1,0 +1,16 @@
+{
+  "piege": "D-05 : l'import ajoute une personne déclarée, statut relu, à un thème publié sans mesure ni case de couverture : erreur",
+  "regle": "REGLE-08",
+  "mode": "production",
+  "remplacer": [],
+  "supprimer": [],
+  "attendu": [
+    {
+      "code": "EQUITE_CANDIDAT_MANQUANT",
+      "severite": "error",
+      "fichier": "src/content/themes/logement.yaml",
+      "pointer": "/statut_relecture",
+      "ligne": 11
+    }
+  ]
+}

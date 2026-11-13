@@ -95,6 +95,7 @@ html[data-js-niveau] .aide-sansjs {
   /* Texte à 160 % sur 320 px : l'étiquette passe à la ligne au lieu de dépasser sa colonne */
   min-inline-size: 0;
   overflow-wrap: anywhere;
+  /* Étiquette de contrôle : doit passer à la ligne à 320 px et 160 % */
   hyphens: auto;
 }
 
@@ -108,8 +109,10 @@ html[data-js-niveau] .aide-sansjs {
   border-radius: 50%;
 }
 
-.niveau:hover label {
-  background: var(--panneau);
+@media (hover: hover) {
+  .niveau:hover label {
+    background: var(--panneau);
+  }
 }
 
 .niveau input:checked + label {

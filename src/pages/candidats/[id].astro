@@ -1,4 +1,5 @@
 ---
+import { NOM_SITE } from '../../lib/identite.ts';
 import Base from '../../layouts/Base.astro';
 import BadgeBrouillon from '../../components/BadgeBrouillon.astro';
 import EtatVide from '../../components/EtatVide.astro';
@@ -20,8 +21,8 @@ const nom = candidat.nomAffiche;
 const mesuresAffichees = sections.flatMap((s) => s.cellule.mesures);
 ---
 <Base
-  titre={`${nom} : positions par thème, reveleTonProg`}
-  description={`Les mesures de ${nom}, thème par thème, avec leurs sources.`}
+  titre={`${nom} : positions par thème, ${NOM_SITE}`}
+  description={`Les mesures de ${nom}, avec leurs sources.`}
   miseAJour={page.miseAJour}
   avecSignalement={mesuresAffichees.length > 0}
 >

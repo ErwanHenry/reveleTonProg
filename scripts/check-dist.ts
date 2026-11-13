@@ -27,7 +27,8 @@ const USAGE = `Usage : node scripts/check-dist.ts [--dist <dossier>] [--root <do
   RTP_DEPLOIEMENT n'accepte que 1, 0 ou vide ; toute autre valeur est refusée (code 2).
   version.json doit exister et donner exactement commit et date ; GITHUB_SHA (40 hexadécimaux, en CI) impose son
   commit, et le commit « dev » est refusé sous RTP_DEPLOIEMENT=1. Le dist ne contient que html, txt, xml et json,
-  plus une seule icône : favicon.ico à la racine, 4 096 octets au plus (régénérée par node scripts/favicon.ts).
+  plus une seule icône : favicon.ico à la racine, 4 096 octets au plus (régénérée par node scripts/favicon.ts),
+  et un seul PNG : partage.png à la racine, 100 000 octets au plus (image de partage, node scripts/partage.ts).
   Code de sortie : 0 sans erreur, 1 si au moins une erreur, 2 si les arguments, le mode, config/site.yml ou config/publication.yml sont invalides.
 `;
 
@@ -92,7 +93,7 @@ try {
 }
 // Version servie (HEB-07) : GITHUB_SHA (CI) est le commit attendu dans version.json quand il compte 40 hexadécimaux,
 // comme dans src/pages/version.json.ts. Types de fichiers (HEB-08) : html, txt, xml et json, plus le seul favicon.ico
-// à la racine (D-11) : TYPES_AUTORISES de scripts/lib/check-dist.ts.
+// à la racine (D-11) et le seul partage.png à la racine (09.1) : TYPES_AUTORISES de scripts/lib/check-dist.ts.
 const sha = process.env.GITHUB_SHA ?? '';
 const version = /^[0-9a-f]{40}$/.test(sha) ? { commitAttendu: sha } : {};
 const constats = checkDist(dist, { mode, cellulesParTheme: attendues, themesOuverts, candidatsNonRelus: nonRelus, deploiement, domaine, version, typesAutorises: TYPES_AUTORISES });
