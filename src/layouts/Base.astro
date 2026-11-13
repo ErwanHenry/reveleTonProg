@@ -92,7 +92,8 @@ const urlImage = urlCanonique !== undefined && Astro.site ? new URL(`/${FICHIER_
             <li><a href="/qui-sommes-nous/" aria-current={institutionnelle === 'qui-sommes-nous' ? 'page' : undefined}>Qui sommes-nous</a></li>
           </ul>
         </nav>
-        {miseAJour === undefined ? (
+        {/* Page d'erreur : aucun contenu daté, donc aucune ligne de mise à jour (IN-09 de la revue 09.1). */}
+        {pageErreur ? null : miseAJour === undefined ? (
           <p data-mise-a-jour>Aucun contenu publié pour le moment.</p>
         ) : (
           <p data-mise-a-jour>Dernière mise à jour des contenus de cette page : <time datetime={miseAJour}>{formatDate(miseAJour)}</time>.</p>

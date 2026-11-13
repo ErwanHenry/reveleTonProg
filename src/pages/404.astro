@@ -5,7 +5,6 @@ import { NOM_SITE } from '../lib/identite.ts';
 // compris une personne non relue écartée de la production (plan 09-15) : le texte ne parle d'aucune personne.
 // Tous les textes de la page sont ici, en un seul endroit, pour la reformulation d'Erwan (09.1-08, 09.1-09).
 import Base from '../layouts/Base.astro';
-import { getCorpus } from '../lib/corpus/index.ts';
 
 const TITRE = 'Page introuvable';
 const EXPLICATION = "Cette adresse ne correspond à aucune page du site. La page a peut-être changé d'adresse, ou elle n'est pas encore publiée.";
@@ -14,10 +13,8 @@ const LIENS = [
   { href: '/themes/', libelle: 'Voir les thèmes' },
   { href: '/candidats/', libelle: 'Voir la liste des candidats' },
 ];
-
-const corpus = await getCorpus();
 ---
-<Base titre={`${TITRE} : ${NOM_SITE}`} description={EXPLICATION} miseAJour={corpus.miseAJourIndex()} pageErreur>
+<Base titre={`${TITRE} : ${NOM_SITE}`} description={EXPLICATION} miseAJour={undefined} pageErreur>
   <main id="contenu" class="conteneur">
     <h1>{TITRE}</h1>
     <p>{EXPLICATION}</p>

@@ -59,6 +59,18 @@ export default function introuvable(ctx: ContexteSite): void {
         assert.equal(trouver(a, (n) => n.tag === 'main' && n.attrs.id === 'contenu').length, 1, 'main#contenu');
       });
 
+      // IN-09 (revue 09.1) : la page 404 n'a pas de contenu daté ; son pied ne dit pas « Dernière mise à jour des contenus
+      // de cette page », et garde ses autres lignes (liens institutionnels, cookie, tours).
+      it('pied de page sans ligne de mise à jour des contenus, autres lignes présentes', () => {
+        const a = page(build(mode));
+        const pied = trouver(a, (n) => n.tag === 'footer' && aClasse(n, 'pied'))[0] as Noeud;
+        assert.equal(trouver(a, (n) => n.attrs['data-mise-a-jour'] !== undefined).length, 0, '[data-mise-a-jour] sur la page 404');
+        assert.doesNotMatch(txt(pied), /Dernière mise à jour des contenus|Aucun contenu publié/);
+        assert.match(txt(pied), /n'utilise aucun cookie/);
+        assert.match(txt(pied), /premier tour le dimanche/);
+        assert.equal(trouver(pied, (n) => n.tag === 'a' && n.attrs.href === '/mentions-legales/').length, 1);
+      });
+
       it('paragraphe d\'explication et liste de trois liens : accueil, thèmes, candidats ; aucun sélecteur de niveau', () => {
         const a = page(build(mode));
         const main = trouver(a, (n) => n.tag === 'main')[0] as Noeud;
