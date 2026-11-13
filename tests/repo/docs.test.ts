@@ -842,3 +842,102 @@ describe('documentation (phase 9) : ADR', () => {
     assert.equal((architecture.match(/^```$/gm) ?? []).length, 1);
   });
 });
+
+describe('documentation (phase 10) : import de décembre (IMP-03)', () => {
+  const IMPORT = 'Import de décembre (10 au 13 décembre 2026)';
+  const GEL = "Gel d'import (13 au 15 décembre 2026)";
+  const ANCIEN = 'Importer les statuts data.gouv';
+  const script = read('scripts/import-datagouv.ts');
+  const scriptsNpm = (JSON.parse(read('package.json')) as { scripts: Record<string, string> }).scripts;
+
+  it("section « Gel d'import » : bornes décidées, interdits, seule exception, run en attente rejeté, fenêtres de 2027 inchangées", () => {
+    const s = sectionRunbook(GEL);
+    for (const needle of ['13 décembre 2026', '15 décembre 2026', '18:00', '23:59', 'retrait_urgence', 'justification', 'scripts/garde-gel.ts']) {
+      assert.ok(s.includes(needle), `« ${needle} » absent de la section « ${GEL} »`);
+    }
+    assert.match(s, /rejet/);
+    assert.match(s, /fusion/);
+  });
+
+  it('le gel d’import suit immédiatement « Gel des scrutins et retrait d’urgence »', () => {
+    const iGel = runbook.search(/^### Gel des scrutins et retrait d'urgence$/m);
+    const iImport = runbook.search(new RegExp(`^### ${GEL.replace(/[()]/g, '\\$&')}$`, 'm'));
+    assert.ok(iGel >= 0 && iImport > iGel);
+    assert.equal(runbook.slice(iGel, iImport).match(/^### /gm)?.length, 1, 'une seule section entre les deux');
+  });
+
+  it('les fenêtres de gel de 2027 restent exactement les deux fenêtres des tours (D-09 : règle écrite, pas de garde technique)', () => {
+    assert.deepEqual(FENETRES_GEL.map((f) => [f.debut, f.fin]), [['2027-04-17', '2027-04-19'], ['2027-05-01', '2027-05-03']]);
+  });
+
+  it("section « Import de décembre » : branche, ordre de fusion, recréation, preuve d'ancêtre, options, vocabulaire, règle D-08", () => {
+    const s = sectionRunbook(IMPORT);
+    for (const needle of [
+      'import/statuts-2026-12',
+      'relecture/sante',
+      'recréer la branche',
+      '--is-ancestor',
+      '--dry-run',
+      '--format markdown',
+      '--check',
+      'Absents du jeu amont',
+      'STATUT_PLUS_RECENT_NON_RELU',
+      '06237c53-76bd-4224-9805-418e125f0493',
+      '13 décembre 2026 à 12:00',
+      'reporter',
+      'jamais fusionner',
+      'marquer statut',
+      '--hors-perimetre',
+      'data/couverture-themes.yaml',
+      'src/content/couverture/',
+      'gh run list --branch main --status waiting',
+    ]) {
+      assert.ok(s.includes(needle), `« ${needle} » absent de la section « ${IMPORT} »`);
+    }
+    assert.match(s, /aucun agent/i);
+  });
+
+  it('la liste de contrôle des mises à jour à la main compte huit points et nomme les deux décisions de l’éditeur', () => {
+    const s = sectionRunbook(IMPORT);
+    const debut = s.indexOf('Liste de contrôle');
+    assert.ok(debut >= 0, 'liste de contrôle absente');
+    const liste = s.slice(debut);
+    const points = [...liste.matchAll(/^\s*(\d+)\.\s+`/gm)].map((m) => Number(m[1]));
+    assert.deepEqual(points.slice(0, 8), [1, 2, 3, 4, 5, 6, 7, 8]);
+    assert.ok(/décision d'Erwan/.test(liste));
+    for (const f of ['data/dataset-datagouv.yaml', 'data/import/ATTRIBUTION.md', 'LICENSE', 'tests/corpus/dataset-datagouv.test.ts', 'tests/dist/cas/methode.cas.ts', 'README.md', 'docs/COUVERTURE-THEMES.md']) {
+      assert.ok(liste.includes(f), `${f} absent de la liste de contrôle`);
+    }
+  });
+
+  it('chaque option et chaque script cités dans l’import existent dans le code', () => {
+    for (const titre of [IMPORT, ANCIEN]) {
+      const s = sectionRunbook(titre);
+      for (const ligne of s.split('\n').filter((l) => l.includes('import:datagouv'))) {
+        for (const o of ligne.matchAll(/(?<![\w-])--([a-z][a-z-]*)/g)) {
+          assert.ok(script.includes(`'${o[1]}'`) || script.includes(`--${o[1]}`), `option --${o[1]} (section « ${titre} ») absente de scripts/import-datagouv.ts`);
+        }
+      }
+      for (const m of s.matchAll(/npm run (?:-s )?([a-z:-]+)/g)) assert.ok(m[1] !== undefined && m[1] in scriptsNpm, `script npm inconnu : ${m[1]}`);
+      for (const m of s.matchAll(/npm run relecture -- (?:--[a-z-]+ \S+ )?([a-z]+)/g)) {
+        assert.ok((COMMANDES as readonly string[]).includes(m[1] as string), `commande de relecture inconnue : ${m[1]}`);
+      }
+    }
+  });
+
+  it("l'ancienne section décrit l'outil actuel : --dry-run, --format markdown, --check, « Nouveaux à décider », « Absents du jeu amont »", () => {
+    const s = sectionRunbook(ANCIEN);
+    for (const needle of ['--dry-run', '--format markdown', '--check', 'Nouveaux à décider', 'Absents du jeu amont']) {
+      assert.ok(s.includes(needle), `« ${needle} » absent de la section « ${ANCIEN} »`);
+    }
+  });
+
+  it('aucun tiret long ni demi-long, aucun mot interdit, aucun secret dans les sections de l’import', () => {
+    for (const titre of [IMPORT, GEL, ANCIEN]) {
+      const s = sectionRunbook(titre);
+      assert.doesNotMatch(s, /[–—]/, `tiret long ou demi-long dans « ${titre} »`);
+      assert.deepEqual(motsInterdits(s, { exempterCitations: false }), [], `mot interdit dans « ${titre} »`);
+      assert.doesNotMatch(s, /ghp_|github_pat_|-----BEGIN|password\s*[:=]/i);
+    }
+  });
+});
