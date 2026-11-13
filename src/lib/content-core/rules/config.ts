@@ -273,6 +273,7 @@ export const CATALOGUE: readonly EntreeCatalogue[] = [
   { code: 'EQUITE_PERIMETRE_VIDE', regle: 'REGLE-08', severite: 'selon_mode', piege: null, libelle: 'Un thème est publié alors qu’aucun candidat n’est dans le périmètre d’équité (en production : aucun statut déclaré ou primaire relu) : l’équité n’y est pas vérifiée.' },
   { code: 'EQUITE_COUVERTURE_INCOHERENTE', regle: 'REGLE-08', severite: 'selon_mode', piege: null, libelle: 'La couverture d’un thème ne correspond pas aux mesures publiées.' },
   { code: 'COUVERTURE_VERIFIEE_AVANT_SOURCE', regle: 'REGLE-08', severite: 'avertissement', piege: null, libelle: 'Une case de couverture est datée d’avant la consultation d’une de ses sources.' },
+  { code: 'STATUT_PLUS_RECENT_NON_RELU', regle: 'REGLE-08', severite: 'avertissement', piege: null, libelle: 'Un statut de candidature plus récent que le statut relu attend sa relecture : la production affiche encore l’ancien.' },
   // REGLE-09 : sondages
   { code: 'SONDAGE_NOTICE_ABSENTE', regle: 'REGLE-09', severite: 'erreur', piege: '§12 : un sondage sans notice', libelle: 'Le sondage n’indique pas l’URL de sa notice officielle.' },
   { code: 'SONDAGE_SOMME_HORS_BORNES', regle: 'REGLE-09', severite: 'erreur', piege: '§12 : un sondage dont les scores font 112 %', libelle: 'La somme des scores d’une hypothèse sort des bornes admises.' },

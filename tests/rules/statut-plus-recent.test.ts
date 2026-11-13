@@ -112,10 +112,13 @@ describe('D-08 option B : STATUT_PLUS_RECENT_NON_RELU (règle)', () => {
 
 describe('D-08 option B : l’avertissement ne bloque jamais (corpus M1 temporaire)', () => {
   const LUC = 'src/content/candidats/luc-retire.yaml';
-  /** Luc (renoncement relu) reçoit une entrée « declare » plus récente et non relue : la production garde « renonce ». */
+  /**
+   * Luc (renoncement relu) reçoit une nouvelle entrée « renonce » plus récente et non relue (nouvelle source) : la production
+   * garde l'ancienne. Le code reste hors périmètre, donc l'outil de relecture ne demande rien d'autre : seul l'avertissement s'allume.
+   */
   const reprise =
-    '  - code: declare\n    date: 2026-11-05\n    source:\n      type: candidat\n      titre: Annonce (fictive)\n' +
-    '      url: https://luc-retire.exemple.invalid/reprise\n      date_consultation: 2026-11-06\n    statut_relecture: brouillon\n';
+    '  - code: renonce\n    motif: retrait\n    date: 2026-11-05\n    source:\n      type: candidat\n      titre: Annonce (fictive)\n' +
+    '      url: https://luc-retire.exemple.invalid/retrait-confirme\n      date_consultation: 2026-11-06\n    statut_relecture: brouillon\n';
   const valider = (racine: string, mode: Mode) =>
     spawnSync(process.execPath, ['scripts/validate.ts', '--root', racine, '--mode', mode], { cwd: REPO_ROOT, encoding: 'utf8' });
   const avertissements = (sortie: string): string[] => sortie.split('\n').filter((l) => l.includes(CODE));
@@ -147,7 +150,7 @@ describe('D-08 option B : l’avertissement ne bloque jamais (corpus M1 temporai
     assert.equal(avertissements(valider(c.racine, 'production').stdout).length, 1, 'retirer ne règle pas la cause');
 
     // marquer n’est pas bloqué non plus, et relire l’entrée de Luc fait disparaître l’avertissement.
-    const luc = c.lancer('marquer', 'statut', 'luc-retire');
+    const luc = c.lancer('marquer', 'statut', 'luc-retire', '--hors-perimetre');
     assert.equal(luc.code, 0, luc.stderr);
     assert.deepEqual(avertissements(valider(c.racine, 'production').stdout), []);
   });
