@@ -267,13 +267,95 @@ Les empreintes CSP de `src/scripts/*.js` sont calculées au chargement de `astro
 
 ### Importer les statuts data.gouv
 
-Entrée : `data/import/` (instantanés bruts datés, `correspondances.yaml` faite à la main, attribution). Détail complet dans `data/import/README.md`.
+Entrée : `data/import/` (instantanés bruts datés, `correspondances.yaml` faite à la main, attribution). Détail complet dans `data/import/README.md`. Toutes les commandes se lancent sous `fnm exec --using=24`, depuis la racine du dépôt.
 
-1. `npm run import:datagouv` (ou `-- --file data/import/<instantané>.json` hors ligne, `-- --dry-run` pour le rapport seul ; `-- --url` n'accepte que des hôtes https publics, redirections revérifiées, sinon `ADRESSE_PRIVEE`) ;
-2. lire le rapport : créé, statut ajouté (en place : les commentaires du fichier candidat sont conservés), inchangé, absent en amont, conflit (un fichier candidat YAML illisible est signalé `conflit` / `illisible`, sans plantage) ;
-3. ouvrir une pull request avec le diff de `src/content/candidats/`, l'instantané et `ids.lock` ; `npm run validate -- --mode production` et `npm run ids -- --check` doivent passer.
+| Commande | Effet |
+|---|---|
+| `npm run import:datagouv -- --dry-run` | Répétition à blanc : n'écrit rien (ni instantané, ni fiche, ni `ids.lock`). Un identifiant amont inconnu de `correspondances.yaml` est listé « à décider » au lieu d'arrêter l'outil. Code 0, sauf conflit ou fiche invalide. |
+| `npm run import:datagouv -- --dry-run --format markdown` | Même répétition, mais le rapport est du Markdown sur la sortie standard (tout le reste va sur la sortie d'erreur) : c'est le corps de la pull request d'import. |
+| `npm run import:datagouv -- --check` | Sans réseau : contrôle la cohérence entre l'instantané versionné, le pointeur de `data/dataset-datagouv.yaml` et les fiches candidats. C'est le même contrôle que `npm test`. Code 1 et liste des écarts s'il y en a. Refuse `--file`, `--url`, `--dry-run` et `--format`. |
+| `npm run import:datagouv` | Import réel : écrit l'instantané et son `.meta.json`, les fiches (statuts en `brouillon`, sans relecteur) et `ids.lock`. S'arrête sur un identifiant inconnu, en listant tous les inconnus et sans rien écrire. |
 
-Les changements de statut attendus en décembre suivent ce chemin : un statut qui change s'ajoute à la fin de `statuts[]` (historique en ajout seul, jamais de réécriture). Un conflit (id amont inconnu, date qui recule) arrête tout sans rien écrire : ajouter la personne à la main dans `correspondances.yaml`, jamais par découpage automatique du nom. Les champs `bloc`, `propositions` et `statut_detail` du jeu amont n'entrent jamais dans `src/content/`. L'attribution de la source (data.gouv.fr, licence) reste dans `data/import/`.
+Options communes : `--file data/import/<instantané>.json` (hors ligne, rejouable), `--url` (https public seulement, redirections revérifiées, sinon `ADRESSE_PRIVEE`), `--root <dossier>`. Une option inconnue affiche l'aide et sort avec le code 2.
+
+Le rapport Markdown a toujours les mêmes sections, dans cet ordre : Instantané, Nouveaux, Nouveaux à décider (absents de `correspondances.yaml`), Absents du jeu amont, Changés, Statut déjà relu qui change, Conséquences sur les thèmes publiés, Dérives de source (information), Conflits. **Vocabulaire : « Absents du jeu amont » est la ligne que la feuille de route appelle « retirés ».** Une absence du jeu ne vaut jamais retrait de candidature : la fiche reste, son identifiant reste verrouillé. Le rapport ne contient aucune décision sur une personne : statut, motif et type de source sont décidés par le relecteur.
+
+Un fichier YAML refusé (alias en excès, clé en double, racine qui n'est pas un objet) donne un message avec le fichier, la ligne et le code. Un conflit (id amont inconnu en mode réel, date qui recule) arrête tout sans rien écrire.
+
+Un statut qui change s'ajoute à la fin de `statuts[]` (historique en ajout seul, jamais de réécriture d'une ancienne entrée). Pour une nouvelle personne, ajouter une ligne à la main dans `correspondances.yaml`, jamais par découpage automatique du nom. Les champs `bloc`, `propositions` et `statut_detail` du jeu amont n'entrent jamais dans `src/content/`. L'attribution de la source (data.gouv.fr, licence) reste dans `data/import/`. Les changements de décembre suivent la procédure « Import de décembre (10 au 13 décembre 2026) ».
+
+### Import de décembre (10 au 13 décembre 2026)
+
+À suivre à la lettre, dans l'ordre. Règles décidées par Erwan le 2026-11-13 (réponse « Tout par défaut » à sept questions) ; elles sont reprises ici telles quelles. **Aucun agent n'écrit jamais une entrée sur une personne** : prénom, nom, nom de tri, type de source, motif de renoncement, case de couverture ne sont décidés et écrits que par Erwan. Un agent n'en propose pas non plus.
+
+**Conditions de départ.** Toutes doivent être vraies avant l'étape 1, sinon l'import ne commence pas.
+
+1. La branche `relecture/sante` est fusionnée dans `main` : `git fetch origin && git merge-base --is-ancestor origin/relecture/sante origin/main && echo fusionnée`. Sinon, l'import est reporté (« Replis » plus bas). Jamais de fusion à la main avec la branche de relecture.
+2. Le thème santé est publié dans `main`. Si l'ouverture au public a pris du retard, l'import peut commencer quand même (réponse d'Erwan), mais aucun push d'import n'a lieu pendant qu'une étape de « Ouverture publique (Phase 9) » est en cours.
+3. `main` local égale `origin/main` et l'arbre est propre : `git fetch origin && git switch main && git pull --ff-only && git status --short` (rien d'affiché).
+4. Aucun déploiement en attente : `gh run list --branch main --status waiting`. Pour chaque run listé, Erwan l'approuve ou le rejette lui-même dans l'interface GitHub (« Review deployments ») avant de commencer ; relancer la commande jusqu'à une liste vide. Un agent n'approuve ni ne rejette jamais un déploiement.
+5. Nous sommes avant le dimanche 13 décembre 2026 à 12:00 (heure de Paris), la date limite de recréation de la branche.
+
+**Déroulé.**
+
+1. **Répétition du matin** sur le jeu en ligne, depuis `main` : `npm run import:datagouv -- --dry-run --format markdown > /tmp/rapport-matin.md`, puis lire le rapport, en particulier « Nouveaux à décider » et « Absents du jeu amont » (une absence du jeu n'est pas un retrait de candidature). Vérifier aussi que la ressource n'a pas changé : `curl -s https://www.data.gouv.fr/api/1/datasets/6abf8836bbebbc5488a27e4e/ | grep -o '06237c53-76bd-4224-9805-418e125f0493'` doit afficher l'identifiant `06237c53-76bd-4224-9805-418e125f0493`. S'il n'apparaît pas, ou si l'outil répond « jeu amont invalide », s'arrêter et prévenir Erwan.
+2. **Décisions d'Erwan** : pour chaque nom listé sous « Nouveaux à décider », Erwan écrit l'entrée de `data/import/correspondances.yaml` (prénom, nom, `nom_tri`, `type_source_statut`, motif seulement pour un statut `renonce`). Si une entrée manque, voir « Replis ».
+3. **Worktree et branche**, depuis le dossier du dépôt : `git worktree add -b import/statuts-2026-12 ../reveleTonProg-import origin/main`, puis `cd ../reveleTonProg-import && fnm exec --using=24 npm ci`. La commande échoue si la branche existe déjà : c'est voulu (voir « recréer la branche »).
+4. **Premier commit, la table** : `git add data/import/correspondances.yaml && git commit -m "chore(import): table de correspondances de décembre, décidée par Erwan"`.
+5. **Deuxième commit, la sortie de l'outil** : `npm run import:datagouv`, puis `git status --short` (seuls `data/import/`, `src/content/candidats/` et `ids.lock` ont changé), `git add data/import src/content/candidats ids.lock` et `git commit -m "chore(import): instantané data.gouv et fiches, sortie de l'outil"`.
+6. **Rapport, calculé depuis le commit parent** (la table, avant la sortie de l'outil), dans un worktree jetable ; remplacer `<instantané>` par le nom du nouveau fichier de `data/import/` :
+   ```bash
+   git worktree add --detach /tmp/rtp-rapport HEAD~1
+   cp data/import/<instantané>.json /tmp/rtp-rapport/data/import/
+   (cd /tmp/rtp-rapport && fnm exec --using=24 npm ci && fnm exec --using=24 npm run -s import:datagouv -- --dry-run --format markdown --file data/import/<instantané>.json > /tmp/rapport-import.md)
+   git worktree remove --force /tmp/rtp-rapport
+   ```
+   `/tmp/rapport-import.md` est le corps de la pull request. Les parties écrites à la main n'ont ni tiret long ni demi-long, ni mot de `regles/mots-interdits.yaml`.
+7. **Troisième commit, les mises à jour à la main**, avec la liste de contrôle ci-dessous ; les points 6 et 7 sont des décisions d'Erwan, écrites par lui seul. Message : `chore(import): mises à jour à la main de l'import (liste de contrôle)`.
+8. **Preuves en local**, toutes à zéro erreur : `npm run validate -- --mode production`, `npm run ids -- --check`, `npm run import:datagouv -- --check` (« 0 écart »), `npm run couverture -- --check-data`, `npm test`, `npm run check`, `RTP_MODE=production npm run build`, puis `RTP_MODE=production npm run check-dist` (trois avertissements attendus tant qu'aucun thème n'est ouvert ou que l'hébergeur est « prévu »).
+9. **Push et pull request** : `git push -u origin import/statuts-2026-12`, puis `gh pr create --base main --head import/statuts-2026-12 --title "Import des statuts data.gouv de décembre 2026" --body-file /tmp/rapport-import.md`. Surveiller la CI de la pull request jusqu'au bout.
+10. **Relecture d'Erwan, règle D-08.** Tout statut qui change pour une personne d'un thème publié (section « Statut déjà relu qui change » du rapport) est relu dans la pull request, avant la fusion : sur la branche d'import, `npm run relecture -- marquer statut <candidat>` (avec `--hors-perimetre` pour un retrait de candidature), puis commit. Ainsi une seule fusion change la production. Jamais d'écriture sur l'ancienne entrée de `statuts[]` pour « repasser à relire ». L'avertissement `STATUT_PLUS_RECENT_NON_RELU` de `npm run validate` doit n'afficher personne avant la fusion ; s'il en reste un, Erwan le dit par écrit avant de fusionner. Cet avertissement ne bloque jamais rien (ni CI, ni déploiement, ni retrait d'urgence).
+11. **Fusion.** Avant toute fusion, l'agent montre à Erwan la preuve que `main` n'a pas avancé pour la tête exacte de la pull request : `git fetch origin && git merge-base --is-ancestor origin/main <sha de tête> && echo vrai`, où `<sha de tête>` vient de `gh pr view <numéro> --json headRefOid --jq .headRefOid`, avec la CI de ce même sha au vert. Si la réponse n'est pas « vrai », ne pas fusionner : « recréer la branche ». La fusion est faite par Erwan dans l'interface GitHub, ou sur son accord écrit avec `gh pr merge <numéro> --merge --match-head-commit <sha de tête>`. Elle peut se faire pendant que les nouvelles personnes sont encore en `brouillon` : elles restent invisibles en production.
+12. **Déploiement.** La fusion crée une demande d'approbation : Erwan l'approuve ou la rejette dans l'interface le jour même, avant le dimanche 13 décembre 2026 à 18:00. Ensuite, `gh run list --branch main --status waiting` doit être vide.
+
+**Si `main` avance, recréer la branche.** Ne jamais fusionner `main` dans la branche d'import : recréer la branche depuis `main` et relancer l'import (mêmes octets d'instantané, même résultat). Depuis le worktree `../reveleTonProg-import`, avant le dimanche 13 décembre 2026 à 12:00 :
+
+```bash
+git fetch origin
+ANCIEN=$(git rev-parse origin/import/statuts-2026-12)
+git log --oneline --reverse origin/main..$ANCIEN        # noter les commits : table, sortie de l'outil, mises à jour à la main, relectures
+git branch import/statuts-2026-12-ancienne $ANCIEN      # trace locale de l'ancienne branche
+git switch -C import/statuts-2026-12 origin/main
+git cherry-pick <sha de la table>
+git checkout $ANCIEN -- data/import/<instantané>.json data/import/<instantané>.meta.json
+npm run import:datagouv -- --file data/import/<instantané>.json
+git add data/import src/content/candidats ids.lock
+git commit -m "chore(import): instantané data.gouv et fiches, sortie de l'outil"
+git cherry-pick <sha des mises à jour à la main> <sha des relectures>
+```
+
+Tout conflit d'un `cherry-pick` arrête la procédure : `git cherry-pick --abort`, ne rien improviser, montrer le conflit à Erwan. Après la recréation, rejouer les preuves de l'étape 8, montrer `git range-diff origin/main...import/statuts-2026-12-ancienne import/statuts-2026-12` à Erwan, puis seulement avec son accord `git push --force-with-lease origin import/statuts-2026-12` (la pull request se met à jour). **Après le dimanche 13 décembre 2026 à 12:00, plus aucune recréation** : l'import attend la fin du gel (« Gel d'import (13 au 15 décembre 2026) »).
+
+**Replis (décidés par Erwan : reporter).**
+
+- Une nouvelle personne n'a pas d'entrée validée par Erwan à l'heure de la fusion : on **reporte l'import entier** après le gel, à partir du 16 décembre 2026. La production garde les statuts relus de novembre. Noter ici et dans la pull request que la part « import » de l'échéance du cahier des charges (15 décembre 2026) a bougé. Seule autre issue, qui est celle d'Erwan seul : écrire lui-même chaque entrée manquante, puis reprendre à l'étape 3 (nouvelle branche) ou à l'étape 7.
+- La relecture santé n'est pas fusionnée le 10 décembre : on **reporte**. L'import ne commence jamais sur un `main` sans cette relecture et n'est jamais fusionné à la main avec sa branche. Il reprend après le gel, ou dès la fusion de la relecture si elle a lieu avant le 13 décembre 2026 à 12:00 et qu'Erwan le dit.
+- Nouvelles personnes encore en `brouillon` au moment de la fusion : fusion permise (D-07), sous la règle D-08 de l'étape 10 pour les statuts qui changent.
+
+**Nouvelle personne visible sur un thème publié.** Une personne importée reste invisible tant que son statut n'est pas relu. Pour la rendre visible sur un thème publié, la case de couverture existe d'abord (`src/content/couverture/<thème>.yaml`), puis `npm run relecture -- marquer statut <candidat>` : sinon l'erreur `EQUITE_CANDIDAT_MANQUANT` bloque la production dès que le statut est relu, et `marquer` refuse en restaurant le fichier.
+
+**Liste de contrôle : mises à jour à la main dans la même pull request** (le jeu en ligne compte plus de lignes que le dépôt : `--check` échoue tant que le pointeur n'est pas à jour).
+
+1. `data/dataset-datagouv.yaml` : `instantane` (nouveau chemin) ; relire la description du jeu en ligne pour `annonce` et `description_consultee_le`, sans rien supposer.
+2. `data/import/ATTRIBUTION.md` : date « mises à jour le JJ/MM/AAAA ».
+3. `LICENSE` (ligne 81) : la même date. Les deux sont contrôlés par `tests/corpus/fiches.test.ts`.
+4. `tests/corpus/dataset-datagouv.test.ts` : titre et assertions (total, répartition par statut, `miseAJour`), calculés sur le nouvel instantané.
+5. `tests/dist/cas/methode.cas.ts` : le titre du test qui annonce le nombre de lignes.
+6. `data/couverture-themes.yaml` : une entrée par nouvelle personne du périmètre (déclarée ou primaire), avec ses 10 cellules, `acces`, `sources` et `urls_consultees` non vide (même pour `aucun_site`). **Décision d'Erwan** : ce sont des constats éditoriaux sur une personne réelle, écrits par lui seul. Contrôlé par `tests/corpus/couverture-themes.test.ts` (ordre `nom_tri`).
+7. `src/content/couverture/sante.yaml`, `src/content/couverture/travail.yaml` et `src/content/couverture/europe-et-monde.yaml` : une case par nouvelle personne du périmètre (`candidat`, `etat`, `verifie_le`, `verifie_par`). **Décision d'Erwan**, comme le point 6. Contrôlé par `tests/corpus/pilote.test.ts` (`PILOTE_CASE_MANQUANTE`).
+8. `README.md` et `docs/COUVERTURE-THEMES.md` : les textes qui annoncent un compte de personnes (aucun test ne les contrôle : ne pas les oublier).
+
+Ni `data/import/README.md` (aucun compte) ni la page Méthode (calculée depuis le pointeur) ne demandent de changement.
 
 ### Mesurer la couverture
 
@@ -499,6 +581,17 @@ gh workflow run rollback.yml -f cible=production -f retrait_urgence=true -f just
 - La justification est nettoyée (caractères de contrôle remplacés, coupée à 300 caractères) et gardée dans le résumé du run. Le déploiement passe ensuite par la même approbation. `retrait_urgence` coché suffit à demander le déploiement : inutile d'ajouter `-f deployer=true`.
 - Une case cochée sans justification valable fait échouer le job `gel` (code 1), même hors gel : jamais de passage silencieux.
 - Essai à blanc sur le Mac : `node scripts/garde-gel.ts --urgence '' --justification '' --date 2027-04-18T12:00:00+02:00` (refus, avertissement, code 0).
+
+### Gel d'import (13 au 15 décembre 2026)
+
+Règle d'exploitation décidée par Erwan le 2026-11-13, écrite ici et tenue par son bouton d'approbation, sans garde technique.
+
+- **Bornes (heure de Paris)** : l'import est fusionné et son déploiement approuvé au plus tard le dimanche 13 décembre 2026 à 18:00. Le gel court du dimanche 13 décembre 2026 à 18:00 au mardi 15 décembre 2026 à 23:59.
+- **Interdit pendant le gel** : toute fusion dans `main` et tout déploiement. Un agent ne fusionne rien, ne pousse rien sur `main` et ne recrée pas la branche d'import (la limite de recréation est le dimanche 13 décembre 2026 à 12:00).
+- **Seule exception** : un retrait d'urgence, par la voie existante (`retrait_urgence` coché et justification écrite, voir « Gel des scrutins et retrait d'urgence » et « Retrait d'urgence d'une mesure (moins d'une heure) »).
+- **Run en attente** : un déploiement encore en attente d'approbation au début du gel est rejeté par Erwan dans l'interface (« Review deployments »), jamais approuvé. Vérifier avec `gh run list --branch main --status waiting` le dimanche 13 décembre 2026 à 18:00, puis la liste doit rester vide.
+- **Import non terminé à 18:00** : il est reporté après le gel (à partir du 16 décembre 2026), selon « Replis » dans « Import de décembre (10 au 13 décembre 2026) ».
+- **Fenêtres de 2027** : celles de `scripts/garde-gel.ts` (17 au 19 avril 2027 et 1er au 3 mai 2027) ne changent pas. Ce gel de décembre est une règle écrite plus le bouton d'approbation d'Erwan : la garde technique ne coupe que le job `deploy` et ne peut pas empêcher une fusion. Le test `tests/repo/docs.test.ts` fait échouer la CI si cette section disparaît ou si les fenêtres de 2027 changent.
 
 ### Hôte technique (essai)
 

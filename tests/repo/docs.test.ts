@@ -904,7 +904,7 @@ describe('documentation (phase 10) : import de décembre (IMP-03)', () => {
     const liste = s.slice(debut);
     const points = [...liste.matchAll(/^\s*(\d+)\.\s+`/gm)].map((m) => Number(m[1]));
     assert.deepEqual(points.slice(0, 8), [1, 2, 3, 4, 5, 6, 7, 8]);
-    assert.ok(/décision d'Erwan/.test(liste));
+    assert.ok((liste.match(/Décision d'Erwan/g) ?? []).length >= 2, 'les points 6 et 7 doivent nommer la décision d’Erwan');
     for (const f of ['data/dataset-datagouv.yaml', 'data/import/ATTRIBUTION.md', 'LICENSE', 'tests/corpus/dataset-datagouv.test.ts', 'tests/dist/cas/methode.cas.ts', 'README.md', 'docs/COUVERTURE-THEMES.md']) {
       assert.ok(liste.includes(f), `${f} absent de la liste de contrôle`);
     }
@@ -913,9 +913,10 @@ describe('documentation (phase 10) : import de décembre (IMP-03)', () => {
   it('chaque option et chaque script cités dans l’import existent dans le code', () => {
     for (const titre of [IMPORT, ANCIEN]) {
       const s = sectionRunbook(titre);
-      for (const ligne of s.split('\n').filter((l) => l.includes('import:datagouv'))) {
-        for (const o of ligne.matchAll(/(?<![\w-])--([a-z][a-z-]*)/g)) {
-          assert.ok(script.includes(`'${o[1]}'`) || script.includes(`--${o[1]}`), `option --${o[1]} (section « ${titre} ») absente de scripts/import-datagouv.ts`);
+      // Les options qui suivent la commande, jusqu'à la fin du bloc de code en ligne ou de la ligne.
+      for (const cmd of s.matchAll(/import:datagouv([^`\n>)]*)/g)) {
+        for (const o of (cmd[1] ?? '').matchAll(/(?<![\w-])--([a-z][a-z-]*)/g)) {
+          assert.ok(new RegExp(`['\\s{,]${o[1]}'?\\s*:\\s*\\{ type:`).test(script), `option --${o[1]} (section « ${titre} ») absente de scripts/import-datagouv.ts`);
         }
       }
       for (const m of s.matchAll(/npm run (?:-s )?([a-z:-]+)/g)) assert.ok(m[1] !== undefined && m[1] in scriptsNpm, `script npm inconnu : ${m[1]}`);
