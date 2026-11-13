@@ -496,17 +496,32 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
     if (!fichiers.includes(chemin.slice(1))) return `image de partage absente du dist : ${chemin.slice(0, 80)}`;
     return undefined;
   };
-  /** Images de partage valides d'une page de production : fichier du dist et URL absolue, pour la règle « jamais chargée ». */
+  /**
+   * Images de partage, pour la règle « jamais chargée » : fichier du dist et origine + chemin de son URL absolue (sans
+   * requête ni fragment). partage.png du dist y est toujours, préversion comprise (IN-03 de la revue 09.1), avec les
+   * images valides citées par og:image et twitter:image en production.
+   */
   const imagesPartage = new Map<string, Set<string>>();
+  if (fichiers.includes(IMAGE_PARTAGE)) imagesPartage.set(IMAGE_PARTAGE, new Set<string>());
+  const origineEtChemin = (u: URL): string => {
+    let chemin = u.pathname;
+    try {
+      chemin = decodeURIComponent(chemin);
+    } catch {
+      // pourcentage mal formé : on garde le chemin brut
+    }
+    return `${u.origin}${chemin}`;
+  };
   for (const p of pages) {
     if (opts.mode === 'preview' || p.rel === PAGE_ERREUR) continue;
     for (const n of trouver(p.racine, estImagePartage)) {
       const url = n.attrs.content ?? '';
       if (problemeImage(url) !== undefined) continue;
       const abs = new URL(nettoyerUrl(url));
-      const hrefs = imagesPartage.get(abs.pathname.slice(1)) ?? new Set<string>();
-      hrefs.add(abs.href.split('#')[0] ?? '');
-      imagesPartage.set(abs.pathname.slice(1), hrefs);
+      const cle = origineEtChemin(abs).slice(abs.origin.length + 1);
+      const hrefs = imagesPartage.get(cle) ?? new Set<string>();
+      hrefs.add(origineEtChemin(abs));
+      imagesPartage.set(cle, hrefs);
     }
   }
 
@@ -739,6 +754,14 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
         if ((n.tag === 'img' || n.tag === 'source') && n.attrs.srcset !== undefined) refs.push(...urlsSrcset(n.attrs.srcset));
         if (n.tag === 'img' && n.attrs.src !== undefined) refs.push(n.attrs.src);
         if (n.tag === 'link' && n.attrs.href !== undefined) refs.push(n.attrs.href);
+        // IN-03 : autres attributs qui font charger une image
+        if (n.tag === 'video' && n.attrs.poster !== undefined) refs.push(n.attrs.poster);
+        if (n.tag === 'input' && n.attrs.src !== undefined) refs.push(n.attrs.src);
+        if (n.tag === 'object' && n.attrs.data !== undefined) refs.push(n.attrs.data);
+        if (n.tag === 'image') {
+          if (n.attrs.href !== undefined) refs.push(n.attrs.href);
+          if (n.attrs['xlink:href'] !== undefined) refs.push(n.attrs['xlink:href']);
+        }
         if (n.tag === 'style') {
           const css = n.enfants.filter((e): e is string => typeof e === 'string').join('');
           for (const m of css.matchAll(/url\(\s*["']?([^"')]+)/gi)) refs.push(m[1] ?? '');
@@ -748,7 +771,7 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
         const v = nettoyerUrl(ref);
         if (v === '') continue;
         const abs = SCHEMA.test(v) ? urlAbsolue(v) : undefined;
-        const fichier = abs !== undefined ? [...imagesPartage].find(([, hrefs]) => hrefs.has(abs.split('#')[0] ?? ''))?.[0] : (() => {
+        const fichier = abs !== undefined ? [...imagesPartage].find(([, hrefs]) => hrefs.has(origineEtChemin(new URL(abs))))?.[0] : (() => {
           const c = cible(rel, v);
           return c !== undefined && imagesPartage.has(c.rel) ? c.rel : undefined;
         })();

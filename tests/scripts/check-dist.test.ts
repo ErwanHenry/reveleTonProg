@@ -995,6 +995,43 @@ describe('checkDist : domaine, URL canoniques, sitemap et robots (HEB-05, HEB-06
       const r = avecDomaine({ ...style, 'themes/logement/index.html': String(style['themes/logement/index.html']).replace('</head>', `<style>.x{background:url(/${IMAGE})}</style></head>`) });
       assert.ok(r.codes.includes('PARTAGE_INCORRECT'), r.messages.join(' | '));
     });
+
+    // IN-03 (revue 09.1) : URL absolue avec requête ou fragment, quatre attributs de plus, et préversion.
+    it('IN-03 : URL absolue avec requête, video poster, input image, object data, image SVG : PARTAGE_INCORRECT', () => {
+      const charges = [
+        `<img src="${ORIGINE}/${IMAGE}?v=1" alt="">`,
+        `<img src="${ORIGINE}/${IMAGE}?v=1#x" alt="">`,
+        `<img src="/${IMAGE}?v=2" alt="">`,
+        `<video poster="/${IMAGE}"></video>`,
+        `<form><input type="image" src="/${IMAGE}" alt="Envoyer"></form>`,
+        `<object data="/${IMAGE}" type="image/png"></object>`,
+        `<svg><image href="/${IMAGE}"></image></svg>`,
+        `<svg><image xlink:href="/${IMAGE}"></image></svg>`,
+      ];
+      for (const chargee of charges) {
+        const f = avecImage((h) => tete(h, imageOg(`${ORIGINE}/${IMAGE}`)));
+        const dist = { ...f, 'themes/logement/index.html': String(f['themes/logement/index.html']).replace('<body>', `<body>${chargee}`) };
+        const r = avecDomaine(dist);
+        assert.ok(r.messages.some((m) => /jamais être chargée/.test(m)), `${chargee} : ${r.messages.join(' | ')}`);
+        assert.ok(r.fichiers.every((x) => x === 'themes/logement/index.html'), chargee);
+      }
+    });
+
+    it('IN-03 : en préversion aussi, partage.png du dist chargé par une page : PARTAGE_INCORRECT ; non chargé : aucun constat', () => {
+      assert.deepEqual(avecDomaine(distPropre({ [IMAGE]: 'PNG' }, { preview: true }), 'preview').codes, []);
+      const f = distPropre({ [IMAGE]: 'PNG' }, { preview: true });
+      const r = avecDomaine({ ...f, 'index.html': String(f['index.html']).replace('<body>', `<body><img src="/${IMAGE}" alt="">`) }, 'preview');
+      seul(r, 'PARTAGE_INCORRECT');
+      assert.match(r.messages[0] ?? '', /jamais être chargée/);
+    });
+
+    it('IN-03 : une autre image du même nom sur un autre chemin, ou partage.png d’un autre hôte, ne sont pas l’image de partage', () => {
+      const f = avecImage((h) => tete(h, imageOg(`${ORIGINE}/${IMAGE}`)), { 'a/partage.html': page() });
+      for (const lien of [`<a href="/a/partage.html">x</a>`]) {
+        const r = avecDomaine({ ...f, 'themes/logement/index.html': String(f['themes/logement/index.html']).replace('<body>', `<body>${lien}`) });
+        assert.ok(!r.messages.some((m) => /jamais être chargée/.test(m)), `${lien} : ${r.messages.join(' | ')}`);
+      }
+    });
   });
 
   it('DOMAINE_PROVISOIRE sans option domaine : une fois par page de production dont l’URL canonique vise un hôte .invalid', () => {
