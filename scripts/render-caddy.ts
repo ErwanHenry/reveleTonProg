@@ -159,14 +159,23 @@ const ENTETE_GENERE = [
  * réponse est ordinaire, notée dans le journal d'accès du site, et le niveau du journal des autres sites ne change pas.
  * `handle` passe avant le file_server de premier niveau (ordre des directives) : fichiers existants et redirection
  * des dossiers (/methode vers /methode/) inchangés. Cible fixe : rien de la requête n'entre dans la réécriture.
+ * Revue 09.1 (CR-01) : `file_server { status 404 }` évalue encore les préconditions et les plages de la requête sur
+ * 404.html ; une revalidation (If-None-Match, If-Modified-Since, que WebKit envoie pour une 404 gardée en cache) ou un
+ * Range donnait le code 404 avec le corps vide ou tronqué d'une 304, 412 ou 206. Dans un `handle`, `request_header`
+ * passe avant `file_server` : ces en-têtes sont retirés ici et nulle part ailleurs, les vrais fichiers gardent ETag,
+ * 304 et plages (prouvé sur caddy:2.11.2-alpine).
  */
 const LIGNES_INTROUVABLE = [
   "\t# Adresse inconnue (ni un fichier ni un dossier de la release) : 404.html du site avec le code 404 ; une release",
   '\t# sans ce fichier répond 404 sans corps. Pas de handle_errors : sur le serveur partagé, il ferait passer le journal',
   "\t# des erreurs de tous les sites au niveau debug (Caddy 2.11.2). Le journal d'accès note ces requêtes comme les autres.",
+  '\t# Préconditions (If-None-Match, If-Modified-Since, If-Match...) et Range retirés dans cette route seulement : sinon',
+  '\t# Caddy 2.11.2 répond 404 sans corps, ou tronqué pour Range, et Safari revalide une 404 (page blanche).',
   '\t@introuvable not file {path} {path}/',
   '\thandle @introuvable {',
   '\t\trewrite * /404.html',
+  '\t\trequest_header -If-*',
+  '\t\trequest_header -Range',
   '\t\tfile_server {',
   '\t\t\tstatus 404',
   '\t\t}',

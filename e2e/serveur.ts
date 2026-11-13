@@ -9,7 +9,10 @@
 // sinon 404 ; un lien qui pointe vers un autre fichier du dist est servi.
 // Adresse inconnue (plan 09.1-02) : comme le bloc Caddy public (`@introuvable not file {path} {path}/`, puis
 // `rewrite * /404.html` et `file_server { status 404 }`), le serveur répond 404 avec <dist>/404.html et les en-têtes
-// d'une page (même contrôle de chemin réel) ; sans 404.html dans le dist, le corps reste « 404 ».
+// d'une page (même contrôle de chemin réel) ; sans 404.html dans le dist, le corps reste « 404 ». Comme Caddy, la 404
+// porte Cache-Control no-cache, ETag et Last-Modified, et comme le bloc (CR-01 de la revue 09.1 : `request_header -If-*`
+// et `-Range` dans la route), préconditions et Range n'y changent rien : WebKit revalide une 404 gardée en cache et
+// doit recevoir la page entière, jamais un corps vide.
 import { createServer, type Server } from 'node:http';
 import { readFileSync, realpathSync, statSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
@@ -86,8 +89,16 @@ export function creerServeur(racineArg: string, options: OptionsServeur = {}): S
     const brut = readFileSync(reel);
     // L'icône reçoit la valeur du bloc Caddy (Cache-Control "no-cache", deploy/caddy/site.caddy) : servie en
     // no-store, Chromium ne garde plus la page dans le bfcache (vérifié par e2e/parcours.spec.ts, D-11).
-    const cache = ext === '.ico' || ext === '.png' ? 'no-cache' : 'no-store';
+    // La 404 aussi, avec ETag et Last-Modified comme file_server : un navigateur la garde et la revalide (CR-01).
+    const cache = status === 404 || ext === '.ico' || ext === '.png' ? 'no-cache' : 'no-store';
     const h: Record<string, string> = { 'content-type': TYPES[ext] ?? 'application/octet-stream', 'cache-control': cache };
+    if (status === 404) {
+      // Préconditions (If-None-Match, If-Modified-Since...) et Range ignorés ici, comme le bloc Caddy les retire
+      // (`request_header -If-*`, `request_header -Range`) : la 404 part toujours entière.
+      const st = statSync(reel);
+      h['etag'] = `"${Math.floor(st.mtimeMs).toString(36)}${st.size.toString(36)}"`;
+      h['last-modified'] = st.mtime.toUTCString();
+    }
     if (csp !== null) h['content-security-policy'] = csp;
     if (ext in TYPES && ext !== '.png' && /\bgzip\b/.test(String(req.headers['accept-encoding'] ?? ''))) {
       let gz = memo.get(reel);

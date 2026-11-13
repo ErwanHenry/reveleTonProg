@@ -204,10 +204,62 @@ describe('e2e/serveur.ts, introuvable 404 : page 404.html du dist', () => {
       assert.equal(r.corps.toString('utf8'), PAGE_404);
       assert.equal(r.headers['content-type'], 'text/html; charset=utf-8');
       assert.equal(r.headers['content-security-policy'], CSP);
-      assert.equal(r.headers['cache-control'], 'no-store');
+      // Comme le bloc Caddy (Cache-Control "no-cache", ETag, Last-Modified) : la 404 est gardée et revalidée (CR-01).
+      assert.equal(r.headers['cache-control'], 'no-cache');
+      assert.match(String(r.headers['etag']), /^"[0-9a-z]+"$/);
+      assert.ok(!Number.isNaN(Date.parse(String(r.headers['last-modified']))), 'last-modified lisible');
       assert.equal(r.headers['content-length'], String(Buffer.byteLength(PAGE_404)));
     });
   }
+
+  // CR-01 (revue 09.1) : le bloc Caddy retire préconditions et Range dans la route de la 404. WebKit revalide une 404
+  // gardée en cache (If-None-Match, If-Modified-Since) : la seconde visite doit recevoir la page entière, jamais un
+  // corps vide ou tronqué.
+  it('CR-01 : seconde requête avec les validateurs de la première, puis chaque précondition et Range : page 404 entière', async () => {
+    const premiere = await get('/nexistepas/', { 'accept-encoding': 'identity' });
+    const etag = String(premiere.headers['etag']);
+    const date = String(premiere.headers['last-modified']);
+    assert.match(etag, /^"/);
+    const variantes: Record<string, string>[] = [
+      { 'if-none-match': etag },
+      { 'if-none-match': '*' },
+      { 'if-modified-since': date },
+      { 'if-modified-since': new Date(Date.now() + 86_400_000).toUTCString() },
+      { 'if-match': '"zzz"' },
+      { 'if-unmodified-since': 'Thu, 01 Jan 1970 00:00:00 GMT' },
+      { range: 'bytes=0-5' },
+      { range: 'bytes=0-5', 'if-range': etag },
+      { 'if-none-match': etag, 'if-modified-since': date },
+    ];
+    for (const entetes of variantes) {
+      for (const encodage of ['identity', 'gzip']) {
+        const r = await get('/nexistepas/', { 'accept-encoding': encodage, ...entetes });
+        const corps = r.headers['content-encoding'] === 'gzip' ? gunzipSync(r.corps).toString('utf8') : r.corps.toString('utf8');
+        assert.equal(r.status, 404, JSON.stringify(entetes));
+        assert.equal(corps, PAGE_404, `${JSON.stringify(entetes)} ${encodage}`);
+        assert.equal(r.headers['content-range'], undefined, JSON.stringify(entetes));
+      }
+    }
+  });
+
+  it('CR-01 : HEAD sur une adresse inconnue, 404 et longueur de la page entière, même avec If-None-Match', async () => {
+    const premiere = await get('/nexistepas/', { 'accept-encoding': 'identity' });
+    for (const entetes of [{}, { 'if-none-match': String(premiere.headers['etag']) }]) {
+      const r: Reponse = await new Promise((ok, ko) => {
+        const req = request(
+          { host: '127.0.0.1', port, path: '/nexistepas/', method: 'HEAD', headers: { 'accept-encoding': 'identity', ...entetes } },
+          (res) => {
+            res.resume();
+            res.on('end', () => ok({ status: res.statusCode, headers: res.headers, corps: Buffer.alloc(0) }));
+          },
+        );
+        req.on('error', ko);
+        req.end();
+      });
+      assert.equal(r.status, 404);
+      assert.equal(r.headers['content-length'], String(Buffer.byteLength(PAGE_404)));
+    }
+  });
 
   it('gzip si demandé, avec le code 404', async () => {
     const r = await get('/nexistepas/', { 'accept-encoding': 'gzip' });
