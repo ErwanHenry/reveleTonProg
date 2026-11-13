@@ -606,6 +606,16 @@ describe('import : --format, --dry-run tolérant et --check (IMP-03)', () => {
     assert.match(section(res.stdout, '## Conflits'), /^- essai-fictif : régression de date/);
   });
 
+  it('IN-02 : une fiche au YAML refusé est nommée dans le rapport Markdown, pas seulement en mode texte', () => {
+    const root = tmpRoot();
+    const snap = path.join(root, 'data', 'import', path.basename(newestSnapshot()));
+    mkdirSync(path.join(root, 'src', 'content', 'candidats'), { recursive: true });
+    writeFileSync(path.join(root, 'src', 'content', 'candidats', 'hors-amont.yaml'), 'a: 1\na: 2\n');
+    const res = importer(['--file', snap, '--root', root, '--dry-run', '--format', 'markdown']);
+    assert.equal(res.status, 0, res.stdout + res.stderr);
+    assert.match(section(res.stdout, '## Instantané'), /^- fiches illisibles \(YAML refusé\), ignorées pour « Absents du jeu amont » : hors-amont \(src\/content\/candidats\/hors-amont\.yaml:2:1 YAML_DUPLICATE_KEY/m);
+  });
+
   it('WR-03 : un fichier candidat refusé par le chargeur est nommé dans l’en-tête du rapport', () => {
     const root = tmpRoot();
     const snap = path.join(root, 'data', 'import', path.basename(newestSnapshot()));

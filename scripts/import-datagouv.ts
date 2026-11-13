@@ -358,6 +358,7 @@ function rapportDeCetteExecution(): string {
     themesOuverts,
     fichiersRefuses,
     gardeVolume,
+    illisibles,
   };
   return rapportMarkdown(construireRapport(entree));
 }

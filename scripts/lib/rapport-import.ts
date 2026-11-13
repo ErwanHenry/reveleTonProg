@@ -58,6 +58,8 @@ export interface EntreeRapport {
    * du nouveau). Absente ou null : pas d'instantané précédent, rien n'est imprimé.
    */
   gardeVolume?: { disparus: number; precedent: number; refus: boolean } | null;
+  /** IN-02 : fiches au YAML refusé, ignorées pour « Absents du jeu amont » (identifiant et raison). */
+  illisibles?: string[];
 }
 
 export interface ConsequenceTheme {
@@ -84,6 +86,7 @@ export interface Rapport {
     inchanges: number;
     fichiersRefuses: string[] | null;
     gardeVolume: { disparus: number; precedent: number; refus: boolean } | null;
+    illisibles: string[];
   };
   nouveaux: string[];
   aDecider: string[];
@@ -260,7 +263,7 @@ export function construireRapport(e: EntreeRapport): Rapport {
   const conflits = e.conflits.map((c) => `- ${messageSur(c.replace(/\s[\u2013\u2014]\s/g, ' : '))}`);
 
   return {
-    entete: { ...e.instantane, cree, ajoutes, inchanges, fichiersRefuses: e.fichiersRefuses === undefined ? null : trier(e.fichiersRefuses), gardeVolume: e.gardeVolume ?? null },
+    entete: { ...e.instantane, cree, ajoutes, inchanges, fichiersRefuses: e.fichiersRefuses === undefined ? null : trier(e.fichiersRefuses), gardeVolume: e.gardeVolume ?? null, illisibles: trier(e.illisibles ?? []) },
     nouveaux,
     aDecider,
     absents,
@@ -292,6 +295,7 @@ export function rapportMarkdown(r: Rapport): string {
       `- garde de volume : ${Number(g.disparus)} identifiant(s) du jeu précédent absent(s) sur ${Number(g.precedent)}, ${g.refus ? 'plus de 20 % : l’import réel refusera ce jeu sans --accepter-absents' : 'sous le plafond de 20 %'}`,
     );
   }
+  if (h.illisibles.length > 0) out.push(`- fiches illisibles (YAML refusé), ignorées pour « Absents du jeu amont » : ${h.illisibles.map(messageSur).join(' ; ')}`);
   if (h.fichiersRefuses !== null) {
     out.push(
       h.fichiersRefuses.length === 0
