@@ -1056,3 +1056,22 @@ describe('documentation (phase 10) : import de décembre (IMP-03)', () => {
     }
   });
 });
+
+// IN-08 (revue 09.1) : l'amendement d'ADR-034 nomme la règle qu'il modifie, celle de 04-UI-SPEC (§C4, « equal height
+// within a row »), et ne l'attribue pas au texte de M1-08, qui ne parle que de « taille fixe ».
+describe('docs/ARCHITECTURE.md : amendement d’ADR-034 (IN-08, revue 09.1)', () => {
+  const debut = architecture.indexOf('- **Amendement du 2026-11-13');
+  const amendement = architecture.slice(debut, architecture.indexOf('\n', debut));
+
+  it('nomme la règle de hauteur égale de 04-UI-SPEC et dit qu’elle est remplacée', () => {
+    assert.ok(debut > 0, 'amendement absent');
+    assert.match(amendement, /04-UI-SPEC/);
+    assert.match(amendement, /equal height within a row/);
+    assert.match(amendement, /remplacée/);
+  });
+
+  it('n’attribue pas la hauteur égale au texte de M1-08', () => {
+    assert.doesNotMatch(amendement, /l'exigence M1-08, verrouillée à l'origine, est modifiée/);
+    assert.match(amendement, /M1-08[^.]*ne parle que de « taille fixe »/);
+  });
+});

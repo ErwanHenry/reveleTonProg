@@ -1,5 +1,6 @@
 // Finitions visuelles 09.1, lot B, proposition 4 (audit B6) : grille des cartes sans grands vides.
-// TOUCHE la règle VERROUILLÉE M1-08 (« même hauteur par rangée ») : décision d'Erwan requise (09.1-09).
+// Remplace la hauteur égale par rangée du contrat verrouillé 04-UI-SPEC §C4 (M1-08 ne dit que « taille fixe ») :
+// acceptée par Erwan le 2026-11-13 (09.1-09, amendement d'ADR-034).
 // Vérifié sur le CSS réellement servi par les pages thème (fixture corpus-m1, production).
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';

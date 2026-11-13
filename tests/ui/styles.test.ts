@@ -460,8 +460,8 @@ describe('finitions 09.1 : contrat CSS', () => {
   });
 });
 
-// Finitions visuelles 09.1, proposition 4 (audit B6) : grille sans grands vides. Change M1-08 (qui était VERROUILLÉ, « même
-// hauteur par rangée ») : acceptée par Erwan le 2026-11-13 (ADR-034). Chaque carte garde sa structure en colonne (C4).
+// Finitions visuelles 09.1, proposition 4 (audit B6) : grille sans grands vides. Remplace la hauteur égale par rangée de
+// 04-UI-SPEC §C4 (verrouillé ; M1-08 ne dit que « taille fixe ») : acceptée par Erwan le 2026-11-13 (amendement d'ADR-034). Chaque carte garde sa structure en colonne (C4).
 describe('styles : grille M1-08 09.1, cartes à leur hauteur', () => {
   const valeur = (selecteur: string, prop: string): string | undefined =>
     regles
