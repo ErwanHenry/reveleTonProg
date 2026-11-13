@@ -31,6 +31,20 @@ const brut: unknown = JSON.parse(readFileSync(path.join(IMPORT_DIR, snapName), '
 const corr: Record<string, Correspondance> = lireCorrespondances(parse(readFileSync(path.join(IMPORT_DIR, 'correspondances.yaml'), 'utf8'), { schema: 'core' }));
 const { rows, miseAJour } = checkUpstream(brut);
 const clone = <T>(o: T): T => structuredClone(o);
+// WR-11 : les statuts inventés des tests de fusion portent sur une personne fictive, jamais sur une ligne réelle.
+const LIGNE_FICTIVE: UpstreamRow = {
+  id: 'essai-fictif',
+  nom: 'Essai Fictif',
+  parti: '',
+  statut: 'renonce',
+  source: { titre: 'Annonce (fictive)', url: 'https://exemple.test/essai-fictif/annonce', date: '2026-09-16' },
+  liens: {},
+  verifie_le: '2026-09-22',
+};
+const CORR_FICTIVE: Record<string, Correspondance> = {
+  'essai-fictif': { id: 'essai-fictif', prenom: 'Essai', nom: 'Fictif', nom_tri: 'Fictif', motif: 'elimine_primaire', type_source_statut: 'presse' },
+};
+const baseFictive = (): Record<string, unknown> => mapRow(LIGNE_FICTIVE, CORR_FICTIVE);
 const FICHE = path.join(REPO_ROOT, 'src', 'content', 'candidats', 'x.yaml');
 const valide = (fiche: unknown) => validateYamlText('candidat', renderYaml(fiche), FICHE, { schemasDir: SCHEMAS_DIR }).diagnostics;
 
@@ -159,7 +173,7 @@ describe('renderYaml', () => {
 });
 
 describe('mergeFiche', () => {
-  const base = mapRow(rows.find((r) => r.id === 'brun') as UpstreamRow, corr);
+  const base = baseFictive();
   const avec = (statuts: Record<string, unknown>[]) => ({ ...clone(base), statuts });
   const dernier = (base.statuts as Record<string, unknown>[])[0] as Record<string, unknown>;
 
@@ -324,7 +338,7 @@ describe('IMP-01 : ajouterStatutYaml passe par l’analyseur plafonné et garde 
 });
 
 describe('WR-09 : statut courant et régression de date', () => {
-  const base = mapRow(rows.find((r) => r.id === 'brun') as UpstreamRow, corr);
+  const base = baseFictive();
   const st = (code: string, date: string): Record<string, unknown> => ({ ...clone((base.statuts as Record<string, unknown>[])[0] as Record<string, unknown>), code, date });
 
   it('statuts[] dans le désordre : le plus récent par date sert de référence, pas le dernier de la liste', () => {

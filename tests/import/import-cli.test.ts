@@ -4,7 +4,10 @@ import { spawnSync } from 'node:child_process';
 import { cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 import { parse, stringify } from 'yaml';
+import { checkUpstream, mapRow, renderYaml } from '../../scripts/lib/datagouv.ts';
+import type { UpstreamRow } from '../../scripts/lib/datagouv.ts';
 import { loadAll } from '../../src/lib/content-core/load.ts';
 import { EN_TETE_IDS_LOCK } from '../../src/lib/content-core/ids-lock.ts';
 import { REPO_ROOT, SCHEMAS_DIR } from '../helpers/validate-yaml.ts';
@@ -68,6 +71,45 @@ function ajouterMotif(root: string, amont: string, motif: string): void {
   const t = parse(readFileSync(file, 'utf8')) as { correspondances: Record<string, Record<string, unknown>> };
   (t.correspondances[amont] as Record<string, unknown>).motif = motif;
   writeFileSync(file, stringify(t));
+}
+
+// WR-11 : le dépôt est public. Un changement de statut, un retrait du jeu ou une date inventés ne portent jamais sur
+// une personne réelle : ils portent sur `essai-fictif`, ajoutée à la racine temporaire (ligne amont et ligne de table).
+const FICTIF = 'essai-fictif';
+
+/** Ligne amont fictive, complète (aucun champ recopié d'une ligne réelle). */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function ligneFictive(over: Record<string, any> = {}): Record<string, any> {
+  return {
+    id: FICTIF,
+    nom: 'Essai Fictif',
+    parti: '',
+    bloc: '',
+    statut: 'declare',
+    statut_detail: '',
+    source: { titre: 'Annonce (fictive)', url: 'https://exemple.test/essai-fictif/annonce', date: '2026-10-01' },
+    propositions: [],
+    liens: {},
+    verifie_le: '2026-11-09',
+    ...over,
+  };
+}
+
+/**
+ * Instantané de base de la racine temporaire : les lignes réelles (lues, jamais modifiées) plus la ligne fictive,
+ * et la ligne de table correspondante. Renvoie le chemin du JSON écrit sous data/import de la racine temporaire.
+ */
+function baseFictive(root: string, snap: string): string {
+  const j = JSON.parse(readFileSync(snap, 'utf8')) as { candidats: Record<string, unknown>[] };
+  j.candidats.push(ligneFictive());
+  const out = path.join(root, 'data', 'import', 'base-fictive.json');
+  writeFileSync(out, JSON.stringify(j));
+  const table = path.join(root, 'data', 'import', 'correspondances.yaml');
+  writeFileSync(
+    table,
+    `${readFileSync(table, 'utf8')}  ${FICTIF}:\n    id: ${FICTIF}\n    prenom: Essai\n    nom: Fictif\n    nom_tri: Fictif\n    type_source_statut: candidat\n`,
+  );
+  return out;
 }
 
 describe('npm run import:datagouv (scripts/import-datagouv.ts)', () => {
@@ -166,20 +208,20 @@ describe('npm run import:datagouv (scripts/import-datagouv.ts)', () => {
   });
 
   it('un statut qui change en amont est ajouté en fin de statuts[] sans toucher l’ancien', () => {
-    const snap = newestSnapshot();
     const root = tmpRoot();
-    assert.equal(importer(['--file', path.join(root, 'data', 'import', path.basename(snap)), '--root', root]).status, 0);
-    const fiche = path.join(root, 'src', 'content', 'candidats', 'jean-luc-melenchon.yaml');
+    const base = baseFictive(root, newestSnapshot());
+    assert.equal(importer(['--file', base, '--root', root]).status, 0);
+    const fiche = path.join(root, 'src', 'content', 'candidats', `${FICTIF}.yaml`);
     const avant = readFileSync(fiche, 'utf8');
-    ajouterMotif(root, 'melenchon', 'retrait');
-    const modif = muter(root, snap, (j) => {
-      const r = j.candidats.find((x) => x.id === 'melenchon') as Record<string, any>;
+    ajouterMotif(root, FICTIF, 'retrait');
+    const modif = muter(root, base, (j) => {
+      const r = j.candidats.find((x) => x.id === FICTIF) as Record<string, any>;
       r.statut = 'renonce';
       r.source.date = '2026-11-01';
     });
     const res = importer(['--file', modif, '--root', root]);
     assert.equal(res.status, 0, res.stdout + res.stderr);
-    assert.match(res.stdout, /statut ajouté : jean-luc-melenchon/);
+    assert.match(res.stdout, /statut ajouté : essai-fictif/);
     assert.match(res.stdout, /1 statut\(s\) ajouté\(s\)/);
     const apres = readFileSync(fiche, 'utf8');
     const ancien = (parse(avant) as { statuts: unknown[] }).statuts;
@@ -194,19 +236,19 @@ describe('npm run import:datagouv (scripts/import-datagouv.ts)', () => {
   });
 
   it('une date qui recule est un conflit : code 1, rien n’est écrit', () => {
-    const snap = newestSnapshot();
     const root = tmpRoot();
-    assert.equal(importer(['--file', path.join(root, 'data', 'import', path.basename(snap)), '--root', root]).status, 0);
+    const base = baseFictive(root, newestSnapshot());
+    assert.equal(importer(['--file', base, '--root', root]).status, 0);
     const avant = fichiers(root);
-    ajouterMotif(root, 'melenchon', 'retrait');
-    const modif = muter(root, snap, (j) => {
-      const r = j.candidats.find((x) => x.id === 'melenchon') as Record<string, any>;
+    ajouterMotif(root, FICTIF, 'retrait');
+    const modif = muter(root, base, (j) => {
+      const r = j.candidats.find((x) => x.id === FICTIF) as Record<string, any>;
       r.statut = 'renonce';
       r.source.date = '2025-01-01';
     });
     const res = importer(['--file', modif, '--root', root]);
     assert.equal(res.status, 1, res.stdout + res.stderr);
-    assert.match(res.stdout, /conflit : jean-luc-melenchon — régression de date/);
+    assert.match(res.stdout, /conflit : essai-fictif — régression de date/);
     const apres = fichiers(root);
     for (const [name, buf] of avant) assert.ok(buf.equals(apres.get(name) as Buffer), `${name} modifié malgré le conflit`);
   });
@@ -215,8 +257,7 @@ describe('npm run import:datagouv (scripts/import-datagouv.ts)', () => {
     const snap = newestSnapshot();
     const root = tmpRoot();
     const modif = muter(root, snap, (j) => {
-      const modele = j.candidats[0] as Record<string, any>;
-      j.candidats.push({ ...modele, id: 'nouveau-un' }, { ...modele, id: 'nouveau-deux' });
+      j.candidats.push(ligneFictive({ id: 'nouveau-un' }), ligneFictive({ id: 'nouveau-deux' }));
     });
     const res = importer(['--file', modif, '--root', root]);
     assert.equal(res.status, 1);
@@ -226,17 +267,17 @@ describe('npm run import:datagouv (scripts/import-datagouv.ts)', () => {
   });
 
   it('une ligne retirée en amont : la fiche reste et le rapport la liste', () => {
-    const snap = newestSnapshot();
     const root = tmpRoot();
-    assert.equal(importer(['--file', path.join(root, 'data', 'import', path.basename(snap)), '--root', root]).status, 0);
-    const modif = muter(root, snap, (j) => {
-      j.candidats = j.candidats.filter((x) => x.id !== 'brun');
+    const base = baseFictive(root, newestSnapshot());
+    assert.equal(importer(['--file', base, '--root', root]).status, 0);
+    const modif = muter(root, base, (j) => {
+      j.candidats = j.candidats.filter((x) => x.id !== FICTIF);
     });
     const res = importer(['--file', modif, '--root', root]);
     assert.equal(res.status, 0, res.stdout + res.stderr);
-    assert.match(res.stdout, /absent en amont : philippe-brun/);
-    assert.ok(existsSync(path.join(root, 'src', 'content', 'candidats', 'philippe-brun.yaml')));
-    assert.match(readFileSync(path.join(root, 'ids.lock'), 'utf8'), /^philippe-brun$/m);
+    assert.match(res.stdout, /absent en amont : essai-fictif/);
+    assert.ok(existsSync(path.join(root, 'src', 'content', 'candidats', `${FICTIF}.yaml`)));
+    assert.match(readFileSync(path.join(root, 'ids.lock'), 'utf8'), /^essai-fictif$/m);
   });
 
   it('un jeu amont malformé : code 1 et rien d’écrit', () => {
@@ -386,12 +427,6 @@ describe('import : --format, --dry-run tolérant et --check (IMP-03)', () => {
     const j = reste.search(/^(## |---$)/m);
     return (j < 0 ? reste : reste.slice(0, j)).trim();
   }
-  function racinePeuplee(): { root: string; snap: string } {
-    const root = tmpRoot();
-    const snap = path.join(root, 'data', 'import', path.basename(newestSnapshot()));
-    assert.equal(importer(['--file', snap, '--root', root]).status, 0);
-    return { root, snap };
-  }
   /** Copie du dépôt réduite à ce que lit --check (jamais le vrai dépôt : le chargeur mémorise par racine). */
   function copieDepot(): string {
     const racine = mkdtempSync(path.join(os.tmpdir(), 'rtp-check-'));
@@ -403,10 +438,39 @@ describe('import : --format, --dry-run tolérant et --check (IMP-03)', () => {
     cpSync(path.join(REPO_ROOT, 'src', 'content', 'candidats'), path.join(racine, 'src', 'content', 'candidats'), { recursive: true });
     return racine;
   }
+  /**
+   * Copie du dépôt avec la personne fictive (WR-11) : un nouvel instantané (lignes réelles, lues, plus la ligne
+   * fictive `over`) avec sa méta au bon SHA-256, le pointeur mis à jour, la ligne de table et une fiche fictive dont
+   * le statut est `statutFiche` (par défaut celui de l'amont). Toute incohérence inventée porte sur cette personne.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function copieDepotFictive(over: Record<string, any> = {}, statutFiche: Record<string, unknown> = {}): string {
+    const racine = copieDepot();
+    const j = JSON.parse(readFileSync(newestSnapshot(), 'utf8')) as { mise_a_jour: string; candidats: Record<string, unknown>[] };
+    const ligne = ligneFictive(over);
+    j.candidats.push(ligne);
+    const octetsJson = Buffer.from(JSON.stringify(j));
+    const sha = createHash('sha256').update(octetsJson).digest('hex');
+    const nom = `2027etmoi-candidats-${j.mise_a_jour}-${sha.slice(0, 12)}`;
+    const dossierImport = path.join(racine, 'data', 'import');
+    writeFileSync(path.join(dossierImport, `${nom}.json`), octetsJson);
+    const metaReelle = JSON.parse(readFileSync(newestSnapshot().replace(/\.json$/, '.meta.json'), 'utf8')) as Record<string, unknown>;
+    const fetched = new Date(Date.parse(String(metaReelle.fetched_at)) + 60_000).toISOString();
+    writeFileSync(path.join(dossierImport, `${nom}.meta.json`), JSON.stringify({ ...metaReelle, sha256: sha, bytes: octetsJson.byteLength, rows: j.candidats.length, fetched_at: fetched }));
+    const ptr = path.join(racine, 'data', 'dataset-datagouv.yaml');
+    writeFileSync(ptr, readFileSync(ptr, 'utf8').replace(/^instantane: .*$/m, `instantane: data/import/${nom}.json`));
+    const table = path.join(dossierImport, 'correspondances.yaml');
+    writeFileSync(table, `${readFileSync(table, 'utf8')}  ${FICTIF}:\n    id: ${FICTIF}\n    prenom: Essai\n    nom: Fictif\n    nom_tri: Fictif\n    type_source_statut: candidat\n`);
+    const corr = { [FICTIF]: { id: FICTIF, prenom: 'Essai', nom: 'Fictif', nom_tri: 'Fictif', type_source_statut: 'candidat' as const } };
+    const fiche = mapRow(checkUpstream({ mise_a_jour: j.mise_a_jour, candidats: [ligne] }).rows[0] as UpstreamRow, corr);
+    const st = (fiche.statuts as Record<string, unknown>[])[0] as Record<string, unknown>;
+    Object.assign(st, statutFiche);
+    writeFileSync(path.join(racine, 'src', 'content', 'candidats', `${FICTIF}.yaml`), renderYaml(fiche));
+    return racine;
+  }
   function deuxInconnus(root: string, snap: string): string {
     return muter(root, snap, (j) => {
-      const modele = j.candidats[0] as Record<string, any>;
-      j.candidats.push({ ...modele, id: 'nouveau-un', nom: 'Essai Fictif Un' }, { ...modele, id: 'nouveau-deux', nom: 'Essai Fictif Deux', statut: 'renonce' });
+      j.candidats.push(ligneFictive({ id: 'nouveau-un', nom: 'Essai Fictif Un' }), ligneFictive({ id: 'nouveau-deux', nom: 'Essai Fictif Deux', statut: 'renonce' }));
     });
   }
 
@@ -443,18 +507,26 @@ describe('import : --format, --dry-run tolérant et --check (IMP-03)', () => {
     assert.equal(fichiers(root).size, 0);
   });
 
+  /** Racine temporaire peuplée avec la personne fictive (WR-11) : toute mutation de statut porte sur elle. */
+  function racineFictive(): { root: string; base: string } {
+    const root = tmpRoot();
+    const base = baseFictive(root, newestSnapshot());
+    assert.equal(importer(['--file', base, '--root', root]).status, 0);
+    return { root, base };
+  }
+
   it('markdown : un statut qui change imprime la transition avec sa source et sa date', () => {
-    const { root, snap } = racinePeuplee();
-    ajouterMotif(root, 'melenchon', 'retrait');
-    const modif = muter(root, snap, (j) => {
-      const r = j.candidats.find((x) => x.id === 'melenchon') as Record<string, any>;
+    const { root, base } = racineFictive();
+    ajouterMotif(root, FICTIF, 'retrait');
+    const modif = muter(root, base, (j) => {
+      const r = j.candidats.find((x) => x.id === FICTIF) as Record<string, any>;
       r.statut = 'renonce';
       r.source.date = '2026-11-01';
     });
     const avant = octets(root);
     const res = importer(['--file', modif, '--root', root, '--dry-run', '--format', 'markdown']);
     assert.equal(res.status, 0, res.stdout + res.stderr);
-    assert.match(res.stdout, /^- jean-luc-melenchon : statut : declare \(\d{4}-\d{2}(-\d{2})?\) -> renonce\/retrait \(2026-11-01\), source https:\/\/\S+ du 2026-11-01$/m);
+    assert.match(res.stdout, /^- essai-fictif : statut : declare \(2026-10-01\) -> renonce\/retrait \(2026-11-01\), source https:\/\/exemple\.test\/essai-fictif\/annonce du 2026-11-01$/m);
     assert.doesNotMatch(res.stdout, /[–—]/);
     identiques(avant, octets(root));
   });
@@ -486,16 +558,16 @@ describe('import : --format, --dry-run tolérant et --check (IMP-03)', () => {
   });
 
   it('conflit en markdown : le rapport est imprimé (section Conflits) et le code est 1', () => {
-    const { root, snap } = racinePeuplee();
-    ajouterMotif(root, 'melenchon', 'retrait');
-    const modif = muter(root, snap, (j) => {
-      const r = j.candidats.find((x) => x.id === 'melenchon') as Record<string, any>;
+    const { root, base } = racineFictive();
+    ajouterMotif(root, FICTIF, 'retrait');
+    const modif = muter(root, base, (j) => {
+      const r = j.candidats.find((x) => x.id === FICTIF) as Record<string, any>;
       r.statut = 'renonce';
       r.source.date = '2025-01-01';
     });
     const res = importer(['--file', modif, '--root', root, '--dry-run', '--format', 'markdown']);
     assert.equal(res.status, 1, res.stdout + res.stderr);
-    assert.match(section(res.stdout, '## Conflits'), /^- jean-luc-melenchon : régression de date/);
+    assert.match(section(res.stdout, '## Conflits'), /^- essai-fictif : régression de date/);
   });
 
   it('dépôt réel en markdown : aucun nouveau, changé ni conflit, sections dans l’ordre, aucun tiret long', () => {
@@ -512,17 +584,18 @@ describe('import : --format, --dry-run tolérant et --check (IMP-03)', () => {
     assert.match(res.stdout, /cohérence instantané \/ fiches : 0 écart/);
   });
 
+  it('--check sur une copie avec la personne fictive cohérente : code 0 (contrôle du montage WR-11)', () => {
+    const res = importer(['--check', '--root', copieDepotFictive()]);
+    assert.equal(res.status, 0, res.stdout + res.stderr);
+    assert.match(res.stdout, /cohérence instantané \/ fiches : 0 écart/);
+  });
+
   it('--check sur une copie dont un statut diffère : code 1 et une ligne d’écart', () => {
-    const racine = copieDepot();
-    const dossier = path.join(racine, 'src', 'content', 'candidats');
-    const nom = readdirSync(dossier).sort().find((n) => readFileSync(path.join(dossier, n), 'utf8').includes('code: declare'));
-    assert.ok(nom);
-    const f = path.join(dossier, nom);
-    writeFileSync(f, readFileSync(f, 'utf8').replace('code: declare', 'code: pressenti'));
+    const racine = copieDepotFictive({}, { code: 'pressenti' });
     const avant = octets(racine);
     const res = importer(['--check', '--root', racine]);
     assert.equal(res.status, 1, res.stdout + res.stderr);
-    assert.ok(res.stdout.includes(`${nom.replace(/\.yaml$/, '')} : statut : fichier=pressenti amont=declare`), res.stdout);
+    assert.ok(res.stdout.includes(`${FICTIF} : statut : fichier=pressenti amont=declare`), res.stdout);
     assert.match(res.stdout, /cohérence instantané \/ fiches : 1 écart\(s\)/);
     identiques(avant, octets(racine));
   });
