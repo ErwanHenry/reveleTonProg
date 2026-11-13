@@ -35,7 +35,7 @@ const unSeulTheme = corpus.themes.length === 1;
     {corpus.themes.length === 0 ? (
       <>
         <p>Aucun thème publié pour le moment.</p>
-        <p><a href="/candidats/">Consulter la liste des candidats</a></p>
+        <p class="hall-candidats"><a href="/candidats/">Consulter la liste des candidats</a></p>
       </>
     ) : (
       <>
@@ -43,7 +43,7 @@ const unSeulTheme = corpus.themes.length === 1;
           {corpus.themes.map((vue) => <TuileTheme vue={vue} une={unSeulTheme} />)}
         </ul>
         {unSeulTheme && <p class="autres-themes">Les autres thèmes seront publiés après relecture.</p>}
-        <p><a href="/candidats/">Voir tous les candidats</a></p>
+        <p class="hall-candidats"><a href="/candidats/">Voir tous les candidats</a></p>
       </>
     )}
     {/* Libellé du lien vers la Méthode. Placé après les thèmes pour que la première tuile reste au

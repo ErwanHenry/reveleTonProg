@@ -17,7 +17,7 @@ const elements = (n: Noeud): Noeud[] => n.enfants.filter((e): e is Noeud => type
 
 /** Jeton d'un enfant de main : balise, puis la classe qui le désigne s'il en a une connue. */
 function jeton(n: Noeud): string {
-  for (const c of ['hall-presentation', 'garanties', 'hall-methode', 'tuiles', 'autres-themes', 'lecteur', 'hall-themes', 'hall-niveaux']) {
+  for (const c of ['hall-presentation', 'garanties', 'hall-candidats', 'hall-methode', 'tuiles', 'autres-themes', 'lecteur', 'hall-themes', 'hall-niveaux']) {
     if (aClasse(n, c)) return `${n.tag}.${c}`;
   }
   return n.tag;
@@ -60,7 +60,8 @@ export default function accueil(ctx: ContexteSite): void {
       'h2.hall-themes',
       'ul.tuiles',
       ...(attendueAutresThemes ? ['p.autres-themes'] : []),
-      'p',
+      // Classe qui donne au lien sa cible de 44 et 48 px hors de .lecteur (WR-01 de la revue 09.1).
+      'p.hall-candidats',
       // Lien vers la Méthode après les thèmes : la première tuile reste au premier écran (e2e/accueil.spec.ts).
       'p.hall-methode',
       'h2.hall-niveaux',

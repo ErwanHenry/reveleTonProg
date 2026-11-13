@@ -4,6 +4,7 @@
 // Les deux corpus (fixture en production, vrai corpus en préversion avec son bandeau).
 import { expect, test } from '@playwright/test';
 import { premierePage } from './pages.ts';
+import { POLICE_LARGE, verifierCibles } from './cibles-accueil.ts';
 
 const accueil = premierePage((p) => p.url === '/', 'l’accueil').url;
 /** Hauteur de la tuile qui doit au moins apparaître dans le premier écran (son nom et le début de sa carte). */
@@ -42,5 +43,18 @@ test.describe('accueil 09.1 : thèmes au premier écran', () => {
       return p === null ? null : getComputedStyle(p).fontSize;
     });
     expect(taille).toBe('22px');
+  });
+
+  // WR-01 (revue 09.1) : depuis que les thèmes sont sortis de .lecteur, les liens autonomes de main (« Voir tous les
+  // candidats », « Consulter la liste des candidats », « Comment nous travaillons ») doivent porter eux-mêmes leur cible :
+  // 44 px, et 48 px en « Gros caractères » (04-UI-SPEC). Les tuiles ont pour cible toute la carte (::after étiré).
+  // Aucun lien dans une phrase dans main de l'accueil : aucune exemption. Même police large que le test ci-dessus.
+  test('liens autonomes de main : 44 px, puis 48 px en « Gros caractères » ; tuiles : carte entière', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto(accueil);
+    await page.addStyleTag({ content: POLICE_LARGE });
+    await verifierCibles(page, 44);
+    await page.locator('#niv-aine').check();
+    await verifierCibles(page, 48);
   });
 });

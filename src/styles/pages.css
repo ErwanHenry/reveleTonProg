@@ -114,10 +114,17 @@
   margin: 0 0 0.25rem;
 }
 
+/* Liens autonomes de l'accueil, hors de .lecteur depuis la proposition 1 : ils portent eux-mêmes leur cible de 44 px,
+   et de 48 px en « Gros caractères » comme la règle .lecteur de niveaux.css (WR-01 de la revue 09.1) */
+.hall-candidats a,
 .hall-methode a {
   display: inline-flex;
   align-items: center;
   min-height: 2.75rem;
+}
+
+main:has(> .lecteur > .niveaux #niv-aine:checked) :is(.hall-candidats, .hall-methode) a {
+  min-height: 3rem;
 }
 
 .hall-themes + .tuiles {
