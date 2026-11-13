@@ -189,6 +189,15 @@ describe('comparerInstantane : cas synthétiques (D-04)', () => {
     assert.equal(r.infos[0]?.id, 'carole-test');
   });
 
+  it('WR-10 : un instantané pointé sans aucune ligne est une erreur (jamais « 0 écart » à vide)', () => {
+    const etat = base();
+    etat.rows = [];
+    etat.fiches = new Map();
+    const r = comparerInstantane(etat);
+    assert.deepEqual(champs(r).e, ['instantane']);
+    assert.match(formaterEcart(r.erreurs[0]!), /instantane : fichier=0 ligne amont=un jeu vide ne prouve aucune cohérence/);
+  });
+
   it('erreurs triées par identifiant puis par champ, une ligne par écart', () => {
     const etat = base();
     etat.rows.push(ligne('z'));
@@ -274,6 +283,11 @@ describe('dépôt réel : instantané et fichiers candidats cohérents (D-04)', 
 
   it('0 erreur, un écart par ligne', () => {
     assert.deepEqual(r.erreurs.map(formaterEcart), []);
+  });
+
+  it('WR-10 : le contrôle ne passe pas à vide : des lignes amont, et une fiche pour chacune', () => {
+    assert.ok(etat.rows.length > 0, 'instantané pointé sans ligne');
+    assert.ok(etat.fiches.size >= etat.rows.length, `${etat.fiches.size} fiche(s) pour ${etat.rows.length} ligne(s)`);
   });
 
   it('informations (dérive de source, absents en amont, hors import) : affichées, jamais bloquantes', (t) => {

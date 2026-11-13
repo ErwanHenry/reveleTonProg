@@ -9,7 +9,8 @@
 //                      la table désigne un autre identifiant
 //   E4 `statut`        le couple (code, motif) du statut le plus récent du fichier diffère de l'amont
 //   E6 `instantane`    data/dataset-datagouv.yaml ne pointe pas l'instantané le plus récent
-//                      (par mise_a_jour puis fetched_at : mise_a_jour seule n'est pas un marqueur de fraîcheur)
+//                      (par mise_a_jour puis fetched_at : mise_a_jour seule n'est pas un marqueur de fraîcheur),
+//                      ou l'instantané pointé n'a aucune ligne (WR-10 : jamais « 0 écart » à vide)
 //   (E5 `date` n'existe plus : voir I1, WR-02 de la revue de la phase 10.)
 //
 // Ce qui n'est qu'une INFORMATION (jamais un échec) :
@@ -86,6 +87,8 @@ export function comparerInstantane(etat: EtatInstantane): { erreurs: Ecart[]; in
   const erreurs: Ecart[] = [];
   const infos: Ecart[] = [];
   const clesAmont = new Set(etat.rows.map((r) => r.id));
+  // WR-10 : un instantané pointé sans ligne ferait passer tout le contrôle à vide (« 0 écart »).
+  if (etat.rows.length === 0) erreurs.push({ id: 'data/dataset-datagouv.yaml', champ: 'instantane', fichier: '0 ligne', amont: 'un jeu vide ne prouve aucune cohérence' });
 
   for (const row of etat.rows) {
     if (!Object.hasOwn(etat.table, row.id)) {

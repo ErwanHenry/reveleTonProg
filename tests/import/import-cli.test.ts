@@ -662,6 +662,50 @@ describe('import : --format, --dry-run tolérant et --check (IMP-03)', () => {
     assert.equal(section(rep.stdout, '## Conflits'), 'aucun');
   });
 
+  it('WR-10 : un jeu amont vide est refusé (code 1, rien d’écrit), même sans instantané précédent', () => {
+    const root = tmpRoot();
+    const vide = muter(root, newestSnapshot(), (j) => {
+      j.candidats = [];
+    });
+    const avant = octets(root);
+    const res = importer(['--file', vide, '--root', root]);
+    assert.equal(res.status, 1, res.stdout + res.stderr);
+    assert.match(res.stderr, /jeu amont vide ou tronqué : 0 ligne/);
+    assert.match(res.stderr, /rien n'a été écrit/);
+    identiques(avant, octets(root));
+  });
+
+  it('WR-10 : un jeu tronqué par rapport à l’instantané pointé est refusé, sauf --accepter-absents', () => {
+    const racine = copieDepot();
+    const tronque = muter(racine, newestSnapshot(), (j) => {
+      j.candidats = j.candidats.slice(0, 10);
+    });
+    const avant = octets(racine);
+    const res = importer(['--file', tronque, '--root', racine]);
+    assert.equal(res.status, 1, res.stdout + res.stderr);
+    assert.match(res.stderr, /jeu amont vide ou tronqué : 10 ligne\(s\) contre \d+ dans l’instantané précédent, \d+ identifiant\(s\) disparu\(s\) \(plus de 20 %\)/);
+    assert.match(res.stderr, /--accepter-absents/);
+    identiques(avant, octets(racine));
+    // la répétition à blanc n'est pas refusée, mais le rapport l'annonce dans l'en-tête
+    const rep = importer(['--file', tronque, '--root', racine, '--dry-run', '--format', 'markdown']);
+    assert.equal(rep.status, 0, rep.stdout + rep.stderr);
+    assert.match(section(rep.stdout, '## Instantané'), /^- garde de volume : \d+ identifiant\(s\) du jeu précédent absent\(s\) sur \d+, plus de 20 % : l’import réel refusera ce jeu sans --accepter-absents$/m);
+    // l'option explicite d'Erwan laisse passer
+    const ok = importer(['--file', tronque, '--root', racine, '--accepter-absents']);
+    assert.equal(ok.status, 0, ok.stdout + ok.stderr);
+    assert.match(ok.stdout, /absent en amont : /);
+  });
+
+  it('WR-10 : un jeu légèrement plus court (sous le plafond) passe sans option', () => {
+    const racine = copieDepot();
+    const court = muter(racine, newestSnapshot(), (j) => {
+      j.candidats = j.candidats.slice(0, j.candidats.length - 2);
+    });
+    const res = importer(['--file', court, '--root', racine, '--dry-run', '--format', 'markdown']);
+    assert.equal(res.status, 0, res.stdout + res.stderr);
+    assert.match(section(res.stdout, '## Instantané'), /^- garde de volume : 2 identifiant\(s\) du jeu précédent absent\(s\) sur \d+, sous le plafond de 20 %$/m);
+  });
+
   it('--check sur une copie dont le pointeur est périmé : code 1', () => {
     const racine = copieDepot();
     const ptr = path.join(racine, 'data', 'dataset-datagouv.yaml');

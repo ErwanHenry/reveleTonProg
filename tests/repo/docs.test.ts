@@ -1011,6 +1011,16 @@ describe('documentation (phase 10) : import de décembre (IMP-03)', () => {
     }
   });
 
+  it('WR-10 : la garde de volume et son option --accepter-absents sont documentées, décision d’Erwan seul', () => {
+    const ancien = sectionRunbook(ANCIEN);
+    for (const needle of ['--accepter-absents', '20 %', 'jeu vide', 'garde de volume']) assert.ok(ancien.includes(needle), `« ${needle} » absent de « ${ANCIEN} »`);
+    const imp = sectionRunbook(IMPORT);
+    assert.ok(imp.includes('--accepter-absents'), `--accepter-absents absent de « ${IMPORT} »`);
+    const ligne = imp.split('\n').find((l) => l.includes('--accepter-absents')) ?? '';
+    assert.match(ligne, /Erwan/);
+    assert.match(ligne, /un agent n'ajoute jamais cette option/);
+  });
+
   it('WR-02 : une date amont qui recule pour un statut inchangé est une information, et les écarts restants ont leur issue', () => {
     const s = sectionRunbook(ANCIEN);
     for (const needle of ['date amont qui recule', 'information', 'Dérives de source', 'ids_externes.2027etmoi', 'data/dataset-datagouv.yaml']) {

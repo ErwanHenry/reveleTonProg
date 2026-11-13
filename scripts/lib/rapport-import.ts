@@ -53,6 +53,11 @@ export interface EntreeRapport {
    * `couvertures`, donc du calcul des conséquences (WR-03). Facultatif : absent, rien n'est signalé.
    */
   fichiersRefuses?: string[];
+  /**
+   * WR-10 : garde de volume, calculée par la CLI contre l'instantané pointé (identifiants du jeu précédent absents
+   * du nouveau). Absente ou null : pas d'instantané précédent, rien n'est imprimé.
+   */
+  gardeVolume?: { disparus: number; precedent: number; refus: boolean } | null;
 }
 
 export interface ConsequenceTheme {
@@ -68,7 +73,18 @@ export interface ConsequenceTheme {
 }
 
 export interface Rapport {
-  entete: { nom: string; sha256: string; miseAJour: string; lignes: number; precedent: string | null; cree: number; ajoutes: number; inchanges: number; fichiersRefuses: string[] | null };
+  entete: {
+    nom: string;
+    sha256: string;
+    miseAJour: string;
+    lignes: number;
+    precedent: string | null;
+    cree: number;
+    ajoutes: number;
+    inchanges: number;
+    fichiersRefuses: string[] | null;
+    gardeVolume: { disparus: number; precedent: number; refus: boolean } | null;
+  };
   nouveaux: string[];
   aDecider: string[];
   absents: string[];
@@ -244,7 +260,7 @@ export function construireRapport(e: EntreeRapport): Rapport {
   const conflits = e.conflits.map((c) => `- ${messageSur(c.replace(/\s[\u2013\u2014]\s/g, ' : '))}`);
 
   return {
-    entete: { ...e.instantane, cree, ajoutes, inchanges, fichiersRefuses: e.fichiersRefuses === undefined ? null : trier(e.fichiersRefuses) },
+    entete: { ...e.instantane, cree, ajoutes, inchanges, fichiersRefuses: e.fichiersRefuses === undefined ? null : trier(e.fichiersRefuses), gardeVolume: e.gardeVolume ?? null },
     nouveaux,
     aDecider,
     absents,
@@ -270,6 +286,12 @@ export function rapportMarkdown(r: Rapport): string {
   out.push(`- lignes amont : ${jeton(h.lignes)}`);
   out.push(h.precedent === null ? '- aucun instantané précédent référencé' : `- instantané précédent : ${jeton(h.precedent)}`);
   out.push(`- fiches : ${h.cree} créée(s), ${h.ajoutes} statut(s) ajouté(s), ${h.inchanges} inchangée(s)`);
+  if (h.gardeVolume !== null) {
+    const g = h.gardeVolume;
+    out.push(
+      `- garde de volume : ${Number(g.disparus)} identifiant(s) du jeu précédent absent(s) sur ${Number(g.precedent)}, ${g.refus ? 'plus de 20 % : l’import réel refusera ce jeu sans --accepter-absents' : 'sous le plafond de 20 %'}`,
+    );
+  }
   if (h.fichiersRefuses !== null) {
     out.push(
       h.fichiersRefuses.length === 0

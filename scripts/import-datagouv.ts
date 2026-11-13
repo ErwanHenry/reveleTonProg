@@ -25,7 +25,7 @@ const URL_PAR_DEFAUT = 'https://www.data.gouv.fr/api/1/datasets/r/06237c53-76bd-
 const PLAFOND_OCTETS = 5 * 1024 * 1024;
 const DELAI_MS = 30_000;
 
-const USAGE = `Usage : npm run import:datagouv -- [--file <json>] [--url <https>] [--dry-run] [--format texte|markdown] [--root <dossier>]
+const USAGE = `Usage : npm run import:datagouv -- [--file <json>] [--url <https>] [--dry-run] [--format texte|markdown] [--accepter-absents] [--root <dossier>]
         npm run import:datagouv -- --check [--root <dossier>]
 
   --file <json>    lit un instantané local (hors ligne, tests) au lieu d'interroger data.gouv.fr
@@ -33,6 +33,10 @@ const USAGE = `Usage : npm run import:datagouv -- [--file <json>] [--url <https>
   --dry-run        imprime le rapport sans rien écrire (ni instantané, ni fiche, ni ids.lock) ;
                    un identifiant amont inconnu de la table y est listé « à décider » au lieu d'arrêter
   --format <f>     texte (défaut) ou markdown : le rapport Markdown est le corps de la pull request d'import
+  --accepter-absents
+                   import réel d'un jeu dont plus de 20 % des identifiants de l'instantané précédent ont disparu
+                   (sans elle : refus, rien n'est écrit) ; décision d'Erwan seul, jamais par défaut. Un jeu vide
+                   est toujours refusé
   --check          vérifie, sans réseau, la cohérence instantané versionné / table / fiches candidats
                    (même contrôle que npm test) ; sort avec 1 et la liste des écarts s'il y en a
   --root <dossier> racine du dépôt (défaut : le dossier courant ; RTP_CONTENT_ROOT est ignorée)
@@ -65,7 +69,7 @@ function verifierCoherence(racine: string): never {
   process.exit(0);
 }
 
-let values: { file?: string; url?: string; 'dry-run'?: boolean; root?: string; format?: string; check?: boolean };
+let values: { file?: string; url?: string; 'dry-run'?: boolean; root?: string; format?: string; check?: boolean; 'accepter-absents'?: boolean };
 try {
   ({ values } = parseArgs({
     args: process.argv.slice(2),
@@ -76,6 +80,7 @@ try {
       root: { type: 'string' },
       format: { type: 'string' },
       check: { type: 'boolean' },
+      'accepter-absents': { type: 'boolean' },
     },
     strict: true,
     allowPositionals: false,
@@ -84,8 +89,8 @@ try {
   usageError(e instanceof Error ? e.message : String(e));
 }
 if (values.check === true) {
-  if (values.file !== undefined || values.url !== undefined || values['dry-run'] === true || values.format !== undefined) {
-    usageError('--check n\'accepte ni --file, ni --url, ni --dry-run, ni --format (seulement --root)');
+  if (values.file !== undefined || values.url !== undefined || values['dry-run'] === true || values.format !== undefined || values['accepter-absents'] === true) {
+    usageError('--check n\'accepte ni --file, ni --url, ni --dry-run, ni --format, ni --accepter-absents (seulement --root)');
   }
   verifierCoherence(path.resolve(process.cwd(), values.root ?? '.'));
 }
@@ -162,6 +167,27 @@ for (const a of amont.avertissements) out(`avertissement : ${a}`);
 if (!existsSync(contentDir) || !statSync(contentDir).isDirectory()) fail(`${rel === '.' ? '' : `${rel}/`}src/content introuvable : vérifier --root`);
 for (const p of [path.join(root, 'src'), contentDir, candidatsDir]) {
   if (existsSync(p) && lstatSync(p).isSymbolicLink()) fail(`lien symbolique refusé : ${path.relative(cwd, p)}`);
+}
+
+// WR-10 : garde de volume. Un jeu vide est toujours refusé ; un jeu dont plus de 20 % des identifiants de
+// l'instantané pointé (data/dataset-datagouv.yaml) ont disparu est refusé en import réel, sauf --accepter-absents
+// (décision d'Erwan, RUNBOOK). La répétition à blanc n'est jamais refusée : son rapport l'annonce dans l'en-tête.
+const PLAFOND_DISPARUS = 0.2;
+let gardeVolume: { disparus: number; precedent: number; refus: boolean } | null = null;
+try {
+  const ptr = loadDatasetDatagouv(root).instantane.chemin;
+  const anciens = checkUpstream(JSON.parse(readFileSync(path.join(root, ptr), 'utf8'))).rows.map((r) => r.id);
+  const nouveaux = new Set(amont.rows.map((r) => r.id));
+  const disparus = anciens.filter((id) => !nouveaux.has(id)).length;
+  gardeVolume = { disparus, precedent: anciens.length, refus: disparus > PLAFOND_DISPARUS * anciens.length };
+} catch {
+  // pas d'instantané précédent lisible sous cette racine : seule la garde du jeu vide s'applique
+}
+if (!dryRun && amont.rows.length === 0) fail('jeu amont vide ou tronqué : 0 ligne ; rien n\'a été écrit.');
+if (!dryRun && gardeVolume?.refus === true && values['accepter-absents'] !== true) {
+  fail(
+    `jeu amont vide ou tronqué : ${amont.rows.length} ligne(s) contre ${gardeVolume.precedent} dans l’instantané précédent, ${gardeVolume.disparus} identifiant(s) disparu(s) (plus de 20 %) ; rien n'a été écrit. Si Erwan confirme ce jeu, relancer avec --accepter-absents (RUNBOOK).`,
+  );
 }
 
 const corrPath = path.join(importDir, 'correspondances.yaml');
@@ -331,6 +357,7 @@ function rapportDeCetteExecution(): string {
     couvertures: casDeCouverture,
     themesOuverts,
     fichiersRefuses,
+    gardeVolume,
   };
   return rapportMarkdown(construireRapport(entree));
 }
