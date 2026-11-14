@@ -32,6 +32,11 @@ export interface OptionsServeurRelecture {
   jeton?: string;
   maintenant?: () => Date;
   charger?: Chargeur;
+  /**
+   * Reçoit une ligne par requête terminée : heure, méthode, chemin sans paramètres, code et, pour un refus, sa raison.
+   * Jamais le corps ni le jeton. La commande servir l'écrit dans le terminal, pour qu'un clic sans effet se voie.
+   */
+  journal?: (ligne: string) => void;
 }
 
 /** Codes d'état de la liste fermée affichés après une redirection 303. */
@@ -61,6 +66,8 @@ mark { background: #ffe14d; color: #000; }
 code { overflow-wrap: anywhere; }
 .etat { font-weight: bold; } .etat-relu, .etat-publie { color: #0a6b1f; } .etat-a_revoir { color: #a33a00; } .etat-a_relire { color: #6b4d00; }
 .message { border: 3px solid #0a6b1f; padding: .5rem 1rem; } .refus { border: 3px solid #a30000; padding: .5rem 1rem; }
+.message, .refus { position: sticky; top: 0; z-index: 1; background: #fff; }
+.bloc:target, article:target { outline: 4px solid #0a6b1f; outline-offset: 2px; }
 .contradiction { border-left: 6px solid #a30000; padding-left: .75rem; }
 .alertes li { margin: .2rem 0; }
 form { display: inline-block; margin: .5rem 1rem .5rem 0; vertical-align: top; }
@@ -174,8 +181,8 @@ function pageFiche(f: Fiche, jeton: string, bandeau: string): string {
   const s = f.statut;
   const statut =
     s === null
-      ? '<section class="bloc" id="statut"><h2>Statut déclaré</h2><p>Aucun statut.</p></section>'
-      : `<section class="bloc" id="statut"><h2>Statut déclaré à relire</h2>
+      ? '<section class="bloc" id="statut"><h2>Statut de candidature</h2><p>Aucun statut.</p></section>'
+      : `<section class="bloc" id="statut"><h2>Statut de candidature</h2>
 <ul>
 <li>Code : <strong>${echapper(s.code)}</strong> depuis le ${echapper(s.date)}</li>
 <li>Source : ${s.source === null ? 'aucune' : `${echapper(s.source.titre)} (${echapper(s.source.type)}), ${lien(s.source.url)}, consultée le ${echapper(s.source.date_consultation)}`}</li>
@@ -257,8 +264,13 @@ function envoyer(res: ServerResponse, statut: number, corps: string, entetes: Re
   res.end(corps);
 }
 
-const refuser = (res: ServerResponse, statut: number, message: string, entetes: Record<string, string> = {}): void =>
+/** Raison d'un refus, par réponse, pour la ligne de journal de la requête. */
+const RAISONS = new WeakMap<ServerResponse, string>();
+
+const refuser = (res: ServerResponse, statut: number, message: string, entetes: Record<string, string> = {}): void => {
+  RAISONS.set(res, message);
   envoyer(res, statut, pageErreur(`Refusé (${statut})`, [message]), entetes);
+};
 
 /** Contrôles communs à toute requête : Host exact, Origin, Sec-Fetch-Site. Renvoie vrai si la requête est refusée. */
 function controlerEntetes(req: IncomingMessage, res: ServerResponse): boolean {
@@ -434,6 +446,7 @@ export function creerGestionnaire(options: OptionsServeurRelecture): Gestionnair
         }
       }
       if (code !== 0) {
+        RAISONS.set(res, `validation refusée, rien n'a été écrit : ${messages.join(' ; ')}`);
         servirFiche(res, c.candidat, 409, `<div class="refus" role="alert"><p><strong>Validation refusée, rien n’a été écrit.</strong></p>${messages.map((m) => `<p>${echapper(m)}</p>`).join('')}</div>`);
         return;
       }
@@ -514,6 +527,16 @@ export function creerGestionnaire(options: OptionsServeurRelecture): Gestionnair
   }
 
   return (req, res) => {
+    const { journal } = options;
+    if (journal !== undefined) {
+      res.on('finish', () => {
+        // Chemin sans paramètres : ni jeton (il n'est que dans le corps) ni texte de note dans le terminal.
+        const chemin = (req.url ?? '/').split('?')[0]!.replace(/[^\x21-\x7e]/g, '?').slice(0, 120);
+        const raison = RAISONS.get(res);
+        const effet = res.statusCode === 303 ? ' : enregistré' : raison !== undefined ? ` : ${raison.replace(/\s+/g, ' ').slice(0, 300)}` : '';
+        journal(`${maintenant().toISOString().slice(11, 19)}Z ${req.method ?? '?'} ${chemin} ${res.statusCode}${effet}`);
+      });
+    }
     try {
       traiter(req, res);
     } catch (e) {
