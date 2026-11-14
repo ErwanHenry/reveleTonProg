@@ -240,6 +240,65 @@ describe('serveur de relecture (corpus M1 temporaire, thème logement)', () => {
   });
 });
 
+describe('journal des requêtes du serveur de relecture (une ligne par requête, sans jeton)', () => {
+  // Constaté le 2026-11-14 : des validations faites dans le navigateur n'étaient pas écrites et rien, dans le terminal,
+  // ne disait pourquoi. Chaque requête terminée laisse maintenant une ligne : méthode, chemin, code, raison du refus.
+  it('GET, validation enregistrée, refus de jeton et refus après note ouverte : une ligne chacun, jamais le jeton ni le texte', async () => {
+    const c = corpusRelecture();
+    const lignes: string[] = [];
+    const serveur = creerServeurRelecture({
+      racine: c.racine,
+      schemasDir: SCHEMAS_DIR,
+      theme: 'logement',
+      maintenant: () => new Date('2026-11-20T10:00:00Z'),
+      journal: (l) => lignes.push(l),
+    });
+    await new Promise<void>((ok) => serveur.listen(0, '127.0.0.1', ok));
+    const port = (serveur.address() as AddressInfo).port;
+    const hote = `127.0.0.1:${port}`;
+    const appel = (methode: string, chemin: string, corps?: string): Promise<{ status: number; corps: string }> =>
+      new Promise((ok, ko) => {
+        const headers: Record<string, string> = { host: hote };
+        if (corps !== undefined) {
+          headers['content-type'] = FORM;
+          headers.origin = `http://${hote}`;
+          headers['sec-fetch-site'] = 'same-origin';
+          headers['content-length'] = String(Buffer.byteLength(corps));
+        }
+        const req = request({ host: '127.0.0.1', port, path: chemin, method: methode, headers }, (res) => {
+          const morceaux: Buffer[] = [];
+          res.on('data', (b: Buffer) => morceaux.push(b));
+          res.on('end', () => ok({ status: res.statusCode ?? 0, corps: Buffer.concat(morceaux).toString('utf8') }));
+        });
+        req.on('error', ko);
+        if (corps !== undefined) req.write(corps);
+        req.end();
+      });
+    try {
+      const page = await appel('GET', '/candidat/elise-erard?etat=valide');
+      const jeton = /name="jeton" value="([0-9a-f]{64})"/.exec(page.corps)![1]!;
+      const champs = (o: Record<string, string>): string => new URLSearchParams(o).toString();
+      assert.equal((await appel('POST', '/valider', champs({ type: 'mesure', cible: 'elise-erard/guichet-unique', jeton: 'f'.repeat(64) }))).status, 403);
+      assert.equal((await appel('POST', '/note', champs({ cible: 'mesure:elise-erard/guichet-unique', texte: 'texte secret de la note', jeton }))).status, 303);
+      assert.equal((await appel('POST', '/valider', champs({ type: 'mesure', cible: 'elise-erard/guichet-unique', jeton }))).status, 409);
+      assert.equal((await appel('POST', '/valider', champs({ type: 'statut', cible: 'paul-de-villefranche', jeton }))).status, 303);
+      await new Promise((ok) => setTimeout(ok, 50));
+      assert.equal(lignes.length, 5, lignes.join('\n'));
+      assert.equal(lignes[0], '10:00:00Z GET /candidat/elise-erard 200');
+      assert.match(lignes[1]!, /^10:00:00Z POST \/valider 403 : jeton absent ou invalide : recharger la page$/);
+      assert.equal(lignes[2], '10:00:00Z POST /note 303 : enregistré');
+      assert.match(lignes[3]!, /^10:00:00Z POST \/valider 409 : validation refusée, rien n'a été écrit : .*note\(s\) ouverte\(s\)/);
+      assert.equal(lignes[4], '10:00:00Z POST /valider 303 : enregistré');
+      const tout = lignes.join('\n');
+      assert.ok(!tout.includes(jeton), 'le jeton ne paraît jamais dans le journal');
+      assert.ok(!tout.includes('etat=valide'), 'pas de paramètres d’adresse dans le journal');
+      assert.ok(!/texte secret/.test(lignes[2]!), 'le texte d’une note n’est pas journalisé à son enregistrement');
+    } finally {
+      await new Promise<void>((ok) => serveur.close(() => ok()));
+    }
+  });
+});
+
 describe('commande servir', () => {
   let c: CorpusRelecture;
   before(() => {

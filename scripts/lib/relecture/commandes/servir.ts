@@ -17,7 +17,13 @@ const USAGE = 'usage : relecture servir [--theme <id>] [--port <n>] (défaut : t
 
 /** Crée et lie le serveur ; renvoie le serveur, ou un code de sortie (1) si le port est pris ou l'adresse n'est pas locale. */
 export async function demarrer(options: { theme: string; port: number }, ctx: Contexte): Promise<{ serveur: Server } | number> {
-  const serveur = creerServeurRelecture({ racine: ctx.racine, schemasDir: ctx.schemasDir, theme: options.theme, maintenant: () => ctx.maintenant() });
+  const serveur = creerServeurRelecture({
+    racine: ctx.racine,
+    schemasDir: ctx.schemasDir,
+    theme: options.theme,
+    maintenant: () => ctx.maintenant(),
+    journal: (ligne) => ctx.sortie(ligne),
+  });
   try {
     await new Promise<void>((ok, ko) => {
       serveur.once('error', ko);
@@ -40,6 +46,7 @@ export async function demarrer(options: { theme: string; port: number }, ctx: Co
   ctx.sortie(`Page de relecture du thème ${options.theme} :`);
   ctx.sortie(`http://${HOTE}:${adresse.port}/`);
   ctx.sortie('Ctrl+C pour arrêter');
+  ctx.sortie('Chaque requête s’affiche ci-dessous (heure UTC, action, code) : 303 = enregistré, 403 ou 409 = refusé, avec la raison.');
   return { serveur };
 }
 
