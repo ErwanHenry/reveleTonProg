@@ -346,7 +346,7 @@ Relecture complète des quatre niveaux des 5 mesures dans l'état du commit `6f7
 - nicolas-dupont-aignan/sante-fin-passe-sanitaire : conforme pour les rédactions. Le parti est sujet dans les quatre niveaux ; l'extension au passe vaccinal figure au détaillé et à l'aîné ; l'absence de date est signalée. Reste ouverte, hors rédactions, la décision de l'éditeur sur la fiche source (`date_publication: 2026-11` non étayée, page peut-être d'une campagne antérieure) : si la page est jugée hors période, la mesure ne doit pas être publiée.
 - nicolas-dupont-aignan/sante-lits-etablissements : conforme pour les rédactions. Parti sujet dans les quatre niveaux ; « immédiatement » rendu partout (« tout de suite » à l'enfant) ; seul le délai des réouvertures est dit absent, ce qui est exact. Même décision ouverte sur la fiche source.
 
-### Données pour script (verdicts finaux après retouches, bloc à prendre en compte)
+### Données pour script (verdicts après retouches, remplacé par le bloc final plus bas)
 
 ```json
 [
@@ -366,5 +366,109 @@ Relecture complète des quatre niveaux des 5 mesures dans l'état du commit `6f7
   { "cible": "mesure:olivier-becht/sante-secretariat-etat-sante-publique", "verdict": "conforme", "motif": "enfant réécrit fidèle et attribué ; mot interdit de la source non repris ; avertissement de lisibilité levé" },
   { "cible": "mesure:raphael-glucksmann/sante-projet-territorial-sante", "verdict": "conforme", "motif": "enfant réécrit fidèle ; sujet « Son parti, Place publique » conforme à la règle ; avertissement de lisibilité levé" },
   { "cible": "mesure:selma-labib/sante-besoins-embauches-hopitaux", "verdict": "decision_editeur", "motif": "texte fidèle, portée générale explicite ; maintien en santé d'une revendication sur l'emploi à décider" }
+]
+```
+
+## Après les décisions de l'éditeur (2026-11-17)
+
+Décisions du propriétaire : quand le document est celui du parti, le sujet est le parti, pour tous les candidats ; les mesures d'Arthaud et de Labib restent en santé ; publication sans les chiffrages des candidats. Commits relus : `8aa78a2` et `25f68eb` (branche `relecture/sante`). Validateur (Node 24) : 0 erreur, 21 avertissements en production comme en preview ; aucun diagnostic sur les fichiers Mélenchon, Dupont-Aignan, Attal et Arthaud (l'avertissement de lisibilité de l'enfant canicule a disparu).
+
+1. **Les deux mesures Mélenchon, relues en entier : conformes.**
+   - Attribution vraie et claire : le document dit présenter « les grandes orientations budgétaires que la France insoumise propose pour l'année 2027 », et la fiche candidat donne `parti: La France insoumise`. La fiche source passe à `auteur: parti_du_candidat`, ce qui est cohérent.
+   - « publié sur le site de campagne du candidat » : étayé par l'adresse du document (melenchon2027.fr) et par l'en-tête « Élection présidentielle - 18 avril 2027 ».
+   - Coupes d'un mot : « le budget hospitalier » pour « le budget des hôpitaux » garde le sens ; « un plan d'urgence contre les canicules, commençant par équiper… » garde le sens de « Ce plan d'urgence contre les canicules commencera par équiper », et « contre les incendies » reste.
+   - Pronoms : « Il indique », « Il veut aussi » renvoient à « son parti » ; « selon lui » suit « Le document range… » et renvoie au document. À l'enfant, « Son parti » sans nom suit la convention du projet (les textes enfant ne nomment pas les partis). Le validateur ne relève aucun dépassement de longueur.
+2. **Dates des sources : exactes.**
+   - Attal `2026-06-25` : la page affiche « 25 juin 2026 · Face aux canicules » sous le titre de la mesure.
+   - Arthaud `2026-06-26` : la brochure se termine par « Supplément gratuit à Lutte ouvrière n° 3021 du 26 juin 2026 » (l'adresse du PDF est aussi rangée en 2026/06).
+   - Debout la France : le champ obligatoire garde `2026-11`, mais le site public n'affiche pas `date_publication` (`BlocSource.astro` montre le titre et la date de consultation). Le titre affiché « Debout la France, projet : Santé (page non datée) », les deux `source_localisation` et le détaillé (et l'aîné de la mesure passe sanitaire) disent l'absence de date : c'est exact et suffisant pour un lecteur. Seul l'outil de relecture interne affiche encore « Publiée : 2026-11 » (`scripts/lib/relecture/serveur.ts`) ; c'est à garder en tête pour les relecteurs, sans effet public.
+3. **Verdicts finaux des quatre mesures en attente :** Mélenchon budget des hôpitaux : conforme. Mélenchon plan canicule : conforme. Arthaud : conforme (classement en santé décidé, texte fidèle, portée explicite). Labib : conforme (même raison).
+
+Bilan final du lot : 16 conformes sur 16.
+
+### Données pour script (verdicts finaux après décisions de l'éditeur, dernier bloc, à prendre en compte)
+
+```json
+[
+  {
+    "cible": "mesure:francis-lalanne/sante-fin-pass-obligations-medicales",
+    "verdict": "conforme",
+    "motif": "fidèle aux quatre niveaux ; localisation quatrième point vérifiée ; phrases « ne précise pas » vraies pour toute la page"
+  },
+  {
+    "cible": "mesure:francois-ruffin/sante-pole-public-medicament",
+    "verdict": "conforme",
+    "motif": "fidèle ; gouvernance mixte et médicaments essentiels rendus ; coût, noms et date absents de tout le livret ; sous-thème gouvernance-sante pertinent"
+  },
+  {
+    "cible": "mesure:gabriel-attal/sante-droit-climatisation",
+    "verdict": "conforme",
+    "motif": "après retouche : enfant entièrement attribué, quatre niveaux concordants ; date de la fiche source corrigée au 2026-06-25, étayée par la page"
+  },
+  {
+    "cible": "mesure:jean-francois-legendre/sante-analyser-arrets-maladie",
+    "verdict": "conforme",
+    "motif": "après la seconde retouche : chiffres situés juste après la citation, renvoi au référendum dans l'ordre du manifeste ; quatre niveaux exacts"
+  },
+  {
+    "cible": "mesure:jean-francois-legendre/sante-preserver-prise-en-charge",
+    "verdict": "conforme",
+    "motif": "baisse des remboursements rendue au détaillé, à l'enfant et à l'aîné ; enfant attribué ; aucune phrase « ne dit pas » fausse"
+  },
+  {
+    "cible": "mesure:jean-luc-melenchon/sante-budget-hopitaux-postes-soignants",
+    "verdict": "conforme",
+    "motif": "après décision de l'éditeur : son parti, La France insoumise, sujet des quatre niveaux, comme le dit le document ; « budget hospitalier » de même sens ; longueurs et chiffres conformes"
+  },
+  {
+    "cible": "mesure:jean-luc-melenchon/sante-plan-canicule-hopitaux-ehpad",
+    "verdict": "conforme",
+    "motif": "après décision de l'éditeur : attribution à La France insoumise exacte ; « commençant par » garde le sens ; « contre les incendies » conservé ; longueurs conformes"
+  },
+  {
+    "cible": "mesure:marine-tondelier/sante-prevention-priorites",
+    "verdict": "conforme",
+    "motif": "exemples de la proposition rendus ; aucun budget dans le programme ; attribution étayée par la préface signée par Marine Tondelier"
+  },
+  {
+    "cible": "mesure:natacha-polony/sante-medicaments-essentiels-production",
+    "verdict": "conforme",
+    "motif": "après retouche : l'enfant rend l'État qui planifie, comme le détaillé et l'aîné ; plus de phrase « ne dit pas » fausse"
+  },
+  {
+    "cible": "mesure:nathalie-arthaud/sante-embauches-hopitaux",
+    "verdict": "conforme",
+    "motif": "maintien en santé décidé par l'éditeur ; texte fidèle, portée générale explicite ; date de la brochure corrigée au 2026-06-26, étayée par l'extrait"
+  },
+  {
+    "cible": "mesure:nicolas-dupont-aignan/sante-fin-passe-sanitaire",
+    "verdict": "conforme",
+    "motif": "parti sujet dans les quatre niveaux, extension au passe vaccinal rendue ; page non datée signalée dans le titre de la source affiché, la localisation et les rédactions"
+  },
+  {
+    "cible": "mesure:nicolas-dupont-aignan/sante-lits-etablissements",
+    "verdict": "conforme",
+    "motif": "parti sujet dans les quatre niveaux, « immédiatement » rendu ; page non datée signalée dans le titre de la source affiché, la localisation et le détaillé"
+  },
+  {
+    "cible": "mesure:olivier-becht/sante-prevention",
+    "verdict": "conforme",
+    "motif": "fidèle ; phrase enfant clarifiée, définition cohérente avec le glossaire"
+  },
+  {
+    "cible": "mesure:olivier-becht/sante-secretariat-etat-sante-publique",
+    "verdict": "conforme",
+    "motif": "enfant réécrit fidèle et attribué ; mot interdit de la source non repris ; avertissement de lisibilité levé"
+  },
+  {
+    "cible": "mesure:raphael-glucksmann/sante-projet-territorial-sante",
+    "verdict": "conforme",
+    "motif": "enfant réécrit fidèle ; sujet « Son parti, Place publique » conforme à la règle ; avertissement de lisibilité levé"
+  },
+  {
+    "cible": "mesure:selma-labib/sante-besoins-embauches-hopitaux",
+    "verdict": "conforme",
+    "motif": "maintien en santé décidé par l'éditeur ; texte fidèle, portée générale explicite"
+  }
 ]
 ```

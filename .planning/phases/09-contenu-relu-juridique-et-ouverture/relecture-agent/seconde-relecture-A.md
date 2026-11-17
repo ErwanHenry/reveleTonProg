@@ -388,3 +388,45 @@ Commit relu : `38b8d93` (9 fichiers, une ligne `enfant` chacun : « Son parti, <
 Avis sur l'alternative (nommer le parti avec une entrée de glossaire de type `parti`) : pour un enfant, le nom seul apporte peu, puisque la carte l'affiche déjà, et une définition d'une phrase par parti ajouterait un mot difficile à chaque texte. Pour la neutralité, définir chaque parti oblige à une description équivalente et sourcée pour tous, avec un risque d'étiquette de positionnement. « Son parti » sans nom est donc préférable. Si un terme doit être expliqué, un seul terme générique « parti politique » au glossaire vaut mieux.
 
 Les verdicts du dernier bloc JSON ci-dessus sont inchangés pour mes 19 mesures.
+
+## Après les décisions de l'éditeur (2026-11-17)
+
+Décisions de l'éditeur du 2026-11-17 :
+- Les chiffrages des candidats absents de `texte_source` ne sont pas ajoutés pour l'ouverture.
+- Le titre « Réduction ou suppression … » est conservé.
+
+J'ai relu une nouvelle fois les trois mesures concernées, sur la branche `relecture/sante`. `git log` montre que leur dernière modification est le commit `6f75573`. Le commit `38b8d93` (« Son parti ») ne les touche pas.
+
+- bruno-retailleau/sante-prescripteurs-atypiques-plafonds : conforme. Aucun niveau ne dit ou ne laisse entendre qu'il n'existe pas de chiffrage. Les absences signalées (définition du prescripteur atypique, auteur de l'accord préalable, durée du premier arrêt) restent vraies pour toute la fiche.
+- bruno-retailleau/sante-reexamen-arrets-maladie : conforme. Aucune phrase sur l'absence de chiffre. « Le texte ne dit pas quand ce serait mis en place » est vrai, car la fiche ne donne qu'un horizon de chiffrage en 2032, pas de date de mise en œuvre.
+- christian-collovati/sante-reduction-ame : conforme. Le titre est conservé. Les quatre niveaux signalent la suppression « avec un autre montant », ce qui reconnaît l'existence du second chiffre sans l'écrire.
+
+Les deux mesures `erwan-rohou` restent `decision_editeur`, en attente de la réarchivage de la page qui relie le candidat au mouvement.
+
+Décompte final : 17 conforme, 2 decision_editeur, 0 a_corriger.
+
+### Verdicts finaux après les décisions de l'éditeur (dernier bloc, à lire par script)
+
+```json
+[
+  { "cible": "mesure:antoine-mikolajczak/sante-alimentation-soins-territoire", "verdict": "conforme", "motif": "Citation et page 2 vérifiées sur le PDF, quatre niveaux fidèles et attribués" },
+  { "cible": "mesure:bernard-cazeneuve/sante-grand-age-dependance", "verdict": "conforme", "motif": "Retouche vérifiée : résumé dit « familles les plus modestes », quatre niveaux cohérents" },
+  { "cible": "mesure:bruno-retailleau/sante-prescripteurs-atypiques-plafonds", "verdict": "conforme", "motif": "Publié sans chiffrage (décision de l'éditeur) ; aucun niveau ne dit qu'il n'y a pas de chiffre" },
+  { "cible": "mesure:bruno-retailleau/sante-reexamen-arrets-maladie", "verdict": "conforme", "motif": "Publié sans chiffrage (décision de l'éditeur) ; aucun niveau ne dit qu'il n'y a pas de chiffre" },
+  { "cible": "mesure:christian-collovati/sante-reduction-ame", "verdict": "conforme", "motif": "Titre conservé (décision de l'éditeur) ; suppression signalée « avec un autre montant » à tous les niveaux" },
+  { "cible": "mesure:christian-collovati/sante-securite-sociale-endettement", "verdict": "conforme", "motif": "Retouche vérifiée : absences bornées à la phrase à tous les niveaux" },
+  { "cible": "mesure:david-lisnard/sante-conventionnement-differencie", "verdict": "conforme", "motif": "Attribution au parti correcte, comparatif respecté, enfant « Son parti » vérifié" },
+  { "cible": "mesure:david-lisnard/sante-supprimer-ars", "verdict": "conforme", "motif": "Attribution au parti correcte, trois éléments fidèles, enfant « Son parti » vérifié" },
+  { "cible": "mesure:delphine-batho/sante-defenseur-constitution", "verdict": "conforme", "motif": "Retouches vérifiées : sujet explicite à l'aîné, absence bornée à la proposition, enfant attribué" },
+  { "cible": "mesure:delphine-batho/sante-deserts-medicaux", "verdict": "conforme", "motif": "Retouche vérifiée : enfant attribué, cohérent avec le détaillé" },
+  { "cible": "mesure:edouard-philippe/sante-sante-mentale-ecole", "verdict": "conforme", "motif": "Doublon et présupposé retirés, localisation exacte, niveaux fidèles" },
+  { "cible": "mesure:emmanuel-dubuisson/sante-parcours-soins-simple", "verdict": "conforme", "motif": "Enfant attribué, niveaux fidèles" },
+  { "cible": "mesure:eric-zemmour/sante-acces-soins-desertification", "verdict": "conforme", "motif": "Attribution au parti, localisation et absences exactes, enfant « Son parti » vérifié" },
+  { "cible": "mesure:eric-zemmour/sante-supprimer-ame", "verdict": "conforme", "motif": "Attribution au parti, qualificatif cité entre guillemets, enfant « Son parti » vérifié" },
+  { "cible": "mesure:erwan-rohou/sante-egalite-acces-soins", "verdict": "decision_editeur", "motif": "Lien candidat et mouvement à réarchiver avant nouvelle relecture" },
+  { "cible": "mesure:erwan-rohou/sante-usagers-conseil-administration", "verdict": "decision_editeur", "motif": "Lien candidat et mouvement à réarchiver avant nouvelle relecture ; lisibilité enfant 61,9" },
+  { "cible": "mesure:fabien-roussel/sante-remboursement-100-securite-sociale", "verdict": "conforme", "motif": "Retouche vérifiée : rôle de la démocratie limité aux zones floues, science arbitre, aîné cohérent" },
+  { "cible": "mesure:florian-philippot/sante-simplifier-gestion-hospitaliere", "verdict": "conforme", "motif": "Attribution au parti, nom du livret exact, enfant « Son parti » vérifié" },
+  { "cible": "mesure:florian-philippot/sante-soins-proximite-centres", "verdict": "conforme", "motif": "Effet attendu attribué au parti, enfant « Son parti » vérifié (57 mots)" }
+]
+```
