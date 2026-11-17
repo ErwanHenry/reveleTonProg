@@ -332,6 +332,8 @@ describe('commande servir', () => {
     const lignes: string[] = [];
     assert.equal(await demarrer({ theme: 'logement', port: pris }, contexte(lignes)), 1);
     assert.ok(lignes.some((l) => l.startsWith('E:') && l.includes(String(pris))), lignes.join('\n'));
+    // Le message dit quoi faire quand c'est la page de relecture elle-même qui tient le port (cas vécu le 2026-11-17).
+    assert.ok(lignes.some((l) => l.includes(`http://127.0.0.1:${pris}/`) && l.includes('rien à relancer')), lignes.join('\n'));
     await new Promise<void>((ok) => occupant.close(() => ok()));
     assert.equal(await servir(['--theme', 'inexistant', '--port', '0'], contexte([])), 1);
     assert.equal(await servir(['--theme', '../x'], contexte([])), 2);
