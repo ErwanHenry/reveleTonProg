@@ -88,3 +88,17 @@ Règle « parti ou candidat » : la règle existante de `docs/COUVERTURE-THEMES.
 Encore à faire accepter par Erwan : la phrase de la Méthode sur la relecture, la nouvelle formulation publique d'un statut, et l'amendement de la note de risques (R5, R6).
 </revision>
 
+<revision date="2026-11-17" suite="cinq points éditoriaux">
+## Cinq points éditoriaux après la seconde relecture : décision d'Erwan
+
+L'orchestrateur a soumis cinq recommandations ; réponse d'Erwan le 2026-11-17 : « Suis ton avis ». Retenu :
+
+1. **Deux mesures d'Erwan Rohou sans lien établi avec le mouvement cité** : l'orchestrateur cherche une page primaire qui établit le lien et l'archive ; à défaut, les deux mesures sortent et la case de couverture passe à « rien de précisé ». Rappel : la page du programme de ce mouvement n'est jamais soumise à Wayback (données de particuliers, décision 3a).
+2. **Chiffrages des candidats absents de la citation** (trois mesures) : publication sans chiffre à l'ouverture ; un champ dédié au chiffrage est une amélioration à planifier après l'ouverture.
+3. **Document d'un parti publié sur le site de campagne du candidat** (deux mesures de Jean-Luc Mélenchon) : même règle que pour les autres candidats, le sujet est le parti (« Son parti, La France insoumise, propose … » ; au niveau enfant « Son parti … » sans le nom).
+4. **Revendications sur l'emploi où l'hôpital est un exemple** (Nathalie Arthaud, Selma Labib) : elles restent dans le thème santé, la portée étant dite dans les quatre niveaux.
+5. **Dates de publication de sources** : les deux dates vérifiables dans l'archive sont corrigées ; la page de parti non datée est citée comme non datée (le champ `date_publication`, obligatoire au schéma et jamais affiché au public, garde une valeur par défaut expliquée par un commentaire ; le titre de la source, lui affiché, dit « page non datée »).
+
+Règle du niveau enfant (constat de CI du même jour) : un parti n'y est pas nommé (« Son parti veut … »), faute de quoi la règle `PILOTE_PARTI_NON_MARQUE` exige une définition de glossaire par parti, que le second relecteur déconseille pour la neutralité.
+</revision>
+
