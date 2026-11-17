@@ -102,3 +102,14 @@ L'orchestrateur a soumis cinq recommandations ; réponse d'Erwan le 2026-11-17 :
 Règle du niveau enfant (constat de CI du même jour) : un parti n'y est pas nommé (« Son parti veut … »), faute de quoi la règle `PILOTE_PARTI_NON_MARQUE` exige une définition de glossaire par parti, que le second relecteur déconseille pour la neutralité.
 </revision>
 
+<revision date="2026-11-17" suite="clôture de la relecture du thème santé">
+Décisions d'Erwan du 2026-11-17 (soir), avec ses mots :
+
+- « Oui, Wayback compris » : le communiqué du mouvement (2026-09-04) et la nouvelle page de son programme sont archivés ; leur soumission à la Wayback Machine est autorisée, les nouvelles pages n'affichant plus de données de particuliers. L'exception de la décision 3a est retirée (liste épinglée vide). État : copies privées faites ; copies Wayback non obtenues le 2026-11-17 (service hors ligne, puis HTTP 520, puis limitation de débit), à relancer avec `--wayback-only` avant le plan 09-11. Si l'échec persiste, une nouvelle exception motivée est une décision d'Erwan.
+- Fiche d'Erwan Rohou : `parti` et `parti_source` renseignés d'après le communiqué (proposé à Erwan avec la question sur Wayback, non contesté ; à retirer s'il le demande).
+- « Suis ton avis » : la case de couverture de Sylvain Durif reste « programme non publié » ; le site non authentifié à son nom n'est ni cité ni archivé. Même réponse pour la phrase de la page Méthode (« ce n'est pas une relecture humaine de chaque texte »), appliquée.
+- « Oui, j'accepte l'avenant » : avenant du 2026-11-17 inscrit dans `docs/RISQUES-JURIDIQUES.md` (section Signature) et dans `docs/RETROSPECTIVE.md`.
+
+État de la relecture santé : 121 cibles sur 121 relues (47 mesures, 37 statuts dont un par Erwan, 37 cases), branche `relecture/sante`. Reste hors périmètre : quatre mesures d'Erwan Rohou (travail, Europe et monde) gardent l'ancien nom du mouvement et la formule « selon l'accueil du mouvement » ; deux mesures de Jean-Luc Mélenchon du thème travail sont à réattribuer au parti. À reprendre à la relecture de ces thèmes.
+</revision>
+
