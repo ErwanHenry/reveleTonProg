@@ -1,7 +1,7 @@
 version_schema: 1
 id: jean-luc-melenchon-comptes-publics
 type: programme
-auteur: candidat
+auteur: parti_du_candidat
 candidats:
   - jean-luc-melenchon
 titre: Mélenchon 2027, Comment nous allons remettre de l'ordre dans les comptes publics
