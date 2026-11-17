@@ -59,3 +59,17 @@ Le site ouvre au public sur `reveletonprog.fr` (et `www`, redirigé) avec le th�
 - Sonde externe (D1) : Erwan a réglé la période et la grâce à 1 jour ; pas de déclencheur externe pour l'instant.
 - Liste blanche : `config/publication.yml` (`themes_ouverts`), règle et codes check-dist dédiés.
 </research_resolutions>
+
+<revision date="2026-11-17">
+## Relecture par un agent (décision d'Erwan, 2026-11-17)
+
+Erwan, après une première validation à la main (statut de François Asselineau), a écrit : « Je ne vais pas valider les 120 à la main », puis, à la question de l'orchestrateur sur la façon de procéder : « Ne pas relire ou alors tu fais relire par un agent ».
+
+Conséquences retenues par l'orchestrateur, à confirmer par Erwan avant toute écriture dans le contenu :
+- D-04 et PUB-01 changent de sens : la relecture du thème santé est faite par un agent d'IA distinct de celui qui a rédigé, à partir de la source archivée, avec un verdict motivé par cible (conforme, doute, erreur).
+- La mention publique reste vraie : une mesure relue par un agent ne porte jamais « Relue par Erwan Henry ». Le champ `relecteur` et la ligne affichée (PUB-03, D-05) nomment l'agent ; la page Méthode, qui dit aujourd'hui « relues par l'éditeur avant leur publication », est corrigée dans le même sens.
+- La note de risques signée le 2026-11-11 s'appuie sur une « relecture humaine avant publication » (R6) : elle doit être amendée et acceptée de nouveau par Erwan.
+- Les cas classés « doute » ou « erreur » par l'agent sont soumis à Erwan : aucune correction de texte sans sa validation (règle inchangée).
+- « Ne pas relire » du tout n'est pas retenu : la publication exige le statut `relu` (garde d'équité, liste blanche), et publier sans aucune relecture retirerait la seule vérification entre un texte rédigé par un modèle et le public.
+</revision>
+
