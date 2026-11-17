@@ -17,4 +17,6 @@ redactions:
     Emmanuel Dubuisson veut que les soins soient plus simples. Pour lui, les Français doivent obtenir une réponse claire et rapide. Il ne veut pas qu'ils se perdent entre plusieurs portes. Selon lui, le patient doit savoir où aller. Il écrit que le médecin doit pouvoir soigner sans perdre son temps en démarches inutiles.
   aine: >-
     Emmanuel Dubuisson écrit que les Français doivent pouvoir obtenir une réponse claire et rapide, sans se perdre entre plusieurs portes. Selon lui, le patient doit savoir où aller, et le médecin doit pouvoir soigner sans perdre son temps dans des démarches inutiles. Le texte ne précise pas quelles démarches seraient supprimées ni qui organiserait ce parcours, et il ne donne ni délai ni calendrier.
-statut_relecture: brouillon
+statut_relecture: relu
+relecteur: l'agent d'IA Claude
+date_relecture: 2026-11-17

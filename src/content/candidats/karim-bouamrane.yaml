@@ -15,4 +15,6 @@ statuts:
       url: https://www.cnews.fr/france/2026-08-26/presidentielle-2027-karim-bouamrane-ne-participera-pas-la-primaire-socialiste
       date_publication: 2026-08-26
       date_consultation: 2026-10-28
-    statut_relecture: brouillon
+    statut_relecture: relu
+    relecteur: l'agent d'IA Claude
+    date_relecture: 2026-11-17

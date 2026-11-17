@@ -20,4 +20,6 @@ statuts:
       url: https://www.delphinebatho.fr/
       date_publication: 2025-11-25
       date_consultation: 2026-10-28
-    statut_relecture: brouillon
+    statut_relecture: relu
+    relecteur: l'agent d'IA Claude
+    date_relecture: 2026-11-17

@@ -15,4 +15,6 @@ statuts:
       url: https://rmc.bfmtv.com/actualites/politique/presidentielle-2027-a-27-ans-il-sillonne-la-france-a-velo-en-quete-des-500-parrainages_AV-202605030128.html
       date_publication: 2026-05-03
       date_consultation: 2026-10-28
-    statut_relecture: brouillon
+    statut_relecture: relu
+    relecteur: l'agent d'IA Claude
+    date_relecture: 2026-11-17
