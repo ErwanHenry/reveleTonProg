@@ -2,7 +2,7 @@ version_schema: 1
 id: francois-ruffin/sante-pole-public-medicament
 candidat: francois-ruffin
 theme: sante
-sous_theme: hopital-et-soignants
+sous_theme: gouvernance-sante
 titre: "Pôle public du médicament à 2 étages"
 texte_source: >-
   Lorsque les dépendances sont les plus « vitales » et que les
@@ -21,9 +21,9 @@ redactions:
   resume: >-
     François Ruffin propose un pôle public du médicament à 2 étages : production publique de produits de base, puis participation majoritaire dans des pôles d'entreprises.
   detaille: >-
-    Dans son cahier de campagne Industrie, François Ruffin écrit que l'État doit devenir majoritaire dans des pôles de production ciblés, en particulier dans la santé, la défense et le numérique. Il cite le pôle public du médicament à 2 étages : une production publique à court terme pour les produits de base critiques, et une participation majoritaire dans des pôles d'entreprises dédiés aux médicaments innovants pour le moyen terme. Le passage cité ne précise ni le coût, ni les médicaments concernés, ni les entreprises visées, ni la date.
+    Dans son cahier de campagne Industrie, François Ruffin écrit que l'État doit devenir majoritaire dans des pôles de production ciblés, en particulier dans la santé, la défense et le numérique. Il cite le pôle public du médicament à 2 étages : une production publique à court terme pour les produits de base critiques, et une participation majoritaire dans des pôles d'entreprises dédiés aux médicaments innovants pour le moyen terme. La suite du texte précise que ce pôle aurait une gouvernance mixte (État, collectivités, représentants des soignants et des patients) et produirait d'abord des médicaments essentiels à brevet public. Elle ne donne ni le coût, ni le nom des entreprises visées, ni la date.
   enfant: >-
     François Ruffin propose un pôle public du médicament. Il aurait 2 étages. D'abord, l'État produirait les produits de base très importants. Ensuite, il deviendrait majoritaire dans des groupes d'entreprises. Ces groupes créeraient des médicaments nouveaux. Le texte ne donne ni date ni coût.
   aine: >-
-    Dans son cahier de campagne Industrie, François Ruffin estime que l'État doit devenir majoritaire dans des pôles de production ciblés, en particulier dans la santé, la défense et le numérique. Il présente comme exemple un pôle public du médicament à 2 étages : une production publique à court terme pour les produits de base critiques, puis une participation majoritaire dans des pôles d'entreprises dédiés aux médicaments innovants pour le moyen terme. Le passage ne dit pas combien cela coûterait ni quels médicaments seraient produits.
+    Dans son cahier de campagne Industrie, François Ruffin estime que l'État doit devenir majoritaire dans des pôles de production ciblés, en particulier dans la santé, la défense et le numérique. Il présente comme exemple un pôle public du médicament à 2 étages : une production publique à court terme pour les produits de base critiques, puis une participation majoritaire dans des pôles d'entreprises dédiés aux médicaments innovants pour le moyen terme. Le texte précise que le pôle aurait une gouvernance mixte et produirait d'abord des médicaments essentiels à brevet public. Il ne dit pas combien cela coûterait.
 statut_relecture: brouillon
