@@ -56,8 +56,8 @@ cases:
     verifie_par: l'agent d'IA Claude
   - candidat: sylvain-durif
     etat: programme_non_publie
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: clara-egger
     etat: non_precise
     sources_consultees:
