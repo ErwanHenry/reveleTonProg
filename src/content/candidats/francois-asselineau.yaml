@@ -19,4 +19,6 @@ statuts:
       url: https://upr.fr/actualites/francois-asselineau-en-2027-je-serai-le-seul-candidat-a-la-presidence-de-la-republique-francaise
       date_publication: 2026-07-07
       date_consultation: 2026-10-28
-    statut_relecture: brouillon
+    statut_relecture: relu
+    relecteur: Erwan Henry
+    date_relecture: 2026-11-17
