@@ -34,7 +34,7 @@ export async function demarrer(options: { theme: string; port: number }, ctx: Co
     });
   } catch (e) {
     const code = (e as NodeJS.ErrnoException).code;
-    ctx.erreur(code === 'EADDRINUSE' ? `port ${options.port} déjà occupé : choisir un autre port avec --port` : `écoute impossible sur ${HOTE}:${options.port} (${e instanceof Error ? e.message : String(e)})`);
+    ctx.erreur(code === 'EADDRINUSE' ? `port ${options.port} déjà occupé. Si la page de relecture tourne déjà dans un autre onglet du terminal, il n'y a rien à relancer : ouvrir http://${HOTE}:${options.port}/ dans le navigateur. Sinon, choisir un autre port avec --port` : `écoute impossible sur ${HOTE}:${options.port} (${e instanceof Error ? e.message : String(e)})`);
     return 1;
   }
   const adresse = serveur.address();
