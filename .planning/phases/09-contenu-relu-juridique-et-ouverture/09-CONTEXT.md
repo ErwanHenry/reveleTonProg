@@ -74,3 +74,17 @@ Conséquences retenues par l'orchestrateur, à confirmer par Erwan avant toute �
 - Mention publique (question de l'orchestrateur du 2026-11-17 : « Quelle mention sous chaque mesure publiée ? », proposition « Relue par un agent d'IA (Claude) le … ») ; réponse d'Erwan : « Agent d'IA, nommé ». Valeur retenue pour le champ `relecteur` des cibles relues par un agent : `Claude (agent d'IA)`, ce qui affiche « Relue par Claude (agent d'IA) le <date>. ». La validation faite par Erwan lui-même (statut de François Asselineau, 2026-11-17) garde son nom.
 </revision>
 
+<revision date="2026-11-17" suite="résultats de la relecture par agent">
+## Corrections et statuts : décisions d'Erwan du 2026-11-17
+
+Résultat de la relecture par trois agents (rapports dans `relecture-agent/`) : mesures 12 conformes, 29 doutes, 6 erreurs ; statuts 17 conformes, 20 doutes ; cases 29 conformes, 5 doutes, 3 erreurs de date.
+
+Questions posées par l'orchestrateur, réponses d'Erwan (choix cochés) :
+- « Qui applique et valide ces corrections de texte ? » : « Agent corrige, autre agent revérifie ». Un agent applique les corrections proposées, un second agent indépendant relit chaque mesure corrigée contre la source ; Erwan ne voit que les désaccords entre les deux et la règle « parti ou candidat ». **Cette décision lève, pour ces corrections, la règle « aucun agent ne modifie le texte d'une mesure de lui-même ».** Restent interdits : modifier `texte_source` (citation mot pour mot), `archives/**`, et toute correction non rattachée à un constat de relecture.
+- « Que fait le site des 20 statuts douteux ? » : « Suivre le jeu, le dire, signaler les doutes ». Le site affiche le statut du jeu de données public en le disant, au lieu d'affirmer en son nom « déclarée depuis le … » ; l'orchestrateur vérifie les cinq sources que l'agent n'a pas pu lire ; les cas sans déclaration formelle sont signalés au responsable du jeu ; les 37 candidats restent affichés.
+
+Règle « parti ou candidat » : la règle existante de `docs/COUVERTURE-THEMES.md` (un document du parti vaut pour le parti, pas pour la parole du candidat) s'applique aux rédactions. Formulation par défaut retenue par l'orchestrateur, à montrer à Erwan : le sujet de la phrase est le parti (« Son parti, <nom>, propose … »), jamais le candidat, quand le document est celui du parti et ne nomme pas le candidat.
+
+Encore à faire accepter par Erwan : la phrase de la Méthode sur la relecture, la nouvelle formulation publique d'un statut, et l'amendement de la note de risques (R5, R6).
+</revision>
+
