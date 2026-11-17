@@ -3,7 +3,11 @@ id: erwan-rohou
 prenom: Erwan
 nom: Rohou
 nom_tri: Rohou
-parti: null
+parti: Mouvement Écologiste Indépendant
+parti_source:
+  type: parti
+  url: https://les-ecologistes-mei.org/erwan-rohou-candidat-du-mei-aux-elections-presidentielles/
+  date_consultation: 2026-11-17
 ids_externes:
   2027etmoi: rohou
 statuts:

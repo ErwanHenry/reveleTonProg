@@ -28,8 +28,12 @@ const EXCEPTION = `  wayback_exception:
 const spec = (remplacer: Remplacement[]): PiegeSpec => ({ piege: 'test', regle: 'REGLE-01', mode: 'production', remplacer, attendu: [] });
 const err = (code: string, fichier: string, pointer: string): ElementAttendu => ({ code, severite: 'error', fichier, pointer });
 
-/** Exceptions Wayback du corpus réel, triées. En ajouter une demande la décision écrite d'Erwan. */
-const EXCEPTIONS_EPINGLEES: string[] = ['erwan-rohou-programme-mei'];
+/**
+ * Exceptions Wayback du corpus réel, triées. En ajouter une demande la décision écrite d'Erwan.
+ * Vide depuis le 2026-11-17 : la page de `erwan-rohou-programme-mei` a changé d'adresse, la nouvelle n'affiche plus
+ * de données de particuliers, Erwan a autorisé sa soumission à Wayback et l'exception a été retirée.
+ */
+const EXCEPTIONS_EPINGLEES: string[] = [];
 
 describe('PUB-04 : copie Wayback ou exception motivée', () => {
   it('exception valide à la place de wayback_url : aucun diagnostic en production', () => {
