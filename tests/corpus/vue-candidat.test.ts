@@ -7,7 +7,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { loadAll } from '../../src/lib/content-core/load.ts';
 import type { Brut } from '../../src/lib/corpus/vue.ts';
-import { BADGES, construireCorpus, depuis, texteSource } from '../../src/lib/corpus/vue.ts';
+import * as corpusVue from '../../src/lib/corpus/vue.ts';
+import { BADGES, construireCorpus, formatDate, texteSource } from '../../src/lib/corpus/vue.ts';
 import type { SourceStatut } from '../../src/lib/corpus/types.ts';
 import { materialiserCorpusM1 } from '../helpers/corpus-m1.ts';
 import { SCHEMAS_DIR } from '../helpers/validate-yaml.ts';
@@ -32,12 +33,13 @@ before(() => {
 });
 after(() => rmSync(dossier, { recursive: true, force: true }));
 
-describe('depuis et texteSource', () => {
-  it('depuis : jour, mois, année', () => {
-    assert.equal(depuis('2026-10-15'), 'depuis le 15 octobre 2026');
-    assert.equal(depuis('2026-11-01'), 'depuis le 1er novembre 2026');
-    assert.equal(depuis('2026-09'), 'depuis septembre 2026');
-    assert.equal(depuis('2026'), 'depuis 2026');
+describe('formatDate (date du statut) et texteSource', () => {
+  it('formatDate : jour, mois, année, sans « depuis » (le site n\'affirme pas de date de déclaration)', () => {
+    assert.equal(formatDate('2026-10-15'), '15 octobre 2026');
+    assert.equal(formatDate('2026-11-01'), '1er novembre 2026');
+    assert.equal(formatDate('2026-09'), 'septembre 2026');
+    assert.equal(formatDate('2026'), '2026');
+    assert.equal(Object.keys(corpusVue).includes('depuis'), false);
   });
 
   it("texteSource : le titre, sinon l'hôte sans « www. »", () => {

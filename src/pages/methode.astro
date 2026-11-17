@@ -1,5 +1,5 @@
 ---
-import { NOM_SITE } from '../lib/identite.ts';
+import { NOM_JEU_DATAGOUV, NOM_SITE } from '../lib/identite.ts';
 import Base from '../layouts/Base.astro';
 import couvertureBrute from '../../data/couverture-themes.yaml?raw';
 import schemaSource from '../../schemas/source.schema.json';
@@ -15,7 +15,7 @@ import { TOURS } from '../lib/dates-tours.ts';
 import { MESURE_SERVEUR_4G, PROFILS_4G } from '../lib/profil-4g.ts';
 
 // Date de dernière révision de cette page (à mettre à jour à chaque modification du texte).
-const REVISION = '2026-11-13';
+const REVISION = '2026-11-17';
 
 // Fail closed : une couverture illisible ne produit pas une page Méthode approximative.
 const lue = lireCouverture(couvertureBrute);
@@ -94,12 +94,15 @@ const SEV: Record<string, string> = { erreur: 'erreur', avertissement: 'avertiss
     <p>Chaque source porte la date à laquelle elle a été consultée. Une copie est conservée dans le dépôt du site, avec son empreinte SHA-256 pour prouver qu'elle n'a pas changé, dans la limite de {tailleArchive} Mio par fichier. Quand la capture a réussi, une copie existe aussi sur les archives Wayback Machine d'Internet Archive : le lien « Copie archivée » n'apparaît que dans ce cas. Une page qui publie des données personnelles de particuliers n'y est jamais envoyée. Le lien « Extrait archivé » mène au texte conservé dans le dépôt ; il affiche les 12 premiers caractères de l'empreinte, l'empreinte complète figure dans la fiche de la source du dépôt.</p>
     <div data-dataset>
       <p>
-        La liste des personnalités vient du jeu de données public « Candidatures à l'élection présidentielle 2027, statuts sourcés ». Sa description annonce {dataset.annonce} personnes (lue le <time datetime={dataset.descriptionConsulteeLe}>{formatDate(dataset.descriptionConsulteeLe)}</time>){ecart ? ', alors que' : ' et'} le fichier mis à jour le <time datetime={dataset.instantane.miseAJour}>{formatDate(dataset.instantane.miseAJour)}</time> en contient {ecart ? dataset.instantane.total : `le même nombre, ${dataset.instantane.total}`} : {Object.entries(dataset.instantane.parStatut).map(([statut, n], i, tout) => (
+        La liste des personnalités vient du jeu de données public « {NOM_JEU_DATAGOUV} ». Sa description annonce {dataset.annonce} personnes (lue le <time datetime={dataset.descriptionConsulteeLe}>{formatDate(dataset.descriptionConsulteeLe)}</time>){ecart ? ', alors que' : ' et'} le fichier mis à jour le <time datetime={dataset.instantane.miseAJour}>{formatDate(dataset.instantane.miseAJour)}</time> en contient {ecart ? dataset.instantane.total : `le même nombre, ${dataset.instantane.total}`} : {Object.entries(dataset.instantane.parStatut).map(([statut, n], i, tout) => (
           <>{n} « {(LIBELLES_STATUT as Record<string, string>)[statut] ?? statut} »{i < tout.length - 1 ? ', ' : ''}</>
         ))}.{ecart && ' Cet écart est constaté, il n\'est pas expliqué.'}
       </p>
       <p>
         Attribution : liste des personnalités de {dataset.producteur.replace(/ \(.*$/, '')}, jeu de données publié sur <a href={dataset.page} rel="noopener noreferrer">data.gouv.fr</a>, {dataset.licence}. Seuls le statut, sa source et le lien vers le site de campagne sont repris. La source d'un statut de candidature peut être un article de presse : l'exigence de source primaire porte sur les mesures, pas sur les statuts. Une candidature est « pressentie » quand la personne est citée comme candidate possible sans l'avoir déclarée elle-même ; elle n'a alors aucune mesure présentée.
+      </p>
+      <p>
+        Le statut d'une personnalité et sa date sont ceux de ce jeu de données public. Le site vérifie que chaque fiche correspond au jeu de données et renvoie à la source que celui-ci cite ; il n'établit pas lui-même la date d'une déclaration de candidature. Une erreur peut être signalée avec les liens « Signaler une erreur » du pied de page.
       </p>
     </div>
     {kNonRelus > 0 && <p data-personnalites-affichees>{phraseAffichees}</p>}

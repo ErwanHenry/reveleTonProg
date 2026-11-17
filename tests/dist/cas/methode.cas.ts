@@ -232,7 +232,10 @@ export default function methode(ctx: ContexteSite): void {
     it('source de la page : aucun mot interdit ni nombre en dur', () => {
       const src = fs.readFileSync(path.join(ctx.repoRoot, 'src/pages/methode.astro'), 'utf8');
       for (const m of MOTS_INTERDITS) for (const ex of m.exemples) assert.ok(!src.includes(ex), `« ${ex} » en dur`);
-      assert.doesNotMatch(src, /\b(51|59|37|17|207|73[,.]6|1[,.]015)\b/);
+      // La ligne REVISION ne porte qu'une date (épinglée par tests/repo/revision-pages.test.ts) : « 2026-11-17 » ne
+      // doit pas être pris pour le nombre 17 ; tout autre nombre en dur reste refusé.
+      const sansRevision = src.split('\n').filter((l) => !/^const REVISION = '\d{4}-\d{2}-\d{2}';$/.test(l)).join('\n');
+      assert.doesNotMatch(sansRevision, /\b(51|59|37|17|207|73[,.]6|1[,.]015)\b/);
     });
   });
 }

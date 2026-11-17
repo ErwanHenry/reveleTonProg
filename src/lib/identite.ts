@@ -17,3 +17,7 @@ export const SOUS_TITRE = 'Présidentielle 2027 : les programmes, expliqués et 
 // Ligne d'identité en tête du pied de page. Pas de mot « indépendant » : rien dans le dépôt ne
 // l'établit ; ce serait une affirmation d'Erwan, à écrire par lui.
 export const LIGNE_IDENTITE = `${NOM_SITE} présente les programmes des candidats sans prendre parti, sans publicité et sans cookie.`;
+
+// Intitulé public du jeu de données data.gouv.fr d'où viennent les statuts. Seule saisie du nom dans le code : la fiche
+// candidat et la page Méthode le reprennent ; l'URL vient de `page` dans data/dataset-datagouv.yaml.
+export const NOM_JEU_DATAGOUV = "Candidatures à l'élection présidentielle 2027, statuts sourcés";
