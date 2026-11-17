@@ -71,5 +71,6 @@ Conséquences retenues par l'orchestrateur, à confirmer par Erwan avant toute �
 - La note de risques signée le 2026-11-11 s'appuie sur une « relecture humaine avant publication » (R6) : elle doit être amendée et acceptée de nouveau par Erwan.
 - Les cas classés « doute » ou « erreur » par l'agent sont soumis à Erwan : aucune correction de texte sans sa validation (règle inchangée).
 - « Ne pas relire » du tout n'est pas retenu : la publication exige le statut `relu` (garde d'équité, liste blanche), et publier sans aucune relecture retirerait la seule vérification entre un texte rédigé par un modèle et le public.
+- Mention publique (question de l'orchestrateur du 2026-11-17 : « Quelle mention sous chaque mesure publiée ? », proposition « Relue par un agent d'IA (Claude) le … ») ; réponse d'Erwan : « Agent d'IA, nommé ». Valeur retenue pour le champ `relecteur` des cibles relues par un agent : `Claude (agent d'IA)`, ce qui affiche « Relue par Claude (agent d'IA) le <date>. ». La validation faite par Erwan lui-même (statut de François Asselineau, 2026-11-17) garde son nom.
 </revision>
 
