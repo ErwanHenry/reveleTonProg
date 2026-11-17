@@ -162,14 +162,27 @@ describe('editer : preuve sur le corpus réel (en mémoire, lecture seule)', () 
   const fichiersDe = (dossier: string): string[] =>
     readdirSync(dossier, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? fichiersDe(path.join(dossier, e.name)) : e.name.endsWith('.yaml') ? [path.join(dossier, e.name)] : []));
 
-  it('chaque mesure : 3 champs, 1 ligne modifiée et 2 ajoutées', () => {
+  // Le corpus réel avance pendant la relecture : une cible déjà relue porte déjà ses champs. L'attendu se calcule donc
+  // depuis le nœud lu : une clé absente donne une ligne ajoutée, une clé présente de valeur différente une ligne
+  // modifiée, une clé déjà égale rien. Sur une cible encore en brouillon, cela redonne 1 modifiée et 2 ajoutées.
+  const attendu = (noeud: Record<string, unknown>, champs: readonly { cle: string; valeur: string }[]): [number, number, number] => {
+    let modifiees = 0;
+    let ajoutees = 0;
+    for (const c of champs) {
+      if (!(c.cle in noeud)) ajoutees++;
+      else if (String(noeud[c.cle]) !== c.valeur) modifiees++;
+    }
+    return [modifiees, ajoutees, 0];
+  };
+
+  it('chaque mesure : 3 champs, 1 ligne modifiée et 2 ajoutées (ou moins si la mesure est déjà relue)', () => {
     const fichiers = fichiersDe(path.join(CONTENU, 'mesures'));
     for (const f of fichiers) {
       const avant = readFileSync(f, 'utf8');
       const apres = definirChamps(avant, [], RELU);
       verifierSeulesCles(avant, apres, [], RELU.map((c) => c.cle));
       const b = comparerLignes(avant, apres);
-      assert.deepEqual([b.modifiees, b.ajoutees, b.supprimees], [1, 2, 0], f);
+      assert.deepEqual([b.modifiees, b.ajoutees, b.supprimees], attendu(parse(avant, { schema: 'core' }) as Record<string, unknown>, RELU), f);
       // Seconde relecture : remplacement, jamais de doublon.
       const deux = definirChamps(apres, [], [RELU[0], RELU[1], { cle: 'date_relecture', valeur: '2026-12-01' }]);
       assert.deepEqual(Object.values(comparerLignes(apres, deux)).slice(0, 3), [0, 1, 0], f);
@@ -188,7 +201,7 @@ describe('editer : preuve sur le corpus réel (en mémoire, lecture seule)', () 
       const apres = definirChamps(avant, ['statuts', i], RELU);
       verifierSeulesCles(avant, apres, ['statuts', i], RELU.map((c) => c.cle));
       const b = comparerLignes(avant, apres);
-      assert.deepEqual([b.modifiees, b.ajoutees, b.supprimees], [1, 2, 0], f);
+      assert.deepEqual([b.modifiees, b.ajoutees, b.supprimees], attendu(statuts[i] as Record<string, unknown>, RELU), f);
     }
     console.log(`editer : ${fichiers.length} candidats réels vérifiés`);
     assert.ok(fichiers.length >= 59, `${fichiers.length} candidats seulement`);
@@ -198,7 +211,8 @@ describe('editer : preuve sur le corpus réel (en mémoire, lecture seule)', () 
     let cases = 0;
     for (const f of fichiersDe(path.join(CONTENU, 'couverture'))) {
       const avant = readFileSync(f, 'utf8');
-      const n = (parse(avant, { schema: 'core' }) as { cases: unknown[] }).cases.length;
+      const lues = (parse(avant, { schema: 'core' }) as { cases: Record<string, unknown>[] }).cases;
+      const n = lues.length;
       for (let i = 0; i < n; i++) {
         const champs = [
           { cle: 'verifie_le', valeur: DATE },
@@ -207,7 +221,7 @@ describe('editer : preuve sur le corpus réel (en mémoire, lecture seule)', () 
         const apres = definirChamps(avant, ['cases', i], champs);
         verifierSeulesCles(avant, apres, ['cases', i], ['verifie_le', 'verifie_par']);
         const b = comparerLignes(avant, apres);
-        assert.deepEqual([b.modifiees, b.ajoutees, b.supprimees], [2, 0, 0], `${f} cases[${i}]`);
+        assert.deepEqual([b.modifiees, b.ajoutees, b.supprimees], attendu(lues[i]!, champs), `${f} cases[${i}]`);
         cases++;
       }
     }
