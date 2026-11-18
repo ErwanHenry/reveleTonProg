@@ -255,9 +255,16 @@ describe('ci.yml : job e2e (Playwright)', () => {
     const iPw = runs.findIndex((r) => r.includes('npx playwright install --with-deps chromium'));
     assert.match(runs[iPw] ?? '', /for essai in 1 2 3/, 'installation de Chromium rejouée trois fois');
     // Chaque essai est borné : trois essais et leurs pauses doivent tenir sous le timeout-minutes du job, tests compris.
-    const borne = /timeout (\d+) npx playwright install/.exec(runs[iPw] ?? '');
-    assert.ok(borne, 'chaque essai est borné par timeout');
-    assert.ok(3 * Number(borne[1]) + 90 <= ((job['timeout-minutes'] ?? 0) - 10) * 60, 'les essais laissent 10 minutes aux tests');
+    // --kill-after : un essai qui ignore le premier signal est tué ; son délai compte dans le budget.
+    const borne = /timeout --kill-after=(\d+) (\d+) npx playwright install/.exec(runs[iPw] ?? '');
+    assert.ok(borne, 'chaque essai est borné par timeout, avec --kill-after');
+    // Entre deux essais : apt-get et dpkg restants arrêtés, dpkg remis en état (5 s de pause). Sans ce nettoyage,
+    // l'apt-get d'un essai interrompu garde le verrou dpkg et les essais suivants échouent aussitôt (2026-11-18).
+    assert.match(runs[iPw] ?? '', /sudo pkill -x apt-get \|\| true/, 'apt-get restant arrêté entre deux essais');
+    assert.match(runs[iPw] ?? '', /sudo pkill -x dpkg \|\| true/, 'dpkg restant arrêté entre deux essais');
+    assert.match(runs[iPw] ?? '', /sudo dpkg --configure -a \|\| true/, 'dpkg remis dans un état cohérent');
+    const parEssai = Number(borne[2]) + Number(borne[1]) + 5;
+    assert.ok(3 * parEssai + 90 <= ((job['timeout-minutes'] ?? 0) - 10) * 60, 'les essais laissent 10 minutes aux tests');
     assert.match(runs[iPw] ?? '', /exit 1\s*$/, 'échec franc après le dernier essai');
     const iE2e = runs.indexOf('npm run e2e');
     assert.ok(iCi >= 0 && iCi < iPw && iPw < iE2e, 'ordre npm ci, playwright install, npm run e2e');
