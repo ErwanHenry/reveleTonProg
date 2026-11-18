@@ -40,7 +40,11 @@ const ESSAI = empreinteFactice('y');
 const SONDE = empreinteFactice('b');
 const PING = ['https:/', '/hc-ping.com/', crypto.randomUUID()].join('');
 const PING_RESTAURATION = ['https:/', '/hc-ping.com/', crypto.randomUUID()].join('');
-const CLE = `ssh-ed25519 ${crypto.randomBytes(51).toString('base64')} rtp-deploy-test`;
+const CLE_CORPS = `ssh-ed25519 ${crypto.randomBytes(51).toString('base64')}`;
+const CLE = `${CLE_CORPS} rtp-deploy-test`;
+// Deux autres clés factices (plan 09.2-07) : la clé du Mac à côté de celle de GitHub, et une troisième, refusée.
+const CLE_MAC = `ssh-ed25519 ${crypto.randomBytes(51).toString('base64')} rtp-deploy-mac`;
+const CLE_TROIS = `ssh-ed25519 ${crypto.randomBytes(51).toString('base64')}`;
 const PREFIXE = 'restrict,command="/usr/local/sbin/rtp-deploy-command"';
 const HORODATAGE = '202611082000';
 const LIGNE_IMPORT = 'import /etc/caddy/sites.d/*.caddy';
@@ -478,16 +482,42 @@ describe('ops/installer-serveur.sh : refus', () => {
     assert.equal(motif('ops/tester-restauration.sh'), ref);
   });
 
-  it('refuse une clé publique qui n’est pas une seule ligne ssh-ed25519 (code 4)', () => {
+  it('refuse une clé publique qui n’est pas une ou deux lignes ssh-ed25519 distinctes (code 4)', () => {
     const b = banc();
     const avant = instantane(b.racine);
-    for (const mauvaise of ['ssh-rsa AAAAB3Nza truc\n', `${CLE}\n${CLE}\n`, `command="x" ${CLE}\n`, `${CLE} commentaire avec espaces\n`]) {
+    for (const mauvaise of [
+      'ssh-rsa AAAAB3Nza truc\n',
+      `${CLE}\n${CLE}\n`,
+      `command="x" ${CLE}\n`,
+      `${CLE} commentaire avec espaces\n`,
+      `${CLE}\n${CLE_MAC}\n${CLE_TROIS}\n`,
+      `${CLE}\n${CLE_CORPS} autre-commentaire\n`,
+      `${CLE}\n${CLE_CORPS}\n`,
+      `${CLE}\n\n${CLE_MAC}\n`,
+      `${CLE}\n${CLE_MAC}\n\n`,
+      `\n${CLE}\n`,
+      `${CLE}\nssh-rsa AAAAB3Nza truc\n`,
+      `${CLE}\n${PREFIXE} ${CLE_MAC}\n`,
+      '',
+    ]) {
       fs.writeFileSync(b.cle, mauvaise);
       const r = lancer(b, ['--appliquer', '--etape', 'utilisateur', '--cle-publique', b.cle]);
-      assert.equal(r.status, 4, mauvaise);
+      assert.equal(r.status, 4, JSON.stringify(mauvaise));
     }
     assert.deepEqual(instantane(b.racine), avant);
     assert.equal(lireJournal(b, 'useradd'), '');
+  });
+
+  it('dit « deux lignes au plus » pour un fichier de trois clés, et « en double » pour une clé répétée', () => {
+    const b = banc();
+    fs.writeFileSync(b.cle, `${CLE}\n${CLE_MAC}\n${CLE_TROIS}\n`);
+    const trois = lancer(b, ['--verifier', '--etape', 'utilisateur', '--cle-publique', b.cle]);
+    assert.equal(trois.status, 4);
+    assert.match(trois.stderr, /--cle-publique : deux lignes au plus \(clé de GitHub et clé du Mac\)/);
+    fs.writeFileSync(b.cle, `${CLE}\n${CLE_CORPS} autre-commentaire\n`);
+    const double = lancer(b, ['--verifier', '--etape', 'utilisateur', '--cle-publique', b.cle]);
+    assert.equal(double.status, 4);
+    assert.match(double.stderr, /--cle-publique : clé en double/);
   });
 
   it('refuse un bloc d’essai dont le domaine est réservé (code 6) et accepte un vrai domaine', () => {
@@ -594,6 +624,90 @@ describe('ops/installer-serveur.sh : refus', () => {
     assert.equal(r.status, 1);
     assert.match(r.stdout, /\[a faire\].*RTP_ESSAI_HASH absent/);
     assert.ok(!fs.existsSync(path.join(b.racine, 'opt/vaultwarden/.env')));
+  });
+});
+
+// Phase 9.2, D-09 (plan 07) : la clé du Mac à côté de celle de GitHub, chacune derrière la commande forcée. Le fichier
+// passé à --cle-publique est la seule source : une application avec la seule clé de GitHub retire celle du Mac.
+describe('ops/installer-serveur.sh : étape utilisateur à deux clés au plus', () => {
+  const ak = (b: Banc): string => path.join(b.racine, 'home/deploy/.ssh/authorized_keys');
+  const ligneCles = (s: Sortie): string[] => s.stdout.split('\n').filter((l) => l.includes('authorized_keys :') && !l.includes('mode 644'));
+  const prepare = (): Banc => {
+    const b = banc();
+    assert.equal(appliquerTout(b).status, 0);
+    return b;
+  };
+  const deuxCles = (b: Banc): string => {
+    const f = path.join(path.dirname(b.cle), 'deux-cles.pub');
+    ecrire(f, `${CLE}\n${CLE_MAC}\n`);
+    return f;
+  };
+
+  it('écrit deux lignes restreintes dans l’ordre du fichier (root:root 0644), puis ne fait plus rien', () => {
+    const b = prepare();
+    const f = deuxCles(b);
+    const a = lancer(b, ['--appliquer', '--etape', 'utilisateur', '--cle-publique', f]);
+    assert.equal(a.status, 0, a.stdout + a.stderr);
+    assert.deepEqual(ligneCles(a), ['[fait] /home/deploy/.ssh/authorized_keys : une ou deux lignes restreintes écrites']);
+    assert.equal(fs.readFileSync(ak(b), 'utf8'), `${PREFIXE} ${CLE}\n${PREFIXE} ${CLE_MAC}\n`);
+    assert.equal(mode(ak(b)), 0o644);
+    assert.ok(lireJournal(b, 'chown').split('\n').includes(`root:root ${ak(b)}`), 'authorized_keys doit appartenir à root');
+
+    const avant = instantane(b.racine);
+    const encore = lancer(b, ['--appliquer', '--etape', 'utilisateur', '--cle-publique', f]);
+    assert.equal(encore.status, 0, encore.stdout + encore.stderr);
+    assert.deepEqual(faits(encore), []);
+    assert.deepEqual(ligneCles(encore), ['[ok] /home/deploy/.ssh/authorized_keys : une ou deux lignes restreintes, à jour']);
+    assert.deepEqual(instantane(b.racine), avant);
+
+    const v = lancer(b, ['--verifier', '--etape', 'utilisateur']);
+    assert.equal(v.status, 0, v.stderr);
+    assert.deepEqual(afaire(v), []);
+    assert.deepEqual(ligneCles(v), ['[ok] /home/deploy/.ssh/authorized_keys : une ou deux lignes restreintes']);
+    const vf = lancer(b, ['--verifier', '--etape', 'utilisateur', '--cle-publique', f]);
+    assert.deepEqual(afaire(vf), []);
+  });
+
+  it('une seule clé : comportement inchangé ; réappliquer la seule clé de GitHub retire celle du Mac (chemin de retour)', () => {
+    const b = prepare();
+    assert.equal(fs.readFileSync(ak(b), 'utf8'), `${PREFIXE} ${CLE}\n`);
+    const v = lancer(b, ['--verifier', '--etape', 'utilisateur']);
+    assert.deepEqual(afaire(v), []);
+    assert.equal(lancer(b, ['--appliquer', '--etape', 'utilisateur', '--cle-publique', deuxCles(b)]).status, 0);
+    // Vérification avec la seule clé de GitHub : le fichier diffère, il y a une action à faire.
+    const vg = lancer(b, ['--verifier', '--etape', 'utilisateur', '--cle-publique', b.cle]);
+    assert.deepEqual(afaire(vg), ['[a faire] /home/deploy/.ssh/authorized_keys : écrire une ou deux lignes restreintes (commande forcée)']);
+    const a = lancer(b, ['--appliquer', '--etape', 'utilisateur', '--cle-publique', b.cle]);
+    assert.equal(a.status, 0, a.stdout + a.stderr);
+    assert.equal(fs.readFileSync(ak(b), 'utf8'), `${PREFIXE} ${CLE}\n`);
+  });
+
+  it('ordre du fichier gardé : la clé du Mac peut venir en premier', () => {
+    const b = prepare();
+    const f = path.join(path.dirname(b.cle), 'mac-puis-github.pub');
+    ecrire(f, `${CLE_MAC}\n${CLE}`); // dernière ligne sans fin de ligne : lue quand même
+    assert.equal(lancer(b, ['--appliquer', '--etape', 'utilisateur', '--cle-publique', f]).status, 0);
+    assert.equal(fs.readFileSync(ak(b), 'utf8'), `${PREFIXE} ${CLE_MAC}\n${PREFIXE} ${CLE}\n`);
+  });
+
+  it('vérification : trois lignes, une clé en double, une ligne sans restriction ou d’un autre type sont à faire', () => {
+    const b = prepare();
+    const cas: [string, string][] = [
+      ['trois lignes restreintes', `${PREFIXE} ${CLE}\n${PREFIXE} ${CLE_MAC}\n${PREFIXE} ${CLE_TROIS}\n`],
+      ['clé en double', `${PREFIXE} ${CLE}\n${PREFIXE} ${CLE}\n`],
+      ['clé en double, autre commentaire', `${PREFIXE} ${CLE}\n${PREFIXE} ${CLE_CORPS} autre-commentaire\n`],
+      ['seconde ligne sans restriction', `${PREFIXE} ${CLE}\n${CLE_MAC}\n`],
+      ['seconde ligne avec une autre commande', `${PREFIXE} ${CLE}\nrestrict,command="/bin/sh" ${CLE_MAC}\n`],
+      ['seconde ligne ssh-rsa', `${PREFIXE} ${CLE}\n${PREFIXE} ssh-rsa AAAAB3Nza truc\n`],
+      ['ligne vide entre deux clés', `${PREFIXE} ${CLE}\n\n${PREFIXE} ${CLE_MAC}\n`],
+      ['fichier vide', ''],
+    ];
+    for (const [nom, contenu] of cas) {
+      fs.writeFileSync(ak(b), contenu);
+      const v = lancer(b, ['--verifier', '--etape', 'utilisateur']);
+      assert.equal(v.status, 0, `${nom} : ${v.stderr}`);
+      assert.deepEqual(afaire(v), ['[a faire] /home/deploy/.ssh/authorized_keys : absent ou non conforme, fournir --cle-publique'], nom);
+    }
   });
 });
 
