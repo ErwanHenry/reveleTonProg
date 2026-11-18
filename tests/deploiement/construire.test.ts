@@ -382,7 +382,7 @@ describe('construireDeploiement (faux sandbox-exec)', () => {
 
   it('~/.config/rtp sous le dossier temporaire de la build : code 2', async () => {
     const b = banc();
-    await refuse(construire(b, { tmpdir: path.dirname(b.home) }), 2, /\.config\/rtp|HOME|personnel/);
+    await refuse(construire(b, { tmpdir: path.dirname(b.home), lecturesInterdites: [] }), 2, /\.config\/rtp/);
     assert.equal(existsSync(b.log), false);
   });
 
