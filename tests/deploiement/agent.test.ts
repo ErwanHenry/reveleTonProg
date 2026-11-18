@@ -78,7 +78,7 @@ esac
     path.join(bin, 'ssh-add'),
     `#!/bin/sh
 ${journal('ssh-add')}
-${variante === 'phrase-refusee' ? 'echo "Bad passphrase" >&2; exit 1' : 'echo "Identity added"; exit 0'}
+${variante === 'phrase-refusee' ? 'exit 1' : 'exit 0'}
 `,
   );
   return { bin, logs, cle, log: (nom) => lire(path.join(logs, `${nom}.log`)) };
