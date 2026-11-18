@@ -18,7 +18,7 @@ import { cheminsLocaux, lireConfig } from '../../scripts/lib/deploiement/config.
 import { Sortie } from '../../scripts/lib/deploiement/gardes.ts';
 import { resoudreExecutables } from '../../scripts/lib/deploiement/executables.ts';
 import type { Agent } from '../../scripts/lib/deploiement/agent.ts';
-import { appelerVerbe, lireEtat } from '../../scripts/lib/deploiement/transport.ts';
+import { appelerVerbe, envoyer, lireEtat } from '../../scripts/lib/deploiement/transport.ts';
 import type { Confirmateur } from '../../scripts/lib/deploiement/confirmation.ts';
 import { executerDeploiement, type ContexteDeploiement, type OptionsDeploiement } from '../../scripts/lib/deploiement/deployer.ts';
 import { executer } from '../../scripts/deploy-local.ts';
@@ -158,6 +158,22 @@ function distDe(s: string): string {
   return d;
 }
 
+/**
+ * Met en ligne la version donnée par la vraie commande forcée (envoi puis activer, .historique écrit) : une version
+ * posée par servirCommit seule serait écartée par le ménage de activer. Journaux ssh et rsync vidés ensuite.
+ */
+async function mettreEnLigne(b: Banc, s: string): Promise<void> {
+  const cfg = lireConfig(b.home);
+  const exe = { ...resoudreExecutables(['ssh'], b.faux.env.PATH ?? ''), rsync: resoudreExecutables([cfg.rsync], b.faux.env.PATH ?? '')[cfg.rsync] as { chemin: string; empreinte: string } };
+  const agent: Agent = { socket: path.join(b.faux.racine, 'agent.sock'), fermer: async () => {} };
+  await envoyer(cfg, agent, exe, distDe(s), cfg.cible, s, lancerReel);
+  await appelerVerbe(cfg, agent, exe, 'activer', [cfg.cible, s], lancerReel);
+  for (const n of ['ssh', 'rsync']) {
+    rmSync(path.join(b.faux.racine, 'logs', n), { recursive: true, force: true });
+    mkdirSync(path.join(b.faux.racine, 'logs', n));
+  }
+}
+
 const pathDe = (b: Banc): string => `${b.outils}:${b.faux.env.PATH ?? ''}`;
 
 async function avecEnv<T>(b: Banc, f: (lancer: Lanceur) => Promise<T>): Promise<T> {
@@ -272,7 +288,7 @@ function avancerOrigine(b: Banc, fichier: string): string {
 describe('déploiement complet contre la vraie commande forcée', () => {
   it('essai : code 0, etat, envoi, etat, activer, etat ; current = sha ; journal succes precedent ; worktree retiré', { skip: !BASCULE && RAISON_MV }, async () => {
     const b = banc();
-    b.faux.servirCommit('essai', b.P, distDe(b.P));
+    await mettreEnLigne(b, b.P);
     recuVert(b);
     const c = confirmateur(phrase(b));
     const { code, texte } = await deployer(b, {}, c);
@@ -299,7 +315,7 @@ describe('déploiement complet contre la vraie commande forcée', () => {
 
   it('production : phrase « deployer en production <sha7> », le faux npm a vu RTP_DEPLOIEMENT=1', { skip: !BASCULE && RAISON_MV }, async () => {
     const b = banc({}, { RTP_CIBLE: 'production' });
-    b.faux.servirCommit('production', b.P, distDe(b.P));
+    await mettreEnLigne(b, b.P);
     recuVert(b);
     const c = confirmateur(phrase(b, 'production'));
     const { code, texte } = await deployer(b, {}, c);
@@ -313,9 +329,9 @@ describe('déploiement complet contre la vraie commande forcée', () => {
     assert.equal(await courant(b), b.S);
   });
 
-  it('confirmation refusée : code 3, seul etat a été appelé, aucun envoi, journal refus', async () => {
+  it('confirmation refusée : code 3, seul etat a été appelé, aucun envoi, journal refus', { skip: !BASCULE && RAISON_MV }, async () => {
     const b = banc();
-    b.faux.servirCommit('essai', b.P, distDe(b.P));
+    await mettreEnLigne(b, b.P);
     recuVert(b);
     const { code, texte } = await deployer(b, {}, confirmateur(null));
     assert.equal(code, 3, texte);
@@ -383,7 +399,7 @@ describe('gardes avant la build', () => {
 
   it('aucun reçu : ci:local lancé une fois, puis déploiement', { skip: !BASCULE && RAISON_MV }, async () => {
     const b = banc();
-    b.faux.servirCommit('essai', b.P, distDe(b.P));
+    await mettreEnLigne(b, b.P);
     let appels = 0;
     const { code, texte } = await deployer(b, {}, {
       ...confirmateur(phrase(b)),
@@ -429,9 +445,9 @@ describe('gardes avant la build', () => {
 });
 
 describe('gardes rejouées après la confirmation (CR-02, T-09.2-33)', () => {
-  it('gel atteint entre l\'écran et la confirmation : code 1 après elle, aucun envoi', async () => {
+  it('gel atteint entre l\'écran et la confirmation : code 1 après elle, aucun envoi', { skip: !BASCULE && RAISON_MV }, async () => {
     const b = banc();
-    b.faux.servirCommit('essai', b.P, distDe(b.P));
+    await mettreEnLigne(b, b.P);
     recuVert(b);
     const c = confirmateur(phrase(b));
     const { code, texte } = await deployer(b, {}, { ...c, maintenant: horloge([new Date('2027-04-16T23:59:30+02:00'), new Date('2027-04-17T00:00:30+02:00')]) });
@@ -446,7 +462,7 @@ describe('gardes rejouées après la confirmation (CR-02, T-09.2-33)', () => {
 
   it('origin a avancé avec docs/ seulement : déployé', { skip: !BASCULE && RAISON_MV }, async () => {
     const b = banc();
-    b.faux.servirCommit('essai', b.P, distDe(b.P));
+    await mettreEnLigne(b, b.P);
     recuVert(b);
     const { code, texte } = await deployer(b, {}, confirmateur(phrase(b), () => void avancerOrigine(b, 'docs/suite.md')));
     assert.equal(code, 0, texte);
@@ -454,9 +470,9 @@ describe('gardes rejouées après la confirmation (CR-02, T-09.2-33)', () => {
     assert.equal(await courant(b), b.S);
   });
 
-  it('origin a avancé avec src/ : code 1, aucun envoi', async () => {
+  it('origin a avancé avec src/ : code 1, aucun envoi', { skip: !BASCULE && RAISON_MV }, async () => {
     const b = banc();
-    b.faux.servirCommit('essai', b.P, distDe(b.P));
+    await mettreEnLigne(b, b.P);
     recuVert(b);
     const { code, texte } = await deployer(b, {}, confirmateur(phrase(b), () => void avancerOrigine(b, 'src/suite.txt')));
     assert.equal(code, 1, texte);
@@ -464,9 +480,9 @@ describe('gardes rejouées après la confirmation (CR-02, T-09.2-33)', () => {
     assert.equal(b.faux.journal('rsync').length, 0);
   });
 
-  it('git fetch impossible après la confirmation : code 1, aucun envoi', async () => {
+  it('git fetch impossible après la confirmation : code 1, aucun envoi', { skip: !BASCULE && RAISON_MV }, async () => {
     const b = banc();
-    b.faux.servirCommit('essai', b.P, distDe(b.P));
+    await mettreEnLigne(b, b.P);
     recuVert(b);
     nettoyages.push(() => rmSync(`${b.nu}-absent`, { recursive: true, force: true }));
     const { code, texte } = await deployer(b, {}, confirmateur(phrase(b), () => renameSync(b.nu, `${b.nu}-absent`)));
@@ -475,9 +491,9 @@ describe('gardes rejouées après la confirmation (CR-02, T-09.2-33)', () => {
     assert.equal(b.faux.journal('rsync').length, 0);
   });
 
-  it('cible passée de essai à production dans deploiement.env : code 1 « cible de la build différente », aucun envoi', async () => {
+  it('cible passée de essai à production dans deploiement.env : code 1 « cible de la build différente », aucun envoi', { skip: !BASCULE && RAISON_MV }, async () => {
     const b = banc();
-    b.faux.servirCommit('essai', b.P, distDe(b.P));
+    await mettreEnLigne(b, b.P);
     recuVert(b);
     const { code, texte } = await deployer(b, {}, confirmateur(phrase(b), () => b.faux.config(b.home, { RTP_CIBLE: 'production' })));
     assert.equal(code, 1, texte);
@@ -485,9 +501,9 @@ describe('gardes rejouées après la confirmation (CR-02, T-09.2-33)', () => {
     assert.equal(b.faux.journal('rsync').length, 0);
   });
 
-  it('.git/config modifié pendant la confirmation : code 1 « intégrité locale », aucun envoi', async () => {
+  it('.git/config modifié pendant la confirmation : code 1 « intégrité locale », aucun envoi', { skip: !BASCULE && RAISON_MV }, async () => {
     const b = banc();
-    b.faux.servirCommit('essai', b.P, distDe(b.P));
+    await mettreEnLigne(b, b.P);
     recuVert(b);
     const { code, texte } = await deployer(b, {}, confirmateur(phrase(b), () => void git(b.racine, 'config', 'rtp.intrus', 'oui')));
     assert.equal(code, 1, texte);
@@ -496,9 +512,9 @@ describe('gardes rejouées après la confirmation (CR-02, T-09.2-33)', () => {
     assert.equal(b.faux.journal('rsync').length, 0);
   });
 
-  it('dist modifié après la build : code 1 « empreinte », aucun envoi', async () => {
+  it('dist modifié après la build : code 1 « empreinte », aucun envoi', { skip: !BASCULE && RAISON_MV }, async () => {
     const b = banc();
-    b.faux.servirCommit('essai', b.P, distDe(b.P));
+    await mettreEnLigne(b, b.P);
     recuVert(b);
     const { code, texte } = await deployer(b, {}, {
       ...confirmateur(phrase(b)),
@@ -514,7 +530,7 @@ describe('gardes rejouées après la confirmation (CR-02, T-09.2-33)', () => {
 describe('site touché depuis la version en ligne', () => {
   it('docs/ seulement depuis la version en ligne : code 0 « rien à déployer », aucun envoi ; --forcer : déployé', { skip: !BASCULE && RAISON_MV }, async () => {
     const b = banc({}, {}, { docs: true });
-    b.faux.servirCommit('essai', b.P, distDe(b.P));
+    await mettreEnLigne(b, b.P);
     recuVert(b);
     const c = confirmateur(phrase(b));
     const r1 = await deployer(b, {}, c);
@@ -531,7 +547,7 @@ describe('site touché depuis la version en ligne', () => {
 describe('après l\'activation : vérifications et retour automatique (WR-01, IN-07)', () => {
   it('commit servi différent : retour à la version d\'avant, code 4, journal retour-auto', { skip: !BASCULE && RAISON_MV }, async () => {
     const b = banc();
-    b.faux.servirCommit('essai', b.P, distDe(b.P));
+    await mettreEnLigne(b, b.P);
     recuVert(b);
     const { code, texte } = await deployer(b, {}, {
       ...confirmateur(phrase(b)),
@@ -553,7 +569,7 @@ describe('après l\'activation : vérifications et retour automatique (WR-01, IN
 
   it('CSP absente : retour automatique, code 4', { skip: !BASCULE && RAISON_MV }, async () => {
     const b = banc();
-    b.faux.servirCommit('essai', b.P, distDe(b.P));
+    await mettreEnLigne(b, b.P);
     b.faux.poserEntetes(SANS_CSP);
     recuVert(b);
     const { code, texte } = await deployer(b, {}, confirmateur(phrase(b)));
@@ -564,7 +580,7 @@ describe('après l\'activation : vérifications et retour automatique (WR-01, IN
 
   it('retrait d\'urgence et test de fumée en échec : aucun retour, code 5', { skip: !BASCULE && RAISON_MV }, async () => {
     const b = banc();
-    b.faux.servirCommit('essai', b.P, distDe(b.P));
+    await mettreEnLigne(b, b.P);
     b.faux.poserEntetes(SANS_CSP);
     recuVert(b);
     const { code, texte } = await deployer(b, { urgence: true, justification: JUSTIFICATION }, confirmateur(phrase(b)));
@@ -586,7 +602,7 @@ describe('après l\'activation : vérifications et retour automatique (WR-01, IN
 
   it('current a bougé après activer (retour manuel entre-temps) : aucun retour automatique, code 5', { skip: !BASCULE && RAISON_MV }, async () => {
     const b = banc();
-    b.faux.servirCommit('essai', b.P, distDe(b.P));
+    await mettreEnLigne(b, b.P);
     recuVert(b);
     const { code, texte } = await deployer(b, {}, {
       ...confirmateur(phrase(b)),
@@ -603,7 +619,7 @@ describe('après l\'activation : vérifications et retour automatique (WR-01, IN
 
   it('commit déjà en ligne redéployé avec --forcer, fumée en échec : aucun retour, code 1', { skip: !BASCULE && RAISON_MV }, async () => {
     const b = banc();
-    b.faux.servirCommit('essai', b.S, distDe(b.S));
+    await mettreEnLigne(b, b.S);
     b.faux.poserEntetes(SANS_CSP);
     recuVert(b);
     const { code, texte } = await deployer(b, { forcer: true }, confirmateur(phrase(b)));
@@ -614,7 +630,7 @@ describe('après l\'activation : vérifications et retour automatique (WR-01, IN
 
   it('retour automatique en échec : code 5, message masqué', { skip: !BASCULE && RAISON_MV }, async () => {
     const b = banc({ echecRetour: true });
-    b.faux.servirCommit('essai', b.P, distDe(b.P));
+    await mettreEnLigne(b, b.P);
     b.faux.poserEntetes(SANS_CSP);
     recuVert(b);
     const { code, texte } = await deployer(b, {}, confirmateur(phrase(b)));
@@ -627,7 +643,7 @@ describe('après l\'activation : vérifications et retour automatique (WR-01, IN
   for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP'] as const) {
     it(`${signal} reçu après activer : retour effectué, code 4`, { skip: !BASCULE && RAISON_MV }, async () => {
       const b = banc();
-      b.faux.servirCommit('essai', b.P, distDe(b.P));
+      await mettreEnLigne(b, b.P);
       recuVert(b);
       let ecoutes = 0;
       const { code, texte } = await deployer(b, {}, {
@@ -647,7 +663,7 @@ describe('après l\'activation : vérifications et retour automatique (WR-01, IN
 
   it('RTP_URL vide : déployé, test de fumée dit sauté, aucun appel de curl', { skip: !BASCULE && RAISON_MV }, async () => {
     const b = banc({}, { RTP_URL: '' });
-    b.faux.servirCommit('essai', b.P, distDe(b.P));
+    await mettreEnLigne(b, b.P);
     recuVert(b);
     const { code, texte } = await deployer(b, {}, confirmateur(phrase(b)));
     assert.equal(code, 0, texte);

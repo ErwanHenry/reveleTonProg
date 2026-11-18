@@ -389,8 +389,9 @@ describe('npm run deploy:local -- etat', () => {
     assert.equal(b.faux.journal('ssh-agent').length, 0);
   });
 
-  // `retour` existe depuis le plan 05 : ses refus d'usage sont dans tests/deploiement/retour.test.ts.
-  for (const argv of [['nimporte'], ['--oui', 'etat'], [], ['etat', 'en-trop']]) {
+  // `retour` existe depuis le plan 05 : ses refus d'usage sont dans tests/deploiement/retour.test.ts. Sans
+  // sous-commande, la CLI déploie depuis le plan 06 (tests/deploiement/deployer.test.ts).
+  for (const argv of [['nimporte'], ['--oui', 'etat'], ['etat', '--forcer'], ['etat', 'en-trop']]) {
     it(`${JSON.stringify(argv)} : code 2 avec l'usage, aucun appel`, async () => {
       const b = banc();
       const { code, lignes } = await cli(b, argv);
