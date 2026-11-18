@@ -4,9 +4,11 @@
 import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { lancer as lancerReel, type Lanceur } from '../../scripts/lib/processus.ts';
 import { Sortie } from '../../scripts/lib/deploiement/gardes.ts';
 import { lireConfig, type ConfigDeploiement } from '../../scripts/lib/deploiement/config.ts';
@@ -23,6 +25,7 @@ import {
   varianteRsync,
   versionServie,
 } from '../../scripts/lib/deploiement/transport.ts';
+import { executer } from '../../scripts/deploy-local.ts';
 import {
   CLE_FACTICE,
   HOTE_FACTICE,
@@ -33,6 +36,7 @@ import {
   type OptionsFauxServeur,
 } from '../helpers/faux-serveur.ts';
 
+const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const sha = (n: number | string): string => crypto.createHash('sha1').update(`version-${n}`).digest('hex');
 
 const nettoyages: (() => void)[] = [];
@@ -317,6 +321,94 @@ describe('versionServie (faux curl)', () => {
     const e = await sortie(versionServie(b.cfg, b.exe, lancer));
     assert.equal(e.code, 2);
     assert.equal(b.faux.journal('curl').length, 0);
+  });
+});
+
+describe('npm run deploy:local -- etat', () => {
+  async function cli(b: Banc, argv: string[]): Promise<{ code: number; lignes: string[] }> {
+    const lignes: string[] = [];
+    const pathAvant = process.env.PATH;
+    process.env.PATH = b.faux.env.PATH;
+    const lancerFaux: Lanceur = (l) => lancerReel({ ...l, env: { ...l.env, PATH: b.faux.env.PATH ?? '' } });
+    try {
+      const code = await executer(argv, { home: b.home, racine: RACINE, lancer: lancerFaux, ecrire: (l) => lignes.push(l) });
+      sorties.push(...lignes);
+      return { code, lignes };
+    } finally {
+      process.env.PATH = pathAvant;
+    }
+  }
+
+  it('etat : cible, aucune version en ligne, versions, espace, et commit servi absent', async () => {
+    const b = banc();
+    const { code, lignes } = await cli(b, ['etat']);
+    const texte = lignes.join('\n');
+    assert.equal(code, 1, texte);
+    assert.match(texte, /Cible : essai/);
+    assert.match(texte, /aucune version en ligne/);
+    assert.match(texte, /Versions sur le serveur : 0/);
+    assert.match(texte, /Espace libre : 50000 Mio/);
+    assert.match(texte, /<url>/);
+  });
+
+  it('etat : commit courant et son sujet, commit servi, HSTS et CSP ; un seul verbe, etat essai', async () => {
+    const b = banc();
+    const tete = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: RACINE, encoding: 'utf8' }).trim();
+    const sujet = execFileSync('git', ['log', '-1', '--format=%s', tete], { cwd: RACINE, encoding: 'utf8' }).trim();
+    b.faux.servirCommit('essai', tete, dist(tete));
+    const { code, lignes } = await cli(b, ['etat']);
+    const texte = lignes.join('\n');
+    assert.equal(code, 0, texte);
+    assert.match(texte, /Cible : essai/);
+    assert.ok(texte.includes(`Commit en ligne : ${tete}`), texte);
+    assert.ok(texte.includes(sujet), texte);
+    assert.match(texte, /Versions sur le serveur : 1/);
+    assert.match(texte, /Espace libre : 50000 Mio/);
+    assert.ok(texte.includes(`Commit servi (/version.json) : ${tete}`), texte);
+    assert.match(texte, /Strict-Transport-Security : présent/);
+    assert.match(texte, /Content-Security-Policy : présent/);
+    const verbes = b.faux.journal('ssh').map((a) => a.at(-1));
+    assert.deepEqual(verbes, ['etat essai']);
+    for (const s of [HOTE_FACTICE, UTILISATEUR_FACTICE, 'https://essai.exemple.invalid']) assert.ok(!texte.includes(s), s);
+  });
+
+  it('commit en ligne inconnu du dépôt local : dit tel quel', async () => {
+    const b = banc();
+    const s = sha(7);
+    b.faux.servirCommit('essai', s, dist(s));
+    const { code, lignes } = await cli(b, ['etat']);
+    assert.equal(code, 0);
+    assert.match(lignes.join('\n'), /inconnu du dépôt local/);
+  });
+
+  it('clé sans phrase de passe : code 3, aucun appel ssh', async () => {
+    const b = banc({ cleSansPhrase: true });
+    const { code } = await cli(b, ['etat']);
+    assert.equal(code, 3);
+    assert.equal(b.faux.journal('ssh').length, 0);
+    assert.equal(b.faux.journal('ssh-agent').length, 0);
+  });
+
+  for (const argv of [['retour'], ['nimporte'], ['--oui', 'etat'], [], ['etat', 'en-trop']]) {
+    it(`${JSON.stringify(argv)} : code 2 avec l'usage, aucun appel`, async () => {
+      const b = banc();
+      const { code, lignes } = await cli(b, argv);
+      assert.equal(code, 2);
+      const texte = lignes.join('\n');
+      assert.match(texte, /Usage : npm run deploy:local -- etat/);
+      assert.ok(!/retour \[/.test(texte), 'l\'usage ne cite que ce qui existe');
+      assert.equal(b.faux.journal('ssh').length, 0);
+      assert.equal(b.faux.journal('ssh-keygen').length, 0);
+    });
+  }
+
+  it('fichier de déploiement absent : code 2, message de lireConfig', async () => {
+    const b = banc();
+    rmSync(path.join(b.home, '.config', 'rtp', 'deploiement.env'));
+    const { code, lignes } = await cli(b, ['etat']);
+    assert.equal(code, 2);
+    assert.match(lignes.join('\n'), /deploiement\.env/);
+    assert.equal(b.faux.journal('ssh-keygen').length, 0);
   });
 });
 

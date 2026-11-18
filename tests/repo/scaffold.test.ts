@@ -46,6 +46,7 @@ describe('scaffold Node 24', () => {
       'audit:lire': 'node scripts/audit-lire.ts',
       relecture: 'node scripts/relecture.ts',
       'ci:local': 'node scripts/ci-local.ts',
+      'deploy:local': 'node scripts/deploy-local.ts',
     });
   });
 
