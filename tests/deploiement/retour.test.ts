@@ -8,7 +8,7 @@ import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -59,16 +59,16 @@ function banc(o: OptionsFauxServeur = {}, surcharges: Partial<Record<string, str
   return { faux, home };
 }
 
-function dist(s: string, servi = s): string {
+function dist(s: string): string {
   const d = realpathSync(mkdtempSync(path.join(tmpdir(), 'rtp-dist-')));
   nettoyages.push(() => rmSync(d, { recursive: true, force: true }));
   writeFileSync(path.join(d, 'index.html'), `<!doctype html><title>${s}</title>\n`);
-  writeFileSync(path.join(d, 'version.json'), JSON.stringify({ commit: servi, date: '2026-11-18T00:00:00Z' }));
+  writeFileSync(path.join(d, 'version.json'), JSON.stringify({ commit: s, date: '2026-11-18T00:00:00Z' }));
   return d;
 }
 
 /** Envoie et active les versions données, dans l'ordre, par la vraie commande forcée (préparation du banc). */
-async function activer(b: Banc, versions: { s: string; servi?: string }[]): Promise<void> {
+async function activer(b: Banc, versions: { s: string }[]): Promise<void> {
   const cfg = lireConfig(b.home);
   const exe: Executables = {
     ...resoudreExecutables(['ssh'], b.faux.env.PATH ?? ''),
@@ -76,7 +76,7 @@ async function activer(b: Banc, versions: { s: string; servi?: string }[]): Prom
   };
   const agent: Agent = { socket: path.join(b.faux.racine, 'agent.sock'), fermer: async () => {} };
   for (const v of versions) {
-    await envoyer(cfg, agent, exe, dist(v.s, v.servi), cfg.cible, v.s, lancerReel);
+    await envoyer(cfg, agent, exe, dist(v.s), cfg.cible, v.s, lancerReel);
     await appelerVerbe(cfg, agent, exe, 'activer', [cfg.cible, v.s], lancerReel);
   }
   // Les appels de préparation ne comptent pas dans les journaux observés ensuite.
@@ -290,7 +290,12 @@ describe('répétition à blanc, vérifications, usage', () => {
 
   it('/version.json ne sert pas le commit remis en ligne : sortie 1, journal echec', { skip: !BASCULE && RAISON_MV }, async () => {
     const b = banc();
-    await activer(b, [{ s: A, servi: sha('autre') }, { s: B }]);
+    await activer(b, [{ s: A }, { s: B }]);
+    // La commande forcée refuse d'activer un version.json faux : il est altéré après coup, dans la version rangée.
+    const fichier = path.join(b.faux.base, 'essai', 'releases', A, 'version.json');
+    chmodSync(path.dirname(fichier), 0o755);
+    rmSync(fichier, { force: true });
+    writeFileSync(fichier, JSON.stringify({ commit: sha('autre'), date: '2026-11-18T00:00:00Z' }));
     const { code, texte } = await retour(b, {}, confirmateur('retour essai precedente'));
     assert.equal(code, 1, texte);
     assert.ok(texte.includes(`/version.json ne sert pas le commit ${A}`), texte);

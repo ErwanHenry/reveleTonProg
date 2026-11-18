@@ -1,17 +1,22 @@
-// Déploiement depuis le Mac (LOC-02, LOC-03 ; D-01, D-04, D-07, D-09) : remplace pour Erwan le job deploy de
-// .github/workflows/ci.yml et rollback.yml. Point d'entrée testable executer(argv, deps), comme scripts/ci-local.ts.
+// Déploiement depuis le Mac (LOC-02, LOC-03 ; D-01, D-04, D-06, D-07, D-08, D-09) : remplace pour Erwan le job
+// deploy de .github/workflows/ci.yml et rollback.yml. Point d'entrée testable executer(argv, deps), comme
+// scripts/ci-local.ts.
 //
 // Sous-commandes de cette version :
 //   etat   lecture seule : version en ligne sur la cible du fichier local (verbe etat de la commande forcée),
 //          sujet du commit s'il est connu du dépôt local, nombre de versions, espace libre, puis commit servi par
 //          /version.json et en-têtes HSTS et CSP de la page d'accueil (si RTP_URL est renseignée).
+//   retour remplace rollback.yml (D-08) : remet en ligne la version précédente ou le commit donné, avec la garde de
+//          gel, la confirmation tapée et les vérifications de rollback.yml (scripts/lib/deploiement/retour.ts).
 // Même en lecture seule, la clé dédiée doit avoir une phrase de passe, tapée par Erwan à l'invite de ssh-add (D-09) :
 // aucun agent ne contacte le serveur par ce chemin.
 //
-// Contrat que les plans 05 et 06 ajoutent (envoi et retour, D-06, D-08) : avant tout envoi ou retour, la phrase de
-// confirmation est lue sur /dev/tty à l'intérieur du module ; l'entrée standard non terminal est refusée en premier ;
-// aucune confirmation injectable (Dependances n'a ni terminal, ni lecture de ligne, ni confirmation) ; aucune option
-// de contournement du type --oui.
+// Confirmation (D-06) : pour retour (et le déploiement du plan 06), la toute première vérification, avant le
+// verrou, la configuration ou le moindre contact avec le serveur, refuse une entrée standard qui n'est pas un
+// terminal (code 3), sauf --dry-run. La phrase est ensuite lue sur /dev/tty par confirmerSurTerminal, le seul
+// confirmateur que cette CLI passe : Dependances n'a ni terminal, ni lecture de ligne, ni confirmation, et aucune
+// option de contournement du type --oui n'existe. Limite assumée (ADR-063) : la phrase protège contre l'erreur, pas
+// contre un programme qui simulerait un terminal ; la barrière réelle est la phrase de passe de la clé.
 //
 // Fichier local : ~/.config/rtp/deploiement.env (hors dépôt). Les sorties de ssh et curl passent par le masque :
 // ni hôte, ni utilisateur, ni URL du serveur à l'écran.
@@ -26,14 +31,24 @@ import { ouvrirAgent } from './lib/deploiement/agent.ts';
 import { Sortie } from './lib/deploiement/gardes.ts';
 import { masquer } from './lib/deploiement/masque.ts';
 import { appelerVerbe, lireEtat, versionServie } from './lib/deploiement/transport.ts';
+import { confirmerSurTerminal } from './lib/deploiement/confirmation.ts';
+import { executerRetour } from './lib/deploiement/retour.ts';
 
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 const USAGE = `Usage : npm run deploy:local -- etat
+        npm run deploy:local -- retour [<sha>] [--urgence --justification "<texte>"] [--dry-run]
   etat : version en ligne sur la cible de ~/.config/rtp/deploiement.env, commit servi, en-têtes HSTS et CSP
          (lecture seule ; la phrase de passe de la clé dédiée est demandée par ssh-add).
-  Codes de sortie : 0 état lu et cohérent, 1 anomalie (commit servi illisible ou différent, en-tête absent),
-  2 usage ou configuration, 3 clé sans phrase de passe ou non chargée, autre : code du serveur ou de ssh.`;
+         Codes : 0 état lu et cohérent, 1 anomalie (commit servi illisible ou différent, en-tête absent),
+         2 usage ou configuration, 3 clé sans phrase de passe ou non chargée, autre : code du serveur ou de ssh.
+  retour [<sha>] : remet en ligne la version précédente, ou le commit donné (40 caractères hexadécimaux en
+         minuscules), sur la cible du fichier local ; remplace rollback.yml. À lancer dans un terminal : phrase de
+         passe de la clé, puis phrase de confirmation tapée (« retour essai precedente », « retour en production
+         <sha7> »…). Pendant un gel des scrutins : --urgence --justification "<20 caractères au moins>".
+         --dry-run : répétition à blanc, aucun contact avec le serveur.
+         Codes : 0 fait et vérifié, 1 garde ou vérification en échec, 2 usage, configuration ou verrou tenu,
+         3 pas de terminal, confirmation refusée ou clé sans phrase de passe.`;
 
 export interface Dependances {
   lancer?: Lanceur;
@@ -45,17 +60,43 @@ export interface Dependances {
 
 const EXECUTABLES = ['ssh', 'ssh-agent', 'ssh-add', 'ssh-keygen', 'curl', 'jq', 'git'];
 
-function lireArguments(argv: string[]): { sousCommande: string } {
-  let positionnels: string[];
+type Arguments =
+  | { sousCommande: 'etat' }
+  | { sousCommande: 'retour'; version: string; urgence: boolean; justification: string; dryRun: boolean };
+
+function lireArguments(argv: string[]): Arguments {
+  let lu: { values: { urgence?: boolean; justification?: string; 'dry-run'?: boolean }; positionals: string[] };
   try {
-    positionnels = parseArgs({ args: argv, options: {}, strict: true, allowPositionals: true }).positionals;
+    lu = parseArgs({
+      args: argv,
+      options: { urgence: { type: 'boolean' }, justification: { type: 'string' }, 'dry-run': { type: 'boolean' } },
+      strict: true,
+      allowPositionals: true,
+    });
   } catch (e) {
     throw new Sortie(2, `${e instanceof Error ? e.message : String(e)}\n${USAGE}`);
   }
-  if (positionnels.length !== 1 || positionnels[0] !== 'etat') {
-    throw new Sortie(2, `sous-commande inconnue ou absente : ${positionnels.join(' ') || '(aucune)'}\n${USAGE}`);
+  const { values, positionals } = lu;
+  const [sousCommande, ...reste] = positionals;
+  const options = Object.keys(values);
+  if (sousCommande === 'etat') {
+    if (reste.length > 0 || options.length > 0) throw new Sortie(2, `etat ne prend ni argument ni option\n${USAGE}`);
+    return { sousCommande };
   }
-  return { sousCommande: positionnels[0] };
+  if (sousCommande === 'retour') {
+    if (reste.length > 1) throw new Sortie(2, `retour : un seul commit au plus\n${USAGE}`);
+    if (values.justification !== undefined && values.urgence !== true) {
+      throw new Sortie(2, `--justification n'a de sens qu'avec --urgence (retrait d'urgence pendant un gel)\n${USAGE}`);
+    }
+    return {
+      sousCommande,
+      version: reste[0] ?? '',
+      urgence: values.urgence === true,
+      justification: values.justification ?? '',
+      dryRun: values['dry-run'] === true,
+    };
+  }
+  throw new Sortie(2, `sous-commande inconnue ou absente : ${positionals.join(' ') || '(aucune)'}\n${USAGE}`);
 }
 
 async function etat(deps: Dependances, ecrire: (l: string) => void): Promise<number> {
@@ -110,11 +151,30 @@ async function etat(deps: Dependances, ecrire: (l: string) => void): Promise<num
 }
 
 async function executerSansCapture(argv: string[], deps: Dependances, ecrire: (l: string) => void): Promise<number> {
-  lireArguments(argv);
-  if (!process.version.startsWith('v24.')) {
-    throw new Sortie(2, `Node 24 exigé (version actuelle ${process.version}) : lancer fnm exec --using=24 npm run deploy:local -- etat`);
+  const a = lireArguments(argv);
+  // Première vérification, non injectable (D-06, T-09.2-25) : sans terminal, rien n'est fait, ni verrou, ni
+  // configuration, ni serveur. La répétition à blanc ne contacte pas le serveur : elle peut tourner sans terminal.
+  if (a.sousCommande === 'retour' && !a.dryRun && process.stdin.isTTY !== true) {
+    throw new Sortie(
+      3,
+      "l'entrée standard n'est pas un terminal : la confirmation doit être tapée par Erwan dans son terminal ; rien n'a été fait (--dry-run pour une répétition à blanc)",
+    );
   }
-  return etat(deps, ecrire);
+  if (!process.version.startsWith('v24.')) {
+    throw new Sortie(2, `Node 24 exigé (version actuelle ${process.version}) : lancer fnm exec --using=24 npm run deploy:local -- ${a.sousCommande}`);
+  }
+  if (a.sousCommande === 'etat') return etat(deps, ecrire);
+  return executerRetour(
+    { version: a.version, urgence: a.urgence, justification: a.justification, dryRun: a.dryRun },
+    {
+      confirmer: confirmerSurTerminal,
+      lancer: deps.lancer ?? lancerParDefaut,
+      maintenant: deps.maintenant ?? (() => new Date()),
+      home: deps.home ?? homedir(),
+      racine: deps.racine ?? RACINE,
+      ecrire,
+    },
+  );
 }
 
 /** Point d'entrée testable : `argv` sans `node` ni le nom du script ; renvoie le code de sortie. */
