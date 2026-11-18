@@ -77,9 +77,9 @@ const n = vue.autresPersonnalites;
               const motif = statut?.motif === undefined ? undefined : LIBELLES_MOTIF[statut.motif];
               return (
                 <li data-rang={c.rang}>
-                  <a href={`/candidats/${c.id}/`}>{c.nomAffiche}</a> : {motif ?? 'ne se présente pas'}.{statut !== null && (
-                    <> <time datetime={statut.date}>{formatDate(statut.date)}</time>.</>
-                  )}
+                  <a href={`/candidats/${c.id}/`}>{c.nomAffiche}</a> : {motif ?? 'ne se présente pas'}, selon le jeu de données{statut !== null && (
+                    <> (<time datetime={statut.date}>{formatDate(statut.date)}</time>)</>
+                  )}.
                 </li>
               );
             })}

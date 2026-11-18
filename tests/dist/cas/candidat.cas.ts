@@ -6,7 +6,8 @@ import path from 'node:path';
 import { analyserHtml, aClasse, texte, trouver } from '../../../scripts/lib/html.ts';
 import type { Noeud } from '../../../scripts/lib/html.ts';
 import { cellulesAttendues, checkDist } from '../../../scripts/lib/check-dist.ts';
-import { NOM_SITE } from '../../../src/lib/identite.ts';
+import { NOM_JEU_DATAGOUV, NOM_SITE } from '../../../src/lib/identite.ts';
+import { loadDatasetDatagouv } from '../../../src/lib/dataset-datagouv.ts';
 import { materialiserCorpusM1 } from '../../helpers/corpus-m1.ts';
 import type { ContexteSite } from '../contexte.ts';
 
@@ -77,7 +78,11 @@ export default function candidat(ctx: ContexteSite): void {
       assert.ok(norm(texte(arbre)).includes('Parti revendiqué : Parti Imaginaire'));
       const statut = trouver(arbre, (n) => n.tag === 'p' && aClasse(n, 'statut'))[0] as Noeud;
       assert.ok(statut, 'p.statut');
-      assert.equal(txt(statut), 'Candidature déclarée, depuis le 15 octobre 2026. Source : Annonce de candidature (fictive).');
+      assert.equal(
+        txt(statut),
+        `Candidature déclarée, selon le jeu de données public ${NOM_JEU_DATAGOUV} (data.gouv.fr), qui cite : Annonce de candidature (fictive), 15 octobre 2026.`,
+      );
+      assert.equal(lien(statut, NOM_JEU_DATAGOUV).attrs.href, loadDatasetDatagouv(ctx.repoRoot).page);
       assert.ok(trouver(statut, (n) => n.tag === 'time' && n.attrs.datetime === '2026-10-15').length === 1);
       const l = lien(statut, 'Annonce de candidature (fictive)');
       assert.equal(l.attrs.href, 'https://marie-fictive.exemple.invalid/candidature');
@@ -106,7 +111,11 @@ export default function candidat(ctx: ContexteSite): void {
     it('Luc : ne se présente pas, avec motif et date', () => {
       const { arbre } = page(production().outDir, 'candidats/luc-retire/index.html');
       const statut = trouver(arbre, (n) => n.tag === 'p' && aClasse(n, 'statut'))[0] as Noeud;
-      assert.ok(txt(statut).startsWith('Ne se présente pas (retrait de la candidature), depuis le 25 octobre 2026. Source : '));
+      assert.ok(
+        txt(statut).startsWith(`Ne se présente pas (retrait de la candidature), selon le jeu de données public ${NOM_JEU_DATAGOUV} (data.gouv.fr), qui cite : `),
+        txt(statut),
+      );
+      assert.ok(txt(statut).endsWith('25 octobre 2026.'), txt(statut));
       // Statut relu hors périmètre : la phrase du périmètre est exacte.
       assert.ok(txt(arbre).includes(SANS_MESURE));
       assert.ok(!txt(arbre).includes(STATUT_A_VERIFIER));
@@ -128,6 +137,22 @@ export default function candidat(ctx: ContexteSite): void {
       const marie = page(outDir, 'candidats/marie-fictive/index.html').html;
       assert.match(marie, /<time datetime="2026-10-26">26 octobre 2026<\/time>/);
     });
+  });
+
+  describe('aucune page ne dit « depuis le » à côté d\'un statut (décision du 2026-11-17 : le statut est attribué au jeu de données)', () => {
+    for (const cle of ['m1-production', 'm1-preview'] as const) {
+      it(`${cle} : ni « depuis le » ni « depuis » suivi d'une date près d'un libellé de statut`, () => {
+        const { outDir } = ctx.construire(cle, { racine, mode: cle === 'm1-production' ? 'production' : 'preview' });
+        const libelles = ['Candidature déclarée', 'Candidature à une primaire', 'Candidature pressentie', 'Candidature empêchée', 'Ne se présente pas'];
+        for (const f of ctx.pagesHtml(outDir)) {
+          const t = txt(analyserHtml(fs.readFileSync(f, 'utf8')));
+          for (const l of libelles) {
+            const i = t.indexOf(l);
+            if (i >= 0) assert.doesNotMatch(t.slice(i, i + 200), /depuis (le )?(\d|janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)/, `${path.relative(outDir, f)} : ${l}`);
+          }
+        }
+      });
+    }
   });
 
   describe('production : liens croisés depuis la page thème', () => {
@@ -177,10 +202,10 @@ export default function candidat(ctx: ContexteSite): void {
       );
       const elise = lignes[0] as Noeud;
       assert.ok(txt(elise).includes('Parti revendiqué : Mouvement Inventé'));
-      assert.ok(txt(elise).includes('Candidature déclarée · 18 octobre 2026'));
-      assert.ok(trouver(elise, (n) => n.tag === 'time' && n.attrs.datetime === '2026-10-18').length === 1);
+      assert.ok(txt(elise).includes('Candidature déclarée, selon le jeu de données'));
+      assert.ok(!txt(elise).includes('depuis le'), 'aucune date de déclaration affirmée par le site');
       assert.ok(!txt(ul).includes('Statut en cours de vérification'), 'aucune ligne au statut non relu en production');
-      assert.ok(txt(lignes[3] as Noeud).includes('Ne se présente pas · 25 octobre 2026'));
+      assert.ok(txt(lignes[3] as Noeud).includes('Ne se présente pas, selon le jeu de données'));
     });
 
     it('/themes/ : tuiles logement et climat (pas ecole), 3 candidats chacune', () => {
@@ -272,7 +297,7 @@ export default function candidat(ctx: ContexteSite): void {
     it('Paul : statut déclaré en brouillon avec sa pastille', () => {
       const { arbre } = page(preview().outDir, 'candidats/paul-de-villefranche/index.html');
       const statut = trouver(arbre, (n) => n.tag === 'p' && aClasse(n, 'statut'))[0] as Noeud;
-      assert.match(txt(statut), /^Candidature déclarée, depuis le 19 octobre 2026\. Source : Article fictif\./);
+      assert.match(txt(statut), /^Candidature déclarée, selon le jeu de données public .+ \(data\.gouv\.fr\), qui cite : Article fictif, 19 octobre 2026\./);
       assert.ok(trouver(statut, (n) => n.attrs['data-badge'] !== undefined && txt(n) === 'brouillon, non relu').length === 1);
     });
 

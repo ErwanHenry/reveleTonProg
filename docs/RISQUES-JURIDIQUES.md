@@ -101,3 +101,19 @@ Preuves (dates seulement, les preuves restent hors du dépôt) :
 
 - Identité transmise à l'hébergeur le 2026-11-10, preuve conservée hors dépôt
 - Adresse de contact testée de bout en bout le 2026-11-10
+
+### Avenant du 2026-11-17 : relecture par un agent d'IA
+
+Cet avenant modifie la note signée le 2026-11-11, qui reposait sur une relecture humaine avant publication (ligne R6). Le reste de la note est inchangé.
+
+Texte accepté :
+
+> La relecture avant publication est faite par un agent d'IA, en trois passes contre la source archivée (relecture, correction, seconde relecture indépendante), et non par l'éditeur, qui tranche seulement les cas douteux. Le risque d'erreur de résumé (R6) et d'erreur sur une personne (R5) est plus élevé qu'avec une relecture humaine. Mesures en place : mention publique « Relue par l'agent d'IA Claude », statut attribué au jeu de données et à sa source, signalement d'erreur, retrait d'urgence en moins d'une heure. L'éditeur accepte ce risque.
+
+- Accepté par : Erwan Henry
+- Accepté le : 2026-11-17
+- Réponse de l'éditeur : « Oui, j'accepte l'avenant »
+- Ce que l'avenant remplace : dans la ligne R6, « relecture humaine avant publication » se lit désormais « relecture par un agent d'IA en trois passes, cas douteux tranchés par l'éditeur ».
+- Ce que le public lit : la page Méthode dit que ce n'est pas une relecture humaine de chaque texte, et chaque mesure publiée nomme son relecteur et la date.
+
+Fait daté du même jour, hors du texte accepté : l'exception citée à la ligne R8 (décision 3a) n'a plus d'objet. La page concernée a changé d'adresse, la nouvelle n'affiche plus de données de particuliers, et l'éditeur a autorisé sa soumission à la Wayback Machine le 2026-11-17.

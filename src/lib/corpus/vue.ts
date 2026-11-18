@@ -176,11 +176,6 @@ export function formatDate(d: string): string {
   return d;
 }
 
-/** « depuis le 15 octobre 2026 », « depuis septembre 2026 », « depuis 2026 ». */
-export function depuis(date: string): string {
-  return /^\d{4}-\d{2}-\d{2}$/.test(date) ? `depuis le ${formatDate(date)}` : `depuis ${formatDate(date)}`;
-}
-
 /** Texte d'un lien vers la source d'un statut : le titre, sinon l'hôte de l'URL sans « www. ». */
 export function texteSource(s: SourceStatut): string {
   if (s.titre !== undefined && s.titre !== '') return s.titre;

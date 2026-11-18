@@ -3,7 +3,7 @@ import { NOM_SITE } from '../../lib/identite.ts';
 import Base from '../../layouts/Base.astro';
 import BadgeBrouillon from '../../components/BadgeBrouillon.astro';
 import OrdreCandidats from '../../components/OrdreCandidats.astro';
-import { BADGES, LIBELLES_STATUT, formatDate, getCorpus } from '../../lib/corpus/index.ts';
+import { BADGES, LIBELLES_STATUT, getCorpus } from '../../lib/corpus/index.ts';
 
 const corpus = await getCorpus();
 // Production : seules les personnes dont un statut a été relu sont listées (D-06, plan 09-15) ; le texte le dit.
@@ -45,7 +45,7 @@ const k = corpus.nonRelus;
                   {statut === null ? (
                     'Statut en cours de vérification'
                   ) : (
-                    <>{LIBELLES_STATUT[statut.code]} · <time datetime={statut.date}>{formatDate(statut.date)}</time> <BadgeBrouillon texte={statut.statut_relecture === 'brouillon' ? BADGES.brouillon : null} /></>
+                    <>{LIBELLES_STATUT[statut.code]}, selon le jeu de données <BadgeBrouillon texte={statut.statut_relecture === 'brouillon' ? BADGES.brouillon : null} /></>
                   )}
                 </p>
               </li>
