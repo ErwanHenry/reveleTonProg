@@ -121,12 +121,12 @@ export function lireConfig(home: string): ConfigDeploiement {
       erreurs.push(`ligne ${n} : forme attendue CLE=valeur (clé en majuscules, sans espace autour de =)`);
       return;
     }
-    const cle = m[1];
+    const cle = m[1] ?? '';
     if (!connues.has(cle)) {
       erreurs.push(`ligne ${n} : clé inconnue : ${cle}`);
       return;
     }
-    let valeur = m[2];
+    let valeur = m[2] ?? '';
     if (valeur.length >= 2 && valeur.startsWith('"') && valeur.endsWith('"')) valeur = valeur.slice(1, -1);
     if (/[$`]/.test(valeur)) {
       erreurs.push(`ligne ${n} (${cle}) : pas d'expansion de shell ($ ou \`), valeur littérale attendue`);

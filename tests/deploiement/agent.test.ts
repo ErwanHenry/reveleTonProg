@@ -158,7 +158,7 @@ describe('ouvrirAgent (exécutables factices)', () => {
     assert.ok(!/^ENV SSH_ASKPASS=/m.test(addLog), addLog);
     assert.ok(!/^ENV DISPLAY=/m.test(addLog), addLog);
     assert.ok(!addLog.includes(PARENT.SSH_AUTH_SOCK), 'agent de l\'utilisateur transmis');
-    assert.ok(!/^ENV SSH_AUTH_SOCK=/m.test(b.log('ssh-agent').split('ARGV [-k]')[0]), 'aucun SSH_AUTH_SOCK au démarrage de l\'agent');
+    assert.ok(!/^ENV SSH_AUTH_SOCK=/m.test(b.log('ssh-agent').split('ARGV [-k]')[0] ?? ''), 'aucun SSH_AUTH_SOCK au démarrage de l\'agent');
 
     await agent.fermer();
     assert.match(b.log('ssh-agent'), /^ARGV \[-k\]$/m);
@@ -263,7 +263,7 @@ setInterval(() => {}, 1000);
         sortie += d;
         const m = /^pret (.+)$/m.exec(sortie);
         if (m && socket === '') {
-          socket = m[1];
+          socket = m[1] ?? '';
           if (mode !== 'sortie') e.kill('SIGTERM');
         }
       });
@@ -380,7 +380,7 @@ describe('vrais outils OpenSSH, clés de test jetables', { skip: OUTILS ? false 
     const exe = resoudreExecutables(['ssh-keygen', 'ssh-agent', 'ssh-add'], process.env.PATH ?? '');
     const lignes: string[] = [];
     const lanceurNote: Lanceur = async (l) => {
-      if (l.args[0] === '-a') sockets.push(l.args[1]);
+      if (l.args[0] === '-a' && l.args[1] !== undefined) sockets.push(l.args[1]);
       return lanceurSansTerminal(l);
     };
     const e = await sortie(ouvrirAgent({ cle: avec }, { exe, lancer: lanceurNote, ecrire: (l) => lignes.push(l) }));
@@ -395,7 +395,7 @@ describe('vrais outils OpenSSH, clés de test jetables', { skip: OUTILS ? false 
   it('vrai agent, ssh-add factice : agent vivant après ouverture, arrêté par fermer', async () => {
     const b = banc();
     const reel = resoudreExecutables(['ssh-keygen', 'ssh-agent'], process.env.PATH ?? '');
-    const exe = { ...reel, 'ssh-add': exeDe(b)['ssh-add'] };
+    const exe = { ...reel, ...resoudreExecutables(['ssh-add'], b.bin) };
     const agent = await ouvrirAgent({ cle: avec }, { exe, lancer: lanceurSansTerminal, ecrire: () => {} });
     sockets.push(agent.socket);
     try {

@@ -26,7 +26,7 @@ export function masquer(texte: string, cfg: Pick<ConfigDeploiement, 'hote' | 'ut
   if (cfg.hote !== '') remplacements.set(cfg.hote, '<hôte>');
   if (cfg.utilisateur !== '') remplacements.set(`${cfg.utilisateur}@`, '<utilisateur>@');
 
-  const alternatives: { motif: string; longueur: number; etiquette: string | null }[] = [...remplacements].map(([v, e]) => ({
+  const alternatives: { motif: string; longueur: number; etiquette: string }[] = [...remplacements].map(([v, e]) => ({
     motif: echapper(v),
     longueur: v.length,
     etiquette: e,
@@ -40,7 +40,7 @@ export function masquer(texte: string, cfg: Pick<ConfigDeploiement, 'hote' | 'ut
   const re = new RegExp(alternatives.map((a) => `(${a.motif})`).join('|'), 'gi');
   return texte.replace(re, (...groupes: unknown[]) => {
     for (let i = 0; i < alternatives.length; i++) {
-      if (groupes[i + 1] !== undefined) return alternatives[i].etiquette as string;
+      if (groupes[i + 1] !== undefined) return alternatives[i]?.etiquette ?? String(groupes[0]);
     }
     return String(groupes[0]);
   });

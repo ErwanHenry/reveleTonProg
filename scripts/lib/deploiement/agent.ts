@@ -126,10 +126,10 @@ export async function ouvrirAgent(
   try {
     const r = await lancer({ commande: sshAgent, args: ['-a', socket, '-s'], cwd: '/', env: envDeBase(), delaiMs: MIN, libelle: 'démarrage de l\'agent ssh' });
     const m = /SSH_AGENT_PID=(\d+);/.exec(r.stdout);
-    if (r.code !== 0 || m === null || !existsSync(socket)) {
+    if (r.code !== 0 || m?.[1] === undefined || !existsSync(socket)) {
       throw new Sortie(3, 'agent ssh non démarré : clé non chargée');
     }
-    pid = m[1];
+    pid = m[1] ?? null;
 
     ecrire(`Clé dédiée ${cfg.cle} : tapez sa phrase de passe à l'invite de ssh-add ci-dessous (clé chargée 15 min dans un agent propre à cette commande).`);
     const ajout = await lancer({
