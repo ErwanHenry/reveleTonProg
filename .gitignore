@@ -52,6 +52,9 @@ n8n_data/
 # Worktrees des agents GSD
 .claude/worktrees/
 
+# Configuration locale de l'aperçu (chemins propres à la machine)
+.claude/launch.json
+
 # Binaires d'archives : jamais dans le dépôt public (dépôt privé reveleTonProg-archives)
 archives/**/*.pdf
 archives/**/*.html
