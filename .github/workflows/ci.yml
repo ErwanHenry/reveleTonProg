@@ -173,10 +173,17 @@ jobs:
         # pour qu'une panne passagère ne bloque pas un déploiement ou un retrait d'urgence. Chaque essai est
         # borné à 4 minutes (apt met environ 7 minutes à renoncer seul) : au pire l'étape échoue en 14 minutes,
         # avec son message, bien avant le timeout-minutes du job.
+        # Un essai interrompu par timeout laisse son apt-get en route, qui garde le verrou dpkg : sans nettoyage,
+        # les essais suivants échouent aussitôt sur ce verrou (vu le 2026-11-18, trois essais n'en faisaient qu'un).
+        # Entre deux essais : arrêter apt-get et dpkg restants, puis remettre dpkg dans un état cohérent.
         run: |
           for essai in 1 2 3; do
-            if timeout 240 npx playwright install --with-deps chromium; then exit 0; fi
+            if timeout --kill-after=10 240 npx playwright install --with-deps chromium; then exit 0; fi
             echo "::warning::Installation de Chromium : essai $essai en échec"
+            sudo pkill -x apt-get || true
+            sudo pkill -x dpkg || true
+            sleep 5
+            sudo dpkg --configure -a || true
             if [ "$essai" -lt 3 ]; then sleep $((essai * 30)); fi
           done
           echo "::error::Installation de Chromium impossible après 3 essais (miroirs apt du runner ?)"
