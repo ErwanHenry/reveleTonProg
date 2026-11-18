@@ -78,7 +78,9 @@ describe('lancer', () => {
         delaiMs: DELAI,
         libelle: 'env',
       });
-      assert.deepEqual(JSON.parse(r.stdout), ['PATH', 'VARIABLE_DONNEE']);
+      // __CF_USER_TEXT_ENCODING est posée par macOS dans l'enfant lui-même (CoreFoundation), pas transmise par lancer.
+      const cles = (JSON.parse(r.stdout) as string[]).filter((k) => k !== '__CF_USER_TEXT_ENCODING');
+      assert.deepEqual(cles, ['PATH', 'VARIABLE_DONNEE']);
     } finally {
       delete process.env.SSH_AUTH_SOCK_TEST_CI_LOCAL;
     }
