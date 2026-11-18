@@ -631,7 +631,7 @@ describe('ops/installer-serveur.sh : refus', () => {
 // passé à --cle-publique est la seule source : une application avec la seule clé de GitHub retire celle du Mac.
 describe('ops/installer-serveur.sh : étape utilisateur à deux clés au plus', () => {
   const ak = (b: Banc): string => path.join(b.racine, 'home/deploy/.ssh/authorized_keys');
-  const ligneCles = (s: Sortie): string[] => s.stdout.split('\n').filter((l) => l.includes('authorized_keys :') && !l.includes('mode 644'));
+  const ligneCles = (s: Sortie): string[] => s.stdout.split('\n').filter((l) => l.includes('authorized_keys :') && !/mode 644|propriétaire/.test(l));
   const prepare = (): Banc => {
     const b = banc();
     assert.equal(appliquerTout(b).status, 0);
