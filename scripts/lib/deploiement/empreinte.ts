@@ -8,7 +8,7 @@
 // fichier régulier à plusieurs liens physiques). normaliserModes remplace --chmod=D755,F644, refusé par openrsync.
 // N'importe que des modules node: (le processus qui tiendra la clé l'importe).
 import { createHash } from 'node:crypto';
-import { chmodSync, lstatSync, readdirSync, readFileSync } from 'node:fs';
+import { chmodSync, lstatSync, readdirSync, readFileSync, type Stats } from 'node:fs';
 import path from 'node:path';
 
 interface Entree {
@@ -18,7 +18,7 @@ interface Entree {
 }
 
 /** Parcours en profondeur sans suivre de lien ; rappelle visiter pour chaque entrée (dossiers compris). */
-function parcourir(racine: string, visiter: (e: Entree, st: ReturnType<typeof lstatSync>) => 'descendre' | 'arreter' | void): void {
+function parcourir(racine: string, visiter: (e: Entree, st: Stats) => 'descendre' | 'arreter' | void): void {
   const pile: string[] = [''];
   while (pile.length > 0) {
     const relDossier = pile.pop() as string;
