@@ -7,7 +7,7 @@ stopped_at: Completed 09-10-PLAN.md (santé relu par agents d'IA, fusionné) ; n
 last_updated: "2026-11-18T08:30:00.000Z"
 last_activity: "2026-11-18 (09-10 : thème santé relu par des agents d'IA sur décision d'Erwan du 2026-11-17, 121 cibles sur 121, pull request 4 fusionnée ; page Méthode et avenant à la note de risques ; copies Wayback des deux pages du mouvement d'Erwan Rohou encore illisibles)"
 progress:
-  total_phases: 5
+  total_phases: 6
   completed_phases: 2
   total_plans: 44
   completed_plans: 39

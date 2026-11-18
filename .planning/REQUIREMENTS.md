@@ -71,6 +71,13 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 - [x] **FIN-03**: L'accueil, l'en-tête et le pied de page disent en quelques secondes ce qu'est le site et pourquoi lui faire confiance ; leurs textes sont validés par Erwan sur un aperçu avant fusion
 - [x] **FIN-04** (atteint avec la cible abaissée : 24 038 px au lieu de 21 500 px, variante 2b refusée, décision d'Erwan du 2026-11-13 « Suis ton avis » ; la cible d'origine n'est pas atteinte) : La page d'un thème est plus courte et plus facile à parcourir (bloc source compact, accès direct à un candidat, grille sans grands vides), sans perdre la source ni la date, avec la validation d'Erwan pour toute règle verrouillée du contrat de design, et tous les garde-fous restent verts (accessibilité AA, 320 px, sans JS, poids, 4G, check-dist)
 
+### CI et déploiement depuis le Mac (ajoutées le 2026-11-18, décision d'Erwan « Script sur le Mac »)
+
+- [ ] **LOC-01**: Une commande locale rejoue les contrôles de la CI (validation, types, tests, builds, check-dist, tests navigateur, recherche de secrets) et laisse un reçu pour le commit ; un test empêche sa liste d'étapes de diverger de celle de la CI GitHub
+- [ ] **LOC-02**: Une commande locale construit et déploie un commit poussé, propre, contrôlé et hors gel, avec les gardes du pipeline (build cloisonnée, empreinte, version servie vérifiée, retour automatique) et une confirmation tapée par Erwan dans un terminal, qu'aucun agent ne peut donner
+- [ ] **LOC-03**: Une commande locale remet en ligne la version précédente ou une version donnée, avec la même confirmation
+- [ ] **LOC-04**: La clé de déploiement du Mac est dédiée, hors dépôt et limitée par la commande forcée du serveur ; l'installation, l'usage, les pannes et le retrait d'urgence sont au RUNBOOK ; chaque déploiement est journalisé localement
+
 ### Dette de l'audit v1.0
 
 - [x] **DETTE-01**: En preview, la phrase de couverture ne présente pas des brouillons comme des positions publiées (W3)
@@ -139,6 +146,10 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 | FIN-02 | Phase 9.1 | Complete |
 | FIN-03 | Phase 9.1 | Complete |
 | FIN-04 | Phase 9.1 | Complete |
+| LOC-01 | Phase 9.2 | Pending |
+| LOC-02 | Phase 9.2 | Pending |
+| LOC-03 | Phase 9.2 | Pending |
+| LOC-04 | Phase 9.2 | Pending |
 | IMP-01 | Phase 10 | Complete |
 | IMP-02 | Phase 10 | Complete |
 | IMP-03 | Phase 10 | Pending |

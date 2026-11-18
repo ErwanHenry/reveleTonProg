@@ -27,6 +27,7 @@ Détail complet : [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) ; exi
 - [x] **Phase 8: Serveur, pipeline, supervision et sauvegardes** : Caddy en HTTPS, déploiement atomique avec retour arrière, hôte technique protégé, alertes, restauration réelle (completed 2026-11-10)
 - [ ] **Phase 9: Contenu relu, juridique et ouverture** : un thème relu publié, Mentions légales finales, journal d'audit refait, ouverture publique vers le 5 décembre
 - [x] **Phase 9.1: Finitions visuelles avant l'ouverture** (INSÉRÉE le 2026-11-12) : défauts de l'audit visuel corrigés, page 404, balises et image de partage, accueil, en-tête, pied de page et page thème retouchés avec validation d'Erwan sur un aperçu ; fusionnée le 2026-11-13, avant la publication (09-11)
+- [ ] **Phase 9.2: CI et déploiement depuis le Mac** (INSÉRÉE le 2026-11-18) : commandes locales de contrôle et de déploiement, mêmes gardes que le pipeline GitHub, confirmation humaine au clavier, clé dédiée
 - [ ] **Phase 10: Import de décembre** : analyseur plafonné, cohérence de l'instantané, import des statuts en pull request relue (10 au 13 décembre, gel du 13 au 15)
 
 ## Piste 0 (Erwan, hors code)
@@ -183,6 +184,20 @@ Plans:
 - [x] 09.1-08-PLAN.md — Proposition 6 (image de partage, seul PNG admis), indépendance de chaque commit, gardes sur la branche, aperçu 4331/4332, carte de partage locale et fiche pour Erwan (vague 7)
 - [x] 09.1-09-PLAN.md — Réponse d'Erwan proposition par proposition et sur les deux textes du lot A, intégration des seuls commits acceptés avec ses textes, gardes, push, mesure finale avant l'import de décembre, nettoyage (vague 8, validation d'Erwan)
 
+### Phase 9.2: CI et déploiement depuis le Mac (INSÉRÉE)
+
+**Goal**: Erwan contrôle et déploie le site depuis son Mac, sans run GitHub Actions, avec les mêmes gardes que le pipeline de la phase 8 et une confirmation qu'il est seul à pouvoir donner.
+**Depends on**: Phase 8 (contrat du serveur : verbes etat, activer, retour) ; à finir avant la publication du thème santé (plan 09-11), qui sera le premier contenu déployé par ce chemin
+**Requirements**: LOC-01, LOC-02, LOC-03, LOC-04
+**Success Criteria** (what must be TRUE):
+
+  1. `npm run ci:local` rejoue sur le Mac les contrôles des jobs de vérification de la CI GitHub et laisse un reçu daté pour le commit ; un test de dépôt empêche les deux listes d'étapes de diverger.
+  2. `npm run deploy:local` ne déploie qu'un commit poussé, propre, contrôlé et hors gel, construit dans une copie propre sans accès à la clé, et seulement après une phrase de confirmation tapée par Erwan dans un terminal ; il vérifie la version servie et revient seul en arrière en cas d'échec.
+  3. `npm run deploy:local -- retour` remet en ligne la version précédente ou une version donnée, avec la même confirmation.
+  4. La clé du Mac est dédiée, hors dépôt, limitée par la commande forcée du serveur ; le RUNBOOK décrit l'installation, l'usage, les pannes et le retrait d'urgence ; chaque déploiement laisse une ligne dans un journal local.
+
+**Plans**: à établir
+
 ### Phase 10: Import de décembre
 
 **Goal**: Les statuts de candidats de décembre entrent dans le dépôt par une pull request relue, sans jamais modifier la production avant relecture d'Erwan.
@@ -219,4 +234,5 @@ Plans:
 | 8. Serveur, pipeline, supervision et sauvegardes | v1.1 | 15/15 | Complete    | 2026-11-10 |
 | 9. Contenu relu, juridique et ouverture | v1.1 | 12/15 | In Progress|  |
 | 9.1 Finitions visuelles avant l'ouverture | v1.1 | 9/9 | Complete | 2026-11-13 |
+| 9.2 CI et déploiement depuis le Mac | v1.1 | 0/0 | Not started |  |
 | 10. Import de décembre | v1.1 | 1/6 | In Progress|  |
