@@ -511,6 +511,8 @@ Faux positif de gitleaks sur un extrait (longue chaîne hexadécimale ou URL dan
 
 ## Déploiement
 
+Depuis le Mac, sans GitHub Actions : voir « CI et déploiement depuis le Mac » (`npm run ci:local`, `npm run deploy:local`).
+
 La chaîne de livraison (Phase 8, ADR-054 et ADR-055) part d'un push sur `main` et finit par un test de fumée HTTPS. Elle dort tant que la variable de dépôt `DEPLOY_CIBLE` n'existe pas : les jobs `gel` et `deploy` de `.github/workflows/ci.yml` sont alors sautés et la CI reste verte.
 
 1. Push sur `main` : les jobs `verifier`, `e2e` et `secrets` tournent comme pour toute modification. En parallèle, le job `changements` (sans secret ni Environment) classe les fichiers changés entre `github.event.before` et le commit du push avec `ops/site-touche.sh` et sort `site=true` ou `site=false`.
@@ -542,6 +544,8 @@ Forcer un déploiement de la tête de `main` (sans nouveau commit, ou après un 
 9. **Sans objet** : l'hypothèse A4 est confirmée, `actions/upload-artifact` fonctionne avec `permissions: contents: read` (artefact `site-preview` publié à chaque run de `main`) ; rien à faire au premier déploiement.
 
 ### Retour arrière
+
+Depuis le Mac : `npm run deploy:local -- retour [<sha>]`, voir « CI et déploiement depuis le Mac ».
 
 Workflow `.github/workflows/rollback.yml` (« Retour arrière »), lancé à la main sur `main`, approuvé par Erwan dans l'Environment `production`, arrêté au bout de 5 min :
 
@@ -779,6 +783,135 @@ Faits du serveur, constatés en 08-09 (ADR-057) :
 - Un bloc n'entre dans `sites.d` qu'avec un vrai domaine dont le DNS répond (`dig +short essai.<domaine>`), jamais en `.invalid` (Caddy demanderait un certificat sans fin). Le bloc public (`site.caddy`, domaine et `www.`) attend la Phase 9 et l'enregistrement DNS de `www.<domaine>`. Avec un enregistrement AAAA publié, vérifier d'abord `curl -6 -I https://essai.<domaine>` depuis l'extérieur.
 - Après un redémarrage de Caddy, le minuteur de rotation ne repart qu'à la première requête. Une fois le DNS posé, la sonde externe (toutes les 10 min) et le battement en HTTPS (toutes les 5 min) touchent le site bien plus d'une fois par jour (D-14) : la rotation de minuit tient tant que la supervision tourne. Contrôle au bout de deux jours : `ls -l /var/log/caddy/` montre des fichiers datés de minuit UTC, jamais plus de 12 par journal.
 - La politique du bloc (IP tronquées, en-têtes supprimés, 14 jours) ne vaut que pour le **journal d'accès**. Le journal d'erreurs (`http.log.error`, réponses 5xx) et le journal par défaut de Caddy (TLS, ACME) vont sur la sortie d'erreur du conteneur, avec l'adresse complète : depuis la recréation, ils sont plafonnés en taille (pilote `json-file`, 10 Mio x 3), pas en durée. Contrôle : `docker inspect --format '{{.HostConfig.LogConfig}}' caddy` montre `max-size` et `max-file`. **Point juridique de la Phase 9** : les Mentions légales doivent le dire tel quel, ou ce flux doit passer par le même filtre (bloc `log` global avec `include http.log.error`).
+
+## CI et déploiement depuis le Mac
+
+Deux commandes locales remplacent, pour Erwan, un run GitHub Actions : `npm run ci:local` rejoue les contrôles de la CI, `npm run deploy:local` construit le commit poussé, l'envoie au serveur, l'active et le vérifie, avec les gardes du job `deploy` de `.github/workflows/ci.yml` (phase 9.2, ADR-063). Code : `scripts/ci-local.ts`, `scripts/deploy-local.ts`, `scripts/lib/ci-local.ts`, `scripts/lib/deploiement/`. Toutes les commandes passent par Node 24 : `fnm exec --using=24 npm run …`.
+
+### Pourquoi
+
+Fait établi le 2026-11-18 : le dépôt est public, ses workflows tournent sur les machines standard de GitHub, et les minutes de ces machines sont gratuites pour un dépôt public ; les runs de ce jour-là ont réussi. Erwan a choisi le chemin local en connaissance de cause (« Script sur le Mac », 2026-11-18). Cette phase ne modifie aucun workflow GitHub : les deux chemins coexistent (voir « Coexistence avec GitHub »).
+
+### Prérequis
+
+- Node 24 par fnm (`fnm exec --using=24`) ; les deux commandes refusent une autre version (code 2).
+- gitleaks, installé par Erwan : `brew install gitleaks` (8.30.1, la version épinglée par la CI). Absent, la recherche de secrets de `ci:local` est « non exécutée » et le reçu ne permet pas de déployer.
+- rsync 3, installé par Erwan : `brew install rsync`. Le `/usr/bin/rsync` de macOS est openrsync : il refuse les options de la CI et n'a jamais été essayé contre le `rrsync` du serveur, donc `deploy:local` le refuse pour un envoi réel (code 2). Si le rsync de Homebrew n'est pas le premier du `PATH`, poser `RTP_RSYNC=/opt/homebrew/bin/rsync` dans le fichier local.
+- `sandbox-exec` (présent sur macOS ; Apple le déclare déprécié, il fonctionne sur macOS 15) : sans lui, la build de déploiement est refusée.
+- `jq`, `git`, `ssh`, `ssh-agent`, `ssh-add`, `ssh-keygen`, `curl` (ceux de macOS conviennent).
+- `~/.config/rtp/known_hosts-deploy` : l'empreinte épinglée du serveur, la même que `DEPLOY_KNOWN_HOSTS` ; jamais de scan de clé d'hôte.
+
+### Fichier local deploiement.env
+
+`~/.config/rtp/deploiement.env`, hors du dépôt, mode 0600 (refusé sinon). Une ligne `CLE=valeur` par clé, lignes vides et commentaires `#` admis, ni `export`, ni `$`, ni accent grave ; `~/` est développé. Jamais lu par un shell. Les messages d'erreur nomment la clé et la ligne, jamais la valeur.
+
+| Clé | Obligatoire | Défaut | Rôle |
+|---|---|---|---|
+| `RTP_CIBLE` | oui | | `essai` ou `production` |
+| `RTP_HOTE` | oui | | nom ou adresse du serveur (`ssh -F /dev/null` : `~/.ssh/config` et ses alias sont ignorés) |
+| `RTP_UTILISATEUR` | oui | | utilisateur de déploiement du serveur |
+| `RTP_URL` | non | vide | adresse `https://` du test de fumée ; vide : test HTTPS sauté, `etat` fait foi |
+| `RTP_CLE` | non | `~/.config/rtp/rtp-deploy-mac` | clé privée du Mac (0600, avec phrase de passe), `.pub` à côté |
+| `RTP_KNOWN_HOSTS` | non | `~/.config/rtp/known_hosts-deploy` | empreinte épinglée du serveur, non vide |
+| `RTP_FUMEE_UTILISATEUR` | non | `sonde` | utilisateur `basic_auth` du test de fumée ; vide avec `RTP_FUMEE_MOT_DE_PASSE` vide : sans identifiant |
+| `RTP_FUMEE_MOT_DE_PASSE` | non | `~/.config/rtp/sonde-pass` | chemin du fichier du mot de passe (0600), jamais le mot de passe |
+| `RTP_RSYNC` | non | `rsync` (cherché dans le `PATH`) | rsync 3 de Homebrew |
+
+Forme attendue, valeurs factices :
+
+```
+RTP_CIBLE=essai
+RTP_HOTE=serveur.exemple.invalid
+RTP_UTILISATEUR=deploy-factice
+RTP_URL=https://essai.exemple.invalid/
+RTP_RSYNC=/opt/homebrew/bin/rsync
+```
+
+Le fichier est créé par la session principale ou par Erwan, jamais commité. Hôte, utilisateur et adresse réels ne vont jamais dans le dépôt.
+
+### Créer la clé du Mac
+
+Erwan, dans son propre terminal, jamais un agent ni la session principale :
+
+```bash
+umask 077 && ssh-keygen -t ed25519 -C rtp-deploy-mac -f ~/.config/rtp/rtp-deploy-mac
+```
+
+ssh-keygen demande une phrase de passe : en choisir une, la ranger dans Vaultwarden (coffre `reveleTonProg`), ne jamais la laisser vide. Le commentaire `rtp-deploy-mac` évite d'écrire le nom du Mac dans la ligne publique. La session principale ne lit que `rtp-deploy-mac.pub`. Toute sous-commande qui contacte le serveur, `etat` comprise, vérifie d'abord que la clé a une phrase de passe (`ssh-keygen -y -P ''`, sortie jetée) et refuse une clé sans phrase de passe (code 3, aucun contact) ; pour en poser une : `ssh-keygen -p -f ~/.config/rtp/rtp-deploy-mac`. La phrase de passe est tapée par Erwan à l'invite de `ssh-add`, dans un agent ssh propre à la commande, où la clé expire au bout de 900 s ; l'agent est arrêté à la fin.
+
+### Autoriser la clé sur le serveur
+
+Écriture du serveur : montrée à Erwan (commande, effet, retour arrière) et lancée seulement après son accord explicite, par la session principale ou par lui (règle D-01 de « Serveur : installer et vérifier »). Aucun agent ne le fait.
+
+1. Fichier de deux lignes, sur le Mac : `cat ~/.config/rtp/rtp-deploy-github.pub ~/.config/rtp/rtp-deploy-mac.pub > ~/.config/rtp/cles-deploy.pub`. Avant, contrôler que la clé de GitHub est bien celle du serveur : l'étape `utilisateur` en vérification avec `--cle-publique` sur `rtp-deploy-github.pub` seul doit répondre `[ok] … une ou deux lignes restreintes, à jour`.
+2. Copier ce fichier sur le serveur (une clé publique n'est pas un secret) avec la copie à jour de `ops/` (`git archive`, voir « Serveur : installer et vérifier »), puis : `ssh <hôte> 'bash /opt/rtp/depot/ops/installer-serveur.sh --appliquer --etape utilisateur --cle-publique <fichier sur le serveur> </dev/null'`. `authorized_keys` reçoit une ligne `restrict,command="/usr/local/sbin/rtp-deploy-command"` par clé, dans l'ordre du fichier, root:root 0644. L'installateur accepte une ou deux lignes `ssh-ed25519` distinctes et refuse (code 4, rien d'écrit) une troisième ligne (« deux lignes au plus »), une clé en double, une ligne vide ou un autre type de clé.
+3. Contrôle : `--verifier --etape utilisateur </dev/null` répond `[ok] … une ou deux lignes restreintes` ; il répond `[a faire]` pour trois lignes, une clé en double ou une ligne sans le préfixe restreint exact.
+4. Retour arrière : réappliquer l'étape avec la seule clé de GitHub (`--cle-publique` sur `rtp-deploy-github.pub`) ; la clé du Mac disparaît. **Le fichier passé à `--cle-publique` est la seule source** : une application future avec la seule clé de GitHub retire aussi celle du Mac. Garder `cles-deploy.pub` à jour et toujours le repasser.
+
+### Contrôler : npm run ci:local
+
+`fnm exec --using=24 npm run ci:local` rejoue les 19 étapes locales des jobs `verifier`, `secrets` et `e2e` de `ci.yml` (`npm run ci:local -- --liste` : identifiant, job, parité, nom de l'étape de ci.yml), une ligne par étape ; un échec n'arrête pas la suite. Long sur une machine chargée : ne lancer en même temps ni `npm test`, ni `npm run e2e`, ni un autre build dans le même dossier. `-- --etapes <id,id>` ne lance que ces étapes : reçu partiel, jamais valide pour un déploiement. `-- --aide` affiche l'usage.
+
+- Reçu : `~/.cache/rtp/ci/<commit>.json` (dossier 0700, fichier 0600), écrit seulement si l'arbre de travail était propre au début et à la fin et que HEAD n'a pas bougé. Il porte le commit, la date, la base de `ids.lock`, la version de gitleaks et le résultat de chaque étape.
+- gitleaks absent : la ligne dit « [non exécutée] Chercher des secrets : gitleaks absent (brew install gitleaks) » et le bilan rappelle que ce reçu ne permet pas de déployer.
+- Codes : 0 toutes les étapes lancées sont vertes, 1 une étape a échoué, 2 usage, Node autre que 24, pas un dépôt git, ou un autre `ci:local` en cours (verrou `~/.cache/rtp/ci/.verrou`).
+- Limite connue : un reçu partiel (`--etapes`) écrase le reçu complet du même commit. Relancer `npm run ci:local` complet avant de déployer.
+
+### Déployer : npm run deploy:local
+
+À lancer par Erwan dans son terminal : `fnm exec --using=24 npm run deploy:local`. Ordre : refus d'une entrée standard qui n'est pas un terminal (code 3, avant toute autre chose, sauf `--dry-run`) ; verrou local `~/.cache/rtp/deploiement/.verrou` commun au déploiement et au retour ; fichier local ; rsync 3 ; instantané d'intégrité (exécutables d'envoi, `.git/config`, `.git/hooks`, fichiers de configuration) ; garde de gel ; arbre propre, `git fetch` réussi et HEAD égal à `origin/main` (rien de non poussé ne part en ligne) ; reçu vert de `ci:local` pour ce commit exact, sinon `ci:local` est lancé ; build scellée ; agent ssh (phrase de passe de la clé) ; `etat` ; site touché depuis la version en ligne ; écran ; phrase tapée ; puis gel, tête de `main`, fichier local, instantané, empreinte de la build et `version.json` rejoués ; envoi, `etat` (version d'avant), `activer`, `etat`, test de fumée.
+
+- Build scellée : worktree temporaire du commit dans le dossier temporaire (`$TMPDIR/rtp-deploiement-<sha12>-<hasard>`), `npm ci --ignore-scripts`, `npm audit signatures`, `npm run build`, `npm run check-dist -- --mode production`, `RTP_DEPLOIEMENT=1` pour `production` et `0` pour `essai`, sous `sandbox-exec` : écriture interdite hors du worktree, de son dossier `.git/worktrees/<nom>`, du dossier temporaire et du cache npm ; lecture interdite de chaque chemin désigné par le fichier local (clé, `.pub`, known_hosts, mot de passe de la sonde) et du fichier lui-même, de `~/.config/rtp`, `~/.ssh` et `~/.config/gh`. L'agent ssh n'existe pas encore pendant la build.
+- Écran avant la phrase : cible, commit et sujet, version en ligne et son sujet, date du reçu, fichiers qui changent (20 lignes au plus), empreinte de la build, variante de rsync, garde de gel.
+- Phrases, tapées exactement (ni espace en plus, ni majuscule) : `deployer essai <sha7>` ou `deployer en production <sha7>`. Elles sont lues sur le terminal (`/dev/tty`), jamais sur l'entrée standard ; aucune option du type `--oui` n'existe. Une autre saisie : code 3, rien n'est envoyé.
+- Commit qui ne touche pas le site (même classement que `ops/site-touche.sh`, depuis la version en ligne) : « rien à déployer », code 0, sauf avec `-- --forcer`.
+- `-- --dry-run` : répétition à blanc. Elle exige le fichier local (clé et `.pub` présents, jamais ouverts), prend le verrou, rejoue les gardes, le reçu (ou `ci:local`) et la build scellée, affiche l'écran et la phrase qui sera demandée, puis s'arrête. **La répétition à blanc ne contacte jamais le serveur** : ni agent ssh, ni `etat`, ni envoi, ni HTTPS, et elle n'écrit pas au journal. Elle tourne sans terminal ; avec openrsync, elle avertit au lieu de refuser.
+- Codes de sortie de `deploy:local` (déploiement) : 0 déployé, rien à déployer ou répétition à blanc ; 1 garde ou étape en échec, rien d'activé ; 2 usage ou configuration (rsync 3 absent compris, verrou tenu) ; 3 pas de terminal, confirmation refusée ou clé sans phrase de passe ; 4 échec après l'activation, version d'avant remise en ligne ; 5 échec après l'activation, version d'avant non remise (vérifier avec `npm run deploy:local -- etat`).
+- Après l'activation, un échec ou un Ctrl-C (SIGINT, SIGTERM, SIGHUP) déclenche le retour automatique vers la version exacte notée juste avant (code 4). Pas de retour automatique (code 5) pour un retrait d'urgence, sans version avant, ou si `current` a changé entre-temps (retour manuel).
+- `deploy:local` n'a pas d'option `--aide` : une option inconnue affiche l'usage complet (code 2).
+
+### Lire l'état
+
+`fnm exec --using=24 npm run deploy:local -- etat` : lecture seule, mais la phrase de passe de la clé est demandée (aucun agent ne contacte le serveur par ce chemin). Affiche la cible, le commit en ligne et son sujet, le nombre de versions, l'espace libre, puis le commit servi par `/version.json` et la présence de `Strict-Transport-Security` et `Content-Security-Policy` (si `RTP_URL` est renseignée). Codes : 0 état lu et cohérent, 1 anomalie (commit servi illisible ou différent, en-tête absent), 2 usage ou configuration, 3 clé sans phrase de passe ou non chargée, autre : code du serveur ou de ssh.
+
+### Retour arrière depuis le Mac
+
+`fnm exec --using=24 npm run deploy:local -- retour` remet la version précédente de la cible du fichier local ; `npm run deploy:local -- retour <sha>` remet un commit précis (40 hexadécimaux en minuscules, encore dans `releases/`). Remplace `rollback.yml` : même verrou que le déploiement, garde de gel, phrase de passe, `etat`, écran, phrase `retour essai precedente`, `retour en production precedente` ou `retour essai <sha7>`, garde de gel rejouée, verbe `retour`, `etat`, commit servi. `-- --dry-run` ne contacte pas le serveur. Codes : 0 fait et vérifié, 1 garde ou vérification en échec (les codes du serveur, 64, 66, 255, sont cités dans le message), 2 usage, configuration ou verrou tenu, 3 pas de terminal, confirmation refusée ou clé sans phrase de passe.
+
+### Gel et retrait d'urgence depuis le Mac
+
+Mêmes fenêtres et mêmes règles que « Gel des scrutins et retrait d'urgence » (`scripts/garde-gel.ts`). La garde est jouée au départ, puis rejouée juste après la phrase tapée : une confirmation tapée avant minuit et validée pendant un gel n'envoie rien. Pendant un gel, seul un retrait d'urgence passe : commiter le retrait, le pousser, puis `npm run deploy:local -- --urgence --justification "Retrait de la mesure X publiée sans source"` (20 caractères au moins ; `--justification` sans `--urgence` est refusé, code 2). Un retrait d'urgence est déployé même si le classement dit « hors site » et n'a jamais de retour automatique (code 5 sur un échec après l'activation : vérifier avec `etat`). Retour arrière pendant un gel : `npm run deploy:local -- retour <sha> --urgence --justification "…"`. La justification est nettoyée, masquée et gardée au journal.
+
+### Pannes
+
+- « rsync 3 requis pour l'envoi » (code 2) : `brew install rsync`, puis `RTP_RSYNC=<chemin>` dans le fichier local si besoin.
+- « recherche de secrets (gitleaks) non exécutée » : `brew install gitleaks`, puis `npm run ci:local`.
+- « la clé … n'a pas de phrase de passe : refusée » (code 3) : `ssh-keygen -p -f ~/.config/rtp/rtp-deploy-mac`. « clé non chargée » : la phrase de passe n'a pas été tapée (pas de terminal, ou phrase refusée).
+- Verrou tenu (code 2, le pid est nommé) : attendre la fin de l'autre déploiement ou retour. Un verrou dont le processus n'existe plus est repris avec un avertissement.
+- « git fetch impossible » (code 1) : réseau ou accès à GitHub ; rien de non vérifié ne part en ligne.
+- « intégrité locale modifiée » (code 1) : un exécutable d'envoi, `.git/config`, `.git/hooks` ou un fichier de configuration a changé pendant `ci:local`, la build ou l'attente de la phrase. Ne pas relancer à l'aveugle : regarder ce qui a changé et pourquoi.
+- Code 4 : le site en ligne est la version d'avant ; lire la raison, corriger, redéployer. Code 5 : la version en ligne est incertaine ; `npm run deploy:local -- etat` d'abord, puis `retour <sha>` si besoin.
+- « sandbox-exec introuvable » (code 2) : aucun déploiement possible sans le bac à sable. Apple déclare `sandbox-exec` déprécié : s'il disparaît d'une future version de macOS, ce chemin s'arrête et le chemin GitHub reste disponible.
+- Ctrl-C pendant la build (avant l'agent ssh) : rien n'est envoyé, mais le worktree temporaire reste dans le dossier temporaire. Le retirer : `rm -rf "$TMPDIR"/rtp-deploiement-<sha12>-*`, puis `git worktree prune`.
+- Tests du bac à sable : `tests/deploiement/construire.test.ts` joue le vrai `sandbox-exec` sur macOS ; sous Linux (CI GitHub) ces cas sont sautés (« macOS seulement »). Un exécuteur qui tourne lui-même dans un bac à sable peut se voir refuser le bac à sable imbriqué : les tests sont alors lancés par la session principale (`TZ=Europe/Paris fnm exec --using=24 node --test --test-timeout=900000 tests/deploiement/construire.test.ts`), jamais affaiblis.
+
+### Journal
+
+`~/.local/state/rtp/deploiements.jsonl` (dossier 0700, fichier 0600), une ligne JSON par déploiement, retour et retour automatique : date UTC, action (`deployer`, `retour`, `retour-auto`), cible, commit, version d'avant, résultat (`succes`, `echec`, `refus`, `retour-auto`, `sans-retour`), urgence, justification et message facultatifs. Identifiants masqués (`<hôte>`, `<utilisateur>`, `<url>`), aucune donnée personnelle, aucun secret. Pas de ligne pour une répétition à blanc ni pour « rien à déployer ». Lecture : `tail -n 5 ~/.local/state/rtp/deploiements.jsonl | jq .`.
+
+### Coexistence avec GitHub
+
+- Les workflows GitHub (`ci.yml`, `rollback.yml`) ne sont pas modifiés par cette phase. Les mettre en sommeil (retirer la variable `DEPLOY_CIBLE`) ou désactiver Actions est une décision séparée d'Erwan, à prendre après le premier déploiement local réussi (D-11, en attente).
+- Tant que `DEPLOY_CIBLE` est posée, un push qui touche le site crée sur GitHub un déploiement en attente d'approbation. Après un déploiement local du même commit, **rejeter** ce run (« Review deployments ») : approuvé, il ne ferait que réactiver le même commit, et approuvé après un retour arrière local, il remettrait en ligne ce que le retour a retiré.
+- Le serveur sérialise de toute façon les verbes `activer` et `retour` des deux chemins (verrou `flock -w 20`) ; le verrou local du Mac ne voit pas GitHub.
+- Revenir au chemin GitHub : rien à réinstaller, les workflows et la clé de GitHub sont en place ; approuver le prochain run, ou `gh workflow run ci.yml --ref main -f deployer=true`. Retirer la clé du Mac si besoin : réappliquer l'étape `utilisateur` avec la seule clé de GitHub (« Autoriser la clé sur le serveur », point 4).
+
+### Règle pour les agents
+
+- Un agent ne lance que `npm run deploy:local -- --dry-run` (ou `retour --dry-run`), qui ne contacte jamais le serveur.
+- Jamais `script`, `expect` ni aucun pseudo-terminal autour de `deploy:local`, jamais de `ssh` vers le serveur. L'agent ne lit ni n'affiche lui-même aucun fichier de `~/.config/rtp/` hors des `.pub` (la commande lit le fichier local sans jamais afficher une valeur).
+- Le premier `etat` réel et chaque déploiement ou retour réels sont faits par Erwan, dans son terminal : lui seul connaît la phrase de passe de la clé.
+- La phrase tapée protège contre l'erreur, pas contre un attaquant : la barrière réelle est la phrase de passe de la clé (ADR-063).
 
 ## Incidents fréquents
 

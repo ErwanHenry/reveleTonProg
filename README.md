@@ -52,6 +52,16 @@ npm run preview                # sert dist/ en local
 npm run dev                    # http://localhost:4321
 ```
 
+CI et déploiement depuis le Mac, sans GitHub Actions (choix d'Erwan du 2026-11-18, ADR-063) :
+
+```bash
+fnm exec --using=24 npm run ci:local                # rejoue les contrôles de la CI et écrit un reçu hors du dépôt
+fnm exec --using=24 npm run deploy:local -- --dry-run   # répétition à blanc : gardes, reçu, build scellée, aucun contact avec le serveur
+fnm exec --using=24 npm run deploy:local            # déploiement réel, par Erwan dans son terminal (phrase de passe, phrase tapée)
+```
+
+Prérequis, fichier local, création de la clé, codes de sortie, pannes et retour au chemin GitHub : section « CI et déploiement depuis le Mac » du [runbook](./docs/RUNBOOK.md).
+
 Voir les brouillons (pastillés, noindex, bandeau de prévisualisation) : `RTP_MODE=preview npm run build`. Parcourir le corpus fictif des pages M1 :
 
 ```bash
@@ -117,7 +127,9 @@ Aucun secret dans le dépôt : `.env` est ignoré par Git, `.env.example` ne con
 - **Serveur, fichiers lisibles par root seul (0600)** : `/opt/vaultwarden/.env` (les deux empreintes bcrypt de l'hôte d'essai), `/etc/rtp/battement.env` et `/etc/rtp/restauration.env` (adresses de ping Healthchecks, identifiants de la sonde pour le battement).
 - **Vaultwarden** (coffre `reveleTonProg`) : mots de passe en clair des utilisateurs `essai` et `sonde`, clé privée de déploiement, copies des trois fichiers du serveur et des adresses de ping. Copies de travail sur le Mac dans `~/.config/rtp/` (0600), hors de tout dépôt.
 
-Procédures : `docs/RUNBOOK.md`, sections « Environments GitHub » et « Restauration ».
+- **Mac, chemin local (phase 9.2)** : `~/.config/rtp/deploiement.env` (0600 : cible, hôte, utilisateur et adresse du serveur, jamais dans le dépôt) et la clé dédiée `~/.config/rtp/rtp-deploy-mac`, protégée par une phrase de passe qu'Erwan seul connaît (rangée dans Vaultwarden), autorisée sur le serveur derrière la même commande forcée que la clé de GitHub.
+
+Procédures : `docs/RUNBOOK.md`, sections « Environments GitHub », « CI et déploiement depuis le Mac » et « Restauration ».
 
 ## Réglages GitHub à activer (action utilisateur)
 

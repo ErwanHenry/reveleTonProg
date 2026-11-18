@@ -11,6 +11,8 @@ import { MESURE_SERVEUR_4G } from '../../src/lib/profil-4g.ts';
 import { motsInterdits } from '../../src/lib/content-core/rules/text/forbidden.ts';
 import { COMMANDES } from '../../scripts/relecture.ts';
 import { FENETRES_GEL } from '../../scripts/garde-gel.ts';
+import { CLES_CONFIG } from '../../scripts/lib/deploiement/config.ts';
+import { loadSiteConfig } from '../../src/lib/site-config.ts';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const read = (f: string): string => fs.readFileSync(path.join(ROOT, f), 'utf8');
@@ -1073,5 +1075,123 @@ describe('docs/ARCHITECTURE.md : amendement d’ADR-034 (IN-08, revue 09.1)', ()
   it('n’attribue pas la hauteur égale au texte de M1-08', () => {
     assert.doesNotMatch(amendement, /l'exigence M1-08, verrouillée à l'origine, est modifiée/);
     assert.match(amendement, /M1-08[^.]*ne parle que de « taille fixe »/);
+  });
+});
+
+// Phase 9.2 (plan 07, D-12, LOC-04) : CI et déploiement depuis le Mac. La section décrit le code réel : chaque clé de
+// CLES_CONFIG, les options et sous-commandes de deploy:local, les codes 0 à 5, et la limite honnête de la phrase tapée.
+describe('documentation (phase 9.2) : CI et déploiement depuis le Mac', () => {
+  const TITRE = 'CI et déploiement depuis le Mac';
+  const section = (): string => sectionRunbook(TITRE);
+
+  it('section de niveau 2, avant « Incidents fréquents », pointée depuis Déploiement et Retour arrière', () => {
+    assert.match(runbook, /^## CI et déploiement depuis le Mac$/m);
+    assert.ok(runbook.indexOf('\n## CI et déploiement depuis le Mac\n') < runbook.indexOf('\n## Incidents fréquents\n'));
+    assert.ok(sectionRunbook('Déploiement').includes('« CI et déploiement depuis le Mac »'));
+    assert.ok(sectionRunbook('Retour arrière').includes('npm run deploy:local -- retour'));
+  });
+
+  it('commandes, options, fichiers locaux, prérequis et règle D-11', () => {
+    const s = section();
+    for (const needle of [
+      'npm run ci:local',
+      'npm run deploy:local',
+      '--dry-run',
+      '-- etat',
+      '-- retour',
+      '--forcer',
+      '--urgence',
+      '--justification',
+      'deploiement.env',
+      'rtp-deploy-mac',
+      'known_hosts-deploy',
+      'ssh-keygen -t ed25519',
+      'phrase de passe',
+      'brew install gitleaks',
+      'brew install rsync',
+      'RTP_RSYNC',
+      'sandbox-exec',
+      'deploiements.jsonl',
+      '~/.cache/rtp/ci/<commit>.json',
+      'D-11',
+      '2026-11-18',
+      'gratuites',
+      '--cle-publique',
+      'deux lignes au plus',
+      'accord explicite',
+      'deployer en production <sha7>',
+      'ADR-063',
+    ]) {
+      assert.ok(s.includes(needle), `${TITRE} doit contenir « ${needle} »`);
+    }
+  });
+
+  it('chaque clé du fichier local (CLES_CONFIG) figure dans la section, valeurs factices en .invalid', () => {
+    const s = section();
+    for (const cle of CLES_CONFIG) assert.ok(s.includes(`\`${cle}\``), `clé ${cle} absente de la section`);
+    assert.match(s, /RTP_HOTE=[a-z.-]+\.invalid/);
+  });
+
+  it('codes de sortie 0 à 5 du déploiement, et ceux de ci:local, etat et retour', () => {
+    const s = section();
+    const codes = s.split('Codes de sortie de `deploy:local`')[1]?.split('\n')[0] ?? '';
+    for (const n of ['0', '1', '2', '3', '4', '5']) assert.match(codes, new RegExp(`(: |; )${n} `), `code ${n} absent de la ligne des codes`);
+    assert.ok(s.includes('Codes : 0 toutes les étapes lancées sont vertes'));
+    assert.ok(s.includes('Codes : 0 état lu et cohérent'));
+    assert.ok(s.includes('Codes : 0 fait et vérifié'));
+  });
+
+  it('dit que la répétition à blanc ne contacte jamais le serveur, et la règle pour les agents', () => {
+    const s = section();
+    assert.ok(s.includes('La répétition à blanc ne contacte jamais le serveur'));
+    const agents = sectionRunbook('Règle pour les agents');
+    for (const needle of ['--dry-run', '`script`', '`expect`', 'pseudo-terminal', 'premier `etat` réel', 'Erwan']) {
+      assert.ok(agents.includes(needle), `Règle pour les agents doit contenir « ${needle} »`);
+    }
+  });
+
+  it('limites connues écrites : sandbox-exec déprécié, worktree laissé par un Ctrl-C, reçu partiel, tests sautés sous Linux', () => {
+    const s = section();
+    for (const needle of ['déprécié', 'worktree temporaire reste', 'reçu partiel (`--etapes`) écrase le reçu complet', 'sous Linux']) {
+      assert.ok(s.includes(needle), `${TITRE} doit contenir « ${needle} »`);
+    }
+  });
+
+  it('aucune adresse IPv4, aucun domaine du site, ni tiret long, ni demi-cadratin, ni mot interdit', () => {
+    const s = section();
+    assert.doesNotMatch(s, /\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/);
+    const domaine = loadSiteConfig(ROOT).domaine;
+    assert.ok(!s.toLowerCase().includes(domaine.toLowerCase()), 'le domaine du site apparaît dans la section');
+    assert.doesNotMatch(s, /[–—]/);
+    assert.deepEqual(motsInterdits(s, { exempterCitations: false }), []);
+  });
+
+  it('ADR-063 après l’ADR-062 : choix d’Erwan, barrière réelle, limite honnête de la phrase, D-11', () => {
+    const position = (n: string): number => architecture.search(new RegExp(`^### ADR-${n} : `, 'm'));
+    assert.ok(position('062') < position('063'));
+    assert.ok(position('063') < architecture.indexOf('## Dépendances externes critiques'));
+    assert.equal((architecture.match(/^### ADR-063 : /gm) ?? []).length, 1);
+    const adr = sectionAdr('063');
+    for (const rubrique of ['**Contexte**', '**Décision**', '**Conséquence']) assert.ok(adr.includes(rubrique), `ADR-063 sans ${rubrique}`);
+    for (const needle of [
+      'protège contre l\'erreur, pas contre un attaquant',
+      'La barrière réelle est la phrase de passe de la clé',
+      'sandbox-exec',
+      'rsync 3',
+      'deux lignes au plus',
+      'ne contacte jamais le serveur',
+      'D-11',
+      'gratuites',
+    ]) {
+      assert.ok(adr.includes(needle), `ADR-063 doit contenir « ${needle} »`);
+    }
+    assert.doesNotMatch(adr, /[–—]/);
+    assert.deepEqual(motsInterdits(adr, { exempterCitations: false }), []);
+  });
+
+  it('README : les deux commandes, le renvoi au RUNBOOK, le fichier local et la clé à phrase de passe', () => {
+    for (const needle of ['npm run ci:local', 'npm run deploy:local', '« CI et déploiement depuis le Mac »', '~/.config/rtp/deploiement.env', 'rtp-deploy-mac', 'phrase de passe']) {
+      assert.ok(readme.includes(needle), `README doit contenir « ${needle} »`);
+    }
   });
 });
