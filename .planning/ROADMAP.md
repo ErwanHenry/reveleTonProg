@@ -200,13 +200,13 @@ Plans:
 
 Plans:
 
-- [ ] 09.2-01-PLAN.md — `npm run ci:local` : catalogue des étapes de verifier, secrets et e2e, test de parité avec ci.yml, reçu daté hors dépôt, verrou local (vague 1)
-- [ ] 09.2-02-PLAN.md — Sonde du bac à sable, empreinte de l'arbre identique à la CI, gardes préalables, build de déploiement dans un worktree sous sandbox-exec (écriture refusée hors liste blanche, secrets illisibles), instantané d'intégrité avant et après (vague 2)
-- [ ] 09.2-03-PLAN.md — Fichier local deploiement.env, masque des identifiants du serveur, clé chargée dans un agent éphémère seulement si elle a une phrase de passe (vague 3)
-- [ ] 09.2-04-PLAN.md — Transport ssh, rsync 3 et curl (options épinglées, mot de passe par l'entrée standard, sorties masquées), faux serveur de test, `deploy:local -- etat` (vague 4)
-- [ ] 09.2-05-PLAN.md — Confirmation lue sur /dev/tty et refus hors terminal en premier, journal local, `deploy:local -- retour [<sha>]` à la place de rollback.yml (vague 5)
-- [ ] 09.2-06-PLAN.md — `npm run deploy:local` complet : gardes rejouées après la confirmation, envoi, activation, vérifications, retour automatique (signaux compris), répétition à blanc sans serveur, tests de fuite et de parité avec le job deploy (vague 6)
-- [ ] 09.2-07-PLAN.md — Étape utilisateur de l'installateur à deux clés au plus, section RUNBOOK, ADR-063, README, tests de documentation (vague 7)
+- [x] 09.2-01-PLAN.md — `npm run ci:local` : catalogue des étapes de verifier, secrets et e2e, test de parité avec ci.yml, reçu daté hors dépôt, verrou local (vague 1)
+- [x] 09.2-02-PLAN.md — Sonde du bac à sable, empreinte de l'arbre identique à la CI, gardes préalables, build de déploiement dans un worktree sous sandbox-exec (écriture refusée hors liste blanche, secrets illisibles), instantané d'intégrité avant et après (vague 2)
+- [x] 09.2-03-PLAN.md — Fichier local deploiement.env, masque des identifiants du serveur, clé chargée dans un agent éphémère seulement si elle a une phrase de passe (vague 3)
+- [x] 09.2-04-PLAN.md — Transport ssh, rsync 3 et curl (options épinglées, mot de passe par l'entrée standard, sorties masquées), faux serveur de test, `deploy:local -- etat` (vague 4)
+- [x] 09.2-05-PLAN.md — Confirmation lue sur /dev/tty et refus hors terminal en premier, journal local, `deploy:local -- retour [<sha>]` à la place de rollback.yml (vague 5)
+- [x] 09.2-06-PLAN.md — `npm run deploy:local` complet : gardes rejouées après la confirmation, envoi, activation, vérifications, retour automatique (signaux compris), répétition à blanc sans serveur, tests de fuite et de parité avec le job deploy (vague 6)
+- [x] 09.2-07-PLAN.md — Étape utilisateur de l'installateur à deux clés au plus, section RUNBOOK, ADR-063, README, tests de documentation (vague 7)
 - [ ] 09.2-08-PLAN.md — Clé créée par Erwan, écriture serveur après son accord, tests du bac à sable si besoin, ci:local complet et répétition à blanc par l'orchestrateur, premier etat et premier déploiement par Erwan (vague 8, points de contrôle humains)
 
 ### Phase 10: Import de décembre
@@ -245,5 +245,5 @@ Plans:
 | 8. Serveur, pipeline, supervision et sauvegardes | v1.1 | 15/15 | Complete    | 2026-11-10 |
 | 9. Contenu relu, juridique et ouverture | v1.1 | 12/15 | In Progress|  |
 | 9.1 Finitions visuelles avant l'ouverture | v1.1 | 9/9 | Complete | 2026-11-13 |
-| 9.2 CI et déploiement depuis le Mac | v1.1 | 0/8 | Not started |  |
+| 9.2 CI et déploiement depuis le Mac | v1.1 | 7/8 | In Progress|  |
 | 10. Import de décembre | v1.1 | 1/6 | In Progress|  |

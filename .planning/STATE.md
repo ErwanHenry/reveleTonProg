@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: "Lot 3 : hébergement et mise en ligne"
 status: executing
-stopped_at: Completed 09-10-PLAN.md (santé relu par agents d'IA, fusionné) ; next 09-11, blocked by the Wayback copy of erwan-rohou-programme-mei
-last_updated: "2026-11-18T08:30:00.000Z"
-last_activity: "2026-11-18 (09-10 : thème santé relu par des agents d'IA sur décision d'Erwan du 2026-11-17, 121 cibles sur 121, pull request 4 fusionnée ; page Méthode et avenant à la note de risques ; copies Wayback des deux pages du mouvement d'Erwan Rohou encore illisibles)"
+stopped_at: Completed 09.2-07-PLAN.md ; next 09.2-08 (checkpoints with Erwan : Mac key with passphrase, server write, first local deploy)
+last_updated: "2026-11-18T16:00:00.000Z"
+last_activity: "2026-11-18 (phase 9.2 insérée sur décision d'Erwan « Script sur le Mac » : plans 09.2-01 à 09.2-07 exécutés et poussés, npm run ci:local et npm run deploy:local testés contre un faux serveur, 3193 tests ; reste 09.2-08 avec Erwan ; 09-10 clos le même jour, 09-11 bloqué par la copie Wayback de erwan-rohou-programme-mei)"
 progress:
   total_phases: 6
   completed_phases: 2
-  total_plans: 44
-  completed_plans: 39
+  total_plans: 52
+  completed_plans: 46
   percent: 40
 ---
 
@@ -28,8 +28,8 @@ See: .planning/PROJECT.md (updated 2026-11-04)
 
 Phase: 9 of 10 (contenu relu, juridique et ouverture)
 Plan: 09-01 à 09-10, 09-14 et 09-15 done (dernier : 09-10, relecture du thème santé par agents d'IA, fusionnée le 2026-11-18) ; reste 09-11 (publication sur l'hôte d'essai, bloquée tant que la source erwan-rohou-programme-mei n'a pas de copie Wayback lisible ou d'exception décidée par Erwan), puis 09-12 et 09-13
-Status: Executing phase 9 (phase 10 en parallèle : 10-01 à 10-04 done, 10-05 du 10 au 11 décembre)
-Last activity: 2026-11-18 (09-10 : thème santé relu par des agents d'IA sur décision d'Erwan du 2026-11-17, 121 cibles sur 121, pull request 4 fusionnée ; page Méthode et avenant à la note de risques ; copies Wayback des deux pages du mouvement d'Erwan Rohou encore illisibles)
+Status: Executing phase 9.2 (CI et déploiement depuis le Mac, 7 plans sur 8 ; reste 09.2-08 avec Erwan), puis retour à la phase 9 (09-11 à 09-13) ; phase 10 en parallèle (10-01 à 10-04 done, 10-05 du 10 au 11 décembre)
+Last activity: 2026-11-18 (phase 9.2 insérée sur décision d'Erwan « Script sur le Mac » : plans 09.2-01 à 09.2-07 exécutés et poussés, npm run ci:local et npm run deploy:local testés contre un faux serveur, 3193 tests ; reste 09.2-08 avec Erwan ; 09-10 clos le même jour, 09-11 bloqué par la copie Wayback de erwan-rohou-programme-mei)
 
 Progress v1.1: [..........] 0/5 phases, 0 plans
 
