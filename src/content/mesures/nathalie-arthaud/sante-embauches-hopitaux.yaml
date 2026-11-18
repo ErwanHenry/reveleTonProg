@@ -3,18 +3,20 @@ id: nathalie-arthaud/sante-embauches-hopitaux
 candidat: nathalie-arthaud
 theme: sante
 sous_theme: hopital-et-soignants
-titre: "Liste des embauches nécessaires établie par le personnel des hôpitaux, des Ehpad, de l'éducation et des transports publics"
+titre: "Idée d'une liste des embauches nécessaires, établie par le personnel des hôpitaux, des Ehpad, de l'éducation et des transports publics"
 texte_source: >-
   Si nous demandions au personnel des hôpitaux, des Ehpad, de l’éducation, des transports publics, d’établir une liste d’embauches dont ils auraient besoin, on arriverait à des centaines de milliers d’emplois à créer tout de suite !
 source: nathalie-arthaud-brochure-campagne
-source_localisation: "brochure de campagne, page 12 du PDF, rubrique sur le partage du travail"
+source_localisation: "brochure de campagne, rubrique Face au chômage et aux licenciements, page imprimée 10"
 redactions:
   resume: >-
-    Nathalie Arthaud évoque une liste d'embauches que dresserait le personnel des hôpitaux, des Ehpad, de l'éducation et des transports publics.
+    Contre le chômage, Nathalie Arthaud évoque une liste d'embauches que dresserait le personnel des hôpitaux, des Ehpad, de l'éducation et des transports publics.
   detaille: >-
-    Dans sa brochure de campagne, Nathalie Arthaud avance l'idée de demander au personnel des hôpitaux, des Ehpad, de l'éducation et des transports publics d'établir une liste des embauches dont il aurait besoin. La phrase est écrite au conditionnel : elle décrit une démarche possible. Selon le texte, on arriverait alors à des centaines de milliers d'emplois à créer tout de suite. L'extrait ne dit pas combien d'embauches concerneraient les hôpitaux ou les Ehpad, ni comment elles seraient financées. Il ne précise pas non plus qui rassemblerait ces listes ni dans quel délai.
+    Dans sa brochure de campagne, dans une rubrique sur le chômage et les licenciements, Nathalie Arthaud demande de recenser les besoins et de répartir le travail entre tous, pour que personne ne soit condamné au chômage. Elle avance l'idée de demander au personnel des hôpitaux, des Ehpad, de l'éducation et des transports publics d'établir une liste des embauches dont il aurait besoin. La phrase est écrite au conditionnel : elle décrit une démarche possible. Selon le texte, on arriverait alors à des centaines de milliers d'emplois à créer tout de suite. Les hôpitaux et les Ehpad y figurent parmi d'autres services. L'extrait ne dit pas combien d'embauches les concerneraient. Ailleurs, la brochure demande la confiscation des bénéfices de ceux qu'elle appelle les profiteurs de guerre, pour les hôpitaux et les écoles, sans lier cette demande à ces embauches. Le texte ne précise pas non plus qui rassemblerait ces listes ni dans quel délai.
   enfant: >-
-    Nathalie Arthaud parle d'une liste d'embauches. Ce serait fait par le personnel des hôpitaux et des [[Ehpad]]. Ce serait aussi fait par celui de l'éducation et des transports publics. Chacun noterait les embauches dont il a besoin. Selon le texte, cela ferait des centaines de milliers d'emplois à créer.
+    Nathalie Arthaud veut partager le travail entre tous, pour que personne ne soit au chômage. Elle imagine une liste des embauches à faire. Le personnel des hôpitaux et des [[Ehpad]] la ferait. Celui de l'éducation et des transports publics aussi. Chacun dirait combien de gens il lui faut. Selon le texte, cela ferait des centaines de milliers d'emplois.
   aine: >-
-    Nathalie Arthaud évoque, dans sa brochure de campagne, une liste d'embauches. Elle serait établie par le personnel des hôpitaux, des Ehpad (établissements d'hébergement pour personnes âgées dépendantes), de l'éducation et des transports publics. Chacun indiquerait les embauches dont son service aurait besoin. D'après le texte, on arriverait à des centaines de milliers d'emplois à créer tout de suite. Le texte ne dit pas combien d'embauches concerneraient les hôpitaux, ni comment elles seraient payées.
-statut_relecture: brouillon
+    Dans une rubrique de sa brochure de campagne consacrée au chômage, Nathalie Arthaud demande de recenser les besoins et de répartir le travail entre tous. Elle évoque une liste d'embauches. Elle serait établie par le personnel des hôpitaux, des Ehpad (établissements d'hébergement pour personnes âgées dépendantes), de l'éducation et des transports publics. Chacun indiquerait les embauches dont son service aurait besoin. D'après le texte, on arriverait à des centaines de milliers d'emplois à créer tout de suite. Les hôpitaux ne sont qu'un exemple parmi d'autres services. Le texte ne dit pas combien d'embauches les concerneraient, ni ne lie ces embauches à un financement précis.
+statut_relecture: relu
+relecteur: l'agent d'IA Claude
+date_relecture: 2026-11-17

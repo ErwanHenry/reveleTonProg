@@ -20,4 +20,6 @@ statuts:
       url: https://www.publicsenat.fr/actualites/politique/presidentielle-2027-la-main-tendue-dedouard-philippe-rejetee-par-gabriel-attal-et-bruno-retailleau-relance-lidee-dune-primaire
       date_publication: 2026-09-09
       date_consultation: 2026-10-28
-    statut_relecture: brouillon
+    statut_relecture: relu
+    relecteur: l'agent d'IA Claude
+    date_relecture: 2026-11-17

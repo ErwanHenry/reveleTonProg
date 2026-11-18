@@ -20,4 +20,6 @@ statuts:
       url: https://lcp.fr/actualites/presidentielle-2027-gabriel-attal-officialise-sa-candidature-436721
       date_publication: 2026-05-22
       date_consultation: 2026-10-28
-    statut_relecture: brouillon
+    statut_relecture: relu
+    relecteur: l'agent d'IA Claude
+    date_relecture: 2026-11-17

@@ -20,4 +20,6 @@ statuts:
       url: https://lcp.fr/actualites/natacha-polony-annonce-sa-candidature-a-l-election-presidentielle-443808
       date_publication: 2026-10-14
       date_consultation: 2026-10-28
-    statut_relecture: brouillon
+    statut_relecture: relu
+    relecteur: l'agent d'IA Claude
+    date_relecture: 2026-11-17

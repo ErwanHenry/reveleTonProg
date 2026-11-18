@@ -20,4 +20,6 @@ statuts:
       url: https://www.revolutionpermanente.fr/Anasse-Kazib-2027-500-parrainages-pour-que-la-classe-ouvriere-s-invite-dans-la-presidentielle
       date_publication: 2026-06-01
       date_consultation: 2026-10-28
-    statut_relecture: brouillon
+    statut_relecture: relu
+    relecteur: l'agent d'IA Claude
+    date_relecture: 2026-11-17

@@ -20,4 +20,6 @@ statuts:
       url: https://actu.orange.fr/politique/presidentielle-francois-ruffin-l-ex-insoumis-qui-a-du-mal-a-socialiser-CNT000002rVfmk.html
       date_publication: 2026-09-16
       date_consultation: 2026-10-28
-    statut_relecture: brouillon
+    statut_relecture: relu
+    relecteur: l'agent d'IA Claude
+    date_relecture: 2026-11-17

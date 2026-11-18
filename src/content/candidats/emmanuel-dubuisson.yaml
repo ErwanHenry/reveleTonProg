@@ -20,4 +20,6 @@ statuts:
       url: https://annuaire-entreprises.data.gouv.fr/entreprise/les-gaulois-campagne-presidentielle-election-2027-de-m-emmanuel-dubuisson-106391956
       date_publication: 2026-10-08
       date_consultation: 2026-10-28
-    statut_relecture: brouillon
+    statut_relecture: relu
+    relecteur: l'agent d'IA Claude
+    date_relecture: 2026-11-17

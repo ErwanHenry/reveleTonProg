@@ -4,159 +4,159 @@ theme: sante
 cases:
   - candidat: nathalie-arthaud
     etat: mesures
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: francois-asselineau
     etat: programme_non_publie
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: gabriel-attal
     etat: mesures
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: delphine-batho
     etat: mesures
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: olivier-becht
     etat: mesures
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: xavier-bertrand
     etat: programme_non_publie
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: augustin-billetdoux
     etat: programme_non_publie
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: karim-bouamrane
     etat: mesures
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: juan-branco
     etat: mesures
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: bernard-cazeneuve
     etat: mesures
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: christian-collovati
     etat: mesures
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: emmanuel-dubuisson
     etat: mesures
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: nicolas-dupont-aignan
     etat: mesures
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: sylvain-durif
     etat: programme_non_publie
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: clara-egger
     etat: non_precise
     sources_consultees:
       - clara-egger-notre-solution
       - clara-egger-parrainage-2027
       - clara-egger-presentation-candidate
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: raphael-glucksmann
     etat: mesures
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: anasse-kazib
     etat: mesures
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: selma-labib
     etat: mesures
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: francis-lalanne
     etat: mesures
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: marine-le-pen
     etat: programme_non_publie
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: jean-francois-legendre
     etat: mesures
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: david-lisnard
     etat: mesures
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: mira-markovic
     etat: programme_non_publie
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: benoit-mathieu
     etat: non_precise
     sources_consultees:
       - benoit-mathieu-le-candidat
       - benoit-mathieu-programme
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: jean-luc-melenchon
     etat: mesures
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: antoine-mikolajczak
     etat: mesures
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: manolo-mlekuz
     etat: non_precise
     sources_consultees:
       - manolo-mlekuz-programme
       - manolo-mlekuz-programme-detaille
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: edouard-philippe
     etat: mesures
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: florian-philippot
     etat: mesures
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: gilles-platret
     etat: programme_non_publie
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: natacha-polony
     etat: mesures
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: bruno-retailleau
     etat: mesures
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: erwan-rohou
     etat: mesures
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: fabien-roussel
     etat: mesures
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: francois-ruffin
     etat: mesures
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: marine-tondelier
     etat: mesures
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: eric-zemmour
     etat: mesures
-    verifie_le: 2026-11-03
-    verifie_par: Claude (agent), à relire par Erwan Henry
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
