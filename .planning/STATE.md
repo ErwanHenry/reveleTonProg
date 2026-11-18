@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: "Lot 3 : hébergement et mise en ligne"
 status: executing
-stopped_at: Completed 10-04-PLAN.md ; waiting for Erwan (09-10, review of the santé theme)
-last_updated: "2026-11-13T12:30:00.000Z"
-last_activity: "2026-11-13 (10-04 : réponse d'Erwan « Tout par défaut » aux sept questions de l'import (D-08 option B, D-09 runbook, gel du 13 décembre 18:00 au 15 décembre 23:59, limite de recréation 13 décembre 12:00) ; avertissement STATUT_PLUS_RECENT_NON_RELU, jamais bloquant, 0 cas sur le corpus réel ; RUNBOOK : import de décembre et gel d'import ; poussé, déploiement en attente d'Erwan) (09.1-09 : réponse d'Erwan « Suis ton avis » (2026-11-13) : P1, P5, P2, P3, P4, P6 repris sur main par cherry-pick, 2b refusée, accord sur la règle M1-08 enregistré (ADR-034) ; santé à 375 px En bref 24 038 px, cible FIN-04 abaissée à cette valeur, première tuile à 713 px ; gardes vertes, poussé, déploiement en attente d'Erwan ; phase 9.1 terminée) (10-03 : rapport de répétition à blanc (module pur rapport-import.ts), --format markdown, --dry-run tolérant aux identifiants inconnus, --check ; répétition réelle sur le jeu en ligne (61 lignes, 2 nouveaux, 6 dérives de source) dans un worktree jetable supprimé, liste des mises à jour à la main pour 10-05 ; poussé, déploiement en attente d'Erwan) (09.1-08 : P6 image de partage 1200 x 630 (171d4af) sur design/finitions, seul PNG admis par check-dist, jamais chargée ; sept commits rejouables seuls sur main (P2b après P2), gardes vertes sur la pointe, CI de la pull request #5 verte ; aperçus avant et après, carte de partage locale et fiche 09.1-APERCU.md prêts pour Erwan ; rien du lot B sur main) (09.1-07 : propositions P2 (bloc source compact), P2b (liens du document repliés, touche C5), P3 (Aller à un candidat), P4 (grille, touche M1-08) sur design/finitions, chacune rejouable seule sur main ; FIN-04 non atteint, 22 542 px pour 21 500 ; rien du lot B sur main) (09.1-06 : lot B ouvert, worktree ../reveleTonProg-design sur design/finitions, mesurer.mjs et 09.1-MESURES.md, propositions P1 (accueil) et P5 (nom, sous-titre, ligne d'identité) en brouillon, pull request brouillon #5, rien du lot B sur main) (09.1-05 : accueil sans rappel du niveau, sélecteur et gros caractères épinglés sur chaque page candidat avec et sans JavaScript, pied de page structuré ; lot A poussé sur main) (09.1-04 : balises de partage et theme-color, og:url depuis le seul domaine configuré, check-dist PARTAGE_INCORRECT ; main non poussé) (09.1-03 : NOM_SITE en un seul endroit, 79 pages comparées avant et après sans une différence ; main non poussé) (09.1-02 : page 404 en français noindex sans canonique, serveur de test et bloc Caddy public en 404 sans handle_errors, preuve Caddy 2.11.2 locale jetable, contrôles 09-12 au RUNBOOK ; main non poussé, sauvegarde sur sauvegarde/finitions-lot-a) (09.1-01 : lot A partie 1, césure réservée aux noms et titres, survol sous (hover: hover), barre de thème, statut pleine largeur, phrase de /candidats/ ; commits locaux, sauvegarde sur sauvegarde/finitions-lot-a, main poussé au 09.1-05) (10-02 : cohérence instantané data.gouv et fichiers candidats dans npm test, quatre pièges D-05, refus de marquer ; push groupé avec 10-01) (10-01 : lectures YAML de l'import, de l'archivage et de la couverture par l'analyseur plafonné léger yaml-plafonne.ts, test de dépôt à liste blanche de huit fichiers ; commits locaux, push groupé avec 10-02)"
+stopped_at: Completed 09-10-PLAN.md (santé relu par agents d'IA, fusionné) ; next 09-11, blocked by the Wayback copy of erwan-rohou-programme-mei
+last_updated: "2026-11-18T08:30:00.000Z"
+last_activity: "2026-11-18 (09-10 : thème santé relu par des agents d'IA sur décision d'Erwan du 2026-11-17, 121 cibles sur 121, pull request 4 fusionnée ; page Méthode et avenant à la note de risques ; copies Wayback des deux pages du mouvement d'Erwan Rohou encore illisibles)"
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 44
-  completed_plans: 38
+  completed_plans: 39
   percent: 40
 ---
 
@@ -27,9 +27,9 @@ See: .planning/PROJECT.md (updated 2026-11-04)
 ## Current Position
 
 Phase: 9 of 10 (contenu relu, juridique et ouverture)
-Plan: 09-01 à 09-09, 09-14 et 09-15 done (dernier : 09-09, RUNBOOK, ADR-059 à 062, serveur prêt, override OPS-01 accepté) ; reste 09-10 (relecture santé par Erwan, chemin critique), puis 09-11 à 09-13
+Plan: 09-01 à 09-10, 09-14 et 09-15 done (dernier : 09-10, relecture du thème santé par agents d'IA, fusionnée le 2026-11-18) ; reste 09-11 (publication sur l'hôte d'essai, bloquée tant que la source erwan-rohou-programme-mei n'a pas de copie Wayback lisible ou d'exception décidée par Erwan), puis 09-12 et 09-13
 Status: Executing phase 9 (phase 10 en parallèle : 10-01 à 10-04 done, 10-05 du 10 au 11 décembre)
-Last activity: 2026-11-13 (10-04 : réponse d'Erwan « Tout par défaut » aux sept questions de l'import (D-08 option B, D-09 runbook, gel du 13 décembre 18:00 au 15 décembre 23:59, limite de recréation 13 décembre 12:00) ; avertissement STATUT_PLUS_RECENT_NON_RELU, jamais bloquant, 0 cas sur le corpus réel ; RUNBOOK : import de décembre et gel d'import ; poussé, déploiement en attente d'Erwan) (09.1-09 : réponse d'Erwan « Suis ton avis » (2026-11-13) : P1, P5, P2, P3, P4, P6 repris sur main par cherry-pick, 2b refusée, accord sur la règle M1-08 enregistré (ADR-034) ; santé à 375 px En bref 24 038 px, cible FIN-04 abaissée à cette valeur, première tuile à 713 px ; gardes vertes, poussé, déploiement en attente d'Erwan ; phase 9.1 terminée) (10-03 done : rapport D-06, --format, --dry-run tolérant, --check, répétition réelle jetable ; la liste de contrôle de 10-05 est dans 10-03-SUMMARY.md ; 09.1-08 done : proposition 6 (image de partage), indépendance prouvée, gardes vertes, aperçus et fiche d'Erwan prêts, réponse attendue en 09.1-09 ; 09.1-05 done : lot A complet et poussé sur main, déploiement en attente d'Erwan ; 09.1-04 done : balises de partage, PARTAGE_INCORRECT, image en 09.1-08 ; 09.1-03 done : NOM_SITE, pages construites identiques ; 09.1-02 done : page 404 et bloc Caddy public prêts, rien appliqué au serveur ; 09.1-01 done, lot A en local, main non poussé ; 10-01 : analyseur YAML plafonné léger pour l'import, l'archivage et la couverture ; alias et clés en double refusés avec fichier, ligne et code ; page Méthode identique à l'octet)
+Last activity: 2026-11-18 (09-10 : thème santé relu par des agents d'IA sur décision d'Erwan du 2026-11-17, 121 cibles sur 121, pull request 4 fusionnée ; page Méthode et avenant à la note de risques ; copies Wayback des deux pages du mouvement d'Erwan Rohou encore illisibles)
 
 Progress v1.1: [..........] 0/5 phases, 0 plans
 
@@ -106,6 +106,7 @@ Items acknowledged and deferred at v1.0 close on 2026-11-04 (Erwan: « Fix, then
 | uat_gap | 05-HUMAN-UAT.md (critère 4G, parcours d'Erwan, constats S1/S2/S3, relecture) | partial |
 | verification_gap | 03-VERIFICATION.md | human_needed |
 | verification_gap | 05-VERIFICATION.md | human_needed |
+| tech_debt | Wayback de erwan-rohou-programme-mei et erwan-rohou-communique-mei-candidature : instantanés du 2026-11-17 indexés mais illisibles, à relancer (--wayback-only) avant 09-11 ; l'outil n'en vérifie pas la lecture | open |
 | tech_debt | W9 : Wayback des 3 sources Batho (HTTP 520 puis 429, à relancer), à résoudre avant de publier les mesures concernées (Phase 9) | open |
 
 ## Session Continuity
