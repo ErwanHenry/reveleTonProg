@@ -22,7 +22,8 @@
     "preview": "astro preview",
     "e2e": "node scripts/e2e.ts",
     "audit:lire": "node scripts/audit-lire.ts",
-    "relecture": "node scripts/relecture.ts"
+    "relecture": "node scripts/relecture.ts",
+    "ci:local": "node scripts/ci-local.ts"
   },
   "dependencies": {
     "ajv": "^8.20.0",

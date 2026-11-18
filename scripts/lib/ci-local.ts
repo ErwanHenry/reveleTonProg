@@ -5,6 +5,10 @@
 // commande ou RTP_CONTENT_ROOT / RTP_MODE changés).
 // Ce module n'importe que des modules node: (et processus.ts) : le processus de déploiement (plan 06), qui tiendra
 // la clé, lit les reçus à travers lui, et aucun code de dépendance npm ne doit y entrer.
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { envDeBase, type Lanceur } from './processus.ts';
 export type Job = 'verifier' | 'e2e' | 'secrets';
 
 export interface EtapeLocale {
@@ -337,4 +341,302 @@ export function ecartsParite(ci: CiParite, etapes: readonly EtapeLocale[], exclu
     }
   }
   return ecarts;
+}
+
+// ---------- reçu (D-03) ----------
+
+export type ResultatEtape = 'ok' | 'echec' | 'non_executee';
+
+export interface Recu {
+  version: 1;
+  commit: string;
+  date: string;
+  node: string;
+  arbre_propre: boolean;
+  partiel: boolean;
+  base_ids: string | null;
+  secrets: ResultatEtape;
+  gitleaks: string | null;
+  etapes: { id: string; nomCi: string; resultat: ResultatEtape; duree_ms: number }[];
+}
+
+const SHA = /^[0-9a-f]{40}$/;
+const RESULTATS: readonly string[] = ['ok', 'echec', 'non_executee'];
+
+/** Dossier des reçus et du verrou : hors du dépôt, dans le cache de l'utilisateur. */
+export const dossierRecus = (home: string): string => path.join(home, '.cache', 'rtp', 'ci');
+
+export function cheminRecu(home: string, sha: string): string {
+  if (!SHA.test(sha)) throw new Error(`commit invalide pour un reçu (40 hexadécimaux attendus) : ${sha}`);
+  return path.join(dossierRecus(home), `${sha}.json`);
+}
+
+/** Écrit le reçu (dossier 0700, fichier 0600, écriture atomique par renommage) et renvoie son chemin. */
+export function ecrireRecu(home: string, recu: Recu): string {
+  const chemin = cheminRecu(home, recu.commit);
+  const dossier = path.dirname(chemin);
+  mkdirSync(dossier, { recursive: true, mode: 0o700 });
+  chmodSync(dossier, 0o700);
+  const provisoire = `${chemin}.${process.pid}.provisoire`;
+  writeFileSync(provisoire, `${JSON.stringify(recu, null, 2)}\n`, { mode: 0o600 });
+  chmodSync(provisoire, 0o600);
+  renameSync(provisoire, chemin);
+  return chemin;
+}
+
+const estChaine = (v: unknown): v is string => typeof v === 'string';
+const chaineOuNull = (v: unknown): boolean => v === null || typeof v === 'string';
+
+function formeDeRecu(v: unknown): v is Recu {
+  if (typeof v !== 'object' || v === null) return false;
+  const r = v as Record<string, unknown>;
+  if (typeof r.version !== 'number' || !estChaine(r.commit) || !estChaine(r.date) || !estChaine(r.node)) return false;
+  if (typeof r.arbre_propre !== 'boolean' || typeof r.partiel !== 'boolean') return false;
+  if (!chaineOuNull(r.base_ids) || !chaineOuNull(r.gitleaks) || !RESULTATS.includes(r.secrets as string)) return false;
+  if (!Array.isArray(r.etapes)) return false;
+  return r.etapes.every((e: unknown) => {
+    if (typeof e !== 'object' || e === null) return false;
+    const x = e as Record<string, unknown>;
+    return estChaine(x.id) && estChaine(x.nomCi) && RESULTATS.includes(x.resultat as string) && typeof x.duree_ms === 'number';
+  });
+}
+
+/** Reçu du commit, ou null s'il manque, n'est pas du JSON ou n'a pas la forme attendue. */
+export function lireRecu(home: string, sha: string): Recu | null {
+  let brut: string;
+  try {
+    brut = readFileSync(cheminRecu(home, sha), 'utf8');
+  } catch {
+    return null;
+  }
+  try {
+    const v: unknown = JSON.parse(brut);
+    return formeDeRecu(v) ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Un reçu ne vaut pour un déploiement que s'il est complet, vert, d'un arbre propre, pour ce commit exact. */
+export function recuValidePourDeploiement(recu: Recu | null, sha: string): { ok: boolean; motif: string } {
+  if (recu === null) return { ok: false, motif: `aucun reçu de CI locale pour le commit ${sha} (lancer npm run ci:local)` };
+  if (recu.version !== 1) return { ok: false, motif: `version de reçu inconnue (${String(recu.version)})` };
+  if (recu.commit !== sha) return { ok: false, motif: `reçu d'un autre commit (${recu.commit}, attendu ${sha})` };
+  if (recu.partiel) return { ok: false, motif: 'reçu d\'une exécution partielle (--etapes) : ne permet pas de déployer' };
+  if (!recu.arbre_propre) return { ok: false, motif: 'reçu d\'un arbre de travail non propre' };
+  if (recu.secrets !== 'ok') {
+    return { ok: false, motif: `recherche de secrets (gitleaks) ${recu.secrets === 'non_executee' ? 'non exécutée' : 'en échec'} : installer gitleaks (brew install gitleaks) puis relancer npm run ci:local` };
+  }
+  for (const e of ETAPES) {
+    const r = recu.etapes.find((x) => x.id === e.id);
+    if (r === undefined) return { ok: false, motif: `étape absente du reçu : ${e.nomCi}` };
+    if (r.resultat !== 'ok') return { ok: false, motif: `étape ${r.resultat === 'echec' ? 'en échec' : 'non exécutée'} : ${e.nomCi}` };
+  }
+  return { ok: true, motif: `reçu vert du ${recu.date}` };
+}
+
+// ---------- base de ids.lock ----------
+
+const lancerGit = (lancer: Lanceur, racine: string, args: string[], delaiMs = 2 * MIN) =>
+  lancer({ commande: 'git', args, cwd: racine, env: envDeBase(), delaiMs, libelle: `git ${args[0] ?? ''}` });
+
+/**
+ * Commit de base de la comparaison de ids.lock : git fetch origin main (échec : avertissement, origin/main local
+ * gardé), puis merge-base de HEAD et origin/main ; s'il vaut HEAD (commit déjà poussé), le premier parent de HEAD.
+ * base null : aucune base (échec fermé de l'étape).
+ */
+export async function baseIdsLock(lancer: Lanceur, racine: string): Promise<{ base: string | null; message: string }> {
+  const messages: string[] = [];
+  const fetch = await lancerGit(lancer, racine, ['fetch', '--quiet', '--no-tags', 'origin', 'main'], 5 * MIN);
+  if (fetch.code !== 0) messages.push('avertissement : git fetch origin main impossible, origin/main local gardé');
+  const head = (await lancerGit(lancer, racine, ['rev-parse', 'HEAD'])).stdout.trim();
+  const mb = await lancerGit(lancer, racine, ['merge-base', 'HEAD', 'origin/main']);
+  const fusion = mb.stdout.trim();
+  if (mb.code !== 0 || !SHA.test(fusion)) {
+    messages.push('merge-base de HEAD et origin/main introuvable : impossible de comparer ids.lock');
+    return { base: null, message: messages.join(' ; ') };
+  }
+  if (fusion !== head) {
+    messages.push(`base = merge-base avec origin/main (${fusion})`);
+    return { base: fusion, message: messages.join(' ; ') };
+  }
+  const parent = await lancerGit(lancer, racine, ['rev-parse', '--verify', '--quiet', 'HEAD^1']);
+  const p = parent.stdout.trim();
+  if (parent.code !== 0 || !SHA.test(p)) {
+    messages.push('HEAD est déjà sur origin/main et n\'a pas de parent : impossible de comparer ids.lock');
+    return { base: null, message: messages.join(' ; ') };
+  }
+  messages.push(`commit déjà poussé : base = premier parent de HEAD (${p})`);
+  return { base: p, message: messages.join(' ; ') };
+}
+
+// ---------- exécution des étapes ----------
+
+export interface ContexteExecution {
+  lancer: Lanceur;
+  racine: string;
+  ecrire: (ligne: string) => void;
+}
+
+export interface BilanExecution {
+  etapes: Recu['etapes'];
+  base_ids: string | null;
+  gitleaks: string | null;
+  secrets: ResultatEtape;
+}
+
+export function duree(ms: number): string {
+  const s = Math.round(ms / 1000);
+  if (s < 60) return `${s} s`;
+  return `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, '0')} s`;
+}
+
+const dernieresLignes = (texte: string, n: number): string[] => {
+  const lignes = texte.replace(/\s+$/, '').split('\n');
+  return lignes.slice(Math.max(0, lignes.length - n));
+};
+
+/** Lance les étapes dans l'ordre ; un échec n'arrête pas la suite (le reçu liste chaque résultat). */
+export async function executerEtapes(etapes: readonly EtapeLocale[], ctx: ContexteExecution): Promise<BilanExecution> {
+  const { lancer, racine, ecrire } = ctx;
+  const bilan: BilanExecution = { etapes: [], base_ids: null, gitleaks: null, secrets: 'non_executee' };
+  let gitleaksAbsent = false;
+
+  const lancerEtape = async (e: EtapeLocale, commande: string[]): Promise<boolean> => {
+    const r = await lancer({
+      commande: commande[0] ?? '',
+      args: commande.slice(1),
+      cwd: racine,
+      env: { ...envDeBase(), ...e.env },
+      delaiMs: e.delaiMs,
+      libelle: e.nomCi,
+      heriter: e.heriter === true,
+    });
+    const ok = r.code === 0 && !r.delaiDepasse;
+    if (!ok) {
+      if (r.delaiDepasse) ecrire(`    délai de ${Math.round(e.delaiMs / MIN)} min dépassé : processus arrêté`);
+      if (e.heriter !== true) for (const l of dernieresLignes(`${r.stdout}\n${r.stderr}`, 40)) ecrire(`    ${l}`);
+    }
+    return ok;
+  };
+
+  for (const e of etapes) {
+    const debut = Date.now();
+    let resultat: ResultatEtape;
+    const details: string[] = [];
+    let ligne: string | undefined;
+
+    if (e.special === 'gitleaks' && gitleaksAbsent) {
+      resultat = 'non_executee';
+      ligne = `[non exécutée] ${e.nomCi} : gitleaks absent`;
+    } else if (e.special === 'gitleaks' && e.commande[1] === 'version') {
+      const r = await lancer({ commande: 'gitleaks', args: ['version'], cwd: racine, env: envDeBase(), delaiMs: e.delaiMs, libelle: e.nomCi });
+      if (r.code === 0) {
+        resultat = 'ok';
+        bilan.gitleaks = r.stdout.trim().split('\n')[0]?.trim() || null;
+      } else {
+        gitleaksAbsent = true;
+        resultat = 'non_executee';
+        ligne = '[non exécutée] Chercher des secrets : gitleaks absent (brew install gitleaks)';
+      }
+    } else if (e.special === 'ids-lock') {
+      const { base, message } = await baseIdsLock(lancer, racine);
+      bilan.base_ids = base;
+      details.push(message);
+      if (base === null) {
+        resultat = 'echec';
+      } else if ((await lancerGit(lancer, racine, ['cat-file', '-e', `${base}^{commit}`])).code !== 0) {
+        details.push(`Commit de base ${base} introuvable (réécriture d'historique ?) : comparaison de ids.lock impossible, l'étape échoue plutôt que de la sauter`);
+        resultat = 'echec';
+      } else if ((await lancerGit(lancer, racine, ['cat-file', '-e', `${base}:ids.lock`])).code !== 0) {
+        details.push(`ids.lock n'existe pas dans le commit de base ${base} (introduction du fichier) : comparaison ignorée`);
+        resultat = 'ok';
+      } else {
+        const show = await lancerGit(lancer, racine, ['show', `${base}:ids.lock`]);
+        if (show.code !== 0) {
+          details.push(`lecture de ids.lock dans ${base} impossible`);
+          resultat = 'echec';
+        } else {
+          const dossier = mkdtempSync(path.join(tmpdir(), 'rtp-ids-base-'));
+          try {
+            const fichier = path.join(dossier, 'ids-base.lock');
+            writeFileSync(fichier, show.stdout);
+            resultat = (await lancerEtape(e, ['npm', 'run', 'ids', '--', '--check', '--base', fichier])) ? 'ok' : 'echec';
+          } finally {
+            rmSync(dossier, { recursive: true, force: true });
+          }
+        }
+      }
+    } else {
+      resultat = (await lancerEtape(e, e.commande)) ? 'ok' : 'echec';
+    }
+
+    const ms = Date.now() - debut;
+    const marque = resultat === 'ok' ? '[ok]' : resultat === 'echec' ? '[échec]' : '[non exécutée]';
+    ecrire(ligne ?? `${marque} ${e.nomCi} (${duree(ms)})`);
+    for (const d of details) ecrire(`    ${d}`);
+    bilan.etapes.push({ id: e.id, nomCi: e.nomCi, resultat, duree_ms: ms });
+  }
+
+  const analyse = bilan.etapes.find((x) => x.id === 'gitleaks');
+  bilan.secrets = gitleaksAbsent || analyse === undefined ? 'non_executee' : analyse.resultat;
+  return bilan;
+}
+
+// ---------- verrou ----------
+
+export class VerrouPris extends Error {
+  readonly pid: number | null;
+  constructor(pid: number | null, dossier: string) {
+    super(`une autre exécution tourne déjà (pid ${pid ?? 'inconnu'}, verrou ${dossier})`);
+    this.name = 'VerrouPris';
+    this.pid = pid;
+  }
+}
+
+const vivant = (pid: number): boolean => {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (e) {
+    return (e as NodeJS.ErrnoException).code === 'EPERM';
+  }
+};
+
+/**
+ * Verrou par dossier (mkdir est atomique, flock n'existe pas sur macOS) contenant le pid du détenteur. Tenu par un
+ * processus vivant : VerrouPris. Laissé par un processus mort (ou sans pid depuis plus d'une minute) : repris, avec
+ * un avertissement. Renvoie la fonction qui rend le verrou.
+ */
+export function prendreVerrou(dossier: string, avertir: (m: string) => void = (m) => console.warn(m)): () => void {
+  mkdirSync(path.dirname(dossier), { recursive: true, mode: 0o700 });
+  const fichierPid = path.join(dossier, 'pid');
+  try {
+    mkdirSync(dossier, { mode: 0o700 });
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code !== 'EEXIST') throw e;
+    let pid: number | null = null;
+    try {
+      const n = Number.parseInt(readFileSync(fichierPid, 'utf8').trim(), 10);
+      pid = Number.isInteger(n) && n > 0 ? n : null;
+    } catch {
+      pid = null;
+    }
+    if (pid !== null && vivant(pid)) throw new VerrouPris(pid, dossier);
+    if (pid === null && Date.now() - statSync(dossier).mtimeMs < MIN) throw new VerrouPris(null, dossier);
+    avertir(`avertissement : verrou abandonné par le processus ${pid ?? 'inconnu'} (${dossier}) : repris`);
+    rmSync(dossier, { recursive: true, force: true });
+    mkdirSync(dossier, { mode: 0o700 });
+  }
+  writeFileSync(fichierPid, String(process.pid), { mode: 0o600 });
+  let rendu = false;
+  return () => {
+    if (rendu) return;
+    rendu = true;
+    try {
+      if (readFileSync(fichierPid, 'utf8').trim() === String(process.pid)) rmSync(dossier, { recursive: true, force: true });
+    } catch {
+      // Verrou déjà retiré.
+    }
+  };
 }
