@@ -27,7 +27,7 @@ Détail complet : [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) ; exi
 - [x] **Phase 8: Serveur, pipeline, supervision et sauvegardes** : Caddy en HTTPS, déploiement atomique avec retour arrière, hôte technique protégé, alertes, restauration réelle (completed 2026-11-10)
 - [ ] **Phase 9: Contenu relu, juridique et ouverture** : un thème relu publié, Mentions légales finales, journal d'audit refait, ouverture publique vers le 5 décembre
 - [x] **Phase 9.1: Finitions visuelles avant l'ouverture** (INSÉRÉE le 2026-11-12) : défauts de l'audit visuel corrigés, page 404, balises et image de partage, accueil, en-tête, pied de page et page thème retouchés avec validation d'Erwan sur un aperçu ; fusionnée le 2026-11-13, avant la publication (09-11)
-- [ ] **Phase 9.2: CI et déploiement depuis le Mac** (INSÉRÉE le 2026-11-18) : commandes locales de contrôle et de déploiement, mêmes gardes que le pipeline GitHub, confirmation humaine au clavier, clé dédiée
+- [x] **Phase 9.2: CI et déploiement depuis le Mac** (INSÉRÉE le 2026-11-18, premier déploiement local le 2026-11-19) : commandes locales de contrôle et de déploiement, mêmes gardes que le pipeline GitHub, confirmation humaine au clavier, clé dédiée
 - [ ] **Phase 10: Import de décembre** : analyseur plafonné, cohérence de l'instantané, import des statuts en pull request relue (10 au 13 décembre, gel du 13 au 15)
 
 ## Piste 0 (Erwan, hors code)
@@ -207,7 +207,7 @@ Plans:
 - [x] 09.2-05-PLAN.md — Confirmation lue sur /dev/tty et refus hors terminal en premier, journal local, `deploy:local -- retour [<sha>]` à la place de rollback.yml (vague 5)
 - [x] 09.2-06-PLAN.md — `npm run deploy:local` complet : gardes rejouées après la confirmation, envoi, activation, vérifications, retour automatique (signaux compris), répétition à blanc sans serveur, tests de fuite et de parité avec le job deploy (vague 6)
 - [x] 09.2-07-PLAN.md — Étape utilisateur de l'installateur à deux clés au plus, section RUNBOOK, ADR-063, README, tests de documentation (vague 7)
-- [ ] 09.2-08-PLAN.md — Clé créée par Erwan, écriture serveur après son accord, tests du bac à sable si besoin, ci:local complet et répétition à blanc par l'orchestrateur, premier etat et premier déploiement par Erwan (vague 8, points de contrôle humains)
+- [x] 09.2-08-PLAN.md — Clé créée par Erwan, écriture serveur après son accord, tests du bac à sable si besoin, ci:local complet et répétition à blanc par l'orchestrateur, premier etat et premier déploiement par Erwan (vague 8, points de contrôle humains)
 
 ### Phase 10: Import de décembre
 
@@ -245,5 +245,5 @@ Plans:
 | 8. Serveur, pipeline, supervision et sauvegardes | v1.1 | 15/15 | Complete    | 2026-11-10 |
 | 9. Contenu relu, juridique et ouverture | v1.1 | 12/15 | In Progress|  |
 | 9.1 Finitions visuelles avant l'ouverture | v1.1 | 9/9 | Complete | 2026-11-13 |
-| 9.2 CI et déploiement depuis le Mac | v1.1 | 7/8 | In Progress|  |
+| 9.2 CI et déploiement depuis le Mac | v1.1 | 8/8 | Complete | 2026-11-19 |
 | 10. Import de décembre | v1.1 | 1/6 | In Progress|  |

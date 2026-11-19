@@ -73,10 +73,10 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 
 ### CI et déploiement depuis le Mac (ajoutées le 2026-11-18, décision d'Erwan « Script sur le Mac »)
 
-- [ ] **LOC-01**: Une commande locale rejoue les contrôles de la CI (validation, types, tests, builds, check-dist, tests navigateur, recherche de secrets) et laisse un reçu pour le commit ; un test empêche sa liste d'étapes de diverger de celle de la CI GitHub
-- [ ] **LOC-02**: Une commande locale construit et déploie un commit poussé, propre, contrôlé et hors gel, avec les gardes du pipeline (build cloisonnée, empreinte, version servie vérifiée, retour automatique) et une confirmation tapée par Erwan dans un terminal, qu'aucun agent ne peut donner
-- [ ] **LOC-03**: Une commande locale remet en ligne la version précédente ou une version donnée, avec la même confirmation
-- [ ] **LOC-04**: La clé de déploiement du Mac est dédiée, hors dépôt et limitée par la commande forcée du serveur ; l'installation, l'usage, les pannes et le retrait d'urgence sont au RUNBOOK ; chaque déploiement est journalisé localement
+- [x] **LOC-01**: Une commande locale rejoue les contrôles de la CI (validation, types, tests, builds, check-dist, tests navigateur, recherche de secrets) et laisse un reçu pour le commit ; un test empêche sa liste d'étapes de diverger de celle de la CI GitHub
+- [x] **LOC-02**: Une commande locale construit et déploie un commit poussé, propre, contrôlé et hors gel, avec les gardes du pipeline (build cloisonnée, empreinte, version servie vérifiée, retour automatique) et une confirmation tapée par Erwan dans un terminal, qu'aucun agent ne peut donner
+- [ ] **LOC-03** (code et tests contre un faux serveur faits ; essai réel prévu avec l'exercice de retrait du plan 09-11): Une commande locale remet en ligne la version précédente ou une version donnée, avec la même confirmation
+- [x] **LOC-04**: La clé de déploiement du Mac est dédiée, hors dépôt et limitée par la commande forcée du serveur ; l'installation, l'usage, les pannes et le retrait d'urgence sont au RUNBOOK ; chaque déploiement est journalisé localement
 
 ### Dette de l'audit v1.0
 
@@ -146,10 +146,10 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 | FIN-02 | Phase 9.1 | Complete |
 | FIN-03 | Phase 9.1 | Complete |
 | FIN-04 | Phase 9.1 | Complete |
-| LOC-01 | Phase 9.2 | Pending |
-| LOC-02 | Phase 9.2 | Pending |
+| LOC-01 | Phase 9.2 | Complete |
+| LOC-02 | Phase 9.2 | Complete |
 | LOC-03 | Phase 9.2 | Pending |
-| LOC-04 | Phase 9.2 | Pending |
+| LOC-04 | Phase 9.2 | Complete |
 | IMP-01 | Phase 10 | Complete |
 | IMP-02 | Phase 10 | Complete |
 | IMP-03 | Phase 10 | Pending |
