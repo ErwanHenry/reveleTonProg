@@ -567,6 +567,54 @@ describe('import : --format, --dry-run tolérant et --check (IMP-03)', () => {
     identiques(avant, octets(root));
   });
 
+  // Phase 10.1 (F-03) : désistement amont de la personne fictive alors que sa ligne de table n'a pas de motif.
+  function desistementSansMotif(): { root: string; modif: string } {
+    const { root, base } = racineFictive();
+    const modif = muter(root, base, (j) => {
+      const r = j.candidats.find((x) => x.id === FICTIF) as Record<string, any>;
+      r.statut = 'renonce';
+      r.source.date = '2026-11-20';
+    });
+    return { root, modif };
+  }
+
+  it('10.1 : désistement sans motif en --dry-run markdown : code 0, section « motif à décider », rien d’écrit', () => {
+    const { root, modif } = desistementSansMotif();
+    const avant = octets(root);
+    const res = importer(['--file', modif, '--root', root, '--dry-run', '--format', 'markdown']);
+    assert.equal(res.status, 0, res.stdout + res.stderr);
+    const s = section(res.stdout, '## Désistements dont le motif est à décider');
+    assert.match(s, /^- essai-fictif \(amont essai-fictif\) : declare \(2026-10-01\) -> renonce \(2026-11-20\), source https:\/\/exemple\.test\/essai-fictif\/annonce ; motif à décider parmi retrait, elimine_primaire, ralliement, non_candidat$/m);
+    identiques(avant, octets(root));
+  });
+
+  it('10.1 : désistement sans motif en --dry-run texte : ligne « motif à décider : », code 0', () => {
+    const { root, modif } = desistementSansMotif();
+    const res = importer(['--file', modif, '--root', root, '--dry-run']);
+    assert.equal(res.status, 0, res.stdout + res.stderr);
+    assert.match(res.stdout, /^motif à décider : essai-fictif$/m);
+  });
+
+  it('10.1 : --format json : un seul objet sur stdout (entrée, motifs à décider, Markdown)', () => {
+    const { root, modif } = desistementSansMotif();
+    const res = importer(['--file', modif, '--root', root, '--dry-run', '--format', 'json']);
+    assert.equal(res.status, 0, res.stdout + res.stderr);
+    const j = JSON.parse(res.stdout) as { version: number; entree: { instantane: { sha256: string } }; motifsADecider: { idAmont: string }[]; markdown: string };
+    assert.equal(j.version, 1);
+    assert.match(j.entree.instantane.sha256, /^[0-9a-f]{64}$/);
+    assert.deepEqual(j.motifsADecider.map((m) => m.idAmont), [FICTIF]);
+    assert.match(j.markdown, /## Désistements dont le motif est à décider/);
+  });
+
+  it('10.1 : désistement sans motif en import réel : code 1, commande decider citée, rien d’écrit', () => {
+    const { root, modif } = desistementSansMotif();
+    const avant = octets(root);
+    const res = importer(['--file', modif, '--root', root]);
+    assert.equal(res.status, 1);
+    assert.match(res.stderr, /motif de renoncement à décider .*essai-fictif.*npm run veille -- decider essai-fictif/);
+    identiques(avant, octets(root));
+  });
+
   it('markdown : deux exécutions donnent les mêmes octets, rien d’autre que le rapport sur stdout', () => {
     const root = tmpRoot();
     const snap = path.join(root, 'data', 'import', path.basename(newestSnapshot()));
