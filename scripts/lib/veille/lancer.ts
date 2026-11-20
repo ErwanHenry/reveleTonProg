@@ -146,6 +146,7 @@ export async function lancerVeille(d: DependancesLancer, o: OptionsLancer = {}):
       '',
       `Calculé le ${etat.dernierPassage} sur ${reference} (${commit.slice(0, 12)}).${r.status !== 0 ? ` La répétition à blanc a signalé un problème (code ${r.status}) : voir « Conflits » ci-dessous.` : ''}`,
       '',
+      '',
     ].join('\n');
     const texte = `${entete}${resumeVeilleMarkdown(classement)}\n${sortie.markdown}\n${detailsLocauxMarkdown(classement, detailsAmont(octets))}`;
     const rapport = path.join(dossierRapports(d.dossier), `${horodatage(d.maintenant())}-${sha.slice(0, 12)}.md`);
