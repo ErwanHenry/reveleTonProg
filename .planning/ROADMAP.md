@@ -249,10 +249,10 @@ Plans:
 
 Plans:
 
-- [ ] 10.1-01-PLAN.md — Motif à décider en répétition à blanc, `--format json`, classement sorties, entrées, retours, à décider (vague 1)
-- [ ] 10.1-02-PLAN.md — Tests à compteurs recalculés depuis l'instantané pointé (vague 1)
-- [ ] 10.1-03-PLAN.md — `npm run veille` : worktree propre, jeu gardé par empreinte, rapport et état hors dépôt, alertes macOS, Telegram et Healthchecks (vague 2)
-- [ ] 10.1-04-PLAN.md — `decider` au terminal par Erwan seul, `preparer` jusqu'à la branche locale sans push, refus pendant les gels (vague 3)
+- [x] 10.1-01-PLAN.md — Motif à décider en répétition à blanc, `--format json`, classement sorties, entrées, retours, à décider (vague 1)
+- [x] 10.1-02-PLAN.md — Tests à compteurs recalculés depuis l'instantané pointé (vague 1)
+- [x] 10.1-03-PLAN.md — `npm run veille` : worktree propre, jeu gardé par empreinte, rapport et état hors dépôt, alertes macOS, Telegram et Healthchecks (vague 2)
+- [x] 10.1-04-PLAN.md — `decider` au terminal par Erwan seul, `preparer` jusqu'à la branche locale sans push, refus pendant les gels (vague 3)
 - [ ] 10.1-05-PLAN.md — launchd 8 h et 19 h, RUNBOOK, ADR-064, mise en service avec Erwan (vague 4, point de contrôle humain)
 
 ## Progress
@@ -271,4 +271,4 @@ Plans:
 | 9.1 Finitions visuelles avant l'ouverture | v1.1 | 9/9 | Complete | 2026-11-13 |
 | 9.2 CI et déploiement depuis le Mac | v1.1 | 8/8 | Complete | 2026-11-19 |
 | 10. Import de décembre | v1.1 | 1/6 | In Progress|  |
-| 10.1 Veille des candidatures | v1.1 | 0/5 | Planned |  |
+| 10.1 Veille des candidatures | v1.1 | 4/5 | In Progress (PR #8, mise en service par Erwan) |  |
