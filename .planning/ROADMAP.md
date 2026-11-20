@@ -29,7 +29,7 @@ Détail complet : [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) ; exi
 - [x] **Phase 9.1: Finitions visuelles avant l'ouverture** (INSÉRÉE le 2026-11-12) : défauts de l'audit visuel corrigés, page 404, balises et image de partage, accueil, en-tête, pied de page et page thème retouchés avec validation d'Erwan sur un aperçu ; fusionnée le 2026-11-13, avant la publication (09-11)
 - [x] **Phase 9.2: CI et déploiement depuis le Mac** (INSÉRÉE le 2026-11-18, premier déploiement local le 2026-11-19) : commandes locales de contrôle et de déploiement, mêmes gardes que le pipeline GitHub, confirmation humaine au clavier, clé dédiée
 - [ ] **Phase 10: Import de décembre** : analyseur plafonné, cohérence de l'instantané, import des statuts en pull request relue (10 au 13 décembre, gel du 13 au 15)
-- [ ] **Phase 10.1: Veille des candidatures** (INSÉRÉE le 2026-11-20, demande d'Erwan) : veille planifiée des entrées et des désistements, rapport et alerte, décisions d'Erwan saisies par lui seul, branche d'import préparée sans push ; à livrer avant le 10 décembre
+- [x] **Phase 10.1: Veille des candidatures** (INSÉRÉE le 2026-11-20, demande d'Erwan) : veille planifiée des entrées et des désistements, rapport et alerte, décisions d'Erwan saisies par lui seul, branche d'import préparée sans push ; à livrer avant le 10 décembre
 
 ## Piste 0 (Erwan, hors code)
 
@@ -253,7 +253,7 @@ Plans:
 - [x] 10.1-02-PLAN.md — Tests à compteurs recalculés depuis l'instantané pointé (vague 1)
 - [x] 10.1-03-PLAN.md — `npm run veille` : worktree propre, jeu gardé par empreinte, rapport et état hors dépôt, alertes macOS, Telegram et Healthchecks (vague 2)
 - [x] 10.1-04-PLAN.md — `decider` au terminal par Erwan seul, `preparer` jusqu'à la branche locale sans push, refus pendant les gels (vague 3)
-- [ ] 10.1-05-PLAN.md — launchd 8 h et 19 h, RUNBOOK, ADR-064, mise en service avec Erwan (vague 4, point de contrôle humain)
+- [x] 10.1-05-PLAN.md — launchd 8 h et 19 h, RUNBOOK, ADR-064, mise en service avec Erwan (vague 4, point de contrôle humain)
 
 ## Progress
 
@@ -271,4 +271,4 @@ Plans:
 | 9.1 Finitions visuelles avant l'ouverture | v1.1 | 9/9 | Complete | 2026-11-13 |
 | 9.2 CI et déploiement depuis le Mac | v1.1 | 8/8 | Complete | 2026-11-19 |
 | 10. Import de décembre | v1.1 | 1/6 | In Progress|  |
-| 10.1 Veille des candidatures | v1.1 | 4/5 | In Progress (PR #8, mise en service par Erwan) |  |
+| 10.1 Veille des candidatures | v1.1 | 5/5 | Complete (Telegram et Healthchecks à configurer par Erwan) | 2026-11-20 |

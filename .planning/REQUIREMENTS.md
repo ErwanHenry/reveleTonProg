@@ -80,12 +80,12 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 
 ### Veille des candidatures (ajoutées le 2026-11-20, demande d'Erwan « watchdog »)
 
-- [ ] **VEI-01**: Une veille planifiée deux fois par jour sur le Mac lit le jeu data.gouv, dédoublonne sur l'empreinte, n'écrit rien dans le dépôt et laisse un rapport daté et un état hors dépôt
-- [ ] **VEI-02**: Le rapport classe les changements en sorties, entrées, retours et décisions à prendre, avec l'effet sur les thèmes publiés ; un désistement sans motif décidé y figure au lieu d'arrêter la répétition à blanc
-- [ ] **VEI-03**: Alerte par notification macOS et Telegram (bot dédié, secrets dans le Trousseau) seulement s'il y a du nouveau à décider ; un contrôle Healthchecks signale une veille qui ne tourne plus
-- [ ] **VEI-04**: Les décisions sur une personne (correspondance, motif) ne peuvent être saisies que par Erwan dans un terminal interactif
-- [ ] **VEI-05**: Une commande prépare la branche d'import locale (import réel, pointeur, dates, contrôles, corps de pull request) sans pousser et refuse pendant un gel ; un import réel ne casse plus de test à compteur en dur
-- [ ] **VEI-06**: Installation, retrait, pannes et lecture du rapport sont au RUNBOOK, gardés par un test de documentation
+- [x] **VEI-01**: Une veille planifiée deux fois par jour sur le Mac lit le jeu data.gouv, dédoublonne sur l'empreinte, n'écrit rien dans le dépôt et laisse un rapport daté et un état hors dépôt
+- [x] **VEI-02**: Le rapport classe les changements en sorties, entrées, retours et décisions à prendre, avec l'effet sur les thèmes publiés ; un désistement sans motif décidé y figure au lieu d'arrêter la répétition à blanc
+- [x] **VEI-03**: Alerte par notification macOS et Telegram (bot dédié, secrets dans le Trousseau) seulement s'il y a du nouveau à décider ; un contrôle Healthchecks signale une veille qui ne tourne plus
+- [x] **VEI-04**: Les décisions sur une personne (correspondance, motif) ne peuvent être saisies que par Erwan dans un terminal interactif
+- [x] **VEI-05**: Une commande prépare la branche d'import locale (import réel, pointeur, dates, contrôles, corps de pull request) sans pousser et refuse pendant un gel ; un import réel ne casse plus de test à compteur en dur
+- [x] **VEI-06**: Installation, retrait, pannes et lecture du rapport sont au RUNBOOK, gardés par un test de documentation
 
 ### Dette de l'audit v1.0
 
@@ -162,12 +162,12 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 | IMP-01 | Phase 10 | Complete |
 | IMP-02 | Phase 10 | Complete |
 | IMP-03 | Phase 10 | Pending |
-| VEI-01 | Phase 10.1 | Pending |
-| VEI-02 | Phase 10.1 | Pending |
-| VEI-03 | Phase 10.1 | Pending |
-| VEI-04 | Phase 10.1 | Pending |
-| VEI-05 | Phase 10.1 | Pending |
-| VEI-06 | Phase 10.1 | Pending |
+| VEI-01 | Phase 10.1 | Complete |
+| VEI-02 | Phase 10.1 | Complete |
+| VEI-03 | Phase 10.1 | Complete |
+| VEI-04 | Phase 10.1 | Complete |
+| VEI-05 | Phase 10.1 | Complete |
+| VEI-06 | Phase 10.1 | Complete |
 
 **Coverage:**
 
