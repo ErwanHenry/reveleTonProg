@@ -16,6 +16,7 @@ import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { fetchSafe } from './lib/fetch-safe.ts';
 import type { Executer } from './lib/veille/alertes.ts';
+import { SOUS_COMMANDES_VEILLE } from './lib/veille/commandes.ts';
 import { RefusDecider, decider, ligneAmont, ouvrirTerminal } from './lib/veille/decider.ts';
 import { dossierVeille, lireEtat, lignesEtat } from './lib/veille/etat.ts';
 import { ArretPreparer, preparerImport } from './lib/veille/preparer.ts';
@@ -25,7 +26,7 @@ import { REFERENCE_PAR_DEFAUT, lancerVeille } from './lib/veille/lancer.ts';
 export const URL_JEU = 'https://www.data.gouv.fr/api/1/datasets/r/06237c53-76bd-4224-9805-418e125f0493';
 const PLAFOND_OCTETS = 5 * 1024 * 1024;
 
-export const SOUS_COMMANDES = ['lancer', 'etat', 'decider', 'preparer', 'installer', 'retirer'] as const;
+const SOUS_COMMANDES = SOUS_COMMANDES_VEILLE;
 
 const USAGE = `Usage : npm run veille -- [lancer] [--reference <ref>] [--sans-alerte]
         npm run veille -- etat

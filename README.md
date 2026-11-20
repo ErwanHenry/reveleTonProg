@@ -62,6 +62,16 @@ fnm exec --using=24 npm run deploy:local            # déploiement réel, par Er
 
 Prérequis, fichier local, création de la clé, codes de sortie, pannes et retour au chemin GitHub : section « CI et déploiement depuis le Mac » du [runbook](./docs/RUNBOOK.md).
 
+Veille des candidatures (phase 10.1, ADR-064) : deux passages par jour sur le Mac, rapport et alerte quand une personne entre dans la course ou s'en retire ; la veille détecte, Erwan décide :
+
+```bash
+fnm exec --using=24 npm run veille                  # un passage : rapport daté hors du dépôt, alerte s'il y a quelque chose à décider
+fnm exec --using=24 npm run veille -- etat          # dernier passage, dernier rapport, canaux configurés
+fnm exec --using=24 npm run veille -- preparer      # branche d'import locale, jamais poussée (décisions par npm run veille -- decider)
+```
+
+Installation (bot Telegram, Trousseau, Healthchecks, launchd), lecture du rapport et pannes : section « Veille des candidatures » du [runbook](./docs/RUNBOOK.md).
+
 Voir les brouillons (pastillés, noindex, bandeau de prévisualisation) : `RTP_MODE=preview npm run build`. Parcourir le corpus fictif des pages M1 :
 
 ```bash
@@ -128,6 +138,7 @@ Aucun secret dans le dépôt : `.env` est ignoré par Git, `.env.example` ne con
 - **Vaultwarden** (coffre `reveleTonProg`) : mots de passe en clair des utilisateurs `essai` et `sonde`, clé privée de déploiement, copies des trois fichiers du serveur et des adresses de ping. Copies de travail sur le Mac dans `~/.config/rtp/` (0600), hors de tout dépôt.
 
 - **Mac, chemin local (phase 9.2)** : `~/.config/rtp/deploiement.env` (0600 : cible, hôte, utilisateur et adresse du serveur, jamais dans le dépôt) et la clé dédiée `~/.config/rtp/rtp-deploy-mac`, protégée par une phrase de passe qu'Erwan seul connaît (rangée dans Vaultwarden), autorisée sur le serveur derrière la même commande forcée que la clé de GitHub.
+- **Mac, veille des candidatures (phase 10.1)** : Trousseau macOS, services `rtp-veille-telegram-jeton`, `rtp-veille-telegram-conversation` et `rtp-veille-healthchecks` (jeton du bot dédié, identifiant de conversation, adresse de ping), saisis par Erwan ; copie du jeton dans Vaultwarden. Aucun fichier de la veille ne contient de secret.
 
 Procédures : `docs/RUNBOOK.md`, sections « Environments GitHub », « CI et déploiement depuis le Mac » et « Restauration ».
 

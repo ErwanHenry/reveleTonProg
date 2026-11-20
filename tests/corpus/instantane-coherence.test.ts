@@ -250,11 +250,12 @@ describe('chargerEtatDepot : racines temporaires', () => {
     const jsonAncien = readdirSync(dossier).find((n) => /^2027etmoi-candidats-.*\.json$/.test(n) && !n.endsWith('.meta.json'));
     assert.ok(jsonAncien);
     const contenu = JSON.parse(readFileSync(path.join(dossier, jsonAncien), 'utf8')) as Record<string, unknown>;
-    contenu.mise_a_jour = '2026-11-09';
-    const nouveau = '2027etmoi-candidats-2026-11-09-000000000000';
+    // Phase 10.1 (D-15) : une date que n'atteint aucun import réel, pour rester « plus récent » après chaque import.
+    contenu.mise_a_jour = '2099-12-31';
+    const nouveau = '2027etmoi-candidats-2099-12-31-000000000000';
     writeFileSync(path.join(dossier, `${nouveau}.json`), JSON.stringify(contenu));
     const meta = JSON.parse(readFileSync(path.join(dossier, jsonAncien.replace(/\.json$/, '.meta.json')), 'utf8')) as Record<string, unknown>;
-    writeFileSync(path.join(dossier, `${nouveau}.meta.json`), JSON.stringify({ ...meta, mise_a_jour: '2026-11-09', fetched_at: '2026-11-12T10:00:00+01:00' }));
+    writeFileSync(path.join(dossier, `${nouveau}.meta.json`), JSON.stringify({ ...meta, mise_a_jour: '2099-12-31', fetched_at: '2099-12-31T10:00:00+01:00' }));
     const { erreurs } = comparerInstantane(chargerEtatDepot(racine));
     assert.deepEqual(erreurs.map((e) => e.champ), ['instantane']);
     assert.match(formaterEcart(erreurs[0]!), new RegExp(`amont=data/import/${nouveau}\\.json`));

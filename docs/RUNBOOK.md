@@ -913,6 +913,85 @@ Mêmes fenêtres et mêmes règles que « Gel des scrutins et retrait d'urgence 
 - Le premier `etat` réel et chaque déploiement ou retour réels sont faits par Erwan, dans son terminal : lui seul connaît la phrase de passe de la clé.
 - La phrase tapée protège contre l'erreur, pas contre un attaquant : la barrière réelle est la phrase de passe de la clé (ADR-063).
 
+## Veille des candidatures
+
+Phase 10.1, demande d'Erwan du 2026-11-20 : sortir les candidats qui se désistent (au profit d'un autre ou non) et ajouter ceux qui entrent dans la course. Règle : la veille détecte et propose, Erwan décide ; le site ne change qu'après une pull request relue (ADR-064).
+
+### Ce que fait la veille
+
+Deux fois par jour, à 8 h et à 19 h (heure du Mac), `launchd` lance la veille sur le Mac d'Erwan ; un passage manqué pendant la veille du Mac est rattrapé au réveil, pas un Mac éteint. Un passage : récupère `origin` en lecture ; aligne son propre worktree détaché (`~/.cache/rtp/veille/arbre`) sur `origin/main` ; télécharge le jeu data.gouv « statuts sourcés » (seule source, décision du 2026-11-20 ; le Conseil constitutionnel viendra dans une phase ultérieure, avant fin février 2027) ; garde les octets sous `amont/<sha256>.json` ; si l'empreinte est déjà connue, s'arrête là ; sinon lance `import:datagouv -- --dry-run --format json` dans son worktree, classe les changements et écrit un rapport daté. Il n'écrit jamais dans le dossier de travail d'Erwan, ne crée aucune branche, ne pousse rien, n'ouvre aucune pull request.
+
+Le jeu amont change d'octets sans changer `mise_a_jour` : la veille dédoublonne sur l'empreinte SHA-256, jamais sur la date.
+
+| Commande | Effet |
+|---|---|
+| `npm run veille` | un passage (sous-commande `lancer` par défaut) ; `--sans-alerte` pour un essai, `--reference <ref>` pour suivre une autre référence |
+| `npm run veille -- etat` | dernier passage, dernière empreinte, dernier rapport, canaux configurés (oui ou non, jamais la valeur) |
+| `npm run veille -- decider <id-amont>` | décision d'Erwan sur une personne, tapée dans un terminal (voir plus bas) |
+| `npm run veille -- preparer` | branche d'import locale, jamais poussée (voir plus bas) |
+| `npm run veille -- installer` | planification `launchd` (agent `fr.reveletonprog.veille`) et lanceur ; idempotent |
+| `npm run veille -- retirer` | retire la planification et le lanceur ; rapports et état restent |
+
+Dossier de données : `~/.cache/rtp/veille` (0700 ; `RTP_VEILLE_DIR` pour un autre dossier) : `etat.json`, `rapports/`, `amont/`, `pr/` (corps de pull request), `arbre/`, `lancer.sh`, `journal.log`.
+
+### Lire le rapport
+
+En tête, le résumé de la veille, puis le rapport d'import habituel (section « Importer les statuts data.gouv »), puis le texte amont non relu.
+
+- **Sorties** : statut amont `renonce` ou `empeche` pour une personne dont le dernier statut ne l'était pas. Un désistement au profit d'une autre candidature se traduit par le motif `ralliement`, sans nommer la candidature soutenue sur le site (décision du 2026-11-20).
+- **Entrées** : personne nouvelle au statut `declare` ou `primaire`, ou statut qui passe à `declare` ou `primaire`.
+- **Retours** : sortie annulée (`renonce` ou `empeche` vers un autre statut).
+- **Autres changements de statut** : par exemple `declare` vers `primaire`, ou une personne nouvelle déjà hors course.
+- **Décisions à prendre (Erwan seul)** : ligne de `correspondances.yaml` à écrire pour une personne absente de la table ; motif d'un désistement quand la ligne de la table n'en a pas. Avant la phase 10.1, ce dernier cas faisait échouer la répétition à blanc ; il y est maintenant listé sous « Désistements dont le motif est à décider », et l'import réel refuse tant que le motif n'est pas décidé.
+- **Effet sur les thèmes publiés** : case de couverture à créer avant de relire le statut d'une entrée ; personne qui sortira du périmètre d'équité quand son statut `renonce` sera relu (ses mesures quittent alors les cellules du thème et elle apparaît sous « Ne se présente pas »).
+- **Texte amont non relu** : `statut_detail` du jeu amont, pour aider à choisir un motif. Il reste dans ce rapport local : jamais dans `src/content/`, jamais dans le corps de la pull request.
+
+Les dérives de source à statut inchangé n'alertent pas ; elles restent dans le rapport.
+
+### Alertes
+
+Alerte seulement quand l'empreinte est nouvelle et qu'il y a une sortie, une entrée, un retour, un autre changement de statut ou une décision à prendre : notification macOS et message Telegram court (comptes et chemin du rapport, aucun nom). Sans jeton Telegram, notification macOS seule ; une panne Telegram n'arrête pas la veille et apparaît dans `etat`. Chaque passage réussi envoie un ping de succès au contrôle Healthchecks `veille-candidatures`, et un `/fail` si la veille elle-même tombe en panne ; ce contrôle ne signale jamais un changement.
+
+### Installer (Erwan, une fois)
+
+1. Bot Telegram : dans Telegram, écrire à `@BotFather`, `/newbot`, nom au choix ; noter le jeton. Écrire un message au bot, puis lire l'identifiant de conversation dans la réponse de `https://api.telegram.org/bot<jeton>/getUpdates` (champ `chat.id`). Copier le jeton dans Vaultwarden (coffre `reveleTonProg`).
+2. Healthchecks : créer le contrôle `veille-candidatures`, période 12 heures, grâce 2 jours, intégration Telegram existante ; copier l'adresse de ping.
+3. Trousseau du Mac (chaque commande demande la valeur, tapée par Erwan ; `-U` remplace une valeur existante) :
+
+   ```bash
+   security add-generic-password -U -a "$USER" -s rtp-veille-telegram-jeton -w
+   security add-generic-password -U -a "$USER" -s rtp-veille-telegram-conversation -w
+   security add-generic-password -U -a "$USER" -s rtp-veille-healthchecks -w
+   ```
+
+4. Depuis n'importe quel checkout du dépôt à jour : `fnm exec --using=24 npm run veille -- installer`, puis un essai immédiat : `launchctl kickstart gui/$(id -u)/fr.reveletonprog.veille`, et `npm run veille -- etat`. Au premier accès au Trousseau, macOS peut demander l'autorisation pour `security` : choisir « Toujours autoriser ».
+
+La première alerte arrive au premier passage (aucune empreinte connue) s'il y a quelque chose à décider.
+
+### De la décision à la pull request
+
+1. `npm run veille -- preparer` : refuse pendant le gel d'import (13 décembre 2026 à 18:00 au 15 décembre 2026 à 23:59) et pendant les fenêtres de `scripts/garde-gel.ts` ; sinon crée ou reprend le worktree `../reveleTonProg-import` sur `import/statuts-AAAA-MM-JJ` depuis `origin/main`, avec les octets du dernier rapport (empreinte vérifiée). S'il reste une décision, il liste les commandes `decider` et s'arrête (code 3).
+2. Dans ce worktree, pour chaque personne listée : `npm run veille -- decider <id-amont>`. La commande affiche les faits amont et le texte amont non relu, puis demande l'identifiant de fiche, le prénom, le nom, `nom_tri`, le type de source et, pour un désistement, le motif (`retrait`, `elimine_primaire`, `ralliement`, `non_candidat`) ; pour une personne déjà dans la table, seulement le motif. Rien n'est prérempli. Elle relit la table modifiée, montre l'entrée et n'écrit qu'après « oui ». Sans terminal de contrôle (tâche planifiée, agent, processus détaché), elle refuse avant toute autre action (code 3) ; dans le dossier de travail principal ou hors d'une branche `import/…`, elle refuse aussi.
+3. `npm run veille -- preparer` à nouveau : corps de pull request écrit sous `~/.cache/rtp/veille/pr/` (résumé et rapport, sans texte amont non relu) ; commit des décisions ; import réel ; pointeur `data/dataset-datagouv.yaml`, dates de `data/import/ATTRIBUTION.md` et de `LICENSE` ; contrôles `--check`, `ids -- --check`, `validate --mode production` ; commit de l'import (statuts en `brouillon`). Il imprime ce qui reste à décider ou à relire et les commandes de push et de pull request, sans les lancer. Code 4 si un contrôle échoue.
+4. Sur la branche, Erwan seul : cases de couverture des thèmes publiés avant toute relecture d'une entrée, `data/couverture-themes.yaml` et cases des thèmes pilotes pour chaque nouvelle personne du périmètre (liste de contrôle de l'import, points 6 et 7), relecture des statuts (`npm run relecture -- marquer statut <candidat>`, `--hors-perimetre` pour une sortie), textes qui annoncent un compte.
+5. Erwan pousse et ouvre la pull request (ou le demande à un agent), la relit et la fusionne ; le déploiement suit la procédure habituelle. En décembre 2026, la procédure « Import de décembre » s'applique telle quelle ; la veille sert à la répétition du matin.
+
+### Pannes
+
+- `etat` dit `panne` : lire `derniere erreur`, puis `~/.cache/rtp/veille/journal.log`. Réseau ou data.gouv indisponible : le passage suivant réessaie, rien à faire.
+- « le worktree de la veille contient des modifications » : quelqu'un a écrit dans `~/.cache/rtp/veille/arbre`. La veille ne l'écrase pas. Regarder le diff (`git -C ~/.cache/rtp/veille/arbre status`), puis le supprimer : `git worktree remove --force ~/.cache/rtp/veille/arbre` ; le passage suivant le recrée.
+- Plus aucune alerte Healthchecks ni rapport : `launchctl print gui/$(id -u)/fr.reveletonprog.veille` ; réinstaller avec `npm run veille -- installer`.
+- Jeton Telegram révoqué ou changé : refaire l'étape 3 de l'installation pour ce seul service.
+- `preparer` code 1 « répétition à blanc signale un conflit » : lire la section « Conflits » du rapport et la section « Importer les statuts data.gouv ».
+
+### Retirer
+
+`npm run veille -- retirer` (planification et lanceur supprimés ; rapports et état gardés). Pour tout effacer ensuite : `git worktree remove --force ~/.cache/rtp/veille/arbre`, puis supprimer `~/.cache/rtp/veille`, les trois entrées `rtp-veille-*` du Trousseau et le contrôle Healthchecks.
+
+### Règle pour les agents
+
+Un agent peut lancer `npm run veille`, `etat` et `preparer`, lire les rapports et en résumer les comptes. Il ne lance jamais `decider` (ni par un pseudo-terminal), n'écrit aucune ligne de `correspondances.yaml`, aucun motif, aucune case de couverture, aucun statut relu, et ne pousse la branche d'import que sur demande écrite d'Erwan.
+
 ## Incidents fréquents
 
 ### Une mesure publiée sans source
@@ -1046,6 +1125,7 @@ Healthchecks.io (compte d'Erwan) reçoit des pings et alerte quand un contrôle 
 | `vps-certificat` | `rtp-battement`, une fois `RTP_HOTE` posé | 5 min | 10 min | `/fail` : certificat servi qui expire dans moins de 14 jours | `ssh keel-vps 'docker logs --since 24h caddy 2>&1 \| grep -ci acme'` puis lire les messages ACME |
 | `sonde-externe` | `.github/workflows/sonde.yml`, toutes les 10 min | 1 jour | 1 jour | environ 2 jours sans ping de succès : page d'accueil sans le marqueur, `/version.json` illisible, hôte injoignable | `gh run list --workflow sonde.yml --limit 3`, puis `gh run view <id> --log-failed` |
 | `restauration-mensuelle` | `rtp-tester-restauration`, le 1er du mois | planning `0 11 1 * *` UTC | 3 jours | test du mois manqué ou en échec | `ssh keel-vps 'journalctl -t rtp-restauration -n 20 --no-pager'` |
+| `veille-candidatures` | `npm run veille`, launchd sur le Mac à 8 h et 19 h | 12 h | 2 jours | plus de ping de succès, ou `/fail` : veille en panne ou Mac éteint deux jours (jamais pour un changement de candidature) | `npm run veille -- etat` |
 
 - La sonde ne pingue qu'en cas de succès ; en cas d'échec elle envoie seulement la raison au journal du contrôle (`/log`). Le battement fait tous ses contrôles, puis envoie un ping par contrôle dans un ordre fixe ; sa ligne JSON (journal `rtp-battement`) ne contient ni adresse ni identifiant. Chaque appel externe est borné par `timeout` (`docker inspect` et `openssl s_client` 15 s, requêtes HTTPS 15 s, pings 60 s) et la ligne cron passe par `flock -n /run/rtp-battement.lock` : pendant une panne de Docker ou de Caddy, un passage encore en cours fait sauter le suivant au lieu de s'empiler (revue de code WR-05).
 - Alertes simulées, sans remplir le disque ni toucher au certificat (elles envoient de vraies alertes : à faire approuver comme une écriture) : `ssh keel-vps 'RTP_SEUIL1=1 /usr/local/sbin/rtp-battement'`, puis `RTP_SEUIL2=1`, puis `RTP_CERT_JOURS=9999` (une fois `RTP_HOTE` posé), et un passage normal pour le rétablissement. `RTP_HC_SIMULATION=1` affiche le signal prévu pour chaque contrôle sans rien envoyer.

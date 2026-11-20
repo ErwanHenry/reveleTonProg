@@ -771,15 +771,16 @@ describe('import : --format, --dry-run tolérant et --check (IMP-03)', () => {
     const ancien = path.basename(newestSnapshot());
     // un instantané plus récent déposé sans mettre le pointeur à jour
     const json = JSON.parse(readFileSync(newestSnapshot(), 'utf8')) as Record<string, unknown>;
-    json.mise_a_jour = '2026-11-09';
-    const nom = '2027etmoi-candidats-2026-11-09-000000000000';
+    // Phase 10.1 (D-15) : une date que n'atteint aucun import réel, pour rester « plus récent » après chaque import.
+    json.mise_a_jour = '2099-12-31';
+    const nom = '2027etmoi-candidats-2099-12-31-000000000000';
     writeFileSync(path.join(racine, 'data', 'import', `${nom}.json`), JSON.stringify(json));
     const meta = JSON.parse(readFileSync(path.join(IMPORT_DIR, ancien.replace(/\.json$/, '.meta.json')), 'utf8')) as Record<string, unknown>;
-    writeFileSync(path.join(racine, 'data', 'import', `${nom}.meta.json`), JSON.stringify({ ...meta, mise_a_jour: '2026-11-09', fetched_at: '2026-11-12T10:00:00+01:00' }));
+    writeFileSync(path.join(racine, 'data', 'import', `${nom}.meta.json`), JSON.stringify({ ...meta, mise_a_jour: '2099-12-31', fetched_at: '2099-12-31T10:00:00+01:00' }));
     assert.equal(readFileSync(ptr, 'utf8'), texte);
     const res = importer(['--check', '--root', racine]);
     assert.equal(res.status, 1, res.stdout + res.stderr);
-    assert.match(res.stdout, /instantane : fichier=data\/import\/.* amont=data\/import\/2027etmoi-candidats-2026-11-09-000000000000\.json/);
+    assert.match(res.stdout, /instantane : fichier=data\/import\/.* amont=data\/import\/2027etmoi-candidats-2099-12-31-000000000000\.json/);
   });
 
   it('--check refuse --file, --url, --dry-run et --format : code 2', () => {

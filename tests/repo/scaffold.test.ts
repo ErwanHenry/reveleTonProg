@@ -47,6 +47,7 @@ describe('scaffold Node 24', () => {
       relecture: 'node scripts/relecture.ts',
       'ci:local': 'node scripts/ci-local.ts',
       'deploy:local': 'node scripts/deploy-local.ts',
+      veille: 'node scripts/veille.ts',
     });
   });
 

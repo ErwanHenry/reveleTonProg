@@ -13,6 +13,10 @@ import { COMMANDES } from '../../scripts/relecture.ts';
 import { FENETRES_GEL } from '../../scripts/garde-gel.ts';
 import { CLES_CONFIG } from '../../scripts/lib/deploiement/config.ts';
 import { loadSiteConfig } from '../../src/lib/site-config.ts';
+import { SOUS_COMMANDES_VEILLE } from '../../scripts/lib/veille/commandes.ts';
+import { SERVICES } from '../../scripts/lib/veille/alertes.ts';
+import { HEURES, LABEL } from '../../scripts/lib/veille/launchd.ts';
+import { MOTIFS_RENONCEMENT } from '../../scripts/lib/rapport-import.ts';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const read = (f: string): string => fs.readFileSync(path.join(ROOT, f), 'utf8');
@@ -1193,5 +1197,50 @@ describe('documentation (phase 9.2) : CI et déploiement depuis le Mac', () => {
     for (const needle of ['npm run ci:local', 'npm run deploy:local', '« CI et déploiement depuis le Mac »', '~/.config/rtp/deploiement.env', 'rtp-deploy-mac', 'phrase de passe']) {
       assert.ok(readme.includes(needle), `README doit contenir « ${needle} »`);
     }
+  });
+});
+
+describe('documentation (phase 10.1) : veille des candidatures', () => {
+  const section = (): string => sectionRunbook('Veille des candidatures');
+
+  it('section de niveau 2 avant « Incidents fréquents », sous-sections attendues', () => {
+    assert.match(runbook, /^## Veille des candidatures$/m);
+    assert.ok(runbook.indexOf('\n## Veille des candidatures\n') < runbook.indexOf('\n## Incidents fréquents\n'));
+    for (const t of ['Ce que fait la veille', 'Lire le rapport', 'Alertes', 'Installer (Erwan, une fois)', 'De la décision à la pull request', 'Pannes', 'Retirer', 'Règle pour les agents']) {
+      assert.match(section(), new RegExp(`^### ${t.replace(/[()]/g, '\\$&')}$`, 'm'), t);
+    }
+  });
+
+  it('chaque sous-commande citée existe, et chaque sous-commande est documentée', () => {
+    const s = section();
+    const citees = [...s.matchAll(/npm run veille -- ([a-z]+)/g)].map((m) => m[1] as string);
+    assert.ok(citees.length > 0);
+    for (const c of citees) assert.ok((SOUS_COMMANDES_VEILLE as readonly string[]).includes(c), `sous-commande inconnue : ${c}`);
+    for (const c of SOUS_COMMANDES_VEILLE.filter((x) => x !== 'lancer')) assert.ok(s.includes(`npm run veille -- ${c}`), `${c} non documentée`);
+  });
+
+  it('heures, étiquette launchd, services du Trousseau, motifs et gel d’import conformes au code', () => {
+    const s = section();
+    for (const h of HEURES) assert.ok(s.includes(`${h} h`), `${h} h`);
+    assert.ok(s.includes(LABEL));
+    for (const v of Object.values(SERVICES)) assert.ok(s.includes(v), v);
+    for (const m of MOTIFS_RENONCEMENT) assert.ok(s.includes(`\`${m}\``), m);
+    assert.ok(s.includes('13 décembre 2026 à 18:00') && s.includes('15 décembre 2026 à 23:59'));
+    assert.ok(s.includes('ralliement') && s.includes('sans nommer la candidature soutenue'));
+  });
+
+  it('aucun secret, aucun tiret long, aucun mot interdit ; la règle des agents interdit decider', () => {
+    const s = section();
+    assert.doesNotMatch(s, /[–—]/);
+    assert.deepEqual(motsInterdits(s, { exempterCitations: false }), []);
+    assert.doesNotMatch(s, /\b\d{6,}:[A-Za-z0-9_-]{20,}\b/, 'jeton Telegram');
+    assert.doesNotMatch(s, /hc-ping\.com\/[0-9a-f-]{20,}/, 'adresse de ping');
+    assert.match(section().slice(section().indexOf('### Règle pour les agents')), /ne lance jamais `decider`/);
+  });
+
+  it('ADR-064, README, contrôle Healthchecks du Monitoring', () => {
+    assert.match(architecture, /^### ADR-064 : veille des candidatures/m);
+    for (const n of ['npm run veille', '« Veille des candidatures »', 'rtp-veille-telegram-jeton']) assert.ok(readme.includes(n), n);
+    assert.ok(sectionRunbook('Monitoring').includes('`veille-candidatures`'));
   });
 });
