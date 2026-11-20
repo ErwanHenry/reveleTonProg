@@ -1,7 +1,7 @@
 // Lecteur strict de config/hebergeur.yml (identité de l'hébergeur, garde de déploiement).
 import { after, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -44,16 +44,16 @@ function projet(contenu: string | null): string {
 }
 
 describe('loadHebergeurConfig', () => {
-  it('le fichier du dépôt est valide : Hetzner Online GmbH, statut prevu', () => {
+  it('le fichier du dépôt est valide : Hetzner Online GmbH, statut actif (plan 09-11)', () => {
     const cfg = loadHebergeurConfig(REPO, {});
-    assert.equal(cfg.statut, 'prevu');
+    assert.equal(cfg.statut, 'actif');
     assert.equal(cfg.nom, 'Hetzner Online GmbH');
     assert.match(cfg.source.url, /^https:\/\/www\.hetzner\.com\/legal\/legal-notice\/$/);
   });
 
   it('garde de déploiement : prevu + RTP_DEPLOIEMENT=1 lève une erreur qui nomme le fichier', () => {
     assert.throws(
-      () => loadHebergeurConfig(REPO, { RTP_DEPLOIEMENT: '1' }),
+      () => loadHebergeurConfig(projet(yml({ statut: 'prevu' })), { RTP_DEPLOIEMENT: '1' }),
       (e: Error) => e.message.startsWith('config/hebergeur.yml') && /RTP_DEPLOIEMENT/.test(e.message),
     );
   });
@@ -61,7 +61,8 @@ describe('loadHebergeurConfig', () => {
   it('IN-06 : RTP_DEPLOIEMENT=true ou yes est refusé au lieu de passer la garde', () => {
     for (const v of ['true', 'yes']) assert.throws(() => loadHebergeurConfig(REPO, { RTP_DEPLOIEMENT: v }), /RTP_DEPLOIEMENT doit valoir 1/, v);
     assert.throws(() => loadHebergeurConfig(projet(yml({ statut: 'actif' })), { RTP_DEPLOIEMENT: 'oui' }), /RTP_DEPLOIEMENT doit valoir 1/);
-    assert.equal(loadHebergeurConfig(REPO, { RTP_DEPLOIEMENT: '' }).statut, 'prevu');
+    assert.equal(loadHebergeurConfig(projet(yml({ statut: 'prevu' })), { RTP_DEPLOIEMENT: '' }).statut, 'prevu');
+    assert.equal(loadHebergeurConfig(REPO, { RTP_DEPLOIEMENT: '1' }).statut, 'actif');
   });
 
   it('statut actif accepté avec RTP_DEPLOIEMENT=1', () => {
@@ -86,4 +87,16 @@ describe('loadHebergeurConfig', () => {
       );
     });
   }
+});
+
+// LEG-01 (plan 09-11) : le fichier du dépôt ne peut être `actif` que si la note de risques signée porte la date
+// de transmission de l'identité de l'éditeur à l'hébergeur et la mention d'acceptation. Sauté tant que le fichier
+// est `prevu` ; échoue si la note perd sa date ou sa signature alors que l'hébergeur est actif.
+describe('config/hebergeur.yml actif exige la note de risques signée et datée', () => {
+  const cfg = loadHebergeurConfig(REPO, {});
+  it('identité transmise datée et « Mention : risque accepté » dans docs/RISQUES-JURIDIQUES.md', { skip: cfg.statut === 'actif' ? false : 'config/hebergeur.yml est prevu' }, () => {
+    const note = readFileSync(path.join(REPO, 'docs', 'RISQUES-JURIDIQUES.md'), 'utf8');
+    assert.match(note, /Identité transmise à l'hébergeur le \d{4}-\d{2}-\d{2}/);
+    assert.match(note, /^- Mention : risque accepté$/m);
+  });
 });

@@ -48,11 +48,12 @@ describe('loadPublicationConfig', () => {
     assert.deepEqual(loadPublicationConfig(racineAvec('# commentaire\nthemes_ouverts:\n  - logement\n  - climat\n')).themesOuverts, ['logement', 'climat']);
   });
 
-  it('le fichier du vrai corpus est lisible et vide', () => {
+  // Plan 09-11 (2026-11-20, décision d'Erwan) : le vrai corpus ouvre exactement le thème santé.
+  it('le fichier du vrai corpus est lisible et ouvre exactement sante', () => {
     const c = loadPublicationConfig(REPO_ROOT);
     assert.equal(c.present, true);
-    assert.deepEqual(c.themesOuverts, []);
-    assert.match(readFileSync(c.fichier, 'utf8'), /^themes_ouverts: \[\]$/m);
+    assert.deepEqual(c.themesOuverts, ['sante']);
+    assert.match(readFileSync(c.fichier, 'utf8'), /^themes_ouverts:\n {2}- sante$/m);
   });
 
   for (const [nom, contenu] of [

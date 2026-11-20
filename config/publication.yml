@@ -8,4 +8,5 @@
 # sous la clé, jamais en séquence de flux. Exemple :
 #   themes_ouverts:
 #     - sante
-themes_ouverts: []
+themes_ouverts:
+  - sante

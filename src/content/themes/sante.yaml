@@ -31,4 +31,6 @@ sous_themes:
     nom: Sécurité sociale et assurance maladie
   - id: grand-age
     nom: Grand âge et dépendance
-statut_relecture: brouillon
+statut_relecture: publie
+relecteur: l'agent d'IA Claude
+date_relecture: 2026-11-20
