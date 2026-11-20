@@ -5,11 +5,12 @@
 //   npm run veille -- etat              état du dernier passage, sans aucun secret
 //   npm run veille -- decider <id-amont> décision d'Erwan sur une personne, tapée dans un terminal
 //   npm run veille -- preparer          branche d'import locale (jamais poussée)
+//   npm run veille -- installer | retirer   planification launchd (8 h et 19 h)
 //
 // La veille détecte et propose ; Erwan décide. Voir docs/RUNBOOK.md, section « Veille des candidatures ».
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
@@ -18,17 +19,20 @@ import type { Executer } from './lib/veille/alertes.ts';
 import { RefusDecider, decider, ligneAmont, ouvrirTerminal } from './lib/veille/decider.ts';
 import { dossierVeille, lireEtat, lignesEtat } from './lib/veille/etat.ts';
 import { ArretPreparer, preparerImport } from './lib/veille/preparer.ts';
+import { HEURES, LABEL, cheminJournal, cheminLanceur, cheminPlist, lanceur, plist } from './lib/veille/launchd.ts';
 import { REFERENCE_PAR_DEFAUT, lancerVeille } from './lib/veille/lancer.ts';
 
 export const URL_JEU = 'https://www.data.gouv.fr/api/1/datasets/r/06237c53-76bd-4224-9805-418e125f0493';
 const PLAFOND_OCTETS = 5 * 1024 * 1024;
 
-export const SOUS_COMMANDES = ['lancer', 'etat', 'decider', 'preparer'] as const;
+export const SOUS_COMMANDES = ['lancer', 'etat', 'decider', 'preparer', 'installer', 'retirer'] as const;
 
 const USAGE = `Usage : npm run veille -- [lancer] [--reference <ref>] [--sans-alerte]
         npm run veille -- etat
         npm run veille -- decider <id-amont>
         npm run veille -- preparer [--dossier-import <dossier>]
+        npm run veille -- installer [--reference <ref>]
+        npm run veille -- retirer
 
   lancer          un passage : jeu data.gouv lu, répétition à blanc dans le worktree de la veille, rapport daté,
                   alerte seulement s'il y a une sortie, une entrée, un retour ou une décision à prendre
@@ -37,6 +41,8 @@ const USAGE = `Usage : npm run veille -- [lancer] [--reference <ref>] [--sans-al
                   dans un terminal ; refusée sans terminal ; écrite dans le worktree d'import seulement
   preparer        refusé pendant un gel ; worktree ../reveleTonProg-import sur import/statuts-AAAA-MM-JJ, import du
                   dernier jeu lu, pointeur et dates, contrôles, commits locaux ; ne pousse jamais
+  installer       planification launchd à 8 h et 19 h (agent utilisateur ${LABEL}) et lanceur ; idempotent
+  retirer         retire la planification et le lanceur (le dossier de données et ses rapports restent)
   --reference     référence suivie (défaut : ${REFERENCE_PAR_DEFAUT})
   --sans-alerte   aucune notification ni message (essais) ; le ping Healthchecks reste
 
@@ -123,6 +129,47 @@ if (sousCommande === 'preparer') {
     process.stderr.write(`veille preparer : ${e instanceof Error ? e.message : String(e)}\n`);
     process.exit(e instanceof ArretPreparer ? e.code : 1);
   }
+}
+
+if (sousCommande === 'installer' || sousCommande === 'retirer') {
+  let opts: { reference?: string } = {};
+  try {
+    ({ values: opts } = parseArgs({ args: reste, options: sousCommande === 'installer' ? { reference: { type: 'string' } } : {}, strict: true, allowPositionals: false }));
+  } catch (e) {
+    usage(e instanceof Error ? e.message : String(e));
+  }
+  const home = os.homedir();
+  const uid = process.getuid?.() ?? 0;
+  const fichierPlist = cheminPlist(home);
+  // bootout échoue si l'agent n'est pas chargé : sans importance, l'étape suivante dit l'état réel.
+  executer('/bin/launchctl', ['bootout', `gui/${uid}/${LABEL}`]);
+  if (sousCommande === 'retirer') {
+    rmSync(fichierPlist, { force: true });
+    rmSync(cheminLanceur(dossier), { force: true });
+    console.log(`veille retirée : ${fichierPlist} et ${cheminLanceur(dossier)} supprimés ; rapports et état gardés dans ${dossier}`);
+    process.exit(0);
+  }
+  const quel = (nom: string): string => {
+    const r = executer('/usr/bin/which', [nom]);
+    if (r.status !== 0 || r.stdout.trim() === '') usage(`veille installer : « ${nom} » introuvable dans le PATH`);
+    return r.stdout.trim();
+  };
+  const fnm = quel('fnm');
+  const gitBin = quel('git');
+  const p = { dossier, depot: racineDepot(), reference: opts.reference ?? REFERENCE_PAR_DEFAUT, fnm, chemins: [path.dirname(gitBin)] };
+  mkdirSync(dossier, { recursive: true, mode: 0o700 });
+  writeFileSync(cheminLanceur(dossier), lanceur(p), { mode: 0o700 });
+  chmodSync(cheminLanceur(dossier), 0o700);
+  mkdirSync(path.dirname(fichierPlist), { recursive: true });
+  writeFileSync(fichierPlist, plist(p), { mode: 0o644 });
+  const r = executer('/bin/launchctl', ['bootstrap', `gui/${uid}`, fichierPlist]);
+  if (r.status !== 0) {
+    process.stderr.write(`veille installer : launchctl bootstrap a échoué (${r.status}) : ${r.stderr.trim()}\n`);
+    process.exit(1);
+  }
+  console.log(`veille installée : ${LABEL}, passages à ${HEURES.map((h) => `${h} h`).join(' et ')} (heure du Mac), référence ${p.reference}`);
+  console.log(`lanceur ${cheminLanceur(dossier)} ; journal ${cheminJournal(dossier)} ; essai immédiat : launchctl kickstart gui/${uid}/${LABEL}`);
+  process.exit(0);
 }
 
 let values: { reference?: string; 'sans-alerte'?: boolean };

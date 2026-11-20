@@ -116,7 +116,9 @@ describe('veille decider', () => {
   });
 
   it('CLI sans terminal de contrôle : refus code 3 avant toute autre action', () => {
-    const res = spawnSync(process.execPath, ['scripts/veille.ts', 'decider', 'nimporte'], { cwd: REPO_ROOT, encoding: 'utf8', detached: true, env: { ...process.env, RTP_VEILLE_DIR: tmp() } });
+    // detached : nouvelle session (setsid), donc aucun terminal de contrôle, même quand npm test tourne dans un terminal.
+    const options = { cwd: REPO_ROOT, encoding: 'utf8' as const, detached: true, env: { ...process.env, RTP_VEILLE_DIR: tmp() } };
+    const res = spawnSync(process.execPath, ['scripts/veille.ts', 'decider', 'nimporte'], options as Parameters<typeof spawnSync>[2] & { encoding: 'utf8' });
     assert.equal(res.status, 3, res.stderr);
     assert.match(res.stderr, /aucun terminal/);
   });
