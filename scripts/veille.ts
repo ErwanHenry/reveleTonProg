@@ -3,28 +3,40 @@
 //   npm run veille                      un passage (même chose que `lancer`)
 //   npm run veille -- lancer [--reference <ref>] [--sans-alerte]
 //   npm run veille -- etat              état du dernier passage, sans aucun secret
+//   npm run veille -- decider <id-amont> décision d'Erwan sur une personne, tapée dans un terminal
+//   npm run veille -- preparer          branche d'import locale (jamais poussée)
 //
 // La veille détecte et propose ; Erwan décide. Voir docs/RUNBOOK.md, section « Veille des candidatures ».
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import { existsSync, readFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { fetchSafe } from './lib/fetch-safe.ts';
 import type { Executer } from './lib/veille/alertes.ts';
+import { RefusDecider, decider, ligneAmont, ouvrirTerminal } from './lib/veille/decider.ts';
 import { dossierVeille, lireEtat, lignesEtat } from './lib/veille/etat.ts';
+import { ArretPreparer, preparerImport } from './lib/veille/preparer.ts';
 import { REFERENCE_PAR_DEFAUT, lancerVeille } from './lib/veille/lancer.ts';
 
 export const URL_JEU = 'https://www.data.gouv.fr/api/1/datasets/r/06237c53-76bd-4224-9805-418e125f0493';
 const PLAFOND_OCTETS = 5 * 1024 * 1024;
 
-export const SOUS_COMMANDES = ['lancer', 'etat'] as const;
+export const SOUS_COMMANDES = ['lancer', 'etat', 'decider', 'preparer'] as const;
 
 const USAGE = `Usage : npm run veille -- [lancer] [--reference <ref>] [--sans-alerte]
         npm run veille -- etat
+        npm run veille -- decider <id-amont>
+        npm run veille -- preparer [--dossier-import <dossier>]
 
   lancer          un passage : jeu data.gouv lu, répétition à blanc dans le worktree de la veille, rapport daté,
                   alerte seulement s'il y a une sortie, une entrée, un retour ou une décision à prendre
   etat            dernier passage, dernière empreinte, dernier rapport, canaux configurés (oui ou non)
+  decider         décision d'Erwan sur une personne (ligne de correspondances.yaml ou motif d'un désistement), tapée
+                  dans un terminal ; refusée sans terminal ; écrite dans le worktree d'import seulement
+  preparer        refusé pendant un gel ; worktree ../reveleTonProg-import sur import/statuts-AAAA-MM-JJ, import du
+                  dernier jeu lu, pointeur et dates, contrôles, commits locaux ; ne pousse jamais
   --reference     référence suivie (défaut : ${REFERENCE_PAR_DEFAUT})
   --sans-alerte   aucune notification ni message (essais) ; le ping Healthchecks reste
 
@@ -59,6 +71,58 @@ if (sousCommande === 'etat') {
   if (reste.length > 0) usage('veille etat : aucune option');
   for (const l of lignesEtat(dossier, lireEtat(dossier))) console.log(l);
   process.exit(0);
+}
+
+if (sousCommande === 'decider') {
+  // Le terminal d'abord : sans lui, refus avant toute autre action (aucun agent ne répond à la place d'Erwan).
+  let terminal: ReturnType<typeof ouvrirTerminal>;
+  try {
+    terminal = ouvrirTerminal();
+  } catch (e) {
+    process.stderr.write(`veille decider : ${e instanceof Error ? e.message : String(e)}\n`);
+    process.exit(e instanceof RefusDecider ? e.code : 1);
+  }
+  try {
+    if (reste.length !== 1 || reste[0]?.startsWith('--')) throw new RefusDecider(2, 'un identifiant amont attendu (celui du rapport de la veille)');
+    const idAmont = reste[0] as string;
+    const top = executer('git', ['rev-parse', '--show-toplevel'], { cwd: process.cwd() });
+    const branche = executer('git', ['rev-parse', '--abbrev-ref', 'HEAD'], { cwd: process.cwd() });
+    if (top.status !== 0 || branche.status !== 0) throw new RefusDecider(2, 'à lancer dans le worktree d’import');
+    const racine = top.stdout.trim();
+    if (path.resolve(racine) === path.resolve(racineDepot())) throw new RefusDecider(2, 'refus dans le dossier de travail principal : lancer dans le worktree d’import (npm run veille -- preparer le crée)');
+    if (!branche.stdout.trim().startsWith('import/')) throw new RefusDecider(2, `branche « ${branche.stdout.trim()} » : une décision s’écrit sur une branche import/…`);
+    const etat = lireEtat(dossier);
+    if (etat.dernierAmont === null || !existsSync(etat.dernierAmont)) throw new RefusDecider(2, 'aucun jeu amont lu par la veille : lancer d’abord npm run veille');
+    const octets = readFileSync(etat.dernierAmont);
+    if (createHash('sha256').update(octets).digest('hex') !== etat.derniereEmpreinte) throw new RefusDecider(2, 'empreinte des octets amont gardés différente de l’état : refus');
+    const r = decider(terminal, racine, ligneAmont(octets, idAmont));
+    terminal.ecrire(`Écrit (${r.ajout}) : ${r.fichier}. Relancer npm run veille -- preparer.\n`);
+    process.exit(0);
+  } catch (e) {
+    terminal.ecrire(`veille decider : ${e instanceof Error ? e.message : String(e)}\n`);
+    process.exit(e instanceof RefusDecider ? e.code : 1);
+  } finally {
+    terminal.fermer();
+  }
+}
+
+if (sousCommande === 'preparer') {
+  let opts: { 'dossier-import'?: string };
+  try {
+    ({ values: opts } = parseArgs({ args: reste, options: { 'dossier-import': { type: 'string' } }, strict: true, allowPositionals: false }));
+  } catch (e) {
+    usage(e instanceof Error ? e.message : String(e));
+  }
+  try {
+    const r = preparerImport(
+      { dossier, depot: racineDepot(), executer, maintenant: () => new Date(), node: process.execPath, journal: (l) => console.log(l) },
+      { dossierImport: opts['dossier-import'] },
+    );
+    process.exit(r.code);
+  } catch (e) {
+    process.stderr.write(`veille preparer : ${e instanceof Error ? e.message : String(e)}\n`);
+    process.exit(e instanceof ArretPreparer ? e.code : 1);
+  }
 }
 
 let values: { reference?: string; 'sans-alerte'?: boolean };
