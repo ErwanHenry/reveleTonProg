@@ -245,7 +245,15 @@ Plans:
   4. Un import réel ne casse plus de test à compteur en dur.
   5. Installation, retrait, pannes et lecture du rapport sont au RUNBOOK, gardés par un test de documentation.
 
-**Plans**: à définir (cadrage : `10.1-CONTEXT.md`)
+**Plans**: 5 plans (vague 1 : 01 et 02 ; puis 03, 04, 05 ; point de contrôle d'Erwan en 05)
+
+Plans:
+
+- [ ] 10.1-01-PLAN.md — Motif à décider en répétition à blanc, `--format json`, classement sorties, entrées, retours, à décider (vague 1)
+- [ ] 10.1-02-PLAN.md — Tests à compteurs recalculés depuis l'instantané pointé (vague 1)
+- [ ] 10.1-03-PLAN.md — `npm run veille` : worktree propre, jeu gardé par empreinte, rapport et état hors dépôt, alertes macOS, Telegram et Healthchecks (vague 2)
+- [ ] 10.1-04-PLAN.md — `decider` au terminal par Erwan seul, `preparer` jusqu'à la branche locale sans push, refus pendant les gels (vague 3)
+- [ ] 10.1-05-PLAN.md — launchd 8 h et 19 h, RUNBOOK, ADR-064, mise en service avec Erwan (vague 4, point de contrôle humain)
 
 ## Progress
 
@@ -263,4 +271,4 @@ Plans:
 | 9.1 Finitions visuelles avant l'ouverture | v1.1 | 9/9 | Complete | 2026-11-13 |
 | 9.2 CI et déploiement depuis le Mac | v1.1 | 8/8 | Complete | 2026-11-19 |
 | 10. Import de décembre | v1.1 | 1/6 | In Progress|  |
-| 10.1 Veille des candidatures | v1.1 | 0/? | Not started |  |
+| 10.1 Veille des candidatures | v1.1 | 0/5 | Planned |  |
