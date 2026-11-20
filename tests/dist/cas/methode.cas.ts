@@ -130,7 +130,7 @@ export default function methode(ctx: ContexteSite): void {
       assert.doesNotMatch(marge, /Deux thèmes à \d+ positions d'écart ou moins/);
     });
 
-    it('dataset : 51 annoncés, 59 lignes, statuts, licence, attribution', () => {
+    it('dataset : annonce, nombre de lignes, statuts, licence, attribution', () => {
       const d = loadDatasetDatagouv(ctx.repoRoot);
       const bloc = unique(page(), 'data-dataset');
       const t = txt(bloc);

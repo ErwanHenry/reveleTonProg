@@ -360,8 +360,8 @@ Tout conflit d'un `cherry-pick` arrête la procédure : `git cherry-pick --abort
 1. `data/dataset-datagouv.yaml` : `instantane` (nouveau chemin) ; relire la description du jeu en ligne pour `annonce` et `description_consultee_le`, sans rien supposer.
 2. `data/import/ATTRIBUTION.md` : date « mises à jour le JJ/MM/AAAA ».
 3. `LICENSE` (ligne 81) : la même date. Les deux sont contrôlés par `tests/corpus/fiches.test.ts`.
-4. `tests/corpus/dataset-datagouv.test.ts` : titre et assertions (total, répartition par statut, `miseAJour`), calculés sur le nouvel instantané.
-5. `tests/dist/cas/methode.cas.ts` : le titre du test qui annonce le nombre de lignes.
+4. `tests/corpus/dataset-datagouv.test.ts` : plus rien à faire depuis la phase 10.1 (total, répartition par statut et `miseAJour` sont recomptés depuis l'instantané pointé).
+5. `tests/dist/cas/methode.cas.ts` : plus rien à faire depuis la phase 10.1 (le titre n'annonce plus de nombre).
 6. `data/couverture-themes.yaml` : une entrée par nouvelle personne du périmètre (déclarée ou primaire), avec ses 10 cellules, `acces`, `sources` et `urls_consultees` non vide (même pour `aucun_site`). **Décision d'Erwan** : ce sont des constats éditoriaux sur une personne réelle, écrits par lui seul. Contrôlé par `tests/corpus/couverture-themes.test.ts` (ordre `nom_tri`).
 7. `src/content/couverture/sante.yaml`, `src/content/couverture/travail.yaml` et `src/content/couverture/europe-et-monde.yaml` : une case par nouvelle personne du périmètre (`candidat`, `etat`, `verifie_le`, `verifie_par`). **Décision d'Erwan**, comme le point 6. Contrôlé par `tests/corpus/pilote.test.ts` (`PILOTE_CASE_MANQUANTE`).
 8. `README.md` et `docs/COUVERTURE-THEMES.md` : les textes qui annoncent un compte de personnes (aucun test ne les contrôle : ne pas les oublier).

@@ -1,4 +1,4 @@
-// Lecteur strict de data/dataset-datagouv.yaml : les comptes (59 lignes, par statut) sont calculés
+// Lecteur strict de data/dataset-datagouv.yaml : les comptes (lignes, par statut) sont calculés
 // depuis l'instantané haché, jamais saisis ; l'annonce (51) est un fait de la description du jeu.
 import { after, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -55,12 +55,21 @@ const echoue = (dir: string, motif: RegExp): void =>
   assert.throws(() => loadDatasetDatagouv(dir), (e: Error) => e.message.includes('data/dataset-datagouv.yaml') && motif.test(e.message));
 
 describe('loadDatasetDatagouv', () => {
-  it('le fichier du dépôt : 51 annoncés, 59 lignes calculées, 37/17/5', () => {
+  // Phase 10.1 (D-15) : aucun compte figé. Le recomptage est fait ici, indépendamment du lecteur (lecture directe du
+  // pointeur et du JSON), pour qu'un import réel ne casse pas ce test sans affaiblir ce qu'il vérifie.
+  it('le fichier du dépôt : annonce lue, total, répartition et date égaux à un recomptage indépendant de l’instantané pointé', () => {
     const d = loadDatasetDatagouv(REPO);
-    assert.equal(d.annonce, 51);
-    assert.equal(d.instantane.total, 59);
-    assert.deepEqual(d.instantane.parStatut, { declare: 37, renonce: 17, pressenti: 5 });
-    assert.equal(d.instantane.miseAJour, '2026-10-28');
+    const pointeur = /^instantane: (.+)$/m.exec(readFileSync(path.join(REPO, 'data', 'dataset-datagouv.yaml'), 'utf8'))?.[1]?.trim();
+    assert.ok(pointeur !== undefined && pointeur.startsWith('data/import/'), 'pointeur instantane absent');
+    const brut = JSON.parse(readFileSync(path.join(REPO, pointeur), 'utf8')) as { mise_a_jour: string; candidats: { statut: string }[] };
+    const parStatut: Record<string, number> = {};
+    for (const c of brut.candidats) parStatut[c.statut] = (parStatut[c.statut] ?? 0) + 1;
+    assert.equal(d.annonce, Number(/^annonce: (\d+)$/m.exec(readFileSync(path.join(REPO, 'data', 'dataset-datagouv.yaml'), 'utf8'))?.[1]));
+    assert.ok(brut.candidats.length > 0);
+    assert.equal(d.instantane.total, brut.candidats.length);
+    assert.deepEqual(d.instantane.parStatut, parStatut);
+    for (const code of Object.keys(parStatut)) assert.ok(['declare', 'primaire', 'pressenti', 'empeche', 'renonce'].includes(code), code);
+    assert.equal(d.instantane.miseAJour, brut.mise_a_jour);
     assert.equal(d.licence, 'Licence Ouverte 2.0');
     assert.match(d.producteur, /2027 et moi/);
     assert.match(d.page, /^https:\/\/www\.data\.gouv\.fr\//);
