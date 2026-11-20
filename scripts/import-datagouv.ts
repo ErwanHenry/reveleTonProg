@@ -19,20 +19,21 @@ import { FetchSafeError, fetchSafe } from './lib/fetch-safe.ts';
 import { chargerEtatDepot } from './lib/instantane-depot.ts';
 import { comparerInstantane, formaterEcart } from './lib/instantane.ts';
 import { construireRapport, rapportMarkdown } from './lib/rapport-import.ts';
-import type { EntreeRapport, PlanRapport } from './lib/rapport-import.ts';
+import type { EntreeRapport, MotifADecider, PlanRapport } from './lib/rapport-import.ts';
 
 const URL_PAR_DEFAUT = 'https://www.data.gouv.fr/api/1/datasets/r/06237c53-76bd-4224-9805-418e125f0493';
 const PLAFOND_OCTETS = 5 * 1024 * 1024;
 const DELAI_MS = 30_000;
 
-const USAGE = `Usage : npm run import:datagouv -- [--file <json>] [--url <https>] [--dry-run] [--format texte|markdown] [--accepter-absents] [--root <dossier>]
+const USAGE = `Usage : npm run import:datagouv -- [--file <json>] [--url <https>] [--dry-run] [--format texte|markdown|json] [--accepter-absents] [--root <dossier>]
         npm run import:datagouv -- --check [--root <dossier>]
 
   --file <json>    lit un instantané local (hors ligne, tests) au lieu d'interroger data.gouv.fr
   --url <https>    ressource à télécharger (défaut : la ressource stable du jeu « statuts sourcés »)
   --dry-run        imprime le rapport sans rien écrire (ni instantané, ni fiche, ni ids.lock) ;
                    un identifiant amont inconnu de la table y est listé « à décider » au lieu d'arrêter
-  --format <f>     texte (défaut) ou markdown : le rapport Markdown est le corps de la pull request d'import
+  --format <f>     texte (défaut), markdown ou json : le rapport Markdown est le corps de la pull request d'import ;
+                   json imprime un seul objet (entrée du rapport, désistements au motif à décider, Markdown) pour la veille
   --accepter-absents
                    import réel d'un jeu dont plus de 20 % des identifiants de l'instantané précédent ont disparu
                    (sans elle : refus, rien n'est écrit) ; décision d'Erwan seul, jamais par défaut. Un jeu vide
@@ -94,8 +95,10 @@ if (values.check === true) {
   }
   verifierCoherence(path.resolve(process.cwd(), values.root ?? '.'));
 }
-if (values.format !== undefined && values.format !== 'texte' && values.format !== 'markdown') usageError('--format : « texte » ou « markdown » attendu');
-const markdown = values.format === 'markdown';
+if (values.format !== undefined && values.format !== 'texte' && values.format !== 'markdown' && values.format !== 'json') usageError('--format : « texte », « markdown » ou « json » attendu');
+const json = values.format === 'json';
+// En markdown comme en json, stdout ne porte que le rapport.
+const markdown = values.format === 'markdown' || json;
 if (values.file !== undefined && values.url !== undefined) usageError('Choisir --file ou --url, pas les deux');
 const dryRun = values['dry-run'] === true;
 const url = values.url ?? URL_PAR_DEFAUT;
@@ -227,11 +230,31 @@ interface Plan {
 }
 const plans: Plan[] = [];
 const conflits: string[] = [];
+// Phase 10.1 (F-03) : un désistement amont sans motif dans la table. Le motif est une décision d'Erwan : la répétition
+// à blanc le liste, l'import réel refuse (avant toute écriture) au lieu d'écrire une fiche invalide.
+const motifsADecider: MotifADecider[] = [];
 let invalide = false;
 /** Chemin relatif à la racine importée, pour nommer un fichier refusé (src/content/candidats/<id>.yaml). */
 const relatif = (f: string): string => path.relative(root, f).split(path.sep).join('/');
 
 for (const row of amont.rows.filter((r) => Object.hasOwn(table, r.id))) {
+  if (row.statut === 'renonce' && table[row.id]?.motif === undefined) {
+    const idFiche = (table[row.id] as { id: string }).id;
+    const fichier = path.join(candidatsDir, `${idFiche}.yaml`);
+    let avant: unknown = null;
+    if (lstatSync(fichier, { throwIfNoEntry: false }) !== undefined) {
+      const lu = readContained(root, fichier);
+      if (!('diagnostic' in lu)) {
+        try {
+          avant = (lireYamlPlafonne(lu.text, relatif(fichier)) as { statuts?: unknown }).statuts ?? null;
+        } catch {
+          avant = null;
+        }
+      }
+    }
+    motifsADecider.push({ id: idFiche, idAmont: row.id, avant, code: row.statut, date: row.source.date, url: row.source.url });
+    continue;
+  }
   const mapped = mapRow(row, table);
   const id = String(mapped.id);
   const file = path.join(candidatsDir, `${id}.yaml`);
@@ -283,6 +306,12 @@ for (const row of amont.rows.filter((r) => Object.hasOwn(table, r.id))) {
   plans.push({ avant: existant ?? null, apres: fusion.fiche, mappe: mapped, row, id, file, action: fusion.action, texte, notes: fusion.notes });
 }
 if (invalide) fail('fiche(s) invalide(s) : rien n\'a été écrit');
+if (motifsADecider.length > 0 && !dryRun) {
+  const ids = motifsADecider.map((m) => m.idAmont).sort();
+  fail(
+    `motif de renoncement à décider (ligne de correspondances.yaml sans motif) : ${ids.join(', ')} ; décision d'Erwan : npm run veille -- decider <id-amont> (${ids.map((i) => `npm run veille -- decider ${i}`).join(' ; ')}) ; rien n'a été écrit`,
+  );
+}
 
 // Fichiers présents avant l'import (lus avant toute écriture) et fiches dont la clé amont a disparu du jeu.
 const presents = existsSync(candidatsDir)
@@ -311,7 +340,7 @@ const absents = absentsFiches.map((a) => a.id);
 const imprimer = (texte: string): Promise<void> => new Promise((resolve) => process.stdout.write(texte, () => resolve()));
 
 /** Texte Markdown du rapport (D-06) : jeu précédent, corpus d'aperçu et liste blanche lus ici, calcul dans le module pur. */
-function rapportDeCetteExecution(): string {
+function entreeDeCetteExecution(): EntreeRapport {
   let precedent: string | null = null;
   let precedentJeu: EntreeRapport['precedent'] = null;
   try {
@@ -325,7 +354,7 @@ function rapportDeCetteExecution(): string {
   try {
     themesOuverts = loadPublicationConfig(root).themesOuverts;
   } catch (e) {
-    return fail(e instanceof Error ? e.message : String(e));
+    fail(e instanceof Error ? e.message : String(e));
   }
   const charge = loadAll(root, { schemasDir, mode: 'preview' });
   const corpus = charge.entries;
@@ -359,8 +388,17 @@ function rapportDeCetteExecution(): string {
     fichiersRefuses,
     gardeVolume,
     illisibles,
+    motifsADecider,
   };
-  return rapportMarkdown(construireRapport(entree));
+  return entree;
+}
+
+/** Markdown du rapport, ou (--format json) un objet unique : entrée, désistements au motif à décider, Markdown. */
+function rapportDeCetteExecution(): string {
+  const entree = entreeDeCetteExecution();
+  const md = rapportMarkdown(construireRapport(entree));
+  if (!json) return md;
+  return `${JSON.stringify({ version: 1, entree, motifsADecider, markdown: md })}\n`;
 }
 
 if (conflits.length > 0) {
@@ -447,6 +485,7 @@ for (const p of plans) {
 }
 if (absents.length > 0) out(`absent en amont : ${absents.join(', ')}`);
 if (inconnus.length > 0) out(`à décider : ${[...inconnus].sort().join(', ')}`);
+if (motifsADecider.length > 0) out(`motif à décider : ${motifsADecider.map((m) => m.idAmont).sort().join(', ')}`);
 if (illisibles.length > 0) out(`illisible (YAML refusé, ignoré pour le rapport « absent en amont ») : ${illisibles.join(', ')}`);
 out(
   `import : ${amont.rows.length} ligne(s), ${nb.cree} créé(s), ${nb.statut_ajoute} statut(s) ajouté(s), ${nb.inchange} inchangé(s), ${absents.length} absent(s) en amont${inconnus.length > 0 ? `, ${inconnus.length} à décider` : ''}, 0 conflit(s) — instantané ${sha12} du ${amont.miseAJour}, racine ${rel}`,

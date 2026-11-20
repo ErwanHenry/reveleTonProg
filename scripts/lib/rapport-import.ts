@@ -60,7 +60,28 @@ export interface EntreeRapport {
   gardeVolume?: { disparus: number; precedent: number; refus: boolean } | null;
   /** IN-02 : fiches au YAML refusé, ignorées pour « Absents du jeu amont » (identifiant et raison). */
   illisibles?: string[];
+  /**
+   * Phase 10.1 (F-03) : lignes amont `renonce` dont la ligne de correspondances.yaml n'a pas de motif. La répétition à
+   * blanc les met de côté au lieu d'échouer ; le motif est une décision d'Erwan. Absent ou vide : rien n'est imprimé.
+   */
+  motifsADecider?: MotifADecider[];
 }
+
+/** Désistement amont dont le motif n'est pas encore décidé (aucune entrée n'est inventée). */
+export interface MotifADecider {
+  /** Identifiant de la fiche (table de correspondances). */
+  id: string;
+  idAmont: string;
+  /** Statuts de la fiche existante, ou null si la fiche n'existe pas encore. */
+  avant: unknown;
+  /** Statut amont (code renonce), sa date et sa source. */
+  code: string;
+  date: string;
+  url: string;
+}
+
+/** Motifs de renoncement du schéma, dans l'ordre du schéma (rappel pour le relecteur, jamais un choix). */
+export const MOTIFS_RENONCEMENT = ['retrait', 'elimine_primaire', 'ralliement', 'non_candidat'] as const;
 
 export interface ConsequenceTheme {
   theme: string;
@@ -90,6 +111,8 @@ export interface Rapport {
   };
   nouveaux: string[];
   aDecider: string[];
+  /** Désistements dont le motif est à décider (phase 10.1) ; vide : la section n'est pas imprimée. */
+  motifsADecider: string[];
   absents: string[];
   changes: string[];
   dejaRelus: string[];
@@ -114,7 +137,7 @@ const propre = (s: string): string => s.replace(/[\u2013\u2014]/g, '-');
 // eslint-disable-next-line no-control-regex
 const INVISIBLES = /[\u0000-\u001f\u007f-\u009f\u00ad\u2028\u2029\u200b-\u200f\u202a-\u202e\u2060-\u2069\ufeff]/g;
 /** Span de code CommonMark : la clôture est plus longue que toute suite d'accents graves du texte. */
-function enCode(s: string): string {
+export function enCode(s: string): string {
   const t = propre(s).replace(INVISIBLES, ' ');
   if (t.trim() === '') return '` `';
   const plusLongue = Math.max(0, ...(t.match(/`+/g) ?? []).map((x) => x.length));
@@ -124,13 +147,13 @@ function enCode(s: string): string {
 }
 /** Jeton sûr : identifiant, code de statut, motif, date (lettres ASCII, chiffres, « - », « / », « _ », « . »). */
 const JETON_SUR = /^[A-Za-z0-9][A-Za-z0-9/_.-]*$/;
-const jeton = (v: unknown): string => {
+export const jeton = (v: unknown): string => {
   const s = String(v);
   return JETON_SUR.test(s) ? s : enCode(s);
 };
 /** Texte libre sûr (nom d'une personne) : lettres, chiffres, espaces simples, apostrophes, point, virgule, tirets, parenthèses. */
 const TEXTE_SUR = /^[\p{L}\p{N}][\p{L}\p{M}\p{N} .,'’()\u2013\u2014-]*$/u;
-const texteAmont = (v: unknown): string => {
+export const texteAmont = (v: unknown): string => {
   const s = String(v);
   return TEXTE_SUR.test(s) ? propre(s) : enCode(s);
 };
@@ -143,13 +166,13 @@ const messageSur = (s: string): string => (MESSAGE_SUR.test(s) ? propre(s) : enC
  * normalisée (`URL.href`, qui encode chevrons, guillemets et espaces) dans un span de code, sans lien.
  */
 const URL_SURE = /^https:\/\/[A-Za-z0-9.-]+(?::\d{1,5})?(?:[/?#][A-Za-z0-9._~:/?#=&%+,;-]*)?$/;
-const urlAmont = (v: unknown): string => {
+export const urlAmont = (v: unknown): string => {
   const s = String(v);
   if (URL_SURE.test(s) && URL.canParse(s) && new URL(s).protocol === 'https:') return s;
   return enCode(URL.canParse(s) ? new URL(s).href : s);
 };
 
-const codeMotif = (s: Obj): string => `${jeton(s.code)}${s.motif !== undefined ? `/${jeton(s.motif)}` : ''}`;
+export const codeMotif = (s: Obj): string => `${jeton(s.code)}${s.motif !== undefined ? `/${jeton(s.motif)}` : ''}`;
 const sourceDe = (s: Obj): { url: string; date: string } => {
   const src = objet(s.source);
   return { url: urlAmont(src.url), date: jeton(src.date_publication ?? s.date) };
@@ -218,6 +241,13 @@ export function construireRapport(e: EntreeRapport): Rapport {
       return `- ${jeton(r.id)} : ${texteAmont(r.nom)}, ${jeton(r.statut)} (${jeton(r.source.date)}), source ${urlAmont(r.source.url)}, vérifié le ${jeton(r.verifie_le)}, liens : ${liens.length > 0 ? liens.map(jeton).join(', ') : 'aucun'}`;
     });
 
+  const motifs = [...(e.motifsADecider ?? [])].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  const motifsADecider = motifs.map((m) => {
+    const ancien = statutLePlusRecent(m.avant);
+    const depuis = ancien === undefined ? 'nouvelle fiche' : `${codeMotif(ancien)} (${jeton(ancien.date)})`;
+    return `- ${jeton(m.id)} (amont ${jeton(m.idAmont)}) : ${depuis} -> ${jeton(m.code)} (${jeton(m.date)}), source ${urlAmont(m.url)} ; motif à décider parmi ${MOTIFS_RENONCEMENT.join(', ')}`;
+  });
+
   // Absents du jeu amont : fiches dont la clé amont a disparu, et lignes du jeu précédent qui ne sont plus là.
   const absentsParCle = new Map<string, string | null>();
   for (const f of e.fichesAbsentes) absentsParCle.set(f.idAmont, f.id);
@@ -233,6 +263,8 @@ export function construireRapport(e: EntreeRapport): Rapport {
   // Conséquences sur les thèmes publiés : périmètre de production (ce que le site montre) et d'aperçu (ce que verra la relecture).
   const apres = new Map<string, unknown>(e.candidats.map((c) => [c.id, c.statuts]));
   for (const p of plans) apres.set(p.id, p.apres.statuts);
+  // Un désistement au motif non décidé compte déjà comme une sortie une fois décidé et relu (le motif ne change pas le périmètre).
+  for (const m of motifs) apres.set(m.id, [...tableau(m.avant), { code: m.code, date: m.date, statut_relecture: 'brouillon' }]);
   const perimetreProd = trier(e.candidats.filter((c) => dansPerimetre(c.statuts, 'production')).map((c) => c.id));
   const perimetreApres = trier([...apres.entries()].filter(([, s]) => dansPerimetre(s, 'preview')).map(([id]) => id));
   const prod = new Set(perimetreProd);
@@ -266,6 +298,7 @@ export function construireRapport(e: EntreeRapport): Rapport {
     entete: { ...e.instantane, cree, ajoutes, inchanges, fichiersRefuses: e.fichiersRefuses === undefined ? null : trier(e.fichiersRefuses), gardeVolume: e.gardeVolume ?? null, illisibles: trier(e.illisibles ?? []) },
     nouveaux,
     aDecider,
+    motifsADecider,
     absents,
     changes,
     dejaRelus,
@@ -307,6 +340,7 @@ export function rapportMarkdown(r: Rapport): string {
   out.push('Vocabulaire : « absents du jeu amont » correspond aux « retirés » de la feuille de route ; une absence du jeu ne vaut pas retrait de candidature.');
   out.push('', '## Nouveaux', '', liste(r.nouveaux), '');
   out.push('## Nouveaux à décider (absents de correspondances.yaml)', '', liste(r.aDecider), '');
+  if (r.motifsADecider.length > 0) out.push('## Désistements dont le motif est à décider', '', liste(r.motifsADecider), '');
   out.push('## Absents du jeu amont', '', liste(r.absents), '');
   out.push('## Changés', '', liste(r.changes), '');
   out.push('## Statut déjà relu qui change', '', liste(r.dejaRelus), '');

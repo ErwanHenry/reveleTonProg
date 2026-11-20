@@ -29,6 +29,7 @@ Détail complet : [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) ; exi
 - [x] **Phase 9.1: Finitions visuelles avant l'ouverture** (INSÉRÉE le 2026-11-12) : défauts de l'audit visuel corrigés, page 404, balises et image de partage, accueil, en-tête, pied de page et page thème retouchés avec validation d'Erwan sur un aperçu ; fusionnée le 2026-11-13, avant la publication (09-11)
 - [x] **Phase 9.2: CI et déploiement depuis le Mac** (INSÉRÉE le 2026-11-18, premier déploiement local le 2026-11-19) : commandes locales de contrôle et de déploiement, mêmes gardes que le pipeline GitHub, confirmation humaine au clavier, clé dédiée
 - [ ] **Phase 10: Import de décembre** : analyseur plafonné, cohérence de l'instantané, import des statuts en pull request relue (10 au 13 décembre, gel du 13 au 15)
+- [ ] **Phase 10.1: Veille des candidatures** (INSÉRÉE le 2026-11-20, demande d'Erwan) : veille planifiée des entrées et des désistements, rapport et alerte, décisions d'Erwan saisies par lui seul, branche d'import préparée sans push ; à livrer avant le 10 décembre
 
 ## Piste 0 (Erwan, hors code)
 
@@ -231,6 +232,29 @@ Plans:
 - [ ] 10-05-PLAN.md — Import réel sur import/statuts-2026-12 : répétition du matin, correspondances validées par Erwan, pull request avec le rapport (vague 5, 10 au 11 décembre)
 - [ ] 10-06-PLAN.md — Relecture et fusion par Erwan, déploiement approuvé avant le gel, vérifications en production, relevé du gel (vague 6, 11 au 16 décembre)
 
+### Phase 10.1: Veille des candidatures (INSÉRÉE)
+
+**Goal**: Les entrées et les désistements de candidatures sont détectés chaque jour sans rien écrire dans le dépôt, signalés à Erwan avec leur effet sur les thèmes publiés, et leur prise en compte est préparée jusqu'à la branche d'import ; aucune décision sur une personne n'est prise par un outil ou un agent.
+**Depends on**: Phase 10 (10-01 à 10-04 : rapport, --check, avertissement, procédure) ; livrée avant le plan 10-05
+**Requirements**: VEI-01, VEI-02, VEI-03, VEI-04, VEI-05, VEI-06
+**Success Criteria** (what must be TRUE):
+
+  1. Une exécution planifiée sur le Mac lit le jeu amont, n'écrit rien dans le dépôt, et n'alerte que si l'empreinte a changé et qu'il y a une sortie, une entrée, un retour ou une décision à prendre.
+  2. Un désistement dont le motif n'est pas décidé apparaît dans le rapport comme « motif à décider » au lieu d'arrêter la répétition à blanc.
+  3. Les décisions sur une personne ne peuvent être saisies que par Erwan dans un terminal ; la préparation monte la branche d'import et le corps de pull request sans pousser ni fusionner.
+  4. Un import réel ne casse plus de test à compteur en dur.
+  5. Installation, retrait, pannes et lecture du rapport sont au RUNBOOK, gardés par un test de documentation.
+
+**Plans**: 5 plans (vague 1 : 01 et 02 ; puis 03, 04, 05 ; point de contrôle d'Erwan en 05)
+
+Plans:
+
+- [x] 10.1-01-PLAN.md — Motif à décider en répétition à blanc, `--format json`, classement sorties, entrées, retours, à décider (vague 1)
+- [x] 10.1-02-PLAN.md — Tests à compteurs recalculés depuis l'instantané pointé (vague 1)
+- [x] 10.1-03-PLAN.md — `npm run veille` : worktree propre, jeu gardé par empreinte, rapport et état hors dépôt, alertes macOS, Telegram et Healthchecks (vague 2)
+- [x] 10.1-04-PLAN.md — `decider` au terminal par Erwan seul, `preparer` jusqu'à la branche locale sans push, refus pendant les gels (vague 3)
+- [ ] 10.1-05-PLAN.md — launchd 8 h et 19 h, RUNBOOK, ADR-064, mise en service avec Erwan (vague 4, point de contrôle humain)
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -247,3 +271,4 @@ Plans:
 | 9.1 Finitions visuelles avant l'ouverture | v1.1 | 9/9 | Complete | 2026-11-13 |
 | 9.2 CI et déploiement depuis le Mac | v1.1 | 8/8 | Complete | 2026-11-19 |
 | 10. Import de décembre | v1.1 | 1/6 | In Progress|  |
+| 10.1 Veille des candidatures | v1.1 | 4/5 | In Progress (PR #8, mise en service par Erwan) |  |

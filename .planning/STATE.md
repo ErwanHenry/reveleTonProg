@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: "Lot 3 : hébergement et mise en ligne"
 status: executing
-stopped_at: Completed 09.2-08-PLAN.md (first local deploy to essai, 72b70ea) ; next 09-11, blocked by the Wayback copy of erwan-rohou-programme-mei
-last_updated: "2026-11-19T11:45:00.000Z"
+stopped_at: "Completed 10-01-PLAN.md (commits locaux, non poussés : push groupé avec 10-02)"
+last_updated: "2026-11-20T09:11:35.213Z"
 last_activity: "2026-11-19 (09.2-08 : clé du Mac créée par Erwan avec phrase de passe et autorisée sur le serveur avec son accord ; ci:local complet vert, 19 étapes ; premier déploiement local par Erwan, commit 72b70ea en ligne sur essai, vérifié de l'extérieur ; phase 9.2 terminée, LOC-03 à exercer en réel au plan 09-11)"
 progress:
-  total_phases: 6
-  completed_phases: 3
-  total_plans: 52
-  completed_plans: 47
-  percent: 40
+  total_phases: 8
+  completed_phases: 4
+  total_plans: 61
+  completed_plans: 57
+  percent: 50
 ---
 
 # Project State
@@ -56,6 +56,10 @@ Progress v1.1: [..........] 0/5 phases, 0 plans
 *Updated after each plan completion*
 
 ## Accumulated Context
+
+### Roadmap Evolution
+
+- Phase 10.1 inserted after Phase 10: Veille des candidatures (watchdog), demande d'Erwan du 2026-11-20 ; cadrage validé le même jour
 
 ### Decisions
 

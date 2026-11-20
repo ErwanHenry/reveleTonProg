@@ -567,6 +567,54 @@ describe('import : --format, --dry-run tolérant et --check (IMP-03)', () => {
     identiques(avant, octets(root));
   });
 
+  // Phase 10.1 (F-03) : désistement amont de la personne fictive alors que sa ligne de table n'a pas de motif.
+  function desistementSansMotif(): { root: string; modif: string } {
+    const { root, base } = racineFictive();
+    const modif = muter(root, base, (j) => {
+      const r = j.candidats.find((x) => x.id === FICTIF) as Record<string, any>;
+      r.statut = 'renonce';
+      r.source.date = '2026-11-20';
+    });
+    return { root, modif };
+  }
+
+  it('10.1 : désistement sans motif en --dry-run markdown : code 0, section « motif à décider », rien d’écrit', () => {
+    const { root, modif } = desistementSansMotif();
+    const avant = octets(root);
+    const res = importer(['--file', modif, '--root', root, '--dry-run', '--format', 'markdown']);
+    assert.equal(res.status, 0, res.stdout + res.stderr);
+    const s = section(res.stdout, '## Désistements dont le motif est à décider');
+    assert.match(s, /^- essai-fictif \(amont essai-fictif\) : declare \(2026-10-01\) -> renonce \(2026-11-20\), source https:\/\/exemple\.test\/essai-fictif\/annonce ; motif à décider parmi retrait, elimine_primaire, ralliement, non_candidat$/m);
+    identiques(avant, octets(root));
+  });
+
+  it('10.1 : désistement sans motif en --dry-run texte : ligne « motif à décider : », code 0', () => {
+    const { root, modif } = desistementSansMotif();
+    const res = importer(['--file', modif, '--root', root, '--dry-run']);
+    assert.equal(res.status, 0, res.stdout + res.stderr);
+    assert.match(res.stdout, /^motif à décider : essai-fictif$/m);
+  });
+
+  it('10.1 : --format json : un seul objet sur stdout (entrée, motifs à décider, Markdown)', () => {
+    const { root, modif } = desistementSansMotif();
+    const res = importer(['--file', modif, '--root', root, '--dry-run', '--format', 'json']);
+    assert.equal(res.status, 0, res.stdout + res.stderr);
+    const j = JSON.parse(res.stdout) as { version: number; entree: { instantane: { sha256: string } }; motifsADecider: { idAmont: string }[]; markdown: string };
+    assert.equal(j.version, 1);
+    assert.match(j.entree.instantane.sha256, /^[0-9a-f]{64}$/);
+    assert.deepEqual(j.motifsADecider.map((m) => m.idAmont), [FICTIF]);
+    assert.match(j.markdown, /## Désistements dont le motif est à décider/);
+  });
+
+  it('10.1 : désistement sans motif en import réel : code 1, commande decider citée, rien d’écrit', () => {
+    const { root, modif } = desistementSansMotif();
+    const avant = octets(root);
+    const res = importer(['--file', modif, '--root', root]);
+    assert.equal(res.status, 1);
+    assert.match(res.stderr, /motif de renoncement à décider .*essai-fictif.*npm run veille -- decider essai-fictif/);
+    identiques(avant, octets(root));
+  });
+
   it('markdown : deux exécutions donnent les mêmes octets, rien d’autre que le rapport sur stdout', () => {
     const root = tmpRoot();
     const snap = path.join(root, 'data', 'import', path.basename(newestSnapshot()));
@@ -723,15 +771,16 @@ describe('import : --format, --dry-run tolérant et --check (IMP-03)', () => {
     const ancien = path.basename(newestSnapshot());
     // un instantané plus récent déposé sans mettre le pointeur à jour
     const json = JSON.parse(readFileSync(newestSnapshot(), 'utf8')) as Record<string, unknown>;
-    json.mise_a_jour = '2026-11-09';
-    const nom = '2027etmoi-candidats-2026-11-09-000000000000';
+    // Phase 10.1 (D-15) : une date que n'atteint aucun import réel, pour rester « plus récent » après chaque import.
+    json.mise_a_jour = '2099-12-31';
+    const nom = '2027etmoi-candidats-2099-12-31-000000000000';
     writeFileSync(path.join(racine, 'data', 'import', `${nom}.json`), JSON.stringify(json));
     const meta = JSON.parse(readFileSync(path.join(IMPORT_DIR, ancien.replace(/\.json$/, '.meta.json')), 'utf8')) as Record<string, unknown>;
-    writeFileSync(path.join(racine, 'data', 'import', `${nom}.meta.json`), JSON.stringify({ ...meta, mise_a_jour: '2026-11-09', fetched_at: '2026-11-12T10:00:00+01:00' }));
+    writeFileSync(path.join(racine, 'data', 'import', `${nom}.meta.json`), JSON.stringify({ ...meta, mise_a_jour: '2099-12-31', fetched_at: '2099-12-31T10:00:00+01:00' }));
     assert.equal(readFileSync(ptr, 'utf8'), texte);
     const res = importer(['--check', '--root', racine]);
     assert.equal(res.status, 1, res.stdout + res.stderr);
-    assert.match(res.stdout, /instantane : fichier=data\/import\/.* amont=data\/import\/2027etmoi-candidats-2026-11-09-000000000000\.json/);
+    assert.match(res.stdout, /instantane : fichier=data\/import\/.* amont=data\/import\/2027etmoi-candidats-2099-12-31-000000000000\.json/);
   });
 
   it('--check refuse --file, --url, --dry-run et --format : code 2', () => {
