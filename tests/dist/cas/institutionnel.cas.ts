@@ -41,7 +41,9 @@ export default function institutionnel(ctx: ContexteSite): void {
         heb.nom, heb.adresse, heb.telephone, 'trois mois', 'trois jours', 'Arcom',
       ]) assert.ok(t.includes(attendu), `« ${attendu} » absent`);
       if (heb.statut === 'prevu') assert.match(t, /Cette version de test n'est pas mise en ligne/);
-      assert.doesNotMatch(t, /article 6\b|6 IV|IV de l'article 6/);
+      // L'ancien « 6 IV » de la LCEN n'est jamais cité comme base. « article 6, paragraphe 1, f du RGPD » (base légale
+      // des journaux, paragraphe affiché seulement quand l'hébergeur est actif) est un autre texte : admis.
+      assert.doesNotMatch(t, /article 6\b(?!, paragraphe 1, f du RGPD)|6 IV|IV de l'article 6/);
     });
 
     it('sondages : loi n° 77-808 et Commission des sondages, cohérent avec la page Méthode (CR-01)', () => {
