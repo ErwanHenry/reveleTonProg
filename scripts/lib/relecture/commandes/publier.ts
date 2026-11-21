@@ -120,7 +120,7 @@ export function publier(theme: string, options: OptionsPublier, deps: Dependance
   }
   ajouterJournal(ctx.racine, { horodatage, action: 'publier', cible: `theme:${theme}`, relecteur: options.relecteur, date: options.date, sha256: empreinteStatut(entreeTheme!.data) });
   ctx.sortie(`${aPublier.length} mesures publiées, thème ${theme} publié`);
-  ctx.sortie('étapes suivantes : relire le diff, commiter, pousser, approuver le déploiement.');
+  ctx.sortie('étapes suivantes : relire le diff, commiter, pousser, puis npm run ci:local et npm run deploy:local.');
   return 0;
 }
 

@@ -32,7 +32,7 @@ const tableau = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
 
 /** Lignes de suite : validation, commit, push, approbation ; et les deux formes `gh` dans une fenêtre de gel. */
 function suites(ctx: Contexte, justification: string): void {
-  ctx.sortie('étapes suivantes : relire le diff, commiter, pousser sur main, approuver le déploiement (bouton « Review deployments » du run).');
+  ctx.sortie('étapes suivantes : relire le diff, commiter, pousser sur main, puis npm run ci:local et npm run deploy:local (docs/RUNBOOK.md, « CI et déploiement depuis le Mac »).');
   const date = dateParis(ctx.maintenant());
   const fenetre = FENETRES_GEL.find((f) => f.debut <= date && date <= f.fin);
   if (fenetre !== undefined) {
