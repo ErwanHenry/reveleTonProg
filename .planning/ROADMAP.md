@@ -153,7 +153,7 @@ Plans:
 - [x] 09-08-PLAN.md — Actes d'Erwan : identité transmise à Hetzner, contact testé de bout en bout, signature de la note de risques (vague 2)
 - [x] 09-09-PLAN.md — RUNBOOK (retrait d'urgence, gel 2027, relecture, publication, ouverture), ADR-059 à 062, préparation du serveur (vague 5, accord d'Erwan)
 - [x] 09-10-PLAN.md — Relecture du thème santé : 47 mesures, 37 statuts, 37 cases, par des agents d'IA sur décision d'Erwan du 2026-11-17 (fusionnée le 2026-11-18)
-- [ ] 09-11-PLAN.md — Publication de santé sur l'hôte d'essai, hébergeur actif, exercice chronométré de retrait d'urgence (vague 6)
+- [x] 09-11-PLAN.md — Publication de santé sur l'hôte d'essai, hébergeur actif, exercice chronométré de retrait d'urgence (fait le 2026-11-21 : 53 min 45 s, retour arrière réel)
 - [ ] 09-12-PLAN.md — Ouverture : cible production, bloc Caddy public et certificats, supervision réorientée, hôte d'essai retiré (vague 7)
 - [ ] 09-13-PLAN.md — Journal d'audit refait sur la build en ligne (DETTE-04), 4G remesurée avec la page santé, confirmation d'Erwan (vague 8)
 - [x] 09-14-PLAN.md — Relecteur et date affichés sur chaque mesure publiée (PUB-03), code check-dist RELECTURE_ABSENTE (vague 3)
@@ -267,7 +267,7 @@ Plans:
 | 6. Diagnostic du VPS et décision | v1.1 | 1/0 | Complete    | 2026-11-08 |
 | 7. Domaine paramétré, inlining et dette | v1.1 | 8/8 | Complete    | 2026-11-07 |
 | 8. Serveur, pipeline, supervision et sauvegardes | v1.1 | 15/15 | Complete    | 2026-11-10 |
-| 9. Contenu relu, juridique et ouverture | v1.1 | 12/15 | In Progress|  |
+| 9. Contenu relu, juridique et ouverture | v1.1 | 13/15 | In Progress|  |
 | 9.1 Finitions visuelles avant l'ouverture | v1.1 | 9/9 | Complete | 2026-11-13 |
 | 9.2 CI et déploiement depuis le Mac | v1.1 | 8/8 | Complete | 2026-11-19 |
 | 10. Import de décembre | v1.1 | 1/6 | In Progress|  |

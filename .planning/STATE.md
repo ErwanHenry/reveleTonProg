@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: "Lot 3 : hébergement et mise en ligne"
 status: executing
-stopped_at: "Completed 10-01-PLAN.md (commits locaux, non poussés : push groupé avec 10-02)"
-last_updated: "2026-11-20T09:11:35.213Z"
-last_activity: "2026-11-19 (09.2-08 : clé du Mac créée par Erwan avec phrase de passe et autorisée sur le serveur avec son accord ; ci:local complet vert, 19 étapes ; premier déploiement local par Erwan, commit 72b70ea en ligne sur essai, vérifié de l'extérieur ; phase 9.2 terminée, LOC-03 à exercer en réel au plan 09-11)"
+stopped_at: Completed 09-11-PLAN.md (santé publié sur essai, hébergeur actif, exercice de retrait 53 min 45 s) ; next 09-12 (ouverture publique, écritures serveur avec accord d'Erwan)
+last_updated: "2026-11-21T22:10:00.000Z"
+last_activity: "2026-11-21 (09-11 : thème santé publié et servi sur l'hôte d'essai, hébergeur actif ; exercice de retrait d'urgence sur une vraie mesure, 53 min 45 s, défaut de la procédure trouvé et corrigé, retour arrière réel par deploy:local en 21 s)"
 progress:
   total_phases: 8
   completed_phases: 4
   total_plans: 61
-  completed_plans: 57
+  completed_plans: 58
   percent: 50
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-11-04)
 Phase: 9 of 10 (contenu relu, juridique et ouverture)
 Plan: 09-01 à 09-10, 09-14 et 09-15 done (dernier : 09-10, relecture du thème santé par agents d'IA, fusionnée le 2026-11-18) ; reste 09-11 (publication sur l'hôte d'essai, bloquée tant que la source erwan-rohou-programme-mei n'a pas de copie Wayback lisible ou d'exception décidée par Erwan), puis 09-12 et 09-13
 Status: Executing phase 9 (09-11 à 09-13 ; 09-11 bloqué par la copie Wayback d'une source) ; phase 9.2 terminée le 2026-11-19 (déploiement depuis le Mac) ; phase 10 en parallèle (10-01 à 10-04 done, 10-05 du 10 au 11 décembre)
-Last activity: 2026-11-19 (09.2-08 : clé du Mac créée par Erwan avec phrase de passe et autorisée sur le serveur avec son accord ; ci:local complet vert, 19 étapes ; premier déploiement local par Erwan, commit 72b70ea en ligne sur essai, vérifié de l'extérieur ; phase 9.2 terminée, LOC-03 à exercer en réel au plan 09-11)
+Last activity: 2026-11-21 (09-11 : thème santé publié et servi sur l'hôte d'essai, hébergeur actif ; exercice de retrait d'urgence sur une vraie mesure, 53 min 45 s, défaut de la procédure trouvé et corrigé, retour arrière réel par deploy:local en 21 s)
 
 Progress v1.1: [..........] 0/5 phases, 0 plans
 

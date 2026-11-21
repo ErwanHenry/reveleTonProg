@@ -42,13 +42,13 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 ### Publication (contenu relu)
 
 - [ ] **PUB-01**: Erwan relit les mesures d'un thème avec une commande qui liste ce qui reste à relire et passe une mesure en `relu` en enregistrant relecteur et date
-- [ ] **PUB-02**: Un thème entièrement relu pour tous les candidats de son périmètre est publié en production ; aucun brouillon n'y apparaît (garde d'équité et liste blanche de publication)
+- [x] **PUB-02**: Un thème entièrement relu pour tous les candidats de son périmètre est publié en production ; aucun brouillon n'y apparaît (garde d'équité et liste blanche de publication)
 - [x] **PUB-03**: Chaque mesure publiée affiche son relecteur et sa date de relecture
-- [ ] **PUB-04**: Les sources citées par les mesures publiées ont toutes une copie Wayback, ou une exception motivée (données personnelles) acceptée par la règle
+- [x] **PUB-04**: Les sources citées par les mesures publiées ont toutes une copie Wayback, ou une exception motivée (données personnelles) acceptée par la règle
 
 ### Ouverture (juridique)
 
-- [ ] **LEG-01**: Les Mentions légales finales portent le régime d'éditeur validé, l'hébergeur `actif`, l'adresse de contact réelle testée de bout en bout, la politique de journal et la base légale exacte du droit de réponse (vérifiée sur Légifrance)
+- [x] **LEG-01**: Les Mentions légales finales portent le régime d'éditeur validé, l'hébergeur `actif`, l'adresse de contact réelle testée de bout en bout, la politique de journal et la base légale exacte du droit de réponse (vérifiée sur Légifrance)
 - [x] **LEG-02**: Une relecture juridique a eu lieu avant l'ouverture, ou Erwan a consigné par écrit le risque accepté
 - [x] **LEG-03**: Le RUNBOOK décrit le retrait d'urgence d'une mesure en moins d'une heure et le calendrier de gel des scrutins de 2027
 
@@ -75,7 +75,7 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 
 - [x] **LOC-01**: Une commande locale rejoue les contrôles de la CI (validation, types, tests, builds, check-dist, tests navigateur, recherche de secrets) et laisse un reçu pour le commit ; un test empêche sa liste d'étapes de diverger de celle de la CI GitHub
 - [x] **LOC-02**: Une commande locale construit et déploie un commit poussé, propre, contrôlé et hors gel, avec les gardes du pipeline (build cloisonnée, empreinte, version servie vérifiée, retour automatique) et une confirmation tapée par Erwan dans un terminal, qu'aucun agent ne peut donner
-- [ ] **LOC-03** (code et tests contre un faux serveur faits ; essai réel prévu avec l'exercice de retrait du plan 09-11): Une commande locale remet en ligne la version précédente ou une version donnée, avec la même confirmation
+- [x] **LOC-03** (essai réel le 2026-11-21, exercice de retrait du plan 09-11): Une commande locale remet en ligne la version précédente ou une version donnée, avec la même confirmation
 - [x] **LOC-04**: La clé de déploiement du Mac est dédiée, hors dépôt et limitée par la commande forcée du serveur ; l'installation, l'usage, les pannes et le retrait d'urgence sont au RUNBOOK ; chaque déploiement est journalisé localement
 
 ### Veille des candidatures (ajoutées le 2026-11-20, demande d'Erwan « watchdog »)
@@ -144,20 +144,20 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 | OPS-03 | Phase 8 | Complete |
 | PERF-02 | Phase 8 | Complete |
 | DETTE-04 | Phase 9 | Pending |
-| LEG-01 | Phase 9 | Pending |
+| LEG-01 | Phase 9 | Complete |
 | LEG-02 | Phase 9 | Complete |
 | LEG-03 | Phase 9 | Complete |
 | PUB-01 | Phase 9 | Pending |
-| PUB-02 | Phase 9 | Pending |
+| PUB-02 | Phase 9 | Complete |
 | PUB-03 | Phase 9 | Complete |
-| PUB-04 | Phase 9 | Pending |
+| PUB-04 | Phase 9 | Complete |
 | FIN-01 | Phase 9.1 | Complete |
 | FIN-02 | Phase 9.1 | Complete |
 | FIN-03 | Phase 9.1 | Complete |
 | FIN-04 | Phase 9.1 | Complete |
 | LOC-01 | Phase 9.2 | Complete |
 | LOC-02 | Phase 9.2 | Complete |
-| LOC-03 | Phase 9.2 | Pending |
+| LOC-03 | Phase 9.2 | Complete |
 | LOC-04 | Phase 9.2 | Complete |
 | IMP-01 | Phase 10 | Complete |
 | IMP-02 | Phase 10 | Complete |
