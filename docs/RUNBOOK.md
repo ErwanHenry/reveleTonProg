@@ -950,7 +950,7 @@ Les dérives de source à statut inchangé n'alertent pas ; elles restent dans l
 
 ### Alertes
 
-Alerte seulement quand l'empreinte est nouvelle et qu'il y a une sortie, une entrée, un retour, un autre changement de statut ou une décision à prendre : notification macOS et message Telegram court (comptes et chemin du rapport, aucun nom). Sans jeton Telegram, notification macOS seule ; une panne Telegram n'arrête pas la veille et apparaît dans `etat`. Chaque passage réussi envoie un ping de succès au contrôle Healthchecks `veille-candidatures`, et un `/fail` si la veille elle-même tombe en panne ; ce contrôle ne signale jamais un changement.
+Alerte seulement quand l'empreinte est nouvelle et qu'il y a une sortie, une entrée, un retour, un autre changement de statut ou une décision à prendre : notification macOS et message Telegram court (comptes et chemin du rapport, aucun nom). Sans jeton Telegram, notification macOS seule ; une panne Telegram n'arrête pas la veille et apparaît dans `etat`. Un envoi Telegram qui échoue pour une raison passagère (réseau, délai de 30 secondes dépassé, 429, 5xx) est retenté une fois après 5 secondes ; un refus net (jeton ou conversation faux) ne l'est pas. Un envoi dont seule la réponse a tardé peut être déjà arrivé : un doublon est alors possible, préféré à une alerte perdue. Chaque passage réussi envoie un ping de succès au contrôle Healthchecks `veille-candidatures`, et un `/fail` si la veille elle-même tombe en panne ; ce contrôle ne signale jamais un changement.
 
 ### Installer (Erwan, une fois)
 

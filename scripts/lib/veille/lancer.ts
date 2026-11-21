@@ -33,6 +33,8 @@ export interface DependancesLancer {
   node: string;
   journal: (ligne: string) => void;
   lireSecret?: (service: string) => string | null;
+  /** Pause avant le second essai Telegram (tests : immédiate). */
+  pause?: (ms: number) => Promise<void>;
 }
 
 export interface OptionsLancer {
@@ -167,7 +169,7 @@ export async function lancerVeille(d: DependancesLancer, o: OptionsLancer = {}):
       const message = texteAlerte(comptes, rapport);
       if (!notifierMac(message, d.executer)) etat.incidentAlerte = 'notification macOS impossible';
       if (jeton !== null && conversation !== null) {
-        const e = await envoyerTelegram(jeton, conversation, message, d.fetch);
+        const e = await envoyerTelegram(jeton, conversation, message, d.fetch, d.pause);
         if (e !== null) etat.incidentAlerte = masquer(e, secrets);
       }
     }
