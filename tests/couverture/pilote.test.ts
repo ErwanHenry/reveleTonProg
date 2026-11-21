@@ -199,6 +199,41 @@ describe('PILOTE_INCOHERENCE / PILOTE_SOURCE_CONSULTEE', () => {
     caseDe(entries, 'marie-fictive').etat = 'programme_non_publie';
     assert.equal(avec(verifierPilote(entries, couverture()), 'PILOTE_INCOHERENCE').length, 1);
   });
+  // Exercice de retrait du 2026-11-21 (plan 09-11) : `relecture -- retirer` repasse la seule mesure publiée d'un
+  // candidat en brouillon et change sa case dans la même opération. Sur un thème publié, la case suit ce que la
+  // production affiche ; sur un thème non publié, toutes les mesures comptent encore.
+  it('thème publié, seule mesure retirée (brouillon), case « non_precise » : accepté', () => {
+    const entries = copie();
+    const theme = trouve(entries, 'themes', 'logement');
+    assert.equal(theme.data.statut_relecture, 'publie', 'le thème de la fixture doit être publié');
+    for (const m of entries.filter((e) => e.collection === 'mesures' && e.data.candidat === 'marie-fictive' && e.data.theme === 'logement')) {
+      m.data.statut_relecture = 'brouillon';
+    }
+    const c = caseDe(entries, 'marie-fictive');
+    c.etat = 'non_precise';
+    c.sources_consultees = ['marie-fictive-programme'];
+    assert.deepEqual(avec(verifierPilote(entries, couverture()), 'PILOTE_INCOHERENCE'), []);
+  });
+  it('thème publié, seule mesure retirée (brouillon), case restée « mesures » : erreur', () => {
+    const entries = copie();
+    for (const m of entries.filter((e) => e.collection === 'mesures' && e.data.candidat === 'marie-fictive' && e.data.theme === 'logement')) {
+      m.data.statut_relecture = 'brouillon';
+    }
+    const ps = avec(verifierPilote(entries, couverture()), 'PILOTE_INCOHERENCE');
+    assert.equal(ps.length, 1);
+    assert.match(ps[0]!.message, /aucune mesure publiée/);
+  });
+  it('thème non publié, mesure en brouillon, case « non_precise » : erreur (règle du pilote)', () => {
+    const entries = copie();
+    trouve(entries, 'themes', 'logement').data.statut_relecture = 'brouillon';
+    for (const m of entries.filter((e) => e.collection === 'mesures' && e.data.candidat === 'marie-fictive' && e.data.theme === 'logement')) {
+      m.data.statut_relecture = 'brouillon';
+    }
+    const c = caseDe(entries, 'marie-fictive');
+    c.etat = 'non_precise';
+    c.sources_consultees = ['marie-fictive-programme'];
+    assert.equal(avec(verifierPilote(entries, couverture()), 'PILOTE_INCOHERENCE').length, 1);
+  });
   it('non_precise avec une source consultée du candidat : accepté', () => {
     const entries = copie();
     const c = caseDe(entries, 'marie-fictive');

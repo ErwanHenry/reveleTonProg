@@ -133,6 +133,13 @@ export function verifierPilote(entries: Entry[], couverture: CouvertureThemes): 
 
   // --- Cases de couverture ----------------------------------------------------------------------------------
   const mesuresDe = (candidat: string, theme: string): Entry[] => mesures.filter((m) => m.data.candidat === candidat && m.data.theme === theme);
+  // Thème publié : la case doit dire ce que la production affiche, donc seules les mesures publiées comptent. Une
+  // mesure retirée en urgence (`relecture -- retirer`, repassée en brouillon avec sa case changée dans la même
+  // opération) ne rend pas la case incohérente (exercice du 2026-11-21, plan 09-11). Thème non publié : toutes les
+  // mesures comptent, comme pendant le pilote.
+  const themePublie = (theme: string): boolean => par('themes').some((t) => t.id === theme && t.data.statut_relecture === 'publie');
+  const mesuresComptees = (candidat: string, theme: string): Entry[] =>
+    mesuresDe(candidat, theme).filter((m) => !themePublie(theme) || m.data.statut_relecture === 'publie');
   const niveauTableau = (candidat: string, theme: string): string | undefined =>
     couverture.candidats.find((c) => c.id === candidat)?.cellules[theme]?.niveau;
 
@@ -181,12 +188,14 @@ export function verifierPilote(entries: Entry[], couverture: CouvertureThemes): 
     for (const { c, file } of cases) {
       const id = texte(c.candidat);
       const etat = texte(c.etat);
-      const nb = mesuresDe(id, theme).length;
+      const comptees = mesuresComptees(id, theme);
+      const nb = comptees.length;
+      const quelles = themePublie(theme) ? 'publiée' : '';
       if (etat === 'mesures' && nb === 0) {
-        err('PILOTE_INCOHERENCE', file, `la case de ${id} (thème ${theme}) indique « mesures » mais aucune mesure n’existe pour ce candidat et ce thème`);
+        err('PILOTE_INCOHERENCE', file, `la case de ${id} (thème ${theme}) indique « mesures » mais aucune mesure ${quelles} n’existe pour ce candidat et ce thème`.replace('  ', ' '));
       }
       if ((etat === 'non_precise' || etat === 'programme_non_publie') && nb > 0) {
-        err('PILOTE_INCOHERENCE', file, `la case de ${id} (thème ${theme}) indique « ${etat} » alors que ${nb} mesure(s) existent : ${mesuresDe(id, theme).map((m) => m.id).join(', ')}`);
+        err('PILOTE_INCOHERENCE', file, `la case de ${id} (thème ${theme}) indique « ${etat} » alors que ${nb} mesure(s) ${quelles} existent : ${comptees.map((m) => m.id).join(', ')}`.replace('  ', ' '));
       }
       const niveau = niveauTableau(id, theme);
       const attendu: Record<string, string> = { fort: 'mesures', partiel: 'mesures', silence: 'non_precise', aucun: 'programme_non_publie' };
