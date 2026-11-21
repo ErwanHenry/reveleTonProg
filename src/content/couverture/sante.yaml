@@ -133,12 +133,9 @@ cases:
     verifie_le: 2026-11-17
     verifie_par: l'agent d'IA Claude
   - candidat: natacha-polony
-    etat: non_precise
-    sources_consultees:
-      - natacha-polony-ma-vision
-      - natacha-polony-mes-principes
-    verifie_le: 2026-11-21
-    verifie_par: Erwan Henry
+    etat: mesures
+    verifie_le: 2026-11-17
+    verifie_par: l'agent d'IA Claude
   - candidat: bruno-retailleau
     etat: mesures
     verifie_le: 2026-11-17
