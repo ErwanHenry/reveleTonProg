@@ -6,7 +6,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, 
 import os from 'node:os';
 import path from 'node:path';
 import type { EntreeRapport } from '../../scripts/lib/rapport-import.ts';
-import { SERVICES, masquer, texteAlerte } from '../../scripts/lib/veille/alertes.ts';
+import { SERVICES, envoyerTelegram, masquer, texteAlerte } from '../../scripts/lib/veille/alertes.ts';
 import type { Executer, Fetch } from '../../scripts/lib/veille/alertes.ts';
 import { lireEtat, lignesEtat } from '../../scripts/lib/veille/etat.ts';
 import { lancerVeille } from '../../scripts/lib/veille/lancer.ts';
@@ -102,6 +102,7 @@ function monde(): Monde {
     node: 'node',
     journal: (l) => m.journal.push(l),
     lireSecret: (s) => m.secrets[s] ?? null,
+    pause: async () => {},
   };
   return m;
 }
@@ -195,7 +196,8 @@ describe('lancerVeille', () => {
     const r = await lancerVeille(m.deps);
     assert.equal(r.code, 0);
     const etat = lireEtat(m.deps.dossier);
-    assert.match(etat.incidentAlerte ?? '', /Telegram injoignable/);
+    assert.match(etat.incidentAlerte ?? '', /Telegram injoignable .*\(2 essais\)/);
+    assert.equal(m.requetes.filter((q) => q.url.startsWith('https://api.telegram.org/')).length, 2, 'un second essai');
     assert.ok(!(etat.incidentAlerte ?? '').includes(JETON));
     assert.ok(!toutLeTexte(m).includes(JETON));
   });
@@ -247,6 +249,41 @@ describe('alertes', () => {
   it('masquer retire les secrets et leur forme encodée', () => {
     assert.equal(masquer(`a ${JETON} b ${encodeURIComponent(JETON)}`, [JETON, null]), 'a [masqué] b [masqué]');
   });
+  it('Telegram : second essai après une erreur passagère, jamais après un refus net, motif sans secret', async () => {
+    const pauses: number[] = [];
+    const pause = async (ms: number): Promise<void> => {
+      pauses.push(ms);
+    };
+    const suite = (reponses: (number | Error)[]): { fetch: Fetch; appels: () => number } => {
+      let n = 0;
+      return {
+        fetch: async () => {
+          const r = reponses[n++] as number | Error;
+          if (r instanceof Error) throw r;
+          return { ok: r === 200, status: r };
+        },
+        appels: () => n,
+      };
+    };
+    let f = suite([new Error(`délai dépassé vers ${JETON}`), 200]);
+    assert.equal(await envoyerTelegram(JETON, CONVERSATION, 't', f.fetch, pause), null);
+    assert.equal(f.appels(), 2);
+    assert.deepEqual(pauses, [5000]);
+    f = suite([503, 429]);
+    const motif = await envoyerTelegram(JETON, CONVERSATION, 't', f.fetch, pause);
+    assert.equal(motif, 'Telegram a répondu 429 (2 essais)');
+    f = suite([401]);
+    assert.equal(await envoyerTelegram(JETON, CONVERSATION, 't', f.fetch, pause), 'Telegram a répondu 401');
+    assert.equal(f.appels(), 1, 'aucun second essai après un refus net');
+    f = suite([200]);
+    assert.equal(await envoyerTelegram(JETON, CONVERSATION, 't', f.fetch, pause), null);
+    assert.equal(f.appels(), 1);
+    f = suite([new Error(`coupé ${JETON}`), new Error(`coupé ${JETON}`)]);
+    const m2 = (await envoyerTelegram(JETON, CONVERSATION, 't', f.fetch, pause)) ?? '';
+    assert.match(m2, /Telegram injoignable .*\(2 essais\)$/);
+    assert.ok(!m2.includes(JETON));
+  });
+
   it('texte d’alerte : comptes et chemin seulement', () => {
     assert.equal(texteAlerte('1 sortie(s)', '/x/r.md'), 'Veille des candidatures : 1 sortie(s). Rapport : /x/r.md');
   });
