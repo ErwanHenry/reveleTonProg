@@ -276,6 +276,33 @@ describe('masquer', () => {
     assert.equal(masquer('par u_(x) ici', c), 'par <utilisateur> ici');
   });
 
+  it('WR-08 : adresses IP des messages réels de ssh masquées (RTP_HOTE est un nom, l\'adresse n\'est pas au fichier local)', () => {
+    // Adresses de documentation (RFC 5737, RFC 3849).
+    const messages: [string, string][] = [
+      ['Connection closed by 203.0.113.7 port 22', 'Connection closed by <adresse> port 22'],
+      ['Connection reset by 203.0.113.7 port 22', 'Connection reset by <adresse> port 22'],
+      ['kex_exchange_identification: Connection closed by remote host\r\nConnection closed by 198.51.100.23 port 22', 'kex_exchange_identification: Connection closed by remote host\r\nConnection closed by <adresse> port 22'],
+      [`ssh: connect to host ${HOTE} port 22: Connection refused`, 'ssh: connect to host <hôte> port 22: Connection refused'],
+      ['Connection closed by 2001:db8::7 port 22', 'Connection closed by <adresse> port 22'],
+      ['ssh: connect to host 2001:db8:0:1::7 port 22: Operation timed out', 'ssh: connect to host <adresse> port 22: Operation timed out'],
+      [`${UTILISATEUR}@[2001:db8::7]: Permission denied (publickey).`, '<utilisateur>@[<adresse>]: Permission denied (publickey).'],
+      ["Warning: Permanently added '203.0.113.7' (ED25519) to the list of known hosts.", "Warning: Permanently added '<adresse>' (ED25519) to the list of known hosts."],
+    ];
+    for (const [brut, attendu] of messages) assert.equal(masquer(brut, cfg), attendu, brut);
+  });
+
+  it('WR-08 : ni version, ni heure, ni empreinte, ni commit pris pour une adresse', () => {
+    for (const t of [
+      'rsync  version 3.5.2  protocol version 33',
+      'Déploiement : début 2026-11-18T12:00:00Z, fin 2026-11-18T12:04:10Z (UTC)',
+      'etat cible=essai courant=50447115c639083c73579cdaef2d5cfccc999262 versions=2 libre_mio=50000',
+      'OpenSSH_9.8p1, LibreSSL 3.3.6',
+      'Number of files: 3 (reg: 2, dir: 1)',
+    ]) {
+      assert.equal(masquer(t, cfg), t);
+    }
+  });
+
   it('une étiquette déjà posée n\'est pas remasquée', () => {
     const c = { hote: 'h.invalid', utilisateur: 'url', url: null };
     assert.equal(masquer('url@h.invalid', c), '<utilisateur>@<hôte>');

@@ -910,7 +910,7 @@ Mêmes fenêtres et mêmes règles que « Gel des scrutins et retrait d'urgence 
 
 ### Journal
 
-`~/.local/state/rtp/deploiements.jsonl` (dossier 0700, fichier 0600), une ligne JSON par déploiement, retour et retour automatique : date UTC, action (`deployer`, `retour`, `retour-auto`), cible, commit, version d'avant, résultat (`succes`, `echec`, `refus`, `retour-auto`, `sans-retour`), urgence, justification et message facultatifs. Identifiants masqués (`<hôte>`, `<utilisateur>`, `<url>`), aucune donnée personnelle, aucun secret. Pas de ligne pour une répétition à blanc ni pour « rien à déployer ». Lecture : `tail -n 5 ~/.local/state/rtp/deploiements.jsonl | jq .`.
+`~/.local/state/rtp/deploiements.jsonl` (dossier 0700, fichier 0600), une ligne JSON par déploiement, retour et retour automatique : date UTC, action (`deployer`, `retour`, `retour-auto`), cible, commit, version d'avant, résultat (`succes`, `echec`, `refus`, `retour-auto`, `sans-retour`), urgence, justification et message facultatifs. Identifiants masqués (`<hôte>`, `<utilisateur>`, `<url>`, et toute adresse IP écrite par ssh : `<adresse>`, WR-08), aucune donnée personnelle, aucun secret. Pas de ligne pour une répétition à blanc ni pour « rien à déployer ». Lecture : `tail -n 5 ~/.local/state/rtp/deploiements.jsonl | jq .`.
 
 ### Coexistence avec GitHub
 

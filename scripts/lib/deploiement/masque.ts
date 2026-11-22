@@ -3,12 +3,28 @@
 // l'utilisateur et l'URL du fichier local de déploiement (dépôt public, transcriptions d'agents) deviennent
 // `<hôte>`, `<utilisateur>`, `<url>`. Un seul passage d'une seule expression : une étiquette déjà posée n'est
 // jamais remasquée, et la valeur la plus longue l'emporte à une même position.
+// WR-08 (revue de la phase 9.2) : quand RTP_HOTE est un nom, OpenSSH écrit l'adresse IP du serveur dans ses messages
+// (« Connection closed by <IP> port 22 »), que le fichier local ne connaît pas : toute adresse IPv4, et toute adresse
+// IPv6 entre crochets ou après by, from, to, host ou address, devient `<adresse>`.
 // N'importe qu'un type du module relatif config.ts.
 import type { ConfigDeploiement } from './config.ts';
 
 const echapper = (s: string): string => s.replace(/[.*+?^${}()|[\]\\/-]/g, '\\$&');
 
+const IPV4 = /(?<![\w.])(?:\d{1,3}\.){3}\d{1,3}(?![\w.])/g;
+const IPV6_CROCHETS = /\[[0-9A-Fa-f]*:[0-9A-Fa-f:.]*\]/g;
+const IPV6_APRES = /(?<=\b(?:by|from|to|host|address) )[0-9A-Fa-f]*:[0-9A-Fa-f]*:[0-9A-Fa-f:.]*(?![\w:])/gi;
+
+/** Adresses IP génériques (WR-08) : IPv4, IPv6 entre crochets ou après un mot qui annonce une adresse. */
+export function masquerAdresses(texte: string): string {
+  return texte.replace(IPV6_CROCHETS, '[<adresse>]').replace(IPV6_APRES, '<adresse>').replace(IPV4, '<adresse>');
+}
+
 export function masquer(texte: string, cfg: Pick<ConfigDeploiement, 'hote' | 'utilisateur' | 'url'>): string {
+  return masquerAdresses(masquerConfig(texte, cfg));
+}
+
+function masquerConfig(texte: string, cfg: Pick<ConfigDeploiement, 'hote' | 'utilisateur' | 'url'>): string {
   const remplacements = new Map<string, string>();
   const url = cfg.url ?? '';
   if (url !== '') {
