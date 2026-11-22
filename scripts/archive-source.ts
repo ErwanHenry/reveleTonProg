@@ -9,10 +9,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs, promisify } from 'node:util';
-import { Lexer } from 'yaml';
+import { visit } from 'yaml';
 import { readContained, validateYamlText } from '../src/lib/content-core/load.ts';
 import { schemasDirOf } from '../src/lib/content-core/root.ts';
-import { YamlRefuse, lireYamlPlafonne } from '../src/lib/content-core/yaml-plafonne.ts';
+import { YamlRefuse, lireDocumentPlafonne, lireYamlPlafonne } from '../src/lib/content-core/yaml-plafonne.ts';
 import {
   TAILLE_MAX_BINAIRE,
   buildSourceYaml,
@@ -179,11 +179,26 @@ function lireSource(racine: string, id: string): SourceLue {
 const paramsDe = paramsDeSource;
 
 /**
- * Commentaires YAML d'un texte : jetons du lexeur qui commencent par « # » (un « # » dans une valeur, une URL ou un
- * texte plié n'en est pas un). La réécriture d'une source par buildSourceYaml les efface (revue de la phase 9, IN-03).
+ * Commentaires YAML d'un texte, lus par l'analyseur plafonné (IMP-01) : ceux du document et de chaque nœud, une ligne
+ * par commentaire, préfixée de « # ». Un « # » dans une valeur, une URL ou un texte plié n'en est pas un. La réécriture
+ * d'une source par buildSourceYaml les efface (revue de la phase 9, IN-03).
  */
-export function commentairesYaml(texte: string): string[] {
-  return [...new Lexer().lex(texte)].filter((jeton) => jeton.startsWith('#'));
+export function commentairesYaml(texte: string, fichier = 'source.yaml'): string[] {
+  const doc = lireDocumentPlafonne(texte, fichier);
+  const out: string[] = [];
+  const ajouter = (c: string | null | undefined): void => {
+    if (typeof c === 'string' && c !== '') for (const l of c.split('\n')) out.push(`#${l}`);
+  };
+  ajouter(doc.commentBefore);
+  ajouter(doc.comment);
+  visit(doc, {
+    Node: (_cle, n) => {
+      const avecCommentaires = n as { commentBefore?: string | null; comment?: string | null };
+      ajouter(avecCommentaires.commentBefore);
+      ajouter(avecCommentaires.comment);
+    },
+  });
+  return out;
 }
 
 /** Phrase commune aux refus : combien de commentaires, et le premier, tronqué. */
@@ -404,7 +419,7 @@ async function soumettre(ctx: Contexte, id: string): Promise<boolean> {
     avertir(`Wayback pour ${id} : ${r.reason}. Reprise : node scripts/archive-source.ts --wayback-only ${id}`);
     return false;
   }
-  const commentaires = commentairesYaml(src.texte);
+  const commentaires = commentairesYaml(src.texte, src.rel);
   if (commentaires.length > 0) {
     // La copie Wayback existe : seule la réécriture automatique est refusée, l'adresse est donnée pour l'ajout à la main.
     avertir(`${decrireCommentaires(src, commentaires)} : fichier non réécrit. Ajouter à la main, sous archive : wayback_url: ${r.waybackUrl}`);
@@ -631,7 +646,7 @@ async function modeAdopter(ctx: Contexte, a: ArgsAdoption, deps: Dependances): P
   p.archive.waybackUrl = wayback;
   const nouveau = buildSourceYaml(p);
   validerSeulement(ctx, p);
-  const commentaires = commentairesYaml(src.texte);
+  const commentaires = commentairesYaml(src.texte, src.rel);
   if (commentaires.length > 0) {
     throw new Sortie(1, `${decrireCommentaires(src, commentaires)} : rien n'est écrit. Instantané vérifié ; ajouter à la main${url !== src.data.url ? ` url: ${url}, et` : ''} sous archive : wayback_url: ${wayback}`);
   }

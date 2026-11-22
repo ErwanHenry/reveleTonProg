@@ -350,7 +350,7 @@ describe('archive-source --wayback-adopter (hors réseau)', () => {
   }
 
   it('commentairesYaml : seuls les vrais commentaires comptent, pas un « # » dans une valeur', () => {
-    assert.deepEqual(commentairesYaml('# tete\na: 1 # fin\nurl: https://x.example/#frag\ntxt: >-\n  ligne # texte\nq: "x # y"\n'), ['# tete', '# fin']);
+    assert.deepEqual(commentairesYaml('# tete\na: 1 # fin\nurl: https://x.example/#frag\ntxt: >-\n  ligne # texte\n  # toujours texte\nq: "x # y"\nb:\n  # avant\n  c: 2\n').sort(), ['# avant', '# fin', '# tete']);
     assert.deepEqual(commentairesYaml(readFileSync(path.join(BASE_CORPUS, SOURCE_REL), 'utf8')), []);
   });
 
