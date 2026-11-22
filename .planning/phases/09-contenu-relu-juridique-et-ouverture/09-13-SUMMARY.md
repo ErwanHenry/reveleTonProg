@@ -13,6 +13,7 @@ provides:
   - Passe d'audit refaite sur la build en ligne, journal et empreintes (DETTE-04)
   - Trois affirmations fausses du site public corrigées et redéployées
 affects: [10-05]
+requirements-completed: [DETTE-04]
 
 key-decisions:
   - "Erwan, 2026-11-22 : « Oui, prépare » (plan 09-13)"
@@ -52,7 +53,7 @@ La mesure 4G publiée et le journal d'audit décrivent maintenant le site tel qu
 
 Site 200, HSTS 300, CSP ; `www` 301 ; `robots.txt` sans `Disallow: /`, avec `Sitemap:` ; plan du site 200 ; certificats jusqu'au 2027-02-20 ; sonde externe verte sur ses cinq dernières exécutions (dernière à 08:45 UTC, planification irrégulière de GitHub) ; battement `site ok`, `cert ok` ; journal d'accès aux adresses masquées ; 18 autres sites identiques ; aucun run en attente ; validation 0 erreur ; relecture santé reste 0 sur 121.
 
-Confirmation d'Erwan : voir la fin de ce résumé (à compléter à sa réponse).
+Confirmation d'Erwan le 2026-11-22 : « Ouvert, vérifié ». La suppression de l'enregistrement DNS `essai` n'a pas été confirmée : elle reste à faire par Erwan chez IONOS.
 
 ## Constats pour Erwan (rien modifié)
 

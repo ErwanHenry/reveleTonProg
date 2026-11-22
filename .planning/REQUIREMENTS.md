@@ -92,7 +92,7 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 - [x] **DETTE-01**: En preview, la phrase de couverture ne présente pas des brouillons comme des positions publiées (W3)
 - [x] **DETTE-02**: Un test navigateur suit le parcours par clics : niveau gardé d'une page à l'autre et après un retour arrière (W4)
 - [x] **DETTE-03**: Les « Sources consultées » des cases vides donnent lien, date et extrait archivé (W10)
-- [ ] **DETTE-04**: Le journal d'audit et ses empreintes sont refaits sur la build réellement mise en ligne (W8)
+- [x] **DETTE-04**: Le journal d'audit et ses empreintes sont refaits sur la build réellement mise en ligne (W8)
 - [x] **DETTE-05**: Un test compare les types de vue écrits à la main aux schémas JSON (W7)
 
 ## Future Requirements
@@ -143,7 +143,7 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 | OPS-02 | Phase 8 | Complete |
 | OPS-03 | Phase 8 | Complete |
 | PERF-02 | Phase 8 | Complete |
-| DETTE-04 | Phase 9 | Pending |
+| DETTE-04 | Phase 9 | Complete |
 | LEG-01 | Phase 9 | Complete |
 | LEG-02 | Phase 9 | Complete |
 | LEG-03 | Phase 9 | Complete |

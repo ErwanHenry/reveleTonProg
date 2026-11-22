@@ -25,7 +25,7 @@ Détail complet : [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) ; exi
 - [x] **Phase 6: Diagnostic du VPS et décision** : rapport chiffré en lecture seule, snapshot, décision écrite d'Erwan (completed 2026-11-08)
 - [x] **Phase 7: Domaine paramétré, inlining et dette** : domaine unique en configuration, CSS et scripts dans la page avec CSP à empreintes, dette W3, W4, W10, W7 (completed 2026-11-07)
 - [x] **Phase 8: Serveur, pipeline, supervision et sauvegardes** : Caddy en HTTPS, déploiement atomique avec retour arrière, hôte technique protégé, alertes, restauration réelle (completed 2026-11-10)
-- [ ] **Phase 9: Contenu relu, juridique et ouverture** : un thème relu publié, Mentions légales finales, journal d'audit refait, ouverture publique vers le 5 décembre
+- [x] **Phase 9: Contenu relu, juridique et ouverture** : un thème relu publié, Mentions légales finales, journal d'audit refait, ouverture publique vers le 5 décembre
 - [x] **Phase 9.1: Finitions visuelles avant l'ouverture** (INSÉRÉE le 2026-11-12) : défauts de l'audit visuel corrigés, page 404, balises et image de partage, accueil, en-tête, pied de page et page thème retouchés avec validation d'Erwan sur un aperçu ; fusionnée le 2026-11-13, avant la publication (09-11)
 - [x] **Phase 9.2: CI et déploiement depuis le Mac** (INSÉRÉE le 2026-11-18, premier déploiement local le 2026-11-19) : commandes locales de contrôle et de déploiement, mêmes gardes que le pipeline GitHub, confirmation humaine au clavier, clé dédiée
 - [ ] **Phase 10: Import de décembre** : analyseur plafonné, cohérence de l'instantané, import des statuts en pull request relue (10 au 13 décembre, gel du 13 au 15)
@@ -155,7 +155,7 @@ Plans:
 - [x] 09-10-PLAN.md — Relecture du thème santé : 47 mesures, 37 statuts, 37 cases, par des agents d'IA sur décision d'Erwan du 2026-11-17 (fusionnée le 2026-11-18)
 - [x] 09-11-PLAN.md — Publication de santé sur l'hôte d'essai, hébergeur actif, exercice chronométré de retrait d'urgence (fait le 2026-11-21 : 53 min 45 s, retour arrière réel)
 - [x] 09-12-PLAN.md — Ouverture : cible production, bloc Caddy public et certificats, supervision réorientée, hôte d'essai retiré (site public le 2026-11-22 à 08:43 UTC)
-- [ ] 09-13-PLAN.md — Journal d'audit refait sur la build en ligne (DETTE-04), 4G remesurée avec la page santé, confirmation d'Erwan (vague 8)
+- [x] 09-13-PLAN.md — Journal d'audit refait sur la build en ligne (DETTE-04), 4G remesurée avec la page santé, confirmation d'Erwan (2026-11-22)
 - [x] 09-14-PLAN.md — Relecteur et date affichés sur chaque mesure publiée (PUB-03), code check-dist RELECTURE_ABSENTE (vague 3)
 - [x] 09-15-PLAN.md — Personnes sans statut relu absentes de la production (D-06, décision 2a), comptes honnêtes, code check-dist CANDIDAT_NON_RELU_EN_PRODUCTION (vague 4)
 
@@ -267,7 +267,7 @@ Plans:
 | 6. Diagnostic du VPS et décision | v1.1 | 1/0 | Complete    | 2026-11-08 |
 | 7. Domaine paramétré, inlining et dette | v1.1 | 8/8 | Complete    | 2026-11-07 |
 | 8. Serveur, pipeline, supervision et sauvegardes | v1.1 | 15/15 | Complete    | 2026-11-10 |
-| 9. Contenu relu, juridique et ouverture | v1.1 | 14/15 | In Progress|  |
+| 9. Contenu relu, juridique et ouverture | v1.1 | 15/15 | Complete | 2026-11-22 |
 | 9.1 Finitions visuelles avant l'ouverture | v1.1 | 9/9 | Complete | 2026-11-13 |
 | 9.2 CI et déploiement depuis le Mac | v1.1 | 8/8 | Complete | 2026-11-19 |
 | 10. Import de décembre | v1.1 | 1/6 | In Progress|  |

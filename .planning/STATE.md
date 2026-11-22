@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: "Lot 3 : hébergement et mise en ligne"
 status: executing
-stopped_at: Completed 09-12-PLAN.md (reveletonprog.fr public since 2026-11-22 08:43:54 UTC, c383a03) ; next 09-13 (audit log on the live build, 4G on the public host, Erwan's confirmation)
-last_updated: "2026-11-22T09:00:00.000Z"
-last_activity: "2026-11-22 (09-12 : reveletonprog.fr ouvert au public à 08:43:54 UTC, commit c383a03 déployé en production depuis le Mac ; certificats obtenus ; supervision sur l'hôte public sans identifiant ; hôte d'essai retiré ; déploiement GitHub en sommeil ; sauvegarde et restauration ok)"
+stopped_at: Completed 09-13-PLAN.md, phase 9 plans all done (site public, audit and 4G on the live build, Erwan confirmed « Ouvert, vérifié ») ; next: phase 9 code review and verification, then phase 10 (10-05 import 10 to 13 December)
+last_updated: "2026-11-22T14:00:00.000Z"
+last_activity: "2026-11-22 (09-13 : 4G refaite sur le site public, 855 ms au plus ; audit refait sur la build en ligne, trois affirmations fausses corrigées et redéployées, 5088ded servi ; Erwan : « Ouvert, vérifié »)"
 progress:
   total_phases: 8
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 61
-  completed_plans: 59
+  completed_plans: 60
   percent: 50
 ---
 
@@ -28,8 +28,8 @@ See: .planning/PROJECT.md (updated 2026-11-04)
 
 Phase: 9 of 10 (contenu relu, juridique et ouverture)
 Plan: 09-01 à 09-10, 09-14 et 09-15 done (dernier : 09-10, relecture du thème santé par agents d'IA, fusionnée le 2026-11-18) ; reste 09-11 (publication sur l'hôte d'essai, bloquée tant que la source erwan-rohou-programme-mei n'a pas de copie Wayback lisible ou d'exception décidée par Erwan), puis 09-12 et 09-13
-Status: Executing phase 9 (09-11 à 09-13 ; 09-11 bloqué par la copie Wayback d'une source) ; phase 9.2 terminée le 2026-11-19 (déploiement depuis le Mac) ; phase 10 en parallèle (10-01 à 10-04 done, 10-05 du 10 au 11 décembre)
-Last activity: 2026-11-22 (09-12 : reveletonprog.fr ouvert au public à 08:43:54 UTC, commit c383a03 déployé en production depuis le Mac ; certificats obtenus ; supervision sur l'hôte public sans identifiant ; hôte d'essai retiré ; déploiement GitHub en sommeil ; sauvegarde et restauration ok)
+Status: Phase 9 : 15 plans sur 15 faits, revue de code et vérification de la phase à faire ; phase 10 ensuite (10-05 du 10 au 11 décembre)
+Last activity: 2026-11-22 (09-13 : 4G refaite sur le site public, 855 ms au plus ; audit refait sur la build en ligne, trois affirmations fausses corrigées et redéployées, 5088ded servi ; Erwan : « Ouvert, vérifié »)
 
 Progress v1.1: [..........] 0/5 phases, 0 plans
 
