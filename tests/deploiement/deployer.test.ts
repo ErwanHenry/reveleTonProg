@@ -739,6 +739,21 @@ describe('échec du verbe activer : activé ou non ? (WR-01)', () => {
   });
 });
 
+describe('version en ligne relue avant l\'activation (WR-02)', () => {
+  it('current changé pendant la confirmation (retour ou déploiement venu d\'ailleurs) : code 1, aucun activer', { skip: !BASCULE && RAISON_MV }, async () => {
+    const b = banc();
+    await mettreEnLigne(b, b.P);
+    recuVert(b);
+    const Q = 'c'.repeat(40);
+    const { code, texte } = await deployer(b, {}, confirmateur(phrase(b), () => mettreEnLigne(b, Q)));
+    assert.equal(code, 1, texte);
+    assert.ok(texte.includes(`la version en ligne a changé depuis l'écran (${b.P} puis ${Q}) : rien n'est activé, relancer deploy:local`), texte);
+    assert.ok(!verbesSsh(b).some((v) => v.startsWith('activer')), verbesSsh(b).join(' | '));
+    assert.equal(await courant(b), Q);
+    assert.equal(journal(b).at(-1)?.resultat, 'echec');
+  });
+});
+
 describe('clé chargée seulement quand il le faut (CR-04, IN-07)', () => {
   const chargements = (b: Banc): number => b.faux.journal('ssh-add').filter((a) => a[1] === '-t').length;
   const retraits = (b: Banc): number => b.faux.journal('ssh-add').filter((a) => a[1] === '-D').length;

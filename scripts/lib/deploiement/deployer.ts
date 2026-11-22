@@ -424,6 +424,11 @@ export async function executerDeploiement(o: OptionsDeploiement, ctx: ContexteDe
     // WR-01 : la version en ligne juste avant l'activation est la seule cible d'un retour automatique.
     courantAvant = (await etatLu("avant l'activation : rien n'est activé")).courant;
     ecrire(`Version en ligne avant l'activation : ${courantAvant ?? 'aucune'}`);
+    // WR-02 (revue de la phase 9.2) : l'activation remplace courantAvant ; l'écran et le classement « site touché »
+    // portaient sur enLigne. Un retour ou un déploiement venu d'ailleurs (GitHub) pendant l'attente : refus.
+    if (courantAvant !== enLigne) {
+      throw new Sortie(1, `la version en ligne a changé depuis l'écran (${enLigne ?? 'aucune'} puis ${courantAvant ?? 'aucune'}) : rien n'est activé, relancer deploy:local`);
+    }
     // CR-04 : la vérification d'après l'activation et le retour automatique ont besoin de la clé ; elle doit être là,
     // avec assez de temps devant elle, avant que activer ne parte (sinon rechargée, phrase de passe tapée de nouveau).
     await assurerCle(ag, MARGE_APRES_ACTIVATION, "avant l'activation", ecrire);
