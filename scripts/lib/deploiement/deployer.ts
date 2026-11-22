@@ -392,8 +392,8 @@ export async function executerDeploiement(o: OptionsDeploiement, ctx: ContexteDe
     await ag.retirer();
     verifierArret();
 
-    ecrire('');
-    for (const l of lignesEcran({
+    // IN-04 : l'écran est aussi passé au confirmateur, qui le réécrit sur le terminal si la sortie est redirigée.
+    const ecran = [...lignesEcran({
       action: 'deployer',
       cible: c0.cible,
       commit: s,
@@ -405,10 +405,10 @@ export async function executerDeploiement(o: OptionsDeploiement, ctx: ContexteDe
       empreinte: b.empreinte,
       rsync: variante,
       gel: gel.motif,
-    })) ecrire(l);
-    for (const l of fichiers.lignes) ecrire(`  ${l}`);
-    ecrire("Clé retirée de l'agent pendant cet écran : sa phrase de passe sera redemandée juste avant l'envoi.");
-    await ctx.confirmer(phraseAttendue('deployer', c0.cible, s), { arret: arret.signal });
+    }), ...fichiers.lignes.map((l) => `  ${l}`), "Clé retirée de l'agent pendant cet écran : sa phrase de passe sera redemandée juste avant l'envoi."];
+    ecrire('');
+    for (const l of ecran) ecrire(l);
+    await ctx.confirmer(phraseAttendue('deployer', c0.cible, s), { arret: arret.signal, ecran });
     verifierArret();
 
     // ---------- 8. tout ce qui a pu changer pendant l'attente est rejoué ----------

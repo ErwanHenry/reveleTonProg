@@ -149,8 +149,8 @@ export async function executerRetour(o: OptionsRetour, ctx: ContexteRetour): Pro
     // CR-04 : la clé n'attend pas la phrase de confirmation chargée.
     await agent.retirer();
 
-    ecrire('');
-    for (const l of lignesEcran({
+    // IN-04 : l'écran est aussi passé au confirmateur, qui le réécrit sur le terminal si la sortie est redirigée.
+    const ecran = [...lignesEcran({
       action: 'retour',
       cible: cfg.cible,
       commit: version,
@@ -158,9 +158,10 @@ export async function executerRetour(o: OptionsRetour, ctx: ContexteRetour): Pro
       enLigne: courantAvant,
       ...(courantAvant === null ? {} : { sujetEnLigne: await sujet(ctx, exe, courantAvant) }),
       gel: gel.motif,
-    })) ecrire(l);
-    ecrire("Clé retirée de l'agent pendant cet écran : sa phrase de passe sera redemandée juste avant le retour.");
-    await ctx.confirmer(phraseAttendue('retour', cfg.cible, version), { arret: arret.signal });
+    }), "Clé retirée de l'agent pendant cet écran : sa phrase de passe sera redemandée juste avant le retour."];
+    ecrire('');
+    for (const l of ecran) ecrire(l);
+    await ctx.confirmer(phraseAttendue('retour', cfg.cible, version), { arret: arret.signal, ecran });
     verifierArret();
 
     // CR-02 : la garde rejouée après la confirmation, avec l'heure du moment.

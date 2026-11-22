@@ -878,14 +878,19 @@ describe('signal reçu avant l\'activation : arrêt propre (WR-05)', () => {
     await mettreEnLigne(b, b.P);
     recuVert(b);
     let signalVu: AbortSignal | undefined;
+    let ecranVu: readonly string[] | undefined;
     const { code, texte } = await deployer(b, {}, {
       confirmer: async (_p, o) => {
         signalVu = o?.arret;
+        ecranVu = o?.ecran;
         process.emit('SIGTERM', 'SIGTERM');
       },
     });
     assert.equal(code, 1, texte);
     assert.equal(signalVu?.aborted, true, 'le confirmateur reçoit le signal d\'arrêt');
+    // IN-04 : l'écran est passé au confirmateur (réécrit sur le terminal si la sortie est redirigée).
+    assert.ok(ecranVu?.includes('Cible : essai'), String(ecranVu));
+    assert.ok(ecranVu?.some((l) => l.startsWith('Empreinte de la build : ')), String(ecranVu));
     assert.match(texte, /interrompu par SIGTERM avant l'activation/);
     assert.equal(b.faux.journal('rsync').length, 0);
     assert.deepEqual(verbesSsh(b), ['etat essai']);

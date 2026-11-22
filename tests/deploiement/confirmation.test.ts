@@ -171,6 +171,43 @@ describe('lireConfirmation (flux factice ; WR-05 : lecture asynchrone, arrêt po
   });
 });
 
+describe('lireConfirmation : saisie d\'avance jetée, écran réécrit (IN-04)', () => {
+  const PHRASE = 'deployer essai 1a2b3c4';
+
+  it('une ligne déjà tapée avant l\'invite (pendant le délai de vidage) est jetée ; seule compte celle d\'après', async () => {
+    const flux = new PassThrough();
+    const ecrit: string[] = [];
+    flux.write(`${PHRASE}\n`); // tapée d'avance, par exemple après la répétition à blanc
+    const p = lireConfirmation(flux, (t) => ecrit.push(t), PHRASE, { vidageMs: 100 });
+    setTimeout(() => flux.write('autre chose\n'), 300);
+    const saisie = await p;
+    assert.equal(saisie, 'autre chose\n');
+    attendreSortie(() => verifierPhrase(saisie, PHRASE), 3, /confirmation refusée/);
+  });
+
+  it('écran donné : écrit sur le terminal avant la consigne', async () => {
+    const flux = new PassThrough();
+    const ecrit: string[] = [];
+    const p = lireConfirmation(flux, (t) => ecrit.push(t), PHRASE, { vidageMs: 10, ecran: ['Cible : essai', 'Commit à déployer : abc'] });
+    setTimeout(() => flux.write(`${PHRASE}\n`), 80);
+    assert.equal(await p, `${PHRASE}\n`);
+    const tout = ecrit.join('');
+    assert.ok(tout.indexOf('Cible : essai\n') < tout.indexOf('Pour confirmer'), tout);
+    assert.ok(tout.includes('Commit à déployer : abc\n'));
+  });
+
+  it('délai de vidage par défaut non nul (150 ms)', async () => {
+    const flux = new PassThrough();
+    const ecrit: string[] = [];
+    const p = lireConfirmation(flux, (t) => ecrit.push(t), PHRASE);
+    flux.write(`${PHRASE}\n`);
+    await new Promise((r) => setTimeout(r, 50));
+    assert.equal(ecrit.length, 0, 'invite pas encore écrite');
+    setTimeout(() => flux.end(), 400);
+    assert.equal(await p, '', 'la ligne tapée avant l\'invite ne compte pas');
+  });
+});
+
 describe('lignesEcran', () => {
   it('production en capitales ; champs renseignés affichés ; absents jamais imprimés', () => {
     const lignes = lignesEcran({ action: 'deployer', cible: 'production', commit: A, sujet: 'feat: exemple', enLigne: B, empreinte: 'f'.repeat(64) });

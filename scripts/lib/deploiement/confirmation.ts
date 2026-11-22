@@ -11,7 +11,9 @@
 // répondre à sa place, et la CLI (scripts/deploy-local.ts) refuse en premier une entrée standard qui n'est pas un
 // terminal, puis ne passe jamais d'autre confirmateur que celui-ci.
 // Revue de la phase 9.2 : la lecture est asynchrone (WR-05 : un Ctrl-C à l'invite arrête tout et laisse le
-// nettoyage se faire, au lieu d'attendre la touche Entrée).
+// nettoyage se faire, au lieu d'attendre la touche Entrée), ce qui a été tapé avant l'invite est lu puis jeté
+// (IN-04 : une ligne tapée d'avance ne vaut pas confirmation), et l'écran est réécrit sur le terminal quand la
+// sortie standard n'en est pas un (IN-04 : sortie redirigée vers un fichier ou tee).
 //
 // Limite, dite franchement : la phrase protège contre l'erreur (mauvaise cible, mauvais commit, commande lancée
 // par réflexe), pas contre un attaquant. Tout code qui tourne sous l'utilisateur d'Erwan peut importer cette
@@ -39,8 +41,8 @@ export type Confirmateur = (phrase: string, o?: OptionsConfirmation) => Promise<
 
 const SHA = /^[0-9a-f]{40}$/;
 const SAISIE_MAX = 1024;
-/** Délai avant l'invite. */
-const VIDAGE_MS = 0;
+/** IN-04 : ce qui arrive du terminal pendant ce délai, avant l'invite, a été tapé d'avance : lu puis jeté. */
+const VIDAGE_MS = 150;
 
 /**
  * Phrase à taper : `<action> [en production|essai] <commit sur 7 caractères | precedente>`. null n'est admis que
@@ -155,6 +157,7 @@ export const confirmerSurTerminal: Confirmateur = async (phrase, o = {}) => {
     try {
       const saisie = await lireConfirmation(flux, (t) => writeSync(fdEcriture, t), phrase, {
         ...(o.arret === undefined ? {} : { arret: o.arret }),
+        ...(process.stdout.isTTY === true || o.ecran === undefined ? {} : { ecran: o.ecran }),
       });
       verifierPhrase(saisie, phrase);
     } finally {
