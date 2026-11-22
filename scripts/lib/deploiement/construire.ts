@@ -15,13 +15,17 @@
 //     étape ;
 //   - encadrée par un instantané (executables.ts) pris avant et comparé après : il constate ce que le profil ne
 //     peut pas garantir seul (hooks git, configuration git, fichiers de configuration, binaire du même nom glissé
-//     plus tôt dans le PATH).
+//     plus tôt dans le PATH) ;
+//   - copiée, une fois les étapes finies, dans un dossier privé que le profil ne laisse pas écrire
+//     (~/.cache/rtp/deploiement/build-<hasard>, 0700), puis le worktree est retiré : l'empreinte, les contrôles
+//     d'après la confirmation et l'envoi portent sur cette copie seule (CR-02 de la revue de la phase 9.2 : un
+//     processus resté de la build ne peut plus réécrire ce qui part en ligne entre l'empreinte et rsync).
 // Aucun agent SSH n'existe à ce stade : le plan 06 le démarre après la build. Aucun secret n'est lu ici : les chemins
 // sont seulement résolus pour le profil et l'instantané (sha256 des fichiers surveillés, jamais affiché).
 // N'importe que des modules node: et des modules relatifs.
 import { randomBytes } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
-import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync } from 'node:fs';
+import { chmodSync, cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync } from 'node:fs';
 import { tmpdir as tmpdirSysteme } from 'node:os';
 import path from 'node:path';
 import { envDeBase, type Lanceur } from '../processus.ts';
@@ -132,7 +136,10 @@ export function sondeBacASable(): { ok: boolean; raison: string } {
 export interface BuildDeploiement {
   cible: 'essai' | 'production';
   sha: string;
+  /** Dossier privé de la copie (CR-02) ; dist est son sous-dossier. */
   dossierTravail: string;
+  /** Worktree de la build, déjà retiré au retour de construireDeploiement (CR-02). */
+  worktree: string;
   dist: string;
   empreinte: string;
   /** Instantané pris avant la build : le plan 06 le compare de nouveau après la confirmation. */
@@ -245,6 +252,20 @@ export async function construireDeploiement(o: OptionsConstruction): Promise<Bui
     throw new Sortie(2, `worktree du commit ${o.sha} impossible : ${fin(ajout.stderr)}`);
   }
 
+  // CR-02 : copie privée de dist, supprimée avec la build.
+  let copie: string | null = null;
+  const retirerCopie = (): void => {
+    if (copie !== null) rmSync(copie, { recursive: true, force: true });
+    copie = null;
+  };
+  const nettoyerTout = async (): Promise<void> => {
+    try {
+      await nettoyer();
+    } finally {
+      retirerCopie();
+    }
+  };
+
   try {
     const gd = await git(['rev-parse', '--absolute-git-dir'], dossier);
     const gitdir = gd.code === 0 ? reel(gd.stdout.trim()) : '';
@@ -281,10 +302,38 @@ export async function construireDeploiement(o: OptionsConstruction): Promise<Bui
       if (o.apresEtape !== undefined) await o.apresEtape(e.args.join(' '));
     }
 
-    // 7. Intégrité locale, arbre construit, commit de version.json, empreinte.
+    // 7. Intégrité locale, arbre construit.
     verifierIntegrite(instantane, prendreInstantane(optionsInstantane));
-    const dist = path.join(dossier, 'dist');
-    if (!existsSync(dist) || !lstatSync(dist).isDirectory()) throw new Sortie(1, `la build n'a pas produit de dossier dist : ${dist}`);
+    const distBuild = path.join(dossier, 'dist');
+    if (!existsSync(distBuild) || !lstatSync(distBuild).isDirectory()) throw new Sortie(1, `la build n'a pas produit de dossier dist : ${distBuild}`);
+    const specialBuild = trouverSpecial(distBuild);
+    if (specialBuild !== null) throw new Sortie(1, `la build contient un lien symbolique ou un fichier spécial : ${specialBuild}`);
+
+    // 8. CR-02 : copie dans un dossier privé que le profil ne laisse pas écrire, puis worktree retiré aussitôt.
+    const parentCopies = path.join(o.home, '.cache', 'rtp', 'deploiement');
+    mkdirSync(parentCopies, { recursive: true, mode: 0o700 });
+    const prive = reel(mkdtempSync(path.join(parentCopies, 'build-')));
+    copie = prive;
+    chmodSync(prive, 0o700);
+    for (const [ecrivable, nomEcrivable] of [
+      [tmp, 'le dossier temporaire'],
+      [dossier, 'le worktree'],
+      [dossierTmp, 'le dossier temporaire de la build'],
+      [admin, 'le dossier git du worktree'],
+      [cacheNpm, 'le cache npm'],
+    ] as const) {
+      if (sous(prive, ecrivable)) throw new Sortie(2, `copie de la build sous ${nomEcrivable} (${ecrivable}), où la build peut écrire : déploiement refusé`);
+    }
+    const dist = path.join(prive, 'dist');
+    try {
+      // Liens copiés tels quels (jamais suivis) ; un fichier spécial fait échouer la copie.
+      cpSync(distBuild, dist, { recursive: true, verbatimSymlinks: true, errorOnExist: true, force: false });
+    } catch (e) {
+      throw new Sortie(1, `copie de la build impossible : ${e instanceof Error ? e.message : String(e)}`);
+    }
+    await nettoyer();
+
+    // 9. Sur la copie seule : modes, aucun lien ni fichier spécial, commit de version.json, empreinte.
     normaliserModes(dist);
     const special = trouverSpecial(dist);
     if (special !== null) throw new Sortie(1, `la build contient un lien symbolique ou un fichier spécial : ${special}`);
@@ -299,9 +348,9 @@ export async function construireDeploiement(o: OptionsConstruction): Promise<Bui
     if (v.code !== 0) throw new Sortie(1, `dist/version.json ne porte pas le commit ${o.sha}`);
     const empreinte = empreinteArbre(dist);
     o.ecrire(`build de déploiement prête (${o.cible}) : empreinte ${empreinte}`);
-    return { cible: o.cible, sha: o.sha, dossierTravail: dossier, dist, empreinte, instantane, executables, nettoyer };
+    return { cible: o.cible, sha: o.sha, dossierTravail: prive, worktree: dossier, dist, empreinte, instantane, executables, nettoyer: nettoyerTout };
   } catch (e) {
-    await nettoyer();
+    await nettoyerTout();
     throw e;
   }
 }

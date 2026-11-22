@@ -271,6 +271,9 @@ function journal(b: Banc): Record<string, unknown>[] {
 function sansWorktree(b: Banc): void {
   assert.equal(git(b.racine, 'worktree', 'list').split('\n').length, 1, git(b.racine, 'worktree', 'list'));
   assert.deepEqual(readdirSync(b.tmp).filter((n) => n.startsWith('rtp-deploiement-')), []);
+  // CR-02 : la copie privée de la build est supprimée elle aussi.
+  const copies = path.dirname(cheminsLocaux(b.home).verrou);
+  assert.deepEqual(existsSync(copies) ? readdirSync(copies).filter((n) => n.startsWith('build-')) : [], []);
   assert.equal(existsSync(cheminsLocaux(b.home).verrou), false, 'verrou rendu');
 }
 

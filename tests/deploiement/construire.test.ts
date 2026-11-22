@@ -113,6 +113,7 @@ essai creation-home 'echo intrus > "$HOME/intrus.txt"'
 essai ecriture-worktree 'echo ok > ./ecrit-worktree.txt'
 essai ecriture-tmpdir 'echo ok > "$TMPDIR/ecrit-tmp.txt"'
 essai ecriture-tmpdir-utilisateur 'echo intrus > "${path.join(tmp, 'intrus-tmp.txt')}"'
+essai ecriture-copies 'echo intrus > "$HOME/.cache/rtp/deploiement/intrus"'
 essai lecture-agents 'ls "$HOME/.cache/rtp/agents" >> "$LOG"'
 essai connexion-agent '"${process.execPath}" "${path.join(sondes, 'connexion.js')}" "$HOME/.cache/rtp/agents/a/s.sock"'
 essai dns-local '"${process.execPath}" "${path.join(sondes, 'dns.js')}"'
@@ -350,14 +351,30 @@ describe('construireDeploiement (faux sandbox-exec)', () => {
     const b = banc();
     for (const [cible, attendu] of [['essai', '0'], ['production', '1']] as const) {
       rmSync(b.log, { force: true });
-      const r = await construire(b, { cible });
+      let tete = '';
+      let tmpPendant = false;
+      const r = await construire(b, {
+        cible,
+        apresEtape: (etape: string) => {
+          if (etape !== 'run build') return;
+          const w = readdirSync(b.tmp).find((n) => n.startsWith('rtp-deploiement-') && !n.endsWith('-tmp')) as string;
+          tete = git(path.join(b.tmp, w), 'rev-parse', 'HEAD');
+          tmpPendant = existsSync(path.join(b.tmp, `${w}-tmp`));
+        },
+      });
       try {
         assert.equal(r.cible, cible);
         assert.equal(r.sha, b.sha);
+        assert.equal(tete, b.sha, 'worktree du commit exact');
+        assert.ok(tmpPendant, 'dossier temporaire propre à la build');
         assert.equal(r.dist, path.join(r.dossierTravail, 'dist'));
-        assert.ok(r.dossierTravail.startsWith(`${b.tmp}/rtp-deploiement-${b.sha.slice(0, 12)}-`), r.dossierTravail);
-        assert.ok(existsSync(`${r.dossierTravail}-tmp`), 'dossier temporaire propre à la build');
-        assert.equal(git(r.dossierTravail, 'rev-parse', 'HEAD'), b.sha);
+        assert.ok(r.worktree.startsWith(`${b.tmp}/rtp-deploiement-${b.sha.slice(0, 12)}-`), r.worktree);
+        // CR-02 : copie privée hors de tout dossier inscriptible par la build, worktree déjà retiré.
+        assert.ok(r.dossierTravail.startsWith(`${path.join(b.home, '.cache', 'rtp', 'deploiement')}/build-`), r.dossierTravail);
+        assert.equal(statSync(r.dossierTravail).mode & 0o777, 0o700);
+        assert.equal(existsSync(r.worktree), false, 'worktree retiré dès la copie');
+        assert.equal(existsSync(`${r.worktree}-tmp`), false);
+        sansWorktree(b);
         assert.equal(r.empreinte, empreinteArbre(r.dist));
         assert.equal(statSync(path.join(r.dist, 'sous')).mode & 0o777, 0o755);
         assert.equal(statSync(path.join(r.dist, 'sous', 'page.html')).mode & 0o777, 0o644);
@@ -371,23 +388,27 @@ describe('construireDeploiement (faux sandbox-exec)', () => {
           assert.equal(a.env.npm_config_cache, b.cache);
           assert.equal(a.env.HOME, b.home);
           // CR-01 : TMPDIR propre à la build, jamais celui de l'utilisateur.
-          assert.equal(a.env.TMPDIR, `${r.dossierTravail}-tmp`);
+          assert.equal(a.env.TMPDIR, `${r.worktree}-tmp`);
+          assert.equal(a.env.PWD, r.worktree);
           assert.equal(a.env.SSH_AUTH_SOCK, undefined);
           assert.equal(a.env.RTP_HOTE, undefined);
         }
         const profil = readFileSync(b.profilLog, 'utf8');
         assert.ok(profil.includes('(deny file-write*)'));
-        assert.ok(profil.includes(`(subpath "${r.dossierTravail}")`));
-        assert.ok(profil.includes(`(subpath "${r.dossierTravail}-tmp")`));
+        assert.ok(profil.includes(`(subpath "${r.worktree}")`));
+        assert.ok(profil.includes(`(subpath "${r.worktree}-tmp")`));
         assert.ok(!profil.includes(`(subpath "${b.tmp}")`), 'TMPDIR de l\'utilisateur ouvert en écriture');
+        // CR-02 : aucun dossier inscriptible par la build ne contient la copie envoyée.
+        const ecrivables = [...(/\(allow file-write\* ([^]*?)\)\(deny file-read\*/.exec(profil)?.[1] ?? '').matchAll(/\(subpath "([^"]+)"\)/g)].map((m) => m[1] as string);
+        assert.equal(ecrivables.length, 4, profil);
+        for (const w of ecrivables) assert.ok(!`${r.dist}/`.startsWith(`${w}/`), `${r.dist} sous ${w}`);
         assert.ok(profil.includes(`(literal "${b.cleExterne}")`));
         assert.deepEqual(Object.keys(r.executables).sort(), ['git', 'jq']);
         assert.equal(r.instantane.fichiers[path.join(b.home, '.config', 'rtp', 'deploiement.env')]?.length, 64);
       } finally {
         await r.nettoyer();
       }
-      assert.equal(existsSync(r.dossierTravail), false);
-      assert.equal(existsSync(`${r.dossierTravail}-tmp`), false);
+      assert.equal(existsSync(r.dossierTravail), false, 'copie supprimée par nettoyer');
       sansWorktree(b);
     }
   });
@@ -466,6 +487,8 @@ describe('bac à sable (vrai sandbox-exec)', { skip: sonde.ok ? false : sonde.ra
     const gitConfig = readFileSync(path.join(b.racine, '.git', 'config'));
     const envFichier = path.join(b.home, '.config', 'rtp', 'deploiement.env');
     const envAvant = readFileSync(envFichier);
+    // CR-02 : le dossier des copies privées existe déjà (déploiements précédents) ; la build ne doit pas y écrire.
+    mkdirSync(path.join(b.home, '.cache', 'rtp', 'deploiement'), { recursive: true, mode: 0o700 });
     const fermerSocket = await socketAgent(b);
     let r: BuildDeploiement;
     try {
@@ -479,7 +502,7 @@ describe('bac à sable (vrai sandbox-exec)', { skip: sonde.ok ? false : sonde.ra
       assert.ok(!log.includes('s.sock'), 'le dossier des agents a été listé par la build');
       assert.ok(log.includes('dns-local REUSSI'), 'résolution DNS refusée');
       assert.equal(existsSync(path.join(b.tmp, 'intrus-tmp.txt')), false);
-      for (const t of ['lecture-cle', 'lecture-cle-externe', 'lecture-ssh', 'lecture-gh', 'ecriture-env', 'ecriture-git-config', 'creation-home', 'ecriture-tmpdir-utilisateur', 'lecture-agents', 'connexion-agent']) {
+      for (const t of ['lecture-cle', 'lecture-cle-externe', 'lecture-ssh', 'lecture-gh', 'ecriture-env', 'ecriture-git-config', 'creation-home', 'ecriture-tmpdir-utilisateur', 'ecriture-copies', 'lecture-agents', 'connexion-agent']) {
         assert.ok(log.includes(`${t} REFUSE`), `${t} n’a pas été refusé :\n${log.split('\n').filter((l) => !l.startsWith('ENV ')).join('\n')}`);
       }
       for (const t of ['ecriture-worktree', 'ecriture-tmpdir']) assert.ok(log.includes(`${t} REUSSI`), t);
