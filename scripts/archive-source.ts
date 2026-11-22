@@ -9,6 +9,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs, promisify } from 'node:util';
+import { Lexer } from 'yaml';
 import { readContained, validateYamlText } from '../src/lib/content-core/load.ts';
 import { schemasDirOf } from '../src/lib/content-core/root.ts';
 import { YamlRefuse, lireYamlPlafonne } from '../src/lib/content-core/yaml-plafonne.ts';
@@ -156,6 +157,8 @@ interface SourceLue {
   fichier: string;
   rel: string;
   data: DonneesSource;
+  /** Texte du fichier tel qu'il a été lu (pour repérer les commentaires qu'une réécriture effacerait). */
+  texte: string;
 }
 
 const relSource = (id: string): string => `src/content/sources/${id}.yaml`;
@@ -170,10 +173,24 @@ function lireSource(racine: string, id: string): SourceLue {
   const res = validateYamlText('source', lu.text, fichier, { schemasDir: SCHEMAS_DIR });
   const erreurs = res.diagnostics.filter((d) => d.severity === 'error');
   if (erreurs.length > 0) throw new Sortie(1, `${rel} invalide : ${erreurs.map((d) => `${d.code} ${d.pointer} ${d.message}`).join(' ; ')}`);
-  return { fichier, rel, data: res.data as SourceLue['data'] };
+  return { fichier, rel, data: res.data as SourceLue['data'], texte: lu.text };
 }
 
 const paramsDe = paramsDeSource;
+
+/**
+ * Commentaires YAML d'un texte : jetons du lexeur qui commencent par « # » (un « # » dans une valeur, une URL ou un
+ * texte plié n'en est pas un). La réécriture d'une source par buildSourceYaml les efface (revue de la phase 9, IN-03).
+ */
+export function commentairesYaml(texte: string): string[] {
+  return [...new Lexer().lex(texte)].filter((jeton) => jeton.startsWith('#'));
+}
+
+/** Phrase commune aux refus : combien de commentaires, et le premier, tronqué. */
+function decrireCommentaires(src: SourceLue, commentaires: readonly string[]): string {
+  const premier = commentaires[0] ?? '';
+  return `${src.rel} contient ${commentaires.length} commentaire(s) YAML (« ${premier.length > 80 ? `${premier.slice(0, 80)}…` : premier} ») que la réécriture effacerait`;
+}
 
 /** Une exception Wayback motivée (D-08) interdit toute soumission ou adoption d'instantané. */
 function refusSiException(src: SourceLue, action: string): void {
@@ -385,6 +402,12 @@ async function soumettre(ctx: Contexte, id: string): Promise<boolean> {
   const r = await submitWayback(src.data.url, { fetch: globalThis.fetch, now: () => new Date() });
   if (!r.ok) {
     avertir(`Wayback pour ${id} : ${r.reason}. Reprise : node scripts/archive-source.ts --wayback-only ${id}`);
+    return false;
+  }
+  const commentaires = commentairesYaml(src.texte);
+  if (commentaires.length > 0) {
+    // La copie Wayback existe : seule la réécriture automatique est refusée, l'adresse est donnée pour l'ajout à la main.
+    avertir(`${decrireCommentaires(src, commentaires)} : fichier non réécrit. Ajouter à la main, sous archive : wayback_url: ${r.waybackUrl}`);
     return false;
   }
   const p = paramsDe(src.data);
@@ -608,6 +631,10 @@ async function modeAdopter(ctx: Contexte, a: ArgsAdoption, deps: Dependances): P
   p.archive.waybackUrl = wayback;
   const nouveau = buildSourceYaml(p);
   validerSeulement(ctx, p);
+  const commentaires = commentairesYaml(src.texte);
+  if (commentaires.length > 0) {
+    throw new Sortie(1, `${decrireCommentaires(src, commentaires)} : rien n'est écrit. Instantané vérifié ; ajouter à la main${url !== src.data.url ? ` url: ${url}, et` : ''} sous archive : wayback_url: ${wayback}`);
+  }
   const diff = diffUnifie(readFileSync(src.fichier, 'utf8'), nouveau, src.rel);
   if (ctx.dryRun) {
     console.log(diff === '' ? '[dry-run] aucun changement.' : `[dry-run] ${src.rel} n'est pas écrit ; diff proposé :\n${diff}`);

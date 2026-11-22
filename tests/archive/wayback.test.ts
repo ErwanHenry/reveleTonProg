@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { after, describe, it, type TestContext } from 'node:test';
 import { parse } from 'yaml';
-import { Sortie, executer } from '../../scripts/archive-source.ts';
+import { Sortie, commentairesYaml, executer } from '../../scripts/archive-source.ts';
 import { validateYamlText } from '../../src/lib/content-core/load.ts';
 import { BASE_CORPUS } from '../helpers/overlay.ts';
 import { SCHEMAS_DIR } from '../helpers/validate-yaml.ts';
@@ -337,6 +337,45 @@ describe('archive-source --wayback-adopter (hors réseau)', () => {
     sortie(t);
     await refus(executer(['--wayback-adopter', 'marie-fictive-programme', '--instantane', H, '--root', r], { fetch: serveur(htmlInstantane(r), vues), lookup }), 1, /exception Wayback motivée/);
     assert.deepEqual(vues, []);
+  });
+
+  /** Ajoute un commentaire au-dessus de date_publication (cas réel : page de parti non datée, décision du 2026-11-17). */
+  function avecCommentaire(r: string): string {
+    const f = path.join(r, SOURCE_REL);
+    const avant = readFileSync(f, 'utf8');
+    const apres = avant.replace('date_publication: 2026-10\n', '# Page non datée : valeur par défaut expliquée ici.\ndate_publication: 2026-10\n');
+    assert.notEqual(apres, avant);
+    writeFileSync(f, apres);
+    return apres;
+  }
+
+  it('commentairesYaml : seuls les vrais commentaires comptent, pas un « # » dans une valeur', () => {
+    assert.deepEqual(commentairesYaml('# tete\na: 1 # fin\nurl: https://x.example/#frag\ntxt: >-\n  ligne # texte\nq: "x # y"\n'), ['# tete', '# fin']);
+    assert.deepEqual(commentairesYaml(readFileSync(path.join(BASE_CORPUS, SOURCE_REL), 'utf8')), []);
+  });
+
+  it('--wayback-adopter sur une source commentée : refus (code 1) qui donne les valeurs à ajouter à la main, rien n’est écrit (IN-03)', async (t) => {
+    const r = racine();
+    const avant = avecCommentaire(r);
+    sortie(t);
+    await refus(
+      executer(['--wayback-adopter', 'marie-fictive-programme', '--instantane', H, '--nouvelle-url', NOUVELLE, '--root', r], { fetch: serveur(htmlInstantane(r), []), lookup }),
+      1,
+      new RegExp(`1 commentaire\\(s\\) YAML .*url: ${NOUVELLE}, et sous archive : wayback_url: https://web.archive.org/web/${H}/${NOUVELLE}`),
+    );
+    assert.equal(readFileSync(path.join(r, SOURCE_REL), 'utf8'), avant);
+  });
+
+  it('--wayback-only sur une source commentée : soumise, mais le fichier n’est pas réécrit ; l’adresse est donnée (IN-03)', async (t) => {
+    const r = racine();
+    const avant = avecCommentaire(r);
+    const out = sortie(t);
+    const instantane = `https://web.archive.org/web/20261122100000/${ANCIENNE}`;
+    const appels = t.mock.method(globalThis, 'fetch', async () => new Response(null, { status: 302, headers: { location: instantane } }));
+    await executer(['--wayback-only', 'marie-fictive-programme', '--root', r]);
+    assert.equal(appels.mock.callCount(), 1);
+    assert.equal(readFileSync(path.join(r, SOURCE_REL), 'utf8'), avant);
+    assert.match(out.texte(), new RegExp(`commentaire\\(s\\) YAML .*fichier non réécrit.*wayback_url: ${instantane.replaceAll('.', '\\.')}`));
   });
 
   it('--wayback-only sur une source avec exception : refus (code 1) qui nomme l’exception, rien n’est soumis', async (t) => {
