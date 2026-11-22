@@ -915,7 +915,7 @@ Mêmes fenêtres et mêmes règles que « Gel des scrutins et retrait d'urgence 
 
 ### Coexistence avec GitHub
 
-- Les workflows GitHub (`ci.yml`, `rollback.yml`) ne sont pas modifiés par cette phase. Les mettre en sommeil (retirer la variable `DEPLOY_CIBLE`) ou désactiver Actions est une décision séparée d'Erwan, à prendre après le premier déploiement local réussi (D-11, en attente).
+- Les workflows GitHub (`ci.yml`, `rollback.yml`) ne sont pas modifiés par cette phase. Les mettre en sommeil (retirer la variable `DEPLOY_CIBLE`) ou désactiver Actions est une décision séparée d'Erwan, à prendre après le premier déploiement local réussi (D-11 : tranchée le 2026-11-22 à l'ouverture, déploiement GitHub mis en sommeil par le retrait de `DEPLOY_CIBLE` ; la CI de vérification continue de tourner sur GitHub).
 - Tant que `DEPLOY_CIBLE` est posée, un push qui touche le site crée sur GitHub un déploiement en attente d'approbation. Après un déploiement local du même commit, **rejeter** ce run (« Review deployments ») : approuvé, il ne ferait que réactiver le même commit, et approuvé après un retour arrière local, il remettrait en ligne ce que le retour a retiré.
 - Le serveur sérialise de toute façon les verbes `activer` et `retour` des deux chemins (verrou `flock -w 20`) ; le verrou local du Mac ne voit pas GitHub.
 - Revenir au chemin GitHub : rien à réinstaller, les workflows et la clé de GitHub sont en place ; approuver le prochain run, ou `gh workflow run ci.yml --ref main -f deployer=true`. Retirer la clé du Mac si besoin : réappliquer l'étape `utilisateur` avec la seule clé de GitHub (« Autoriser la clé sur le serveur », point 4).
@@ -1012,6 +1012,16 @@ Un agent peut lancer `npm run veille`, `etat` et `preparer`, lire les rapports e
 Retirer dans l'heure : voir « Retrait d'urgence d'une mesure (moins d'une heure) » juste en dessous. Pendant un gel des scrutins : « Gel des scrutins et retrait d'urgence ».
 
 ### Retrait d'urgence d'une mesure (moins d'une heure)
+
+**Chemin à suivre depuis le 2026-11-22 : le Mac.** Le déploiement GitHub est en sommeil (variable `DEPLOY_CIBLE` retirée à l'ouverture) : `gh workflow run rollback.yml` et l'approbation « Review deployments » décrites plus bas ne déploient plus rien. Équivalences, à lancer par Erwan dans son terminal (« CI et déploiement depuis le Mac ») :
+
+| Étape | Commande |
+|---|---|
+| Voie 1, retour arrière | `npm run deploy:local -- retour` (version précédente) ou `npm run deploy:local -- retour <sha>` ; phrase « retour en production precedente » ou « retour en production <sha7> » (avec « malgre retrait » à la fin si la version visée remettrait en ligne un contenu retiré en urgence) |
+| Voies 2 et 3, après `retirer` | commit, push sur `main`, `npm run ci:local` (13 à 16 minutes sur une machine chargée), puis `npm run deploy:local` et la phrase « deployer en production <sha7> » |
+| Pendant un gel des scrutins | ajouter `--urgence --justification "<motif d'au moins 20 caractères>"` à `deploy:local` ou à `deploy:local -- retour` (aucun retour automatique pour un retrait d'urgence) |
+
+Exercice du 2026-11-21 (plus bas) : 53 min 45 s par la voie 2 sur ce chemin, retour arrière réel en 21 s. Le texte qui suit garde la description du chemin GitHub comme historique.
 
 Objectif : une mesure publiée qui ne doit plus l'être (absence de source, erreur factuelle, demande fondée) disparaît du site **en moins d'une heure** entre la décision et la page servie. Trois voies, à prendre dans cet ordre. Dans tous les cas : noter l'identifiant de la mesure (`<candidat>/<slug>`) et l'heure de début.
 
