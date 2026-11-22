@@ -29,7 +29,7 @@ import { cheminsLocaux, lireConfig, type ConfigDeploiement } from './config.ts';
 import { lignesEcran, phraseAttendue, type Confirmateur } from './confirmation.ts';
 import { resoudreExecutables, type Executables } from './executables.ts';
 import { decisionGel, Sortie } from './gardes.ts';
-import { ajouterJournal, type EntreeJournal } from './journal.ts';
+import { ajouterJournal, retraitUrgenceEnLigne, type EntreeJournal } from './journal.ts';
 import { masquer } from './masque.ts';
 import { appelerVerbe, lireEtat, lireRetour, versionServie } from './transport.ts';
 
@@ -146,6 +146,9 @@ export async function executerRetour(o: OptionsRetour, ctx: ContexteRetour): Pro
     const avant = lireEtat(ligneAvant);
     if (avant === null || avant.cible !== cfg.cible) throw new Sortie(1, `réponse de etat illisible : ${masquer(ligneAvant, cfg)}`);
     courantAvant = avant.courant;
+    // WR-03 : la version en ligne est-elle un retrait d'urgence (journal local) ? Le retour remettrait en ligne le
+    // contenu retiré : avertissement et phrase distincte.
+    const apresRetrait = courantAvant !== null && retraitUrgenceEnLigne(ctx.home, cfg.cible, courantAvant);
     // CR-04 : la clé n'attend pas la phrase de confirmation chargée.
     await agent.retirer();
 
@@ -158,10 +161,12 @@ export async function executerRetour(o: OptionsRetour, ctx: ContexteRetour): Pro
       enLigne: courantAvant,
       ...(courantAvant === null ? {} : { sujetEnLigne: await sujet(ctx, exe, courantAvant) }),
       gel: gel.motif,
-    }), "Clé retirée de l'agent pendant cet écran : sa phrase de passe sera redemandée juste avant le retour."];
+    }),
+      ...(apresRetrait ? ["Attention : la version en ligne est un retrait d'urgence (journal local) ; le retour remettra en ligne le contenu retiré."] : []),
+      "Clé retirée de l'agent pendant cet écran : sa phrase de passe sera redemandée juste avant le retour."];
     ecrire('');
     for (const l of ecran) ecrire(l);
-    await ctx.confirmer(phraseAttendue('retour', cfg.cible, version), { arret: arret.signal, ecran });
+    await ctx.confirmer(phraseAttendue('retour', cfg.cible, version, { malgreRetrait: apresRetrait }), { arret: arret.signal, ecran });
     verifierArret();
 
     // CR-02 : la garde rejouée après la confirmation, avec l'heure du moment.
@@ -173,6 +178,15 @@ export async function executerRetour(o: OptionsRetour, ctx: ContexteRetour): Pro
     // CR-04 : clé rechargée juste avant d'écrire sur le serveur (phrase de passe tapée de nouveau).
     await assurerCle(agent, MARGE_RETOUR, 'avant le retour', ecrire);
 
+    // WR-03 : le serveur décide de « la précédente » au moment du verbe ; current ne doit pas avoir changé depuis
+    // l'écran (un run GitHub peut activer une autre version pendant l'attente).
+    const ligneRelue = await appelerVerbe(cfg, agent, exe, 'etat', [cfg.cible], ctx.lancer);
+    const relu = lireEtat(ligneRelue);
+    if (relu === null || relu.cible !== cfg.cible) throw new Sortie(1, `réponse de etat illisible après la confirmation : ${masquer(ligneRelue, cfg)}`);
+    if (relu.courant !== courantAvant) {
+      throw new Sortie(1, `la version en ligne a changé depuis l'écran (${courantAvant ?? 'aucune'} puis ${relu.courant ?? 'aucune'}) : rien n'a été remis en ligne, relancer`);
+    }
+
     let ligneRetour: string;
     verifierArret();
     verbeEnvoye = true;
@@ -182,14 +196,20 @@ export async function executerRetour(o: OptionsRetour, ctx: ContexteRetour): Pro
       if (e instanceof Sortie) throw new Sortie(1, `retour arrière en échec : ${e.message}`);
       throw e;
     }
-    if (lireRetour(ligneRetour) === null) throw new Sortie(1, `réponse de retour illisible : ${masquer(ligneRetour, cfg)}`);
+    const lu = lireRetour(ligneRetour);
+    if (lu === null) throw new Sortie(1, `réponse de retour illisible : ${masquer(ligneRetour, cfg)}`);
     ecrire(ligneRetour);
+    // WR-03 : le serveur doit avoir quitté la version montrée à l'écran.
+    if (lu.precedent !== courantAvant) {
+      throw new Sortie(1, `le serveur a quitté ${lu.precedent ?? 'aucune version'} au lieu de ${courantAvant ?? 'aucune version'} montrée à l'écran : vérifier avec npm run deploy:local -- etat`);
+    }
 
     const ligneApres = await appelerVerbe(cfg, agent, exe, 'etat', [cfg.cible], ctx.lancer);
     const apres = lireEtat(ligneApres);
     if (apres === null || apres.courant === null) throw new Sortie(1, 'état illisible ou aucune version courante après le retour arrière');
     nouveau = apres.courant;
     if (version !== null && nouveau !== version) throw new Sortie(1, `current pointe ${nouveau} au lieu de ${version}`);
+    if (version === null && nouveau === courantAvant) throw new Sortie(1, `current pointe toujours ${nouveau} après le retour vers la précédente`);
     ecrire(`Version active sur le serveur : ${nouveau} (${cfg.cible})`);
 
     if (cfg.url === null) {

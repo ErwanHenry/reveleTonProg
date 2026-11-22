@@ -48,14 +48,16 @@ const VIDAGE_MS = 150;
  * Phrase à taper : `<action> [en production|essai] <commit sur 7 caractères | precedente>`. null n'est admis que
  * pour un retour (version précédente).
  */
-export function phraseAttendue(action: Action, cible: CibleConfirmation, sha: string | null): string {
+export function phraseAttendue(action: Action, cible: CibleConfirmation, sha: string | null, o: { malgreRetrait?: boolean } = {}): string {
   if (action !== 'deployer' && action !== 'retour') throw new Error(`action inconnue : ${String(action)}`);
   if (cible !== 'essai' && cible !== 'production') throw new Error(`cible inconnue : ${String(cible)}`);
   if (sha === null && action === 'deployer') throw new Error('un déploiement porte toujours un commit');
   if (sha !== null && !SHA.test(sha)) throw new Error('commit attendu sur 40 caractères hexadécimaux minuscules');
   const quoi = sha === null ? 'precedente' : sha.slice(0, 7);
   const ou = cible === 'production' ? 'en production' : 'essai';
-  return `${action} ${ou} ${quoi}`;
+  // WR-03 : un retour qui remettrait en ligne le contenu d'un retrait d'urgence demande une phrase distincte.
+  const suite = action === 'retour' && o.malgreRetrait === true ? ' malgre retrait' : '';
+  return `${action} ${ou} ${quoi}${suite}`;
 }
 
 /**

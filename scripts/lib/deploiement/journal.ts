@@ -10,7 +10,7 @@
 // par masquer, puis sont ramenés à une ligne de 300 caractères au plus). Une écriture impossible n'est qu'un
 // avertissement : le journal ne doit jamais faire échouer une action déjà faite sur le serveur.
 // N'importe que des modules node:, des modules relatifs et scripts/garde-gel.ts (sans dépendance npm).
-import { chmodSync, closeSync, constants, fchmodSync, mkdirSync, openSync, writeSync } from 'node:fs';
+import { chmodSync, closeSync, constants, fchmodSync, mkdirSync, openSync, readFileSync, writeSync } from 'node:fs';
 import path from 'node:path';
 import { nettoyerJustification } from '../../garde-gel.ts';
 import { cheminsLocaux, type ConfigDeploiement } from './config.ts';
@@ -56,6 +56,30 @@ function valider(e: Record<string, unknown>): void {
   for (const k of CLES_FACULTATIVES) {
     if (k in e && typeof e[k] !== 'string') throw new Error(`journal : ${k} doit être un texte`);
   }
+}
+
+/**
+ * WR-03 (revue de la phase 9.2) : le commit donné a-t-il été mis en ligne sur cette cible par un retrait d'urgence
+ * réussi (déploiement ou retour avec --urgence), d'après le journal local ? Journal absent ou ligne illisible : non.
+ * Un retrait fait depuis GitHub n'y figure pas : l'avertissement est un filet, pas une garantie.
+ */
+export function retraitUrgenceEnLigne(home: string, cible: 'essai' | 'production', commit: string): boolean {
+  let texte: string;
+  try {
+    texte = readFileSync(cheminsLocaux(home).journal, 'utf8');
+  } catch {
+    return false;
+  }
+  for (const ligne of texte.split('\n')) {
+    if (ligne.trim() === '') continue;
+    try {
+      const e = JSON.parse(ligne) as Partial<EntreeJournal>;
+      if ((e.action === 'deployer' || e.action === 'retour') && e.resultat === 'succes' && e.urgence === true && e.cible === cible && e.commit === commit) return true;
+    } catch {
+      // ligne illisible : ignorée
+    }
+  }
+  return false;
 }
 
 /**

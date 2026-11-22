@@ -20,6 +20,7 @@ import type { Agent } from '../../scripts/lib/deploiement/agent.ts';
 import { appelerVerbe, envoyer, lireEtat } from '../../scripts/lib/deploiement/transport.ts';
 import type { Confirmateur } from '../../scripts/lib/deploiement/confirmation.ts';
 import { executerRetour, type ContexteRetour, type OptionsRetour } from '../../scripts/lib/deploiement/retour.ts';
+import { ajouterJournal } from '../../scripts/lib/deploiement/journal.ts';
 import { executer } from '../../scripts/deploy-local.ts';
 import { CLE_FACTICE, HOTE_FACTICE, MOT_DE_PASSE_FACTICE, UTILISATEUR_FACTICE, creerFauxServeur, type FauxServeur, type OptionsFauxServeur } from '../helpers/faux-serveur.ts';
 
@@ -161,7 +162,8 @@ describe('executerRetour contre la vraie commande forcée', () => {
     assert.equal(code, 0, texte);
     assert.deepEqual(c.vues, ['retour essai precedente']);
     assert.equal(await courant(b), A);
-    assert.deepEqual(verbesSsh(b).slice(0, 3), ['etat essai', 'retour essai', 'etat essai']);
+    // WR-03 : etat relu après la confirmation, avant le verbe retour.
+    assert.deepEqual(verbesSsh(b).slice(0, 4), ['etat essai', 'etat essai', 'retour essai', 'etat essai']);
     assert.match(texte, /Cible : essai/);
     assert.match(texte, /Version à remettre en ligne : la précédente/);
     assert.ok(texte.includes(`Version en ligne : ${B}`), texte);
@@ -245,6 +247,58 @@ describe('executerRetour contre la vraie commande forcée', () => {
     assert.equal(b.faux.journal('ssh-agent').length, 0);
     assert.equal(b.faux.journal('ssh-add').length, 0);
     assert.deepEqual(c.vues, []);
+  });
+});
+
+describe('cible du retour revérifiée, retrait d\'urgence signalé (WR-03)', () => {
+  const C = sha('C');
+
+  it('current changé entre l\'écran et le verbe (run GitHub) : code 1, aucun verbe retour', { skip: !BASCULE && RAISON_MV }, async () => {
+    const b = banc();
+    await activer(b, [{ s: A }, { s: B }]);
+    const { code, texte } = await retour(b, {}, confirmateur('retour essai precedente', () => activer(b, [{ s: C }])));
+    assert.equal(code, 1, texte);
+    assert.ok(texte.includes(`la version en ligne a changé depuis l'écran (${B} puis ${C}) : rien n'a été remis en ligne, relancer`), texte);
+    assert.ok(!verbesSsh(b).some((v) => v.startsWith('retour')), verbesSsh(b).join(' | '));
+    assert.equal(await courant(b), C);
+  });
+
+  it('la version en ligne est un retrait d\'urgence au journal local : avertissement et phrase distincte', { skip: !BASCULE && RAISON_MV }, async () => {
+    const b = banc();
+    await activer(b, [{ s: A }, { s: B }]);
+    const cfg = lireConfig(b.home);
+    ajouterJournal(b.home, { date: '2026-11-18T10:00:00Z', action: 'deployer', cible: 'essai', commit: B, precedent: A, resultat: 'succes', urgence: true, justification: 'retrait de la mesure publiée sans source' }, cfg, () => {});
+    const c = confirmateur('retour essai precedente malgre retrait');
+    const { code, texte } = await retour(b, {}, c);
+    assert.equal(code, 0, texte);
+    assert.deepEqual(c.vues, ['retour essai precedente malgre retrait']);
+    assert.match(texte, /Attention : la version en ligne est un retrait d'urgence \(journal local\) ; le retour remettra en ligne le contenu retiré/);
+    assert.equal(await courant(b), A);
+  });
+
+  it('phrase ordinaire refusée quand la version en ligne est un retrait d\'urgence : code 3, aucun verbe retour', async () => {
+    const b = banc();
+    b.faux.chargerCle();
+    b.faux.servirCommit('essai', B, dist(B));
+    ajouterJournal(b.home, { date: '2026-11-18T10:00:00Z', action: 'retour', cible: 'essai', commit: B, precedent: A, resultat: 'succes', urgence: true, justification: 'retrait pendant le gel du premier tour' }, lireConfig(b.home), () => {});
+    const c = confirmateur(`retour essai ${A.slice(0, 7)}`);
+    const { code } = await retour(b, { version: A }, c);
+    assert.equal(code, 3);
+    assert.deepEqual(c.vues, [`retour essai ${A.slice(0, 7)} malgre retrait`]);
+    assert.ok(!verbesSsh(b).some((v) => v.startsWith('retour')));
+  });
+
+  it('le serveur dit avoir quitté une autre version que celle de l\'écran : code 1, vérifier avec etat', { skip: !BASCULE && RAISON_MV }, async () => {
+    const b = banc();
+    await activer(b, [{ s: A }, { s: B }]);
+    const lancerAltere: Lanceur = async (l) => {
+      const r = await lancerReel({ ...l, env: { ...l.env, PATH: b.faux.env.PATH ?? '' } });
+      if (l.args.at(-1) === 'retour essai') return { ...r, stdout: r.stdout.replace(`precedent=${B}`, `precedent=${C}`) };
+      return r;
+    };
+    const { code, texte } = await retour(b, {}, { ...confirmateur('retour essai precedente'), lancer: lancerAltere });
+    assert.equal(code, 1, texte);
+    assert.ok(texte.includes(`le serveur a quitté ${C} au lieu de ${B} montrée à l'écran : vérifier avec npm run deploy:local -- etat`), texte);
   });
 });
 

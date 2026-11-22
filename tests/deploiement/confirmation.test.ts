@@ -56,6 +56,12 @@ describe('phraseAttendue', () => {
     assert.equal(phraseAttendue('retour', 'production', null), 'retour en production precedente');
   });
 
+  it('WR-03 : retour « malgre retrait » distinct ; sans effet sur un déploiement', () => {
+    assert.equal(phraseAttendue('retour', 'essai', null, { malgreRetrait: true }), 'retour essai precedente malgre retrait');
+    assert.equal(phraseAttendue('retour', 'production', A, { malgreRetrait: true }), `retour en production ${A.slice(0, 7)} malgre retrait`);
+    assert.equal(phraseAttendue('deployer', 'essai', A, { malgreRetrait: true }), `deployer essai ${A.slice(0, 7)}`);
+  });
+
   it('refuse un déploiement sans commit, un commit mal formé, une action ou une cible inconnues', () => {
     assert.throws(() => phraseAttendue('deployer', 'essai', null));
     assert.throws(() => phraseAttendue('deployer', 'essai', 'ABC'));
