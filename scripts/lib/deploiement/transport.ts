@@ -90,6 +90,23 @@ function controlerSha(sha: string): void {
   if (!SHA.test(sha)) throw new Sortie(2, 'commit refusé : 40 caractères hexadécimaux minuscules attendus');
 }
 
+/**
+ * Échec d'un verbe de la commande forcée, avec ce qu'il faut pour savoir si le serveur a pu agir (WR-01 de la revue
+ * de la phase 9.2) : code brut de ssh (null : signal ou délai), délai dépassé, sortie d'erreur masquée.
+ */
+export class EchecVerbe extends Sortie {
+  readonly codeBrut: number | null;
+  readonly delaiDepasse: boolean;
+  readonly detail: string;
+  constructor(code: number, message: string, r: { codeBrut: number | null; delaiDepasse: boolean; detail: string }) {
+    super(code, message);
+    this.name = 'EchecVerbe';
+    this.codeBrut = r.codeBrut;
+    this.delaiDepasse = r.delaiDepasse;
+    this.detail = r.detail;
+  }
+}
+
 /** Détail d'un processus terminé en échec, masqué. */
 function detail(r: Resultat, cfg: CfgSsh): string {
   if (r.delaiDepasse) return 'délai dépassé';
@@ -145,7 +162,8 @@ export async function appelerVerbe(
   if (r.code !== 0) {
     const code = r.code ?? 1;
     const nom = CODES_SERVEUR[code] ?? 'échec';
-    throw new Sortie(code, `${verbe} ${cible} : ${nom} (code ${r.code ?? 'aucun'}) : ${detail(r, cfg)}`);
+    const d = detail(r, cfg);
+    throw new EchecVerbe(code, `${verbe} ${cible} : ${nom} (code ${r.code ?? 'aucun'}) : ${d}`, { codeBrut: r.code, delaiDepasse: r.delaiDepasse, detail: d });
   }
   return masquer(r.stdout, cfg).trim();
 }

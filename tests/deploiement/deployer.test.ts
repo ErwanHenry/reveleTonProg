@@ -18,9 +18,9 @@ import { cheminsLocaux, lireConfig } from '../../scripts/lib/deploiement/config.
 import { Sortie } from '../../scripts/lib/deploiement/gardes.ts';
 import { resoudreExecutables } from '../../scripts/lib/deploiement/executables.ts';
 import type { Agent } from '../../scripts/lib/deploiement/agent.ts';
-import { appelerVerbe, envoyer, lireEtat } from '../../scripts/lib/deploiement/transport.ts';
+import { appelerVerbe, EchecVerbe, envoyer, lireEtat } from '../../scripts/lib/deploiement/transport.ts';
 import type { Confirmateur } from '../../scripts/lib/deploiement/confirmation.ts';
-import { executerDeploiement, type ContexteDeploiement, type OptionsDeploiement } from '../../scripts/lib/deploiement/deployer.ts';
+import { activationExclue, executerDeploiement, type ContexteDeploiement, type OptionsDeploiement } from '../../scripts/lib/deploiement/deployer.ts';
 import { executer } from '../../scripts/deploy-local.ts';
 import { CLE_FACTICE, ENTETES_PAR_DEFAUT, HOTE_FACTICE, MOT_DE_PASSE_FACTICE, UTILISATEUR_FACTICE, creerFauxServeur, type FauxServeur, type OptionsFauxServeur } from '../helpers/faux-serveur.ts';
 
@@ -596,7 +596,7 @@ describe('après l\'activation : vérifications et retour automatique (WR-01, IN
     assert.ok(!verbesSsh(b).some((v) => v.startsWith('retour')));
   });
 
-  it('current a bougé après activer (retour manuel entre-temps) : aucun retour automatique, code 5', { skip: !BASCULE && RAISON_MV }, async () => {
+  it('retour manuel vers la version d\'avant après activer : aucun retour automatique, code 1 « rien de ce déploiement n\'est en ligne » (WR-01)', { skip: !BASCULE && RAISON_MV }, async () => {
     const b = banc();
     await mettreEnLigne(b, b.P);
     recuVert(b);
@@ -607,8 +607,8 @@ describe('après l\'activation : vérifications et retour automatique (WR-01, IN
         await verbe(b, 'retour', ['essai', b.P]);
       },
     });
-    assert.equal(code, 5, texte);
-    assert.match(texte, /current a changé depuis l'activation/);
+    assert.equal(code, 1, texte);
+    assert.match(texte, /current pointe la version d'avant [0-9a-f]{40} : rien de ce déploiement n'est en ligne \(jamais activé, ou déjà remis par un retour manuel\)/);
     assert.equal(verbesSsh(b).filter((v) => v.startsWith('retour')).length, 1, 'seul le retour manuel');
     assert.equal(await courant(b), b.P);
   });
@@ -665,6 +665,77 @@ describe('après l\'activation : vérifications et retour automatique (WR-01, IN
     assert.equal(code, 0, texte);
     assert.match(texte, /test de fumée HTTPS sauté : RTP_URL vide \(etat fait foi\)/);
     assert.equal(b.faux.journal('curl').length, 0);
+  });
+});
+
+describe('échec du verbe activer : activé ou non ? (WR-01)', () => {
+  const echec = (codeBrut: number | null, detail: string, delaiDepasse = false): EchecVerbe =>
+    new EchecVerbe(codeBrut ?? 1, `activer essai : échec (code ${String(codeBrut)}) : ${detail}`, { codeBrut, delaiDepasse, detail });
+
+  it('activationExclue : refus du serveur, verrou occupé, refus de ssh avant la commande ; jamais un délai, un signal ou un autre échec', () => {
+    for (const c of [64, 65, 66, 75]) assert.equal(activationExclue(echec(c, 'refus')), true, String(c));
+    assert.equal(activationExclue(echec(1, 'échec : verrou occupé depuis 20 s')), true);
+    assert.equal(activationExclue(echec(1, 'échec : bascule de current impossible')), false);
+    for (const d of ['<utilisateur>@<hôte>: Permission denied (publickey).', 'ssh: connect to host <hôte> port 22: Connection refused', 'Host key verification failed.', 'ssh: Could not resolve hostname <hôte>: nodename nor servname provided']) {
+      assert.equal(activationExclue(echec(255, d)), true, d);
+    }
+    assert.equal(activationExclue(echec(255, 'Connection to <hôte> closed by remote host.')), false);
+    assert.equal(activationExclue(echec(65, 'refus', true)), false, 'délai dépassé');
+    assert.equal(activationExclue(echec(null, 'aucun message')), false, 'signal');
+    assert.equal(activationExclue(new Sortie(65, 'refus')), false, 'pas un échec de verbe');
+    assert.equal(activationExclue(null), false);
+  });
+
+  it('verrou du serveur occupé : code 1 « rien n\'a été activé », aucun retour automatique, journal echec', { skip: !BASCULE && RAISON_MV }, async () => {
+    const b = banc();
+    await mettreEnLigne(b, b.P);
+    b.faux.echouerActiver('verrou');
+    recuVert(b);
+    const { code, texte } = await deployer(b, {}, confirmateur(phrase(b)));
+    assert.equal(code, 1, texte);
+    assert.match(texte, /activation refusée, rien n'a été activé \(version en ligne : [0-9a-f]{40}\) : activer essai : .*verrou occupé/);
+    assert.doesNotMatch(texte, /retour manuel entre-temps|version en ligne est peut-être/);
+    assert.ok(!verbesSsh(b).some((v) => v.startsWith('retour')), verbesSsh(b).join(' | '));
+    assert.equal(await courant(b), b.P);
+    const j = journal(b);
+    assert.equal(j.length, 1, JSON.stringify(j));
+    assert.equal(j[0]?.resultat, 'echec');
+    sansWorktree(b);
+  });
+
+  it('envoi refusé par la commande forcée à l\'activation (65) : code 1, aucun retour automatique', { skip: !BASCULE && RAISON_MV }, async () => {
+    const b = banc();
+    await mettreEnLigne(b, b.P);
+    recuVert(b);
+    // Après l'envoi, version.json de incoming/ ne porte plus le commit : activer répond 65 sans rien changer.
+    const envelopper = (l: Lanceur): Lanceur => async (x) => {
+      const r = await l(x);
+      if (x.args.includes('--stats')) {
+        const f = path.join(b.faux.base, 'incoming', 'essai', b.S, 'version.json');
+        writeFileSync(f, JSON.stringify({ commit: b.P }));
+      }
+      return r;
+    };
+    const { code, texte } = await deployer(b, {}, { ...confirmateur(phrase(b)), envelopper });
+    assert.equal(code, 1, texte);
+    assert.match(texte, /activation refusée, rien n'a été activé/);
+    assert.match(texte, /code 65/);
+    assert.ok(!verbesSsh(b).some((v) => v.startsWith('retour')));
+    assert.equal(await courant(b), b.P);
+  });
+
+  it('échec ambigu de activer (code 1) sans bascule : retour automatique qui constate « rien de ce déploiement n\'est en ligne », code 1', { skip: !BASCULE && RAISON_MV }, async () => {
+    const b = banc();
+    await mettreEnLigne(b, b.P);
+    b.faux.echouerActiver('bascule');
+    recuVert(b);
+    const { code, texte } = await deployer(b, {}, confirmateur(phrase(b)));
+    assert.equal(code, 1, texte);
+    assert.match(texte, /current pointe la version d'avant [0-9a-f]{40} : rien de ce déploiement n'est en ligne/);
+    assert.doesNotMatch(texte, /retour manuel entre-temps/);
+    assert.ok(!verbesSsh(b).some((v) => v.startsWith('retour')));
+    assert.equal(await courant(b), b.P);
+    assert.equal(journal(b).at(-1)?.resultat, 'echec');
   });
 });
 

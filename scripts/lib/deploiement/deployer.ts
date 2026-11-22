@@ -45,7 +45,7 @@ import { arbrePropre, decisionGel, lireCheminsHorsSite, siteTouche, Sortie, tete
 import { ajouterJournal, type EntreeJournal } from './journal.ts';
 import { masquer } from './masque.ts';
 import { prendreVerrouDeploiement } from './retour.ts';
-import { appelerVerbe, envoyer, exigerRsync3, lireEtat, varianteRsync, versionServie } from './transport.ts';
+import { appelerVerbe, EchecVerbe, envoyer, exigerRsync3, lireEtat, varianteRsync, versionServie } from './transport.ts';
 
 export interface OptionsDeploiement {
   /** Déployer même si le site n'a pas changé depuis la version en ligne. */
@@ -201,6 +201,20 @@ class FinApresActivation extends Error {
     this.code = code;
     this.resultat = resultat;
   }
+}
+
+/**
+ * WR-01 (revue de la phase 9.2) : l'échec du verbe activer prouve-t-il que rien n'a été activé ? Oui pour un refus de
+ * la commande forcée (64, 65, 66, 75), un verrou du serveur occupé (1, « verrou occupé »), ou un refus de ssh avant
+ * toute commande (255 : clé refusée, connexion refusée, clé d'hôte, nom introuvable). Un délai dépassé, un signal ou
+ * toute autre fin laisse l'activation possible : retour automatique.
+ */
+export function activationExclue(e: unknown): boolean {
+  if (!(e instanceof EchecVerbe) || e.delaiDepasse || e.codeBrut === null) return false;
+  if ([64, 65, 66, 75].includes(e.codeBrut)) return true;
+  if (e.codeBrut === 1) return /échec : verrou occupé/.test(e.detail);
+  if (e.codeBrut === 255) return /Permission denied|Connection refused|Host key verification failed|Could not resolve hostname/.test(e.detail);
+  return false;
 }
 
 function chemin(exe: Executables, nom: string): string {
@@ -458,7 +472,12 @@ export async function executerDeploiement(o: OptionsDeploiement, ctx: ContexteDe
       if (!(e instanceof Sortie) && !(e instanceof Interruption)) throw e;
       const raison = e instanceof Interruption ? e.message : masquer(e.message, c0);
       // Un activer encore en vol est attendu (son délai est borné) : le retour ne doit pas le précéder.
-      if (activerEnCours !== null) await activerEnCours.catch(() => {});
+      const issueActiver: unknown = activerEnCours === null ? null : await activerEnCours.then(() => null, (x: unknown) => x);
+      // WR-01 : un refus net du verbe activer n'a rien activé : ni retour automatique, ni « version incertaine ».
+      if (activationExclue(issueActiver)) {
+        const refus = masquer((issueActiver as EchecVerbe).message, c0);
+        throw new Sortie(1, `activation refusée, rien n'a été activé (version en ligne : ${courantAvant ?? 'aucune'}) : ${refus}${e instanceof Interruption ? ` ; ${e.message}` : ''}`);
+      }
       throw await retourAutomatique({ o, ctx, cfg: c0, agent: ag, exe, sha: s, courantAvant, raison });
     }
 
@@ -566,6 +585,7 @@ async function retourAutomatique(r: EntreeRetourAuto): Promise<FinApresActivatio
   if (courantAvant === sha) {
     return new FinApresActivation(1, 'echec', `${sha12} était déjà en ligne avant ce déploiement : current n'a pas changé, aucun retour (${r.raison})`);
   }
+  const avant = courantAvant;
   const journalRetour = (resultat: 'succes' | 'echec', message?: string): void => {
     const e: EntreeJournal = { date: ctx.maintenant().toISOString(), action: 'retour-auto', cible: cfg.cible, commit: courantAvant, precedent: sha, resultat, urgence: false };
     if (message !== undefined) e.message = message;
@@ -586,6 +606,10 @@ async function retourAutomatique(r: EntreeRetourAuto): Promise<FinApresActivatio
   } catch (x) {
     if (!(x instanceof Sortie)) throw x;
     return enEchec(x.message);
+  }
+  // WR-01 : current pointe la version d'avant : rien de ce déploiement n'est en ligne, la version en ligne est sûre.
+  if (actuel === avant) {
+    return new FinApresActivation(1, 'echec', `current pointe la version d'avant ${avant} : rien de ce déploiement n'est en ligne (jamais activé, ou déjà remis par un retour manuel), aucun retour nécessaire (${r.raison})`);
   }
   if (actuel !== sha) {
     return new FinApresActivation(5, 'sans-retour', `current a changé depuis l'activation (pointe ${actuel ?? 'aucun'} : retour manuel entre-temps ?) : aucun retour automatique ; vérifier avec npm run deploy:local -- etat`);

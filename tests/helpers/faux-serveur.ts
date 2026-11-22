@@ -52,6 +52,8 @@ export interface FauxServeur {
   servirCommit(cible: 'essai' | 'production', sha: string, dossier: string): void;
   /** Retire la clé du faux agent, comme une expiration (ssh-add -t) : avec exigerCle, ssh répond alors 255. */
   expirerCle(): void;
+  /** WR-01 : le verbe activer échouera sans rien activer (verrou occupé, ou échec de code 1 ambigu) ; null : rétabli. */
+  echouerActiver(mode: 'verrou' | 'bascule' | null): void;
   /** Pose la clé dans le faux agent (aides des tests qui appellent un verbe sans agent). */
   chargerCle(): void;
   /** La clé est-elle dans le faux agent ? */
@@ -105,6 +107,7 @@ export function creerFauxServeur(o: OptionsFauxServeur = {}): FauxServeur {
   const fichierMotDePasse = path.join(prive, 'mot-de-passe-recu');
   const fichierCleChargee = path.join(prive, 'cle-chargee');
   const fichierChargements = path.join(prive, 'chargements');
+  const fichierEchecActiver = path.join(prive, 'echec-activer');
   writeFileSync(fichierCible, 'essai\n');
   writeFileSync(fichierEntetes, `${ENTETES_PAR_DEFAUT.join('\r\n')}\r\n\r\n`);
 
@@ -166,6 +169,11 @@ ${o.exigerCle === true ? `[ -f ${quote(fichierCleChargee)} ] || { echo "$1: Perm
 shift
 CMD="$*"
 ${o.echecRetour === true ? `case "$CMD" in retour*) echo "échec : connexion perdue vers ${HOTE_FACTICE}" >&2; exit 1 ;; esac` : ''}
+ECHEC_ACTIVER=$(cat ${quote(fichierEchecActiver)} 2>/dev/null || true)
+case "$ECHEC_ACTIVER:$CMD" in
+  verrou:activer*) echo "échec : verrou occupé depuis 20 s" >&2; exit 1 ;;
+  bascule:activer*) echo "échec : bascule de current impossible" >&2; exit 1 ;;
+esac
 exec env -i PATH=${quote(pathServeur)} LC_ALL=C RTP_BASE=${quote(base)} RTP_RRSYNC=${quote(path.join(serveur, 'rrsync'))} \\
   SSH_ORIGINAL_COMMAND="$CMD" FAUX_RSYNC_SOURCE="\${FAUX_RSYNC_SOURCE:-}" \\
   bash ${quote(SCRIPT)}
@@ -346,6 +354,10 @@ exit 0
     },
     expirerCle() {
       rmSync(fichierCleChargee, { force: true });
+    },
+    echouerActiver(mode) {
+      if (mode === null) rmSync(fichierEchecActiver, { force: true });
+      else writeFileSync(fichierEchecActiver, mode);
     },
     chargerCle() {
       writeFileSync(fichierCleChargee, '');
