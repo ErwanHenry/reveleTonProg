@@ -73,11 +73,13 @@ export default function methode(ctx: ContexteSite): void {
       for (const verbe of VERBES_CONNOTES) assert.ok(v.includes(verbe), verbe);
     });
 
-    it('INFO : les non-candidats sont décrits là où ils apparaissent (page thème : motif et date ; page de la personne : motif et source)', () => {
+    // Texte corrigé le 2026-11-22 (audit 09-13) : en production, une personne sans statut relu est absente (D-06) ;
+    // la phrase ne promet la liste à part qu'une fois le statut relu.
+    it('INFO : les non-candidats sont décrits là où ils apparaissent, une fois leur statut relu (page thème : motif, date et source)', () => {
       const a = page();
       const t = txt(unique(a, 'data-regle', 'non-candidats'));
-      assert.ok(t.includes('Sur chaque page thème') && t.includes('avec le motif et la date'), t);
-      assert.ok(t.includes('donne le motif et la source'), t);
+      assert.ok(t.includes("qu'une fois leur statut relu") && t.includes('listées à part sur chaque page thème'), t);
+      assert.ok(t.includes('avec le motif, la date et la source'), t);
       assert.doesNotMatch(txt(a), /sur la page des candidats/);
       // Ce que la phrase annonce existe : la page thème de la fixture liste Luc avec son motif et une date.
       const theme = analyserHtml(ctx.lire(build().outDir, 'themes/logement/index.html'));

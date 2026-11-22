@@ -98,15 +98,17 @@ export default function institutionnel(ctx: ContexteSite): void {
       assert.equal(trouver(analyserHtml(html(chemin)), (n) => n.tag === 'h1').length, 1);
     });
 
-    it("qui écrit les textes : outil d'IA déclaré, relecture par l'éditeur, aucun badge de brouillon (WR-06)", () => {
+    it("qui écrit les textes : outil d'IA déclaré, relecture par un second agent d'IA dite telle quelle, aucun badge de brouillon (WR-06)", () => {
       const chemin = 'qui-sommes-nous/index.html';
       const bloc = trouver(analyserHtml(html(chemin)), (n) => n.attrs['data-redaction-ia'] !== undefined);
       assert.equal(bloc.length, 1);
       const t = norm(texte(bloc[0] as Noeud));
-      for (const attendu of ["outil d'intelligence artificielle", 'modèle de langage', 'cité mot pour mot', "L'éditeur relit chaque version avant sa publication", "n'est jamais publiée"]) {
+      // Décision d'Erwan du 2026-11-17 (relecture par agent) ; texte aligné sur la Méthode le 2026-11-22 (audit 09-13).
+      for (const attendu of ["outil d'intelligence artificielle", 'modèle de langage', 'cité mot pour mot', "second agent d'intelligence artificielle", "Ce n'est pas une relecture humaine de chaque texte", "n'est jamais publiée"]) {
         assert.ok(t.includes(attendu), `« ${attendu} » absent de « ${t} »`);
       }
       assert.doesNotMatch(t, /rédigées par l'éditeur/);
+      assert.doesNotMatch(t, /L'éditeur relit chaque version/);
       for (const f of ctx.fichiers(build('production').outDir)) {
         assert.ok(!fs.readFileSync(f, 'utf8').includes('brouillon, non relu'), `${path.relative(build('production').outDir, f)} : « brouillon, non relu » en production`);
       }

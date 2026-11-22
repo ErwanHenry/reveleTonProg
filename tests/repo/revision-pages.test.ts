@@ -31,7 +31,9 @@ const PAGES: Page[] = [
   // lu dans identite.ts, paragraphe « le site n'établit pas lui-même la date d'une déclaration » ; puis limite
   // « relecture par un second agent d'intelligence artificielle, pas une relecture humaine de chaque texte »,
   // décision d'Erwan du même jour).
-  { fichier: 'src/pages/methode.astro', revision: '2026-11-17', empreinte: '2b18a0e64423c673', extra: () => JSON.stringify(CATALOGUE) },
+  // Puis le 2026-11-22 (audit 09-13, textes validés par Erwan) : mesure 4G « sur le site public » ; personnes qui ne se
+  // présentent pas affichées une fois leur statut relu.
+  { fichier: 'src/pages/methode.astro', revision: '2026-11-22', empreinte: '14be6ed419799ee4', extra: () => JSON.stringify(CATALOGUE) },
 ];
 
 /** Gabarit sans commentaires JSX ({/* … *\/}), sans commentaires de ligne du frontmatter et sans la ligne REVISION. */
