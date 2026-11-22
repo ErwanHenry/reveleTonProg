@@ -1,6 +1,7 @@
 import { describe, it, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { appendFileSync, mkdirSync } from 'node:fs';
+import { appendFileSync, chmodSync, mkdirSync } from 'node:fs';
+import path from 'node:path';
 import { loadAll } from '../../src/lib/content-core/load.ts';
 import type { LoadOptions } from '../../src/lib/content-core/load.ts';
 import { publier } from '../../scripts/lib/relecture/commandes/publier.ts';
@@ -146,6 +147,31 @@ describe('appliquerLot', () => {
     const ok = appliquerLot(c.racine, [{ fichier, chemin: [], champs: [{ cle: 'statut_relecture', valeur: 'relu' }] }, { fichier, chemin: [], champs: [{ cle: 'relecteur', valeur: 'Anne Relectrice' }, { cle: 'date_relecture', valeur: DATE }] }], () => []);
     assert.equal(ok.ok, true);
     assert.match(c.lire(MESURE_ELISE), /statut_relecture: relu\nrelecteur: Anne Relectrice\ndate_relecture: 2026-11-20\n/);
+  });
+
+  it('une écriture qui échoue au deuxième fichier : le premier retrouve ses octets, l’erreur d’origine est rendue (WR-04)', () => {
+    const c = corpusRelecture();
+    const avant = c.arbre();
+    const dossier = path.dirname(c.chemin(MESURE_MARIE_1));
+    chmodSync(dossier, 0o555);
+    let r: ReturnType<typeof appliquerLot>;
+    try {
+      r = appliquerLot(
+        c.racine,
+        [
+          { fichier: c.chemin(MESURE_ELISE), chemin: [], champs: [{ cle: 'statut_relecture', valeur: 'relu' }] },
+          { fichier: c.chemin(MESURE_MARIE_1), chemin: [], champs: [{ cle: 'statut_relecture', valeur: 'relu' }] },
+        ],
+        () => [],
+      );
+    } finally {
+      chmodSync(dossier, 0o755);
+    }
+    assert.equal(r.ok, false);
+    assert.deepEqual(r.fichiers, [c.chemin(MESURE_ELISE)]);
+    assert.match(r.erreurs[0] ?? '', /EACCES|permission/i);
+    assert.equal(r.erreurs.length, 1, r.erreurs.join('\n'));
+    assert.deepEqual(c.arbre(), avant);
   });
 
   it('une vérification qui lève restaure tout', () => {

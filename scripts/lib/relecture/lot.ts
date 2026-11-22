@@ -49,24 +49,35 @@ export function appliquerLot(racine: string, editions: readonly Edition[], verif
     throw err;
   }
 
+  // Un fichier n'entre dans `ecrits` qu'une fois écrit (revue de la phase 9, WR-04) : un fichier dont l'écriture a
+  // échoué n'est pas « restauré », ce qui échouerait de nouveau et laisserait les précédents modifiés. Chaque
+  // restauration a son propre essai ; un échec est ajouté aux erreurs renvoyées, jamais levé.
   const ecrits: string[] = [];
-  const restaurer = (): void => {
-    for (const f of [...ecrits].reverse()) ecrireAtomique(racine, f, originaux.get(f) ?? '');
+  const restaurer = (): string[] => {
+    const echecs: string[] = [];
+    for (const f of [...ecrits].reverse()) {
+      try {
+        ecrireAtomique(racine, f, originaux.get(f) ?? '');
+      } catch (err) {
+        echecs.push(`restauration impossible de ${path.relative(racine, f).split(path.sep).join('/')} : ${err instanceof Error ? err.message : String(err)} (le remettre avec git checkout)`);
+      }
+    }
+    return echecs;
   };
   let erreurs: string[];
   try {
     for (const [fichier, texte] of nouveaux) {
-      ecrits.push(fichier);
       ecrireAtomique(racine, fichier, texte);
+      ecrits.push(fichier);
     }
     erreurs = verifier();
   } catch (err) {
-    restaurer();
-    return { ok: false, erreurs: [err instanceof Error ? err.message : String(err)], fichiers: ecrits };
+    const echecs = restaurer();
+    return { ok: false, erreurs: [err instanceof Error ? err.message : String(err), ...echecs], fichiers: ecrits };
   }
   if (erreurs.length > 0) {
-    restaurer();
-    return { ok: false, erreurs, fichiers: ecrits };
+    const echecs = restaurer();
+    return { ok: false, erreurs: [...erreurs, ...echecs], fichiers: ecrits };
   }
   return { ok: true, erreurs: [], fichiers: ecrits };
 }
