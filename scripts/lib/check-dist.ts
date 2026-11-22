@@ -435,9 +435,13 @@ export function relecturesPerimees(contentRoot: string, projectRoot: string, opt
   return out;
 }
 
-/** Identifiant de candidat visé par un chemin public `/candidats/<id>/` (avec ou sans index.html), sinon `undefined`. */
-function idCandidatDuChemin(chemin: string): string | undefined {
-  const m = /^\/candidats\/([^/]+)\/(?:index\.html)?$/.exec(chemin);
+/**
+ * Identifiant de candidat visé par un chemin public, sinon `undefined`. Toutes les formes que Caddy sert ou qu'une
+ * build `file` produirait (revue de la phase 9, WR-09) : `/candidats/<id>/`, `/candidats/<id>/index.html`,
+ * `/candidats/<id>` (sans barre finale) et `/candidats/<id>.html`.
+ */
+export function idCandidatDuChemin(chemin: string): string | undefined {
+  const m = /^\/candidats\/([^/]+?)(?:\/(?:index\.html)?|\.html)?$/.exec(chemin);
   if (m === null || m[1] === undefined) return undefined;
   try {
     return decodeURIComponent(m[1]);

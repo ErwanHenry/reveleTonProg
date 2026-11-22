@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { CODES_CHECK_DIST, LIMITES, TYPES_AUTORISES, candidatsNonRelus, cellulesAttendues, checkDist, relecturesPerimees } from '../../scripts/lib/check-dist.ts';
+import { CODES_CHECK_DIST, LIMITES, TYPES_AUTORISES, candidatsNonRelus, cellulesAttendues, checkDist, idCandidatDuChemin, relecturesPerimees } from '../../scripts/lib/check-dist.ts';
 import { empreinteCase, empreinteMesure, empreinteStatut } from '../../scripts/lib/relecture/etat.ts';
 import { loadAll } from '../../src/lib/content-core/load.ts';
 import { statutRetenu } from '../../src/lib/content-core/rules/equite.ts';
@@ -691,6 +691,22 @@ describe('checkDist : personnes sans statut relu (D-06, plan 09-15)', () => {
       assert.equal(nonRelus[0]?.fichier, 'themes/logement/index.html');
       assert.match(nonRelus[0]?.message ?? '', /paul-de-villefranche/);
     }
+  });
+
+  it('formes sans barre finale ou en .html : lien, page et entrée de sitemap signalés (WR-09)', () => {
+    for (const href of ['/candidats/paul-de-villefranche', '/candidats/paul-de-villefranche.html', '/candidats/paul-de-villefranche?x=1', '../../candidats/paul-de-villefranche']) {
+      const c = res(distPropre({ 'themes/logement/index.html': theme('logement', 2, { corps: `<a href="${href}">Paul</a>` }) }));
+      assert.ok(c.some((x) => x.code === code && x.fichier === 'themes/logement/index.html'), `${href} : ${JSON.stringify(c)}`);
+    }
+    const page = res(distPropre({ 'candidats/paul-de-villefranche.html': pageCandidat }));
+    assert.ok(page.some((x) => x.code === code && x.fichier === 'candidats/paul-de-villefranche.html'), JSON.stringify(page));
+    const urls = ['/', '/themes/logement/', '/candidats/paul-de-villefranche'].map((c) => `https://${DOMAINE_TEST}${c}`);
+    assert.ok(res(distPropre({ 'sitemap.xml': xmlSitemap(urls) })).some((x) => x.code === code && x.fichier === 'sitemap.xml'));
+  });
+
+  it('idCandidatDuChemin : formes reconnues et refusées', () => {
+    for (const ch of ['/candidats/paul/', '/candidats/paul/index.html', '/candidats/paul', '/candidats/paul.html']) assert.equal(idCandidatDuChemin(ch), 'paul', ch);
+    for (const ch of ['/candidats/', '/candidats', '/candidats/paul/autre', '/themes/paul/', '/candidats/paul/index.htm']) assert.equal(idCandidatDuChemin(ch), undefined, ch);
   });
 
   it('entrée de sitemap plantée : erreur sur sitemap.xml', () => {
