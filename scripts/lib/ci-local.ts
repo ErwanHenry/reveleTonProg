@@ -5,7 +5,8 @@
 // commande ou RTP_CONTENT_ROOT / RTP_MODE changés).
 // Ce module n'importe que des modules node: (et processus.ts) : le processus de déploiement (plan 06), qui tiendra
 // la clé, lit les reçus à travers lui, et aucun code de dépendance npm ne doit y entrer.
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { randomBytes } from 'node:crypto';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { envDeBase, type Lanceur } from './processus.ts';
@@ -625,8 +626,38 @@ export function prendreVerrou(dossier: string, avertir: (m: string) => void = (m
     if (pid !== null && vivant(pid)) throw new VerrouPris(pid, dossier);
     if (pid === null && Date.now() - statSync(dossier).mtimeMs < MIN) throw new VerrouPris(null, dossier);
     avertir(`avertissement : verrou abandonné par le processus ${pid ?? 'inconnu'} (${dossier}) : repris`);
-    rmSync(dossier, { recursive: true, force: true });
-    mkdirSync(dossier, { mode: 0o700 });
+    // IN-05 (revue de la phase 9.2) : le verrou abandonné est d'abord renommé vers un nom unique, puis son pid relu :
+    // deux processus qui le reprennent en même temps ne suppriment jamais le verrou que l'autre vient de créer, et
+    // le chemin principal n'est jamais supprimé ici.
+    const abandon = `${dossier}.abandon-${process.pid}-${randomBytes(4).toString('hex')}`;
+    try {
+      renameSync(dossier, abandon);
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e;
+    }
+    let pidRenomme: number | null = null;
+    try {
+      const n = Number.parseInt(readFileSync(path.join(abandon, 'pid'), 'utf8').trim(), 10);
+      pidRenomme = Number.isInteger(n) && n > 0 ? n : null;
+    } catch {
+      pidRenomme = null;
+    }
+    if (existsSync(abandon) && pidRenomme !== pid) {
+      // Un autre processus a repris le verrou entre la lecture et le renommage : on le lui rend.
+      try {
+        renameSync(abandon, dossier);
+      } catch {
+        // Le chemin principal est déjà repris : le verrou renommé n'est plus celui de personne.
+      }
+      throw new VerrouPris(pidRenomme, dossier);
+    }
+    rmSync(abandon, { recursive: true, force: true });
+    try {
+      mkdirSync(dossier, { mode: 0o700 });
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code === 'EEXIST') throw new VerrouPris(null, dossier);
+      throw e;
+    }
   }
   writeFileSync(fichierPid, String(process.pid), { mode: 0o600 });
   let rendu = false;

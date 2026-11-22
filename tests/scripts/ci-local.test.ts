@@ -4,7 +4,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { envDeBase, lancer, type Lancement, type Lanceur, type Resultat } from '../../scripts/lib/processus.ts';
@@ -536,5 +536,34 @@ describe('ci:local : verrou', () => {
     assert.throws(() => prendreVerrou(dossier), new RegExp(String(process.pid)));
     rendre();
     prendreVerrou(dossier)();
+  });
+
+  it('IN-05 : verrou abandonné repris par renommage, sans reste ; un verrou repris entre-temps par un autre est rendu', () => {
+    const home = mkdtempSync(path.join(tmpdir(), 'ci-local-verrou-'));
+    const dossier = path.join(home, 'v');
+    const mort = spawnSync(process.execPath, ['-e', 'process.stdout.write(String(process.pid))'], { encoding: 'utf8' });
+    mkdirSync(dossier, { recursive: true });
+    writeFileSync(path.join(dossier, 'pid'), mort.stdout);
+    const avertissements: string[] = [];
+    const rendre = prendreVerrou(dossier, (m) => avertissements.push(m));
+    assert.match(avertissements.join('\n'), /repris/);
+    assert.equal(readFileSync(path.join(dossier, 'pid'), 'utf8'), String(process.pid));
+    assert.deepEqual(readdirSync(home).filter((n) => n.includes('.abandon-')), [], 'aucun verrou renommé laissé');
+    rendre();
+
+    // Course : le verrou mort est remplacé par celui d'un processus vivant juste avant le renommage. Le pid relu
+    // après le renommage n'est plus le pid mort : le verrou est rendu à son détenteur, VerrouPris.
+    mkdirSync(dossier, { recursive: true });
+    writeFileSync(path.join(dossier, 'pid'), mort.stdout);
+    const vivant = String(process.ppid);
+    let premiere = true;
+    // Le second processus a repris : son pid est déjà écrit quand le premier renomme.
+    const avertir = (): void => {
+      if (premiere) writeFileSync(path.join(dossier, 'pid'), vivant);
+      premiere = false;
+    };
+    assert.throws(() => prendreVerrou(dossier, avertir), /une autre exécution tourne déjà/);
+    assert.equal(readFileSync(path.join(dossier, 'pid'), 'utf8'), vivant, 'verrou du second processus rendu intact');
+    assert.deepEqual(readdirSync(home).filter((n) => n.includes('.abandon-')), []);
   });
 });
