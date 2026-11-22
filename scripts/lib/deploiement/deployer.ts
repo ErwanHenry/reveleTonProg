@@ -42,7 +42,7 @@ import { lignesEcran, phraseAttendue, type Confirmateur } from './confirmation.t
 import { construireDeploiement, type BuildDeploiement } from './construire.ts';
 import { empreinteArbre, trouverSpecial } from './empreinte.ts';
 import { prendreInstantane, resoudreExecutables, verifierIntegrite, type Executables, type Instantane } from './executables.ts';
-import { arbrePropre, decisionGel, lireCheminsHorsSite, siteTouche, Sortie, teteAdmise, teteOrigine, verifierRecu } from './gardes.ts';
+import { arbrePropre, decisionGel, lireCheminsHorsSite, SITE_TOUCHE, siteTouche, Sortie, teteAdmise, teteOrigine, verifierRecu, type Outils } from './gardes.ts';
 import { ajouterJournal, type EntreeJournal } from './journal.ts';
 import { masquer } from './masque.ts';
 import { prendreVerrouDeploiement } from './retour.ts';
@@ -179,6 +179,11 @@ const MARGE_ENVOI = 5 * MIN;
 const SIGNAUX = ['SIGINT', 'SIGTERM', 'SIGHUP'] as const;
 /** ci.yml du dépôt qui exécute ce code (seule définition de CHEMINS_HORS_SITE), comme ops/site-touche.sh. */
 const CI_YML = fileURLToPath(new URL('../../../.github/workflows/ci.yml', import.meta.url));
+/**
+ * WR-06 (revue de la phase 9.2) : fichiers du dépôt qui exécute ce code, lus pendant le déploiement (classement du
+ * site, CHEMINS_HORS_SITE) : ajoutés à l'instantané d'intégrité.
+ */
+export const FICHIERS_DEPOT_SURVEILLES: readonly string[] = [SITE_TOUCHE, CI_YML];
 const NOMS_FIXES = ['git', 'bash', 'ssh', 'ssh-agent', 'ssh-add', 'ssh-keygen', 'curl', 'jq', 'sandbox-exec', 'npm'];
 
 const utc = (d: Date): string => d.toISOString().replace(/\.\d{3}Z$/, 'Z');
@@ -227,8 +232,10 @@ function chemin(exe: Executables, nom: string): string {
 export async function executerDeploiement(o: OptionsDeploiement, ctx: ContexteDeploiement): Promise<number> {
   const { ecrire } = ctx;
   const debut = ctx.maintenant();
+  // WR-06 : git et bash par leur chemin résolu et figé (instantané A), dès qu'il est connu.
+  const outils: Outils = {};
   const gitL = (args: string[], delaiMs = 2 * MIN) =>
-    ctx.lancer({ commande: 'git', args, cwd: ctx.racine, env: envDeBase(), delaiMs, libelle: `git ${args[0] ?? ''}` });
+    ctx.lancer({ commande: outils.git ?? 'git', args, cwd: ctx.racine, env: envDeBase(), delaiMs, libelle: `git ${args[0] ?? ''}` });
 
   let rendre: (() => void) | null = null;
   let agent: Agent | null = null;
@@ -283,7 +290,10 @@ export async function executerDeploiement(o: OptionsDeploiement, ctx: ContexteDe
     const variante = await varianteRsync(chemin(exe, 'rsync'), ctx.lancer);
     if (!o.dryRun) exigerRsync3(variante);
     const secrets = cheminsSecrets(c0, ctx.home);
-    const optionsInstantane = { racine: ctx.racine, fichiers: secrets, executables: { noms, path: PATH } };
+    outils.git = chemin(exe, 'git');
+    outils.bash = chemin(exe, 'bash');
+    const surveilles = [...secrets, ...FICHIERS_DEPOT_SURVEILLES];
+    const optionsInstantane = { racine: ctx.racine, fichiers: surveilles, executables: { noms, path: PATH } };
     const instantaneA: Instantane = prendreInstantane(optionsInstantane);
     let chemins: string;
     try {
@@ -302,14 +312,14 @@ export async function executerDeploiement(o: OptionsDeploiement, ctx: ContexteDe
     }
 
     // ---------- 3. arbre propre, tête de origin/main ----------
-    if (!(await arbrePropre(ctx.lancer, ctx.racine))) {
+    if (!(await arbrePropre(ctx.lancer, ctx.racine, outils))) {
       throw new Sortie(1, "arbre de travail non propre (changements ou fichiers non suivis) : committer et pousser d'abord");
     }
     const head = await gitL(['rev-parse', '--verify', 'HEAD^{commit}']);
     if (head.code !== 0) throw new Sortie(2, `HEAD illisible : ${head.stderr.trim()}`);
     const s = head.stdout.trim();
     sha = s;
-    const origine = await teteOrigine(ctx.lancer, ctx.racine);
+    const origine = await teteOrigine(ctx.lancer, ctx.racine, outils);
     if (!origine.fetchOk) throw new Sortie(1, "git fetch impossible : rien de non vérifié ne part en ligne");
     if (origine.tete !== s) {
       throw new Sortie(1, `HEAD (${s}) n'est pas la tête de origin/main (${origine.tete || 'inconnue'}) : rien de non poussé ne part en ligne ; git pull ou git push d'abord`);
@@ -337,7 +347,7 @@ export async function executerDeploiement(o: OptionsDeploiement, ctx: ContexteDe
       cible: c0.cible,
       home: ctx.home,
       lecturesInterdites: secrets,
-      fichiersSurveilles: secrets,
+      fichiersSurveilles: surveilles,
       nomsExecutables: noms,
       lancer: ctx.lancer,
       ecrire,
@@ -379,7 +389,7 @@ export async function executerDeploiement(o: OptionsDeploiement, ctx: ContexteDe
       return e;
     };
     const enLigne = (await etatLu('avant la confirmation')).courant;
-    const site = await siteTouche(ctx.lancer, ctx.racine, enLigne, s, chemins);
+    const site = await siteTouche(ctx.lancer, ctx.racine, enLigne, s, chemins, outils);
     ecrire(`Site : ${site.raison}`);
     if (!site.touche && !o.forcer && !o.urgence) {
       ecrire('rien à déployer (--forcer pour déployer quand même)');
@@ -412,15 +422,18 @@ export async function executerDeploiement(o: OptionsDeploiement, ctx: ContexteDe
     verifierArret();
 
     // ---------- 8. tout ce qui a pu changer pendant l'attente est rejoué ----------
+    // WR-06 : l'intégrité locale (exécutables, .git, fichiers surveillés) est contrôlée avant que git ou bash ne
+    // tournent de nouveau, puis encore juste avant l'envoi.
+    verifierIntegrite(instantaneA, prendreInstantane(optionsInstantane), 'pendant l\'attente de la confirmation');
     // CR-02 : garde de gel rejouée avec l'heure du moment (une confirmation tapée la veille d'un gel ne passe pas).
     const gelApres = decisionGel(ctx.maintenant(), o.urgence, o.justification);
     if (!gelApres.ok) {
       refus = true;
       throw new Sortie(1, `garde de gel rejouée après la confirmation : ${gelApres.motif} ; rien n'a été envoyé`);
     }
-    const origineApres = await teteOrigine(ctx.lancer, ctx.racine);
+    const origineApres = await teteOrigine(ctx.lancer, ctx.racine, outils);
     if (!origineApres.fetchOk) throw new Sortie(1, "git fetch impossible après la confirmation : rien de non vérifié ne part en ligne");
-    const admise = await teteAdmise(ctx.lancer, ctx.racine, s, origineApres.tete, chemins);
+    const admise = await teteAdmise(ctx.lancer, ctx.racine, s, origineApres.tete, chemins, outils);
     if (!admise.ok) throw new Sortie(1, admise.motif);
     ecrire(admise.motif);
     const relue = lireConfig(ctx.home);

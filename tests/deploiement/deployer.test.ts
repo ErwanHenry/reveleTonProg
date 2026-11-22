@@ -20,7 +20,7 @@ import { resoudreExecutables } from '../../scripts/lib/deploiement/executables.t
 import type { Agent } from '../../scripts/lib/deploiement/agent.ts';
 import { appelerVerbe, EchecVerbe, envoyer, lireEtat } from '../../scripts/lib/deploiement/transport.ts';
 import type { Confirmateur } from '../../scripts/lib/deploiement/confirmation.ts';
-import { activationExclue, executerDeploiement, type ContexteDeploiement, type OptionsDeploiement } from '../../scripts/lib/deploiement/deployer.ts';
+import { activationExclue, executerDeploiement, FICHIERS_DEPOT_SURVEILLES, type ContexteDeploiement, type OptionsDeploiement } from '../../scripts/lib/deploiement/deployer.ts';
 import { executer } from '../../scripts/deploy-local.ts';
 import { CLE_FACTICE, ENTETES_PAR_DEFAUT, HOTE_FACTICE, MOT_DE_PASSE_FACTICE, UTILISATEUR_FACTICE, creerFauxServeur, type FauxServeur, type OptionsFauxServeur } from '../helpers/faux-serveur.ts';
 
@@ -497,15 +497,40 @@ describe('gardes rejouées après la confirmation (CR-02, T-09.2-33)', () => {
     assert.equal(b.faux.journal('rsync').length, 0);
   });
 
-  it('.git/config modifié pendant la confirmation : code 1 « intégrité locale », aucun envoi', { skip: !BASCULE && RAISON_MV }, async () => {
+  it('.git/config modifié pendant la confirmation : code 1 « intégrité locale » avant tout nouveau git fetch, aucun envoi', { skip: !BASCULE && RAISON_MV }, async () => {
     const b = banc();
     await mettreEnLigne(b, b.P);
     recuVert(b);
-    const { code, texte } = await deployer(b, {}, confirmateur(phrase(b), () => void git(b.racine, 'config', 'rtp.intrus', 'oui')));
+    const fetchs: string[] = [];
+    const envelopper = (l: Lanceur): Lanceur => (x) => {
+      if (x.args.includes('fetch')) fetchs.push(x.commande);
+      return l(x);
+    };
+    const { code, texte } = await deployer(b, {}, { ...confirmateur(phrase(b), () => void git(b.racine, 'config', 'rtp.intrus', 'oui')), envelopper });
     assert.equal(code, 1, texte);
-    assert.match(texte, /intégrité locale modifiée/);
+    assert.match(texte, /intégrité locale modifiée pendant l'attente de la confirmation/);
     assert.match(texte, /\.git\/config/);
+    // WR-06 : contrôlée avant que git ne tourne de nouveau (seul le fetch du départ a eu lieu).
+    assert.equal(fetchs.length, 1, fetchs.join(' | '));
     assert.equal(b.faux.journal('rsync').length, 0);
+  });
+
+  it('WR-06 : git et bash toujours lancés par leur chemin absolu figé ; ops/site-touche.sh et ci.yml surveillés', { skip: !BASCULE && RAISON_MV }, async () => {
+    const b = banc();
+    await mettreEnLigne(b, b.P);
+    recuVert(b);
+    const commandes: string[] = [];
+    const envelopper = (l: Lanceur): Lanceur => (x) => {
+      commandes.push(x.commande);
+      return l(x);
+    };
+    const { code, texte } = await deployer(b, {}, { ...confirmateur(phrase(b)), envelopper });
+    assert.equal(code, 0, texte);
+    assert.ok(commandes.length > 10);
+    for (const c of commandes) assert.ok(path.isAbsolute(c), `commande lancée par son nom : ${c}`);
+    assert.ok(commandes.some((c) => path.basename(c) === 'bash'), 'site-touche lancé');
+    assert.deepEqual(FICHIERS_DEPOT_SURVEILLES.map((f) => path.relative(RACINE, f)), ['ops/site-touche.sh', '.github/workflows/ci.yml']);
+    for (const f of FICHIERS_DEPOT_SURVEILLES) assert.ok(existsSync(f), f);
   });
 
   it('dist modifié après la build : code 1 « empreinte », aucun envoi', { skip: !BASCULE && RAISON_MV }, async () => {
