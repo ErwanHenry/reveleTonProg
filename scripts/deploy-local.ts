@@ -224,6 +224,10 @@ export async function executer(argv: string[], deps: Dependances = {}): Promise<
 }
 
 if (import.meta.main) {
+  // WR-04 : après un SIGHUP (fenêtre fermée), écrire sur un terminal raccroché ne doit pas faire échouer le processus
+  // pendant un retour automatique ; le journal local garde la trace.
+  process.stdout.on('error', () => {});
+  process.stderr.on('error', () => {});
   try {
     process.exitCode = await executer(process.argv.slice(2));
   } catch (e) {

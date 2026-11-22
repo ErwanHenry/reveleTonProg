@@ -15,6 +15,9 @@
 //   serveur applique son umask 022, même résultat que l'option chmod D755,F644 de la CI.
 // - CR-01 : `-rt` sans option de liens. Aucun lien symbolique n'est envoyé ; la commande forcée refuse de toute
 //   façon un envoi qui en contient.
+// WR-04 (revue de la phase 9.2) : ssh, rsync et curl tournent dans leur propre session (isole) : un Ctrl-C ou la
+// fermeture du terminal ne tue pas un activer ou un retour en vol (BatchMode=yes : aucun terminal nécessaire) ; le
+// déploiement décide lui-même quoi faire du signal (retour automatique après l'activation).
 // Chaque verbe est construit à partir de jetons contrôlés (cible essai|production, sha de 40 hexadécimaux
 // minuscules) avant tout lancement, sans shell. Chaque stdout et stderr de ssh, rsync et curl passe par masquer
 // avant d'être rendu, affiché ou mis dans un message : aucun hôte, utilisateur ni URL du serveur dans un journal.
@@ -158,6 +161,7 @@ export async function appelerVerbe(
     env: envDeBase(),
     delaiMs: MIN,
     libelle: `verbe ${verbe} ${cible}`,
+    isole: true,
   });
   if (r.code !== 0) {
     const code = r.code ?? 1;
@@ -246,6 +250,7 @@ export async function envoyer(
     env: envDeBase(),
     delaiMs: 15 * MIN,
     libelle: `envoi de la build vers ${cible}`,
+    isole: true,
   });
   if (r.code !== 0) {
     throw new Sortie(r.code ?? 1, `envoi vers ${cible} en échec (code ${r.code ?? 'aucun'}) : ${detail(r, cfg)}`);
@@ -284,13 +289,13 @@ export async function versionServie(cfg: ConfigDeploiement, exe: Executables, la
     const version = path.join(dossier, 'version.json');
     const entetes = path.join(dossier, 'entetes');
 
-    const r1 = await lancer({ commande: curl, args: [...options, '-o', version, `${base}/version.json`], cwd: '/', env: envDeBase(), entree, delaiMs: 3 * MIN, libelle: 'lecture de /version.json' });
+    const r1 = await lancer({ commande: curl, args: [...options, '-o', version, `${base}/version.json`], cwd: '/', env: envDeBase(), entree, delaiMs: 3 * MIN, libelle: 'lecture de /version.json', isole: true });
     if (r1.code !== 0) throw new Sortie(1, `/version.json illisible (curl code ${r1.code ?? 'aucun'}) : ${detail(r1, cfg)}`);
     const j = await lancer({ commande: jq, args: ['-r', '.commit', version], cwd: '/', env: envDeBase(), delaiMs: MIN, libelle: 'commit de /version.json' });
     const commit = masquer(j.stdout, cfg).trim();
     if (j.code !== 0 || commit === '' || commit === 'null') throw new Sortie(1, '/version.json ne porte pas de commit lisible');
 
-    const r2 = await lancer({ commande: curl, args: [...options, '-o', '/dev/null', '-D', entetes, `${base}/`], cwd: '/', env: envDeBase(), entree, delaiMs: 3 * MIN, libelle: "en-têtes de la page d'accueil" });
+    const r2 = await lancer({ commande: curl, args: [...options, '-o', '/dev/null', '-D', entetes, `${base}/`], cwd: '/', env: envDeBase(), entree, delaiMs: 3 * MIN, libelle: "en-têtes de la page d'accueil", isole: true });
     if (r2.code !== 0) throw new Sortie(1, `page d'accueil illisible (curl code ${r2.code ?? 'aucun'}) : ${detail(r2, cfg)}`);
     let texte = '';
     try {

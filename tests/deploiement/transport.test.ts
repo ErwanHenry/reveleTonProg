@@ -270,6 +270,26 @@ describe('envoyer et activer (faux serveur)', () => {
   });
 });
 
+describe('appels au serveur hors d\'atteinte des signaux du terminal (WR-04)', () => {
+  it('ssh (verbe et envoi), rsync et curl lancés dans leur propre session ; rsync --version et jq non', async () => {
+    const b = banc();
+    const s = sha(7);
+    b.faux.servirCommit('essai', s, dist(s));
+    const vus: { nom: string; args: string[]; isole: boolean }[] = [];
+    const espion: Lanceur = (l) => {
+      vus.push({ nom: path.basename(l.commande), args: l.args, isole: l.isole === true });
+      return lancerReel(l);
+    };
+    garder(await appelerVerbe(b.cfg, b.agent, b.exe, 'etat', ['essai'], espion));
+    garder(await envoyer(b.cfg, b.agent, b.exe, dist(sha(8)), 'essai', sha(8), espion));
+    garder(await versionServie(b.cfg, b.exe, espion));
+    const isoles = vus.filter((v) => v.isole).map((v) => (v.nom === 'rsync' ? 'rsync' : v.nom));
+    assert.deepEqual(isoles, ['ssh', 'rsync', 'curl', 'curl']);
+    assert.ok(vus.some((v) => v.nom === 'rsync' && v.args.includes('--version') && !v.isole));
+    assert.ok(vus.some((v) => v.nom === 'jq' && !v.isole));
+  });
+});
+
 describe('versionServie (faux curl)', () => {
   it('mot de passe sur l\'entrée standard de curl seulement ; commit et en-têtes lus', async () => {
     const b = banc();
