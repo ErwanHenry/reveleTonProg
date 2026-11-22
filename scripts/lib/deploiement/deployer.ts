@@ -43,7 +43,7 @@ import { construireDeploiement, type BuildDeploiement } from './construire.ts';
 import { empreinteArbre, trouverSpecial } from './empreinte.ts';
 import { prendreInstantane, resoudreExecutables, verifierIntegrite, type Executables, type Instantane } from './executables.ts';
 import { arbrePropre, decisionGel, lireCheminsHorsSite, SITE_TOUCHE, siteTouche, Sortie, teteAdmise, teteOrigine, verifierRecu, type Outils } from './gardes.ts';
-import { ajouterJournal, type EntreeJournal } from './journal.ts';
+import { ajouterJournal, dejaDeploye, type EntreeJournal } from './journal.ts';
 import { masquer } from './masque.ts';
 import { prendreVerrouDeploiement } from './retour.ts';
 import { appelerVerbe, EchecVerbe, envoyer, exigerRsync3, lireEtat, varianteRsync, versionServie } from './transport.ts';
@@ -415,7 +415,13 @@ export async function executerDeploiement(o: OptionsDeploiement, ctx: ContexteDe
       empreinte: b.empreinte,
       rsync: variante,
       gel: gel.motif,
-    }), ...fichiers.lignes.map((l) => `  ${l}`), "Clé retirée de l'agent pendant cet écran : sa phrase de passe sera redemandée juste avant l'envoi."];
+    }),
+      ...fichiers.lignes.map((l) => `  ${l}`),
+      // IN-01 : version déjà rangée sur le serveur ? Elle serait réactivée telle quelle, l'envoi ignoré.
+      ...(dejaDeploye(ctx.home, c0.cible, s)
+        ? ["Ce commit a déjà été déployé sur cette cible (journal local) : si sa version est encore rangée sur le serveur, la copie envoyée sera ignorée et l'ancienne réactivée ; l'empreinte ci-dessus n'est alors pas celle servie."]
+        : []),
+      "Clé retirée de l'agent pendant cet écran : sa phrase de passe sera redemandée juste avant l'envoi."];
     ecrire('');
     for (const l of ecran) ecrire(l);
     await ctx.confirmer(phraseAttendue('deployer', c0.cible, s), { arret: arret.signal, ecran });

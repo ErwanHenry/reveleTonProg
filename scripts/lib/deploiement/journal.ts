@@ -64,6 +64,20 @@ function valider(e: Record<string, unknown>): void {
  * Un retrait fait depuis GitHub n'y figure pas : l'avertissement est un filet, pas une garantie.
  */
 export function retraitUrgenceEnLigne(home: string, cible: 'essai' | 'production', commit: string): boolean {
+  return chercherJournal(home, (e) => (e.action === 'deployer' || e.action === 'retour') && e.resultat === 'succes' && e.urgence === true && e.cible === cible && e.commit === commit);
+}
+
+/**
+ * IN-01 (revue de la phase 9.2) : ce commit a-t-il déjà été déployé avec succès sur cette cible, d'après le journal
+ * local ? Si sa version est encore rangée sur le serveur, la commande forcée ignore l'envoi et réactive l'ancienne
+ * copie (contrat du serveur inchangé) : l'écran le dit.
+ */
+export function dejaDeploye(home: string, cible: 'essai' | 'production', commit: string): boolean {
+  return chercherJournal(home, (e) => e.action === 'deployer' && e.resultat === 'succes' && e.cible === cible && e.commit === commit);
+}
+
+/** Une ligne du journal local satisfait-elle le critère ? Journal absent ou ligne illisible : non. */
+function chercherJournal(home: string, critere: (e: Partial<EntreeJournal>) => boolean): boolean {
   let texte: string;
   try {
     texte = readFileSync(cheminsLocaux(home).journal, 'utf8');
@@ -73,8 +87,7 @@ export function retraitUrgenceEnLigne(home: string, cible: 'essai' | 'production
   for (const ligne of texte.split('\n')) {
     if (ligne.trim() === '') continue;
     try {
-      const e = JSON.parse(ligne) as Partial<EntreeJournal>;
-      if ((e.action === 'deployer' || e.action === 'retour') && e.resultat === 'succes' && e.urgence === true && e.cible === cible && e.commit === commit) return true;
+      if (critere(JSON.parse(ligne) as Partial<EntreeJournal>)) return true;
     } catch {
       // ligne illisible : ignorée
     }

@@ -548,6 +548,21 @@ describe('gardes rejouées après la confirmation (CR-02, T-09.2-33)', () => {
   });
 });
 
+describe('version déjà rangée sur le serveur (IN-01)', () => {
+  it('commit déjà déployé avec succès sur cette cible (journal local) : l\'écran prévient que la copie envoyée peut être ignorée', { skip: !BASCULE && RAISON_MV }, async () => {
+    const b = banc();
+    await mettreEnLigne(b, b.P);
+    recuVert(b);
+    const r1 = await deployer(b, {}, confirmateur(phrase(b)));
+    assert.equal(r1.code, 0, r1.texte);
+    assert.doesNotMatch(r1.texte, /déjà été déployé/);
+    await verbe(b, 'retour', ['essai', b.P]);
+    const r2 = await deployer(b, {}, confirmateur(phrase(b)));
+    assert.equal(r2.code, 0, r2.texte);
+    assert.match(r2.texte, /Ce commit a déjà été déployé sur cette cible \(journal local\) : si sa version est encore rangée sur le serveur, la copie envoyée sera ignorée et l'ancienne réactivée/);
+  });
+});
+
 describe('site touché depuis la version en ligne', () => {
   it('docs/ seulement depuis la version en ligne : code 0 « rien à déployer », aucun envoi ; --forcer : déployé', { skip: !BASCULE && RAISON_MV }, async () => {
     const b = banc({}, {}, { docs: true });
