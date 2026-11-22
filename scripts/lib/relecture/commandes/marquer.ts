@@ -1,6 +1,9 @@
 // `relecture marquer mesure <candidat/slug> | statut <candidat> | case <theme> <candidat>` : écrit `relu`, le
 // relecteur et la date (ou verifie_le et verifie_par pour une case), et rien d'autre (D-04). Validation avant
 // et après l'écriture ; toute nouvelle erreur restaure les octets d'origine.
+// Une mesure ou un statut déjà `publie` dont le texte a changé depuis sa relecture (empreinte différente de celle du
+// registre, revue de la phase 9, CR-01) se relit sans repasser par `retirer` : la commande garde `publie` et ne
+// change que le relecteur et la date. Inchangé depuis sa relecture, il est refusé comme avant.
 
 import path from 'node:path';
 import { parseArgs } from 'node:util';
@@ -11,7 +14,7 @@ import { RE_DATE, EditionRefusee, dateValide, definirChamps, ecrireAtomique, rel
 import type { Champ, Chemin } from '../editer.ts';
 import { RELECTEUR_DEFAUT, RE_SEGMENT, codeDansPerimetre, empreinteCase, empreinteMesure, empreinteStatut, entreesDe, nomCible } from '../etat.ts';
 import type { Chargeur, Cible, Contexte } from '../etat.ts';
-import { ajouterJournal, lireNotes, notesOuvertes } from '../registre.ts';
+import { ajouterJournal, dernieresEmpreintes, lireJournal, lireNotes, notesOuvertes } from '../registre.ts';
 
 export interface OptionsMarquer {
   relecteur: string;
@@ -58,20 +61,28 @@ export function marquer(cible: Cible, options: OptionsMarquer, deps: Dependances
   const avant = charger(ctx.racine, { schemasDir: ctx.schemasDir, mode: 'production' });
   const erreursAvant = avant.diagnostics.filter((d) => d.severity === 'error');
 
+  // Champs écrits : `relu`, relecteur et date ; pour une cible déjà publiée dont le texte a changé depuis sa
+  // relecture, seulement le relecteur et la date (elle reste publiée).
+  const empreintes = dernieresEmpreintes(lireJournal(ctx.racine));
+  const champsRelecture = (publie: boolean): Champ[] => [
+    ...(publie ? [] : [{ cle: 'statut_relecture', valeur: 'relu' } as Champ]),
+    { cle: 'relecteur', valeur: options.relecteur },
+    { cle: 'date_relecture', valeur: options.date },
+  ];
+
   // Résolution de la cible dans la liste chargée (jamais un chemin reçu en argument).
   let plan: Plan;
   if (cible.type === 'mesure') {
     const m = entreesDe(avant, 'mesures').find((e) => e.id === cible.id);
     if (!m) return refuser('mesure inconnue (ou fichier invalide : voir npm run validate)');
-    if (m.data.statut_relecture === 'publie') return refuser('mesure déjà publiée : la repasser en brouillon passe par la commande retirer');
+    const publie = m.data.statut_relecture === 'publie';
+    if (publie && empreintes.get(nom)?.sha256 === empreinteMesure(m.data)) {
+      return refuser('mesure déjà publiée et inchangée depuis sa relecture : la repasser en brouillon passe par la commande retirer');
+    }
     plan = {
       file: m.file,
       chemin: [],
-      champs: [
-        { cle: 'statut_relecture', valeur: 'relu' },
-        { cle: 'relecteur', valeur: options.relecteur },
-        { cle: 'date_relecture', valeur: options.date },
-      ],
+      champs: champsRelecture(publie),
       empreinte: (d) => empreinteMesure(d),
     };
   } else if (cible.type === 'statut') {
@@ -86,15 +97,12 @@ export function marquer(cible: Cible, options: OptionsMarquer, deps: Dependances
       return refuser(`statut « ${String(retenu.code)} » hors du périmètre d’équité : seuls les statuts déclarés sont relus pour l’ouverture (D-06) ; --hors-perimetre pour passer outre`);
     }
     if (typeof retenu.date !== 'string' || !RE_DATE.test(retenu.date)) return refuser(`date du statut incomplète (« ${String(retenu.date)} ») : un statut relu exige une date complète`);
-    if (retenu.statut_relecture === 'publie') return refuser('statut déjà publié');
+    const publie = retenu.statut_relecture === 'publie';
+    if (publie && empreintes.get(nom)?.sha256 === empreinteStatut(retenu)) return refuser('statut déjà publié et inchangé depuis sa relecture');
     plan = {
       file: c.file,
       chemin: ['statuts', index],
-      champs: [
-        { cle: 'statut_relecture', valeur: 'relu' },
-        { cle: 'relecteur', valeur: options.relecteur },
-        { cle: 'date_relecture', valeur: options.date },
-      ],
+      champs: champsRelecture(publie),
       empreinte: (d) => empreinteStatut(objet(tableau(d.statuts)[index])),
     };
   } else {

@@ -17,6 +17,8 @@ import { estOuvert } from '../../src/lib/publication-config.ts';
 import { HAUTEUR_PARTAGE, LARGEUR_PARTAGE } from '../../src/lib/partage.ts';
 import { estHoteProvisoire } from '../../src/lib/site-config.ts';
 import { aClasse, analyserHtml, trouver } from './html.ts';
+import { empreinteCase, empreinteMesure, empreinteStatut } from './relecture/etat.ts';
+import { DOSSIER_REGISTRE, FICHIER_JOURNAL, RegistreInvalide, dernieresEmpreintes, lireJournal } from './relecture/registre.ts';
 
 /** Page d'erreur 404 d'Astro (src/pages/404.astro donnerait dist/404.html) : exclue des canoniques et du sitemap (IN-07). */
 export const PAGE_ERREUR = '404.html';
@@ -98,6 +100,7 @@ export const CODES_CHECK_DIST = [
   'PUBLICATION_VIDE',
   'BROUILLON_EN_PRODUCTION',
   'RELECTURE_ABSENTE',
+  'RELECTURE_PERIMEE',
   'CANDIDAT_NON_RELU_EN_PRODUCTION',
   'PREVIEW_INDEXABLE',
   'LIEN_INTERNE_CASSE',
@@ -154,6 +157,13 @@ export interface OptionsCheckDist {
    * sans elle, ou en preview, le code est inactif.
    */
   candidatsNonRelus?: readonly string[];
+  /**
+   * Contenus relus ou publiés dont le texte ne correspond plus à l'empreinte du registre de relecture
+   * (`relecturesPerimees` de la racine de contenu, revue de la phase 9, CR-01). Donnée, elle active en production
+   * RELECTURE_PERIMEE (erreur) : une ligne « Relue par … » ne part jamais en ligne sous un texte que personne n'a relu.
+   * Le CLI la remplit toujours ; sans elle, ou en preview, le code est inactif.
+   */
+  relecturesPerimees?: readonly RelecturePerimee[];
   /**
    * Vrai pour un contrôle avant déploiement (RTP_DEPLOIEMENT=1) : un contact provisoire (CONTACT_PROVISOIRE, TLD réservé) et
    * une page qui annonce un hébergeur seulement prévu (HEBERGEUR_PREVU) deviennent des erreurs, sinon des avertissements.
@@ -356,6 +366,73 @@ export function cellulesAttendues(contentRoot: string, projectRoot: string, mode
 export function candidatsNonRelus(contentRoot: string, projectRoot: string): Set<string> {
   const { entries } = loadAll(contentRoot, { schemasDir: schemasDirOf(projectRoot), mode: 'production' });
   return new Set(entries.filter((e) => e.collection === 'candidats' && statutRetenu(e.data.statuts, 'production') === undefined).map((e) => e.id));
+}
+
+export interface RelecturePerimee {
+  /** Cible du registre : `mesure:<candidat>/<slug>`, `statut:<candidat>` ou `case:<theme>/<candidat>`. */
+  cible: string;
+  /** Page du dist qui montre (ou montrerait) la cible, chemin relatif au dist. */
+  page: string;
+  message: string;
+}
+
+/**
+ * Contenus relus ou publiés dont le texte a changé depuis leur relecture (revue de la phase 9, CR-01). Le registre
+ * `relecture/journal.jsonl` garde l'empreinte du texte relu (dernière ligne par cible) ; elle est comparée ici à
+ * l'empreinte du contenu actuel, avec les fonctions de l'outil de relecture :
+ * - chaque mesure `relu` ou `publie` (empreinteMesure : titre, citation, source, chiffrage, rédactions) ;
+ * - le statut que la production retient pour chaque personne (statutRetenu en production, empreinteStatut) ;
+ * - chaque case de couverture d'un thème `publie` pour une personne visible en production (empreinteCase).
+ * Une cible absente du registre compte comme non relue. Le registre est obligatoire pour le vrai corpus (racine de
+ * contenu égale à la racine du projet, celle que la CI et le déploiement construisent) ; une fixture sans registre
+ * n'est pas contrôlée. Un registre illisible donne une seule entrée qui le dit.
+ */
+export function relecturesPerimees(contentRoot: string, projectRoot: string, options: { registreObligatoire?: boolean } = {}): RelecturePerimee[] {
+  const obligatoire = options.registreObligatoire ?? path.resolve(contentRoot) === path.resolve(projectRoot);
+  const journal = path.join(path.resolve(contentRoot), DOSSIER_REGISTRE, FICHIER_JOURNAL);
+  if (!obligatoire && !fs.existsSync(journal)) return [];
+  let empreintes: ReturnType<typeof dernieresEmpreintes>;
+  try {
+    empreintes = dernieresEmpreintes(lireJournal(contentRoot));
+  } catch (e) {
+    if (!(e instanceof RegistreInvalide)) throw e;
+    return [{ cible: `${DOSSIER_REGISTRE}/${FICHIER_JOURNAL}`, page: 'index.html', message: `registre de relecture illisible (${e.message}) : aucune relecture ne peut être vérifiée` }];
+  }
+  const { entries } = loadAll(contentRoot, { schemasDir: schemasDirOf(projectRoot), mode: 'production' });
+  const objet = (v: unknown): Record<string, unknown> => (v !== null && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : {});
+  const out: RelecturePerimee[] = [];
+  const comparer = (cible: string, page: string, empreinte: string, commande: string): void => {
+    const ligne = empreintes.get(cible);
+    if (ligne?.sha256 === empreinte) return;
+    const raison =
+      ligne === undefined
+        ? `aucune relecture de cette cible dans ${DOSSIER_REGISTRE}/${FICHIER_JOURNAL}`
+        : `texte modifié depuis sa relecture du ${ligne.date} par ${ligne.relecteur} (empreinte différente de celle du registre)`;
+    out.push({ cible, page, message: `${cible} : ${raison} ; relire le texte actuel puis npm run relecture -- ${commande} --relecteur <nom>` });
+  };
+  const visibles = new Set<string>();
+  for (const c of entries.filter((e) => e.collection === 'candidats')) {
+    const retenu = statutRetenu(c.data.statuts, 'production');
+    if (retenu === undefined) continue;
+    visibles.add(c.id);
+    comparer(`statut:${c.id}`, `candidats/${c.id}/index.html`, empreinteStatut(objet(retenu)), `marquer statut ${c.id}`);
+  }
+  for (const m of entries.filter((e) => e.collection === 'mesures')) {
+    if (m.data.statut_relecture !== 'relu' && m.data.statut_relecture !== 'publie') continue;
+    comparer(`mesure:${m.id}`, `themes/${String(m.data.theme)}/index.html`, empreinteMesure(m.data), `marquer mesure ${m.id}`);
+  }
+  const publies = new Set(entries.filter((e) => e.collection === 'themes' && e.data.statut_relecture === 'publie').map((e) => e.id));
+  for (const couv of entries.filter((e) => e.collection === 'couverture')) {
+    const theme = String(couv.data.theme);
+    if (!publies.has(theme)) continue;
+    for (const brute of Array.isArray(couv.data.cases) ? couv.data.cases : []) {
+      const k = objet(brute);
+      const candidat = String(k.candidat);
+      if (!visibles.has(candidat)) continue;
+      comparer(`case:${theme}/${candidat}`, `themes/${theme}/index.html`, empreinteCase(k), `marquer case ${theme} ${candidat}`);
+    }
+  }
+  return out;
 }
 
 /** Identifiant de candidat visé par un chemin public `/candidats/<id>/` (avec ou sans index.html), sinon `undefined`. */
@@ -975,6 +1052,11 @@ export function checkDist(dist: string, opts: OptionsCheckDist): Constat[] {
       const id = idCandidatDuChemin(chemin);
       if (id !== undefined && nonRelus.has(id)) signaler('CANDIDAT_NON_RELU_EN_PRODUCTION', 'sitemap.xml', `entrée <loc> pour /candidats/${id}/ : ${raison}`);
     }
+  }
+
+  // Texte modifié depuis sa relecture (revue de la phase 9, CR-01) : jamais de « Relue par … » sous un texte non relu.
+  if (opts.mode === 'production') {
+    for (const r of opts.relecturesPerimees ?? []) signaler('RELECTURE_PERIMEE', r.page, r.message);
   }
 
   // robots.txt et sitemap.xml

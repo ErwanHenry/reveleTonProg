@@ -7,7 +7,7 @@ import type { LoadOptions } from '../../src/lib/content-core/load.ts';
 import { marquer } from '../../scripts/lib/relecture/commandes/marquer.ts';
 import type { Contexte } from '../../scripts/lib/relecture/etat.ts';
 import { empreinteMesure } from '../../scripts/lib/relecture/etat.ts';
-import { lireJournal, lireNotes } from '../../scripts/lib/relecture/registre.ts';
+import { ajouterJournal, lireJournal, lireNotes } from '../../scripts/lib/relecture/registre.ts';
 import { principal } from '../../scripts/relecture.ts';
 import { corpusRelecture, lancerDepuis, nettoyerCorpusRelecture } from '../helpers/corpus-relecture.ts';
 import type { CorpusRelecture } from '../helpers/corpus-relecture.ts';
@@ -20,6 +20,8 @@ import { parse } from 'yaml';
 const MESURE = 'src/content/mesures/elise-erard/guichet-unique.yaml';
 const PAUL = 'src/content/candidats/paul-de-villefranche.yaml';
 const COUV = 'src/content/couverture/logement.yaml';
+const PUBLIEE_ID = 'marie-fictive/aide-construction';
+const PUBLIEE = `src/content/mesures/${PUBLIEE_ID}.yaml`;
 
 after(() => nettoyerCorpusRelecture());
 
@@ -66,10 +68,9 @@ describe('relecture marquer (CLI, corpus M1 temporaire)', () => {
     assert.deepEqual(lireJournal(c.racine).map((l) => l.cible), ['statut:paul-de-villefranche', 'case:logement/paul-de-villefranche']);
   });
 
-  it('refus (code 1, rien d’écrit) : cible inconnue, mesure publiée, hors périmètre, date partielle, fichier invalide', () => {
+  it('refus (code 1, rien d’écrit) : cible inconnue, hors périmètre, date partielle, fichier invalide', () => {
     const cas: [string[], RegExp, (() => void)?][] = [
       [['mesure', 'elise-erard/inexistante'], /mesure inconnue/],
-      [['mesure', 'marie-fictive/aide-construction'], /déjà publiée/],
       [['statut', 'nina-pressentie'], /hors du périmètre/],
       [['statut', 'inconnu-total'], /candidat inconnu/],
       [['case', 'logement', 'nina-pressentie'], /aucune case/],
@@ -85,6 +86,33 @@ describe('relecture marquer (CLI, corpus M1 temporaire)', () => {
       assert.deepEqual(differences(avant, c.arbre()), [], args.join(' '));
     }
     assert.equal(existsSync(path.join(c.racine, 'relecture', 'journal.jsonl')), false);
+  });
+
+  it('mesure publiée inchangée depuis sa relecture : refus, rien d’écrit (CR-01)', () => {
+    ajouterJournal(c.racine, { horodatage: '2026-10-26T10:00:00.000Z', action: 'publier', cible: `mesure:${PUBLIEE_ID}`, relecteur: 'Erwan Henry', date: '2026-10-26', sha256: empreinteMesure(parse(c.lire(PUBLIEE)) as Record<string, unknown>) });
+    const avant = c.arbre();
+    const r = c.lancer('marquer', 'mesure', PUBLIEE_ID, '--date', '2026-11-20', '--relecteur', 'Anne Relectrice');
+    assert.equal(r.code, 1, r.stderr);
+    assert.match(r.stderr, /déjà publiée et inchangée/);
+    assert.deepEqual(differences(avant, c.arbre()), []);
+    assert.equal(lireJournal(c.racine).length, 1);
+  });
+
+  it('mesure publiée modifiée depuis sa relecture : relue de nouveau, reste publiée, relecteur et date changent (CR-01)', () => {
+    ajouterJournal(c.racine, { horodatage: '2026-10-26T10:00:00.000Z', action: 'publier', cible: `mesure:${PUBLIEE_ID}`, relecteur: 'Erwan Henry', date: '2026-10-26', sha256: empreinteMesure(parse(c.lire(PUBLIEE)) as Record<string, unknown>) });
+    c.ecrire(PUBLIEE, c.lire(PUBLIEE).replace(/^(  resume: .*)\.$/m, '$1, selon son programme.'));
+    const corrige = c.lire(PUBLIEE);
+    const avant = c.arbre();
+    const r = c.lancer('marquer', 'mesure', PUBLIEE_ID, '--date', '2026-11-22', '--relecteur', 'Anne Relectrice');
+    assert.equal(r.code, 0, r.stderr);
+    assert.deepEqual(differences(avant, c.arbre()), [PUBLIEE]);
+    const attendu = corrige.replace('relecteur: Erwan Henry\ndate_relecture: 2026-10-26\n', 'relecteur: Anne Relectrice\ndate_relecture: 2026-11-22\n');
+    assert.notEqual(attendu, corrige);
+    assert.deepEqual(c.lire(PUBLIEE).split('\n'), attendu.split('\n'));
+    const derniere = lireJournal(c.racine).at(-1);
+    assert.equal(derniere?.cible, `mesure:${PUBLIEE_ID}`);
+    assert.equal(derniere?.relecteur, 'Anne Relectrice');
+    assert.equal(derniere?.sha256, empreinteMesure(parse(corrige) as Record<string, unknown>));
   });
 
   it('hors périmètre accepté avec --hors-perimetre (statut pressenti à date complète)', () => {

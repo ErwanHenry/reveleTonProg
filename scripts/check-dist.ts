@@ -8,7 +8,7 @@ import { ModeInvalideError, resolveContentRoot, resolveMode } from '../src/lib/c
 import { DeploiementInvalideError, estDeploiement } from '../src/lib/deploiement.ts';
 import { loadPublicationConfig } from '../src/lib/publication-config.ts';
 import { loadSiteConfig } from '../src/lib/site-config.ts';
-import { TYPES_AUTORISES, candidatsNonRelus, cellulesAttendues, checkDist } from './lib/check-dist.ts';
+import { TYPES_AUTORISES, candidatsNonRelus, cellulesAttendues, checkDist, relecturesPerimees } from './lib/check-dist.ts';
 
 const USAGE = `Usage : node scripts/check-dist.ts [--dist <dossier>] [--root <dossier>] [--mode preview|production] [--format text|github]
 
@@ -20,6 +20,9 @@ const USAGE = `Usage : node scripts/check-dist.ts [--dist <dossier>] [--root <do
   hors liste est une erreur (THEME_HORS_LISTE_BLANCHE), un thème listé sans page ou un dist sans thème un avertissement.
   Personnes sans statut relu ou publié (lues dans la racine de contenu, D-06) : en production, une page, un lien ou
   une entrée de sitemap.xml pour l'une d'elles est une erreur (CANDIDAT_NON_RELU_EN_PRODUCTION).
+  Registre de relecture (relecture/journal.jsonl de la racine de contenu, obligatoire pour le vrai corpus) : en
+  production, une mesure relue ou publiée, un statut retenu ou une case d'un thème publié dont le texte ne correspond
+  plus à l'empreinte relue est une erreur (RELECTURE_PERIMEE).
   Le domaine du site est lu dans config/site.yml (racine du projet) : en production, URL canonique de chaque page,
   sitemap.xml et ligne Sitemap de robots.txt doivent le suivre ; en preview, aucun des trois n'est permis.
   RTP_DEPLOIEMENT=1 (job de déploiement) : un contact provisoire, un hébergeur seulement prévu et un domaine
@@ -75,6 +78,8 @@ try {
 const attendues = cellulesAttendues(contentRoot, projectRoot, mode, themesOuverts);
 // D-06 (plan 09-15) : toujours passé ; checkDist ne l'applique qu'en production.
 const nonRelus = [...candidatsNonRelus(contentRoot, projectRoot)];
+// CR-01 (revue de la phase 9) : toujours passé ; checkDist ne l'applique qu'en production.
+const perimees = relecturesPerimees(contentRoot, projectRoot);
 let deploiement = false;
 try {
   deploiement = estDeploiement(process.env);
@@ -96,7 +101,7 @@ try {
 // à la racine (D-11) et le seul partage.png à la racine (09.1) : TYPES_AUTORISES de scripts/lib/check-dist.ts.
 const sha = process.env.GITHUB_SHA ?? '';
 const version = /^[0-9a-f]{40}$/.test(sha) ? { commitAttendu: sha } : {};
-const constats = checkDist(dist, { mode, cellulesParTheme: attendues, themesOuverts, candidatsNonRelus: nonRelus, deploiement, domaine, version, typesAutorises: TYPES_AUTORISES });
+const constats = checkDist(dist, { mode, cellulesParTheme: attendues, themesOuverts, candidatsNonRelus: nonRelus, relecturesPerimees: perimees, deploiement, domaine, version, typesAutorises: TYPES_AUTORISES });
 
 for (const c of constats) console.log(`${c.code} ${safe(c.fichier)} : ${safe(c.message)}`);
 if (format === 'github') {

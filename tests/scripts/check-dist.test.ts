@@ -7,7 +7,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { CODES_CHECK_DIST, LIMITES, TYPES_AUTORISES, candidatsNonRelus, cellulesAttendues, checkDist } from '../../scripts/lib/check-dist.ts';
+import { CODES_CHECK_DIST, LIMITES, TYPES_AUTORISES, candidatsNonRelus, cellulesAttendues, checkDist, relecturesPerimees } from '../../scripts/lib/check-dist.ts';
+import { empreinteCase, empreinteMesure, empreinteStatut } from '../../scripts/lib/relecture/etat.ts';
+import { loadAll } from '../../src/lib/content-core/load.ts';
+import { statutRetenu } from '../../src/lib/content-core/rules/equite.ts';
 import { materialiserCorpusM1 } from '../helpers/corpus-m1.ts';
 import type { OptionsCheckDist } from '../../scripts/lib/check-dist.ts';
 import { empreinteCsp } from '../../src/lib/csp-empreintes.ts';
@@ -715,6 +718,92 @@ describe('checkDist : personnes sans statut relu (D-06, plan 09-15)', () => {
     const racine = materialiserCorpusM1(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'rtp-checkdist-m1-')), 'corpus-m1'));
     tmpDirs.push(path.dirname(racine));
     assert.deepEqual([...candidatsNonRelus(racine, REPO_ROOT)].sort(), ['nina-pressentie', 'paul-de-villefranche']);
+  });
+});
+
+describe('checkDist : texte modifié depuis sa relecture (revue de la phase 9, CR-01)', () => {
+  const M1 = (): string => {
+    const racine = materialiserCorpusM1(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'rtp-checkdist-relu-')), 'corpus-m1'));
+    tmpDirs.push(path.dirname(racine));
+    return racine;
+  };
+  /** Registre qui reprend l'empreinte actuelle de chaque cible relue ou publiée (ce qu'écrivent marquer et publier). */
+  const registreAJour = (racine: string): void => {
+    const { entries } = loadAll(racine, { schemasDir: path.join(REPO_ROOT, 'schemas'), mode: 'production' });
+    const lignes: string[] = [];
+    const ligne = (cible: string, sha256: string): void => {
+      lignes.push(JSON.stringify({ horodatage: '2026-11-20T10:00:00.000Z', action: 'marquer', cible, relecteur: 'Anne Relectrice', date: '2026-11-20', sha256 }));
+    };
+    for (const e of entries) {
+      if (e.collection === 'mesures' && (e.data.statut_relecture === 'relu' || e.data.statut_relecture === 'publie')) ligne(`mesure:${e.id}`, empreinteMesure(e.data));
+      if (e.collection === 'candidats') {
+        const r = statutRetenu(e.data.statuts, 'production');
+        if (r !== undefined) ligne(`statut:${e.id}`, empreinteStatut(r));
+      }
+      if (e.collection === 'couverture') for (const k of e.data.cases as Record<string, unknown>[]) ligne(`case:${String(e.data.theme)}/${String(k.candidat)}`, empreinteCase(k));
+    }
+    fs.mkdirSync(path.join(racine, 'relecture'), { recursive: true });
+    fs.writeFileSync(path.join(racine, 'relecture', 'journal.jsonl'), `${lignes.join('\n')}\n`);
+  };
+  const MESURE = 'src/content/mesures/marie-fictive/aide-construction.yaml';
+  const remplacer = (racine: string, rel: string, de: RegExp | string, par: string): void => {
+    const f = path.join(racine, ...rel.split('/'));
+    const avant = fs.readFileSync(f, 'utf8');
+    const apres = avant.replace(de, par);
+    assert.notEqual(apres, avant, `${rel} : motif absent`);
+    fs.writeFileSync(f, apres);
+  };
+  const obligatoire = { registreObligatoire: true };
+
+  it('registre à jour : aucune entrée ; fixture sans registre : pas contrôlée', () => {
+    const racine = M1();
+    assert.deepEqual(relecturesPerimees(racine, REPO_ROOT), []);
+    registreAJour(racine);
+    assert.deepEqual(relecturesPerimees(racine, REPO_ROOT, obligatoire), []);
+  });
+
+  it('registre obligatoire absent : chaque cible relue ou publiée est signalée comme non relue', () => {
+    const cibles = relecturesPerimees(M1(), REPO_ROOT, obligatoire).map((r) => r.cible);
+    for (const c of ['mesure:marie-fictive/aide-construction', 'statut:marie-fictive', 'case:logement/marie-fictive']) assert.ok(cibles.includes(c), `${c} absent de ${cibles.join(', ')}`);
+  });
+
+  it('mesure publiée corrigée à la main sans nouvelle relecture : une entrée, sur la page du thème', () => {
+    const racine = M1();
+    registreAJour(racine);
+    remplacer(racine, MESURE, /^(  resume: .*)\.$/m, '$1, selon son programme.');
+    const r = relecturesPerimees(racine, REPO_ROOT);
+    assert.deepEqual(r.map((x) => [x.cible, x.page]), [['mesure:marie-fictive/aide-construction', 'themes/logement/index.html']]);
+    assert.match(r[0]?.message ?? '', /texte modifié depuis sa relecture du 2026-11-20 par Anne Relectrice/);
+    assert.match(r[0]?.message ?? '', /marquer mesure marie-fictive\/aide-construction/);
+  });
+
+  it('statut retenu ou case d’un thème publié modifiés à la main : signalés ; champs de relecture seuls : rien', () => {
+    const racine = M1();
+    registreAJour(racine);
+    remplacer(racine, 'src/content/candidats/marie-fictive.yaml', 'relecteur: Erwan Henry\n    date_relecture: 2026-10-17', 'relecteur: Autre Nom\n    date_relecture: 2026-10-18');
+    remplacer(racine, 'src/content/couverture/logement.yaml', /(candidat: elise-erard\n    etat: non_precise\n    verifie_le: )2026-10-24(\n    verifie_par: )Erwan Henry/, '$12026-10-25$2Autre Nom');
+    assert.deepEqual(relecturesPerimees(racine, REPO_ROOT), []);
+    remplacer(racine, 'src/content/candidats/marie-fictive.yaml', 'date: 2026-10-15', 'date: 2026-10-14');
+    remplacer(racine, 'src/content/couverture/logement.yaml', '      - programme-commun-fictif\n', '      - marie-fictive-programme\n');
+    assert.deepEqual(relecturesPerimees(racine, REPO_ROOT).map((x) => x.cible).sort(), ['case:logement/elise-erard', 'statut:marie-fictive']);
+  });
+
+  it('registre illisible : une seule entrée qui le dit', () => {
+    const racine = M1();
+    fs.mkdirSync(path.join(racine, 'relecture'));
+    fs.writeFileSync(path.join(racine, 'relecture', 'journal.jsonl'), '{pas du json\n');
+    const r = relecturesPerimees(racine, REPO_ROOT);
+    assert.equal(r.length, 1);
+    assert.match(r[0]?.message ?? '', /registre de relecture illisible/);
+  });
+
+  it('RELECTURE_PERIMEE : erreur en production sur la page donnée, rien en preview ni sans l’option', () => {
+    const perimee = [{ cible: 'mesure:marie-fictive/aide-construction', page: 'themes/logement/index.html', message: 'texte modifié' }];
+    const prod = checkDist(ecrireDist(distPropre()), { mode: 'production', cellulesParTheme: new Map([['logement', 2]]), relecturesPerimees: perimee });
+    assert.deepEqual(prod.map((c) => [c.code, c.severite, c.fichier]), [['RELECTURE_PERIMEE', 'erreur', 'themes/logement/index.html']]);
+    assert.deepEqual(checkDist(ecrireDist(distPropre()), { mode: 'production', cellulesParTheme: new Map([['logement', 2]]) }), []);
+    const preview = checkDist(ecrireDist(distPropre({}, { preview: true })), { mode: 'preview', cellulesParTheme: new Map([['logement', 2]]), relecturesPerimees: perimee });
+    assert.ok(!preview.some((c) => c.code === 'RELECTURE_PERIMEE'));
   });
 });
 
