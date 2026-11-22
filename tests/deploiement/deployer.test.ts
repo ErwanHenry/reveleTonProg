@@ -487,13 +487,15 @@ describe('gardes rejouées après la confirmation (CR-02, T-09.2-33)', () => {
     assert.equal(b.faux.journal('rsync').length, 0);
   });
 
-  it('cible passée de essai à production dans deploiement.env : code 1 « cible de la build différente », aucun envoi', { skip: !BASCULE && RAISON_MV }, async () => {
+  it('cible passée de essai à production dans deploiement.env : code 1, aucun envoi ni git (instantané d\'abord, WR-06)', { skip: !BASCULE && RAISON_MV }, async () => {
     const b = banc();
     await mettreEnLigne(b, b.P);
     recuVert(b);
     const { code, texte } = await deployer(b, {}, confirmateur(phrase(b), () => b.faux.config(b.home, { RTP_CIBLE: 'production' })));
     assert.equal(code, 1, texte);
-    assert.match(texte, /cible de la build différente de la cible du déploiement/);
+    // Le fichier local est surveillé : l'instantané comparé au début de l'étape 8 l'arrête avant même la relecture
+    // de la cible (qui reste un second filet).
+    assert.match(texte, /intégrité locale modifiée pendant l'attente de la confirmation : .*deploiement\.env/);
     assert.equal(b.faux.journal('rsync').length, 0);
   });
 
