@@ -67,7 +67,9 @@ export default function mentionsFinales(ctx: ContexteSite): void {
       assert.equal(sections.length, 1);
       const s = norm(texte(sections[0]!));
       assert.match(s, /n'ont pas été relues par un juriste/);
-      assert.match(s, /après l'ouverture/);
+      // Au passé depuis le 2026-11-22 (site ouvert) : aucune relecture juridique avant l'ouverture, une plus tard.
+      assert.match(s, /n'a eu lieu avant l'ouverture du site/);
+      assert.match(s, /pourra les relire plus tard/);
       assert.ok(trouver(a, (n) => n.tag === 'h2').some((n) => norm(texte(n)) === 'Relecture juridique'));
       const hrefs = trouver(a, (n) => n.attrs.href !== undefined).map((n) => n.attrs.href ?? '');
       assert.equal(hrefs.filter((h) => h.includes('RISQUES-JURIDIQUES')).length, 0);

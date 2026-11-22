@@ -24,7 +24,8 @@ interface Page {
 
 const PAGES: Page[] = [
   // Texte modifié le 2026-11-12 (09.1, proposition 2 : noms des liens « Signaler une erreur : par courriel / sur GitHub »).
-  { fichier: 'src/pages/mentions-legales.astro', revision: '2026-11-12', empreinte: '5cc6f01f34941a2c' },
+  // Puis le 2026-11-22 (vérification de la phase 9, texte validé par Erwan) : relecture juridique au passé.
+  { fichier: 'src/pages/mentions-legales.astro', revision: '2026-11-22', empreinte: 'a33308af579e525a' },
   // Texte modifié le 2026-11-12 (09.1, proposition 2 : « Copie archivée ») et le 2026-11-13 (Phase 10, ligne
   // STATUT_PLUS_RECENT_NON_RELU du catalogue affiché ; puis « un thème à la fois » à la place de « thème par
   // thème », texte validé par Erwan le même jour) et le 2026-11-17 (statut attribué au jeu de données : nom du jeu
@@ -32,8 +33,9 @@ const PAGES: Page[] = [
   // « relecture par un second agent d'intelligence artificielle, pas une relecture humaine de chaque texte »,
   // décision d'Erwan du même jour).
   // Puis le 2026-11-22 (audit 09-13, textes validés par Erwan) : mesure 4G « sur le site public » ; personnes qui ne se
-  // présentent pas affichées une fois leur statut relu.
-  { fichier: 'src/pages/methode.astro', revision: '2026-11-22', empreinte: '14be6ed419799ee4', extra: () => JSON.stringify(CATALOGUE) },
+  // présentent pas affichées une fois leur statut relu ; puis, après la vérification de la phase 9 : rôle de l'éditeur
+  // (règles de relecture, cas soumis), source « du candidat, de sa candidature ou de son parti », pressentis.
+  { fichier: 'src/pages/methode.astro', revision: '2026-11-22', empreinte: '900098e0981c11a2', extra: () => JSON.stringify(CATALOGUE) },
 ];
 
 /** Gabarit sans commentaires JSX ({/* … *\/}), sans commentaires de ligne du frontmatter et sans la ligne REVISION. */

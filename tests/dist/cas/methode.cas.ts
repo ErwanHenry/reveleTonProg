@@ -79,7 +79,8 @@ export default function methode(ctx: ContexteSite): void {
       const a = page();
       const t = txt(unique(a, 'data-regle', 'non-candidats'));
       assert.ok(t.includes("qu'une fois leur statut relu") && t.includes('listées à part sur chaque page thème'), t);
-      assert.ok(t.includes('avec le motif, la date et la source'), t);
+      assert.ok(t.includes('avec le motif et la date') && t.includes('leur page donne la source'), t);
+      assert.ok(t.includes("pressentie n'a pas de mesure présentée"), t);
       assert.doesNotMatch(txt(a), /sur la page des candidats/);
       // Ce que la phrase annonce existe : la page thème de la fixture liste Luc avec son motif et une date.
       const theme = analyserHtml(ctx.lire(build().outDir, 'themes/logement/index.html'));

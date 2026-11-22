@@ -20,10 +20,10 @@ const ECARTES = ['nina-pressentie', 'paul-de-villefranche'];
 const SANS_MESURE = "Aucune mesure n'est présentée pour cette personnalité : les thèmes couvrent les candidatures déclarées et les candidatures à une primaire.";
 const STATUT_A_VERIFIER = "Aucune mesure n'est présentée pour cette personnalité tant que son statut est en cours de vérification.";
 const INTRO_CANDIDATS =
-  "Les personnalités du jeu de données dont le statut a été relu, par ordre alphabétique du nom, ou dans un ordre aléatoire si vous le choisissez ci-dessous. Le statut est celui de la dernière source consultée.";
+  "Les personnalités du jeu de données dont le statut a été relu, par ordre alphabétique du nom, ou dans un ordre aléatoire si vous le choisissez ci-dessous. Le statut affiché est le plus récent qui a été relu.";
 const NIVEAUX_HALL = [
   ['En bref', 'Une phrase par mesure.'],
-  ['En détail', 'Le coût annoncé, le calendrier, ce qui existe déjà dans la loi et la citation du programme.'],
+  ['En détail', 'Le coût annoncé, le calendrier, ce que le texte ne précise pas et la citation du programme.'],
   ['Pour les enfants', 'Des mots simples, avec les mots difficiles expliqués.'],
   ['Gros caractères', 'Un texte plus grand et les thèmes qui touchent souvent les retraités en premier.'],
 ];
@@ -284,7 +284,7 @@ export default function candidat(ctx: ContexteSite): void {
 
     it('/candidats/ : six lignes, Paul sans étiquette de parti, intro de preview', () => {
       const { arbre } = page(preview().outDir, 'candidats/index.html');
-      assert.ok(txt(arbre).includes("Toutes les personnalités du jeu de données, par ordre alphabétique du nom, ou dans un ordre aléatoire si vous le choisissez ci-dessous. Le statut est celui de la dernière source consultée."));
+      assert.ok(txt(arbre).includes("Toutes les personnalités du jeu de données, par ordre alphabétique du nom, ou dans un ordre aléatoire si vous le choisissez ci-dessous. Le statut affiché est le plus récent qui a été relu."));
       const lignes = trouver(arbre, (n) => n.tag === 'li' && n.attrs['data-rang'] !== undefined);
       assert.deepEqual(
         lignes.map((l) => lien(l, /./).attrs.href),

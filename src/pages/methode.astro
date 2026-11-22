@@ -89,7 +89,7 @@ const SEV: Record<string, string> = { erreur: 'erreur', avertissement: 'avertiss
     </p>
 
     <h2>D'où viennent les informations</h2>
-    <p>Une mesure n'est affichée que si elle s'appuie sur une source primaire, c'est-à-dire un texte publié par le candidat ou sa candidature, jamais un article de presse. Les sources acceptées sont : {typesSource.join(', ')}.</p>
+    <p>Une mesure n'est affichée que si elle s'appuie sur une source primaire, c'est-à-dire un texte publié par le candidat, sa candidature ou son parti, jamais un article de presse. Les sources acceptées sont : {typesSource.join(', ')}.</p>
     {/* Nom du lien « Copie archivée » aligné sur le bloc source compact (avant : « Copie archivée (Wayback Machine) »). */}
     <p>Chaque source porte la date à laquelle elle a été consultée. Une copie est conservée dans le dépôt du site, avec son empreinte SHA-256 pour prouver qu'elle n'a pas changé, dans la limite de {tailleArchive} Mio par fichier. Quand la capture a réussi, une copie existe aussi sur les archives Wayback Machine d'Internet Archive : le lien « Copie archivée » n'apparaît que dans ce cas. Une page qui publie des données personnelles de particuliers n'y est jamais envoyée. Le lien « Extrait archivé » mène au texte conservé dans le dépôt ; il affiche les 12 premiers caractères de l'empreinte, l'empreinte complète figure dans la fiche de la source du dépôt.</p>
     <div data-dataset>
@@ -113,7 +113,7 @@ const SEV: Record<string, string> = { erreur: 'erreur', avertissement: 'avertiss
       {PERIMETRE_EQUITE.map((code) => <li>{LIBELLES_STATUT[code]}</li>)}
     </ul>
     <p>Tous les candidats de ce périmètre reçoivent le même niveau de détail sur un thème publié.</p>
-    <p data-regle="non-candidats">Les personnes qui ne se présentent pas, ou dont la candidature n'est que pressentie, ne sont affichées qu'une fois leur statut relu ; elles sont alors listées à part sur chaque page thème, avec le motif, la date et la source.</p>
+    <p data-regle="non-candidats">Les personnes qui ne se présentent pas ne sont affichées qu'une fois leur statut relu ; elles sont alors listées à part sur chaque page thème, avec le motif et la date, et leur page donne la source. Une personne dont la candidature n'est que pressentie n'a pas de mesure présentée.</p>
 
     <h2>Neutralité</h2>
     <p>Les textes du site évitent les mots qui jugent. Ils ne comportent pas, par exemple : <span data-liste-mots-interdits>{motsInterdits}</span>.</p>
@@ -183,7 +183,7 @@ const SEV: Record<string, string> = { erreur: 'erreur', avertissement: 'avertiss
       <li>Certaines sources ne sont datées qu'au mois de leur capture.</li>
       <li>La mesure de lisibilité est un avertissement, pas un verdict.</li>
       <li>Safari, VoiceOver et NVDA n'ont pas été testés.</li>
-      <li>Les quatre versions de chaque mesure sont rédigées avec l'aide d'un outil d'intelligence artificielle (un modèle de langage). Avant publication, chaque version est comparée à la source archivée par un second agent d'intelligence artificielle, distinct du rédacteur ; les corrections sont elles-mêmes revérifiées, et l'éditeur tranche les cas douteux. Ce n'est pas une relecture humaine de chaque texte : une erreur reste possible et peut être signalée. Chaque mesure publiée indique qui l'a relue et à quelle date.</li>
+      <li>Les quatre versions de chaque mesure sont rédigées avec l'aide d'un outil d'intelligence artificielle (un modèle de langage). Avant publication, chaque version est comparée à la source archivée par un second agent d'intelligence artificielle, distinct du rédacteur ; les corrections sont elles-mêmes revérifiées, et l'éditeur fixe les règles de relecture et décide des cas qui lui sont soumis. Ce n'est pas une relecture humaine de chaque texte : une erreur reste possible et peut être signalée. Chaque mesure publiée indique qui l'a relue et à quelle date.</li>
       <li>La lecture croisée a été simulée par des agents, pas par de vrais lecteurs.</li>
       {heb.statut === 'prevu' && <li data-hebergeur="prevu">Cette version de test n'est pas encore en ligne.</li>}
     </ul>

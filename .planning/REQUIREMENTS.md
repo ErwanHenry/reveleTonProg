@@ -41,7 +41,7 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 
 ### Publication (contenu relu)
 
-- [ ] **PUB-01**: Erwan relit les mesures d'un thème avec une commande qui liste ce qui reste à relire et passe une mesure en `relu` en enregistrant relecteur et date
+- [x] **PUB-01** (atteinte par dérogation acceptée par Erwan le 2026-11-22 : la relecture est faite par un agent d'IA nommé sur chaque mesure, et non par Erwan, selon sa décision du 2026-11-17 et l'avenant signé à la note de risques ; l'outil et l'enregistrement du relecteur et de la date sont livrés): Erwan relit les mesures d'un thème avec une commande qui liste ce qui reste à relire et passe une mesure en `relu` en enregistrant relecteur et date
 - [x] **PUB-02**: Un thème entièrement relu pour tous les candidats de son périmètre est publié en production ; aucun brouillon n'y apparaît (garde d'équité et liste blanche de publication)
 - [x] **PUB-03**: Chaque mesure publiée affiche son relecteur et sa date de relecture
 - [x] **PUB-04**: Les sources citées par les mesures publiées ont toutes une copie Wayback, ou une exception motivée (données personnelles) acceptée par la règle
@@ -147,7 +147,7 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 | LEG-01 | Phase 9 | Complete |
 | LEG-02 | Phase 9 | Complete |
 | LEG-03 | Phase 9 | Complete |
-| PUB-01 | Phase 9 | Pending |
+| PUB-01 | Phase 9 | Complete (dérogation) |
 | PUB-02 | Phase 9 | Complete |
 | PUB-03 | Phase 9 | Complete |
 | PUB-04 | Phase 9 | Complete |

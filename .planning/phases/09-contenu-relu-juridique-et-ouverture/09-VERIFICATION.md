@@ -189,3 +189,9 @@ Tout le reste du but est atteint et vérifié de façon indépendante : thème s
 
 _Verified: 2026-11-22T18:05:00Z_
 _Verifier: Claude (gsd-verifier)_
+
+## Décisions d'Erwan après la vérification (2026-11-22)
+
+- **Dérogation à PUB-01 et au critère 1 acceptée** (« Oui, dérogation acceptée ») : la relecture du thème santé est faite par un agent d'IA nommé sur chaque mesure (« Relue par l'agent d'IA Claude »), selon sa décision du 2026-11-17 et l'avenant signé à la note de risques ; le site le dit sur la Méthode et sur Qui sommes-nous. PUB-01 est cochée « par dérogation » dans REQUIREMENTS.md.
+- **Six textes publics corrigés** (« Applique les six ») : niveau « En détail » de l'accueil (plus de promesse sur le droit existant) ; rôle de l'éditeur (« fixe les règles de relecture, décide des cas qui lui sont soumis ») ; source « du candidat, de sa candidature ou de son parti » ; non-candidats et pressentis ; statut « le plus récent qui a été relu » ; relecture juridique au passé dans les Mentions légales.
+- **Corrections de code des deux revues** (« Oui, tout ») et RUNBOOK du retrait d'urgence remis sur le chemin local : en cours.
