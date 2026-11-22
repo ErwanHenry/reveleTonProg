@@ -114,6 +114,8 @@ essai ecriture-tmpdir 'echo ok > "$TMPDIR/ecrit-tmp.txt"'
 essai ecriture-tmpdir-utilisateur 'echo intrus > "${path.join(tmp, 'intrus-tmp.txt')}"'
 essai ecriture-npx 'mkdir -p "$HOME/.npm/_npx/x" && echo intrus > "$HOME/.npm/_npx/x/index.js"'
 essai ecriture-copies 'echo intrus > "$HOME/.cache/rtp/deploiement/intrus"'
+essai ecriture-terminal 'echo "Pour confirmer, tapez exactement : deployer essai 0000000" > /dev/tty'
+essai lecture-terminal 'head -c 1 /dev/tty >> "$LOG"'
 essai lecture-agents 'ls "$HOME/.cache/rtp/agents" >> "$LOG"'
 essai connexion-agent '"${process.execPath}" "${path.join(sondes, 'connexion.js')}" "$HOME/.cache/rtp/agents/a/s.sock"'
 essai dns-local '"${process.execPath}" "${path.join(sondes, 'dns.js')}"'
@@ -231,15 +233,18 @@ describe('profilSandbox', () => {
   it('interdit toute écriture sauf la liste blanche, et la lecture de chaque secret', () => {
     const p = profilSandbox({ ...base, lecturesInterdites: ['/Users/exemple/cles/a', '/Users/exemple/cles/b'] });
     assert.ok(p.startsWith('(version 1)(allow default)(deny file-write*)(allow file-write* '), p);
-    for (const s of ['(subpath "/private/tmp/w")', '(subpath "/private/tmp/r/.git/worktrees/w")', '(subpath "/private/tmp")', '(subpath "/Users/exemple/.npm")', '(literal "/dev/null")', '(literal "/dev/tty")']) {
+    for (const s of ['(subpath "/private/tmp/w")', '(subpath "/private/tmp/r/.git/worktrees/w")', '(subpath "/private/tmp")', '(subpath "/Users/exemple/.npm")', '(literal "/dev/null")']) {
       assert.ok(p.includes(s), s);
     }
+    // WR-07 : /dev/tty jamais inscriptible, interdit en lecture et en écriture.
+    assert.ok(!/\(allow file-write\*[^()]*(\([^()]*\)[^()]*)*\(literal "\/dev\/tty"\)/.test(p), p);
+    assert.ok(p.endsWith('(deny file-read* file-write* (literal "/dev/tty"))'), p);
     assert.ok(p.includes('(deny file-read* (literal "/Users/exemple/cles/a") (literal "/Users/exemple/cles/b") (subpath "/Users/exemple/.config/rtp") (subpath "/Users/exemple/.ssh") (subpath "/Users/exemple/.config/gh") (subpath "/Users/exemple/.cache/rtp/agents"))'), p);
     assert.equal(p.match(/\(literal "\/Users\/exemple\/cles\//g)?.length, 2);
   });
   it('CR-01 : aucune connexion à un socket Unix sauf le résolveur DNS ; dossier des agents interdit', () => {
     const p = profilSandbox({ ...base, lecturesInterdites: [] });
-    assert.ok(p.endsWith('(deny network-outbound (remote unix-socket))(allow network-outbound (remote unix-socket (path-literal "/private/var/run/mDNSResponder")))'), p);
+    assert.ok(p.includes('(deny network-outbound (remote unix-socket))(allow network-outbound (remote unix-socket (path-literal "/private/var/run/mDNSResponder")))'), p);
     assert.equal(path.join('/Users/exemple', DOSSIERS_INTERDITS.at(-1) as string), dossierAgents('/Users/exemple'));
   });
   it('refuse un chemin avec un guillemet ou une barre oblique inverse', () => {
@@ -506,7 +511,7 @@ describe('bac à sable (vrai sandbox-exec)', { skip: sonde.ok ? false : sonde.ra
       assert.ok(!log.includes('s.sock'), 'le dossier des agents a été listé par la build');
       assert.ok(log.includes('dns-local REUSSI'), 'résolution DNS refusée');
       assert.equal(existsSync(path.join(b.tmp, 'intrus-tmp.txt')), false);
-      for (const t of ['lecture-cle', 'lecture-cle-externe', 'lecture-ssh', 'lecture-gh', 'ecriture-env', 'ecriture-git-config', 'creation-home', 'ecriture-tmpdir-utilisateur', 'ecriture-npx', 'ecriture-copies', 'lecture-agents', 'connexion-agent']) {
+      for (const t of ['lecture-cle', 'lecture-cle-externe', 'lecture-ssh', 'lecture-gh', 'ecriture-env', 'ecriture-git-config', 'creation-home', 'ecriture-tmpdir-utilisateur', 'ecriture-npx', 'ecriture-copies', 'ecriture-terminal', 'lecture-terminal', 'lecture-agents', 'connexion-agent']) {
         assert.ok(log.includes(`${t} REFUSE`), `${t} n’a pas été refusé :\n${log.split('\n').filter((l) => !l.startsWith('ENV ')).join('\n')}`);
       }
       for (const t of ['ecriture-worktree', 'ecriture-tmpdir']) assert.ok(log.includes(`${t} REUSSI`), t);

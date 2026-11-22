@@ -88,12 +88,16 @@ const RESOLVEUR = '/private/var/run/mDNSResponder';
  */
 export function profilSandbox(o: OptionsProfil): string {
   const ecriture = [o.worktree, o.gitWorktreeDir, o.tmpdir, o.cacheNpm].map((p) => `(subpath "${cheminProfil(p)}")`);
-  ecriture.push('(literal "/dev/null")', '(literal "/dev/tty")');
+  // WR-07 (revue de la phase 9.2) : /dev/tty n'est plus inscriptible ; il est même interdit en lecture et en écriture
+  // plus bas. Avec la session propre de chaque étape (sans terminal de contrôle), un processus de la build ne peut ni
+  // écrire de fausses lignes d'écran, ni injecter de frappes (TIOCSTI) pendant la confirmation.
+  ecriture.push('(literal "/dev/null")');
   const lecture = o.lecturesInterdites.map((p) => `(literal "${cheminProfil(p)}")`);
   for (const rel of DOSSIERS_INTERDITS) lecture.push(`(subpath "${cheminProfil(path.join(o.home, rel))}")`);
   return (
     `(version 1)(allow default)(deny file-write*)(allow file-write* ${ecriture.join(' ')})(deny file-read* ${lecture.join(' ')})` +
-    `(deny network-outbound (remote unix-socket))(allow network-outbound (remote unix-socket (path-literal "${RESOLVEUR}")))`
+    `(deny network-outbound (remote unix-socket))(allow network-outbound (remote unix-socket (path-literal "${RESOLVEUR}")))` +
+    '(deny file-read* file-write* (literal "/dev/tty"))'
   );
 }
 
