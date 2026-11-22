@@ -588,6 +588,22 @@ describe('après l\'activation : vérifications et retour automatique (WR-01, IN
     sansWorktree(b);
   });
 
+  it('IN-03 : erreur autre qu\'une Sortie après l\'activation (ENOSPC simulé) : retour automatique, code 4', { skip: !BASCULE && RAISON_MV }, async () => {
+    const b = banc();
+    await mettreEnLigne(b, b.P);
+    recuVert(b);
+    const { code, texte } = await deployer(b, {}, {
+      ...confirmateur(phrase(b)),
+      apresActivation: () => {
+        throw Object.assign(new Error('ENOSPC: no space left on device, mkdtemp'), { code: 'ENOSPC' });
+      },
+    });
+    assert.equal(code, 4, texte);
+    assert.match(texte, /ENOSPC/);
+    assert.equal(await courant(b), b.P);
+    assert.ok(journal(b).some((l) => l.action === 'retour-auto' && l.resultat === 'succes'));
+  });
+
   it('CSP absente : retour automatique, code 4', { skip: !BASCULE && RAISON_MV }, async () => {
     const b = banc();
     await mettreEnLigne(b, b.P);

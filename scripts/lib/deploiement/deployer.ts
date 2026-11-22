@@ -517,8 +517,9 @@ export async function executerDeploiement(o: OptionsDeploiement, ctx: ContexteDe
         ecrire('En-têtes Strict-Transport-Security et Content-Security-Policy présents');
       }
     } catch (e) {
-      if (!(e instanceof Sortie) && !(e instanceof Interruption)) throw e;
-      const raison = e instanceof Interruption ? e.message : masquer(e.message, c0);
+      // IN-03 (revue de la phase 9.2) : toute erreur levée après l'activation (ENOSPC de versionServie, erreur de
+      // programmation), pas seulement une Sortie, passe par le retour automatique, comme failure() dans ci.yml.
+      const raison = e instanceof Interruption ? e.message : masquer(e instanceof Error ? e.message : String(e), c0);
       // Un activer encore en vol est attendu (son délai est borné) : le retour ne doit pas le précéder.
       const issueActiver: unknown = activerEnCours === null ? null : await activerEnCours.then(() => null, (x: unknown) => x);
       // WR-01 : un refus net du verbe activer n'a rien activé : ni retour automatique, ni « version incertaine ».
