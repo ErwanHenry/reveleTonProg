@@ -290,6 +290,23 @@ describe('appels au serveur hors d\'atteinte des signaux du terminal (WR-04)', (
   });
 });
 
+describe('adresse IPv6 (IN-06)', () => {
+  it('RTP_HOTE en IPv6 : entre crochets dans la destination de rsync, telle quelle pour un verbe ssh', async () => {
+    const b = banc();
+    const cfg = { ...b.cfg, hote: '2001:db8::7' };
+    const vus: string[][] = [];
+    const espion: Lanceur = async (l) => {
+      vus.push(l.args);
+      if (l.args[0] === '--version') return lancerReel(l);
+      return { code: 0, signal: null, stdout: 'etat cible=essai courant=aucun versions=0 libre_mio=1\n', stderr: '', dureeMs: 1, delaiDepasse: false };
+    };
+    await envoyer(cfg, b.agent, b.exe, dist(sha(9)), 'essai', sha(9), espion);
+    assert.equal(vus.at(-1)?.at(-1), `${UTILISATEUR_FACTICE}@[2001:db8::7]:essai/${sha(9)}/`);
+    await appelerVerbe(cfg, b.agent, b.exe, 'etat', ['essai'], espion);
+    assert.ok(vus.at(-1)?.includes(`${UTILISATEUR_FACTICE}@2001:db8::7`), String(vus.at(-1)));
+  });
+});
+
 describe('versionServie (faux curl)', () => {
   it('mot de passe sur l\'entrée standard de curl seulement ; commit et en-têtes lus', async () => {
     const b = banc();

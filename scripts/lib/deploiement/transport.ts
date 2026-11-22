@@ -243,9 +243,11 @@ export async function envoyer(
   // rsync découpe -e sur les blancs : un chemin qui en contient changerait les options passées à ssh.
   if (transport.some((m) => /\s/.test(m))) throw new Sortie(2, 'chemin avec espace dans la commande ssh de rsync : refusé');
 
+  // IN-06 (revue de la phase 9.2) : une adresse IPv6 doit être entre crochets pour rsync (user@[2001:db8::1]:chemin).
+  const hote = cfg.hote.includes(':') ? `[${cfg.hote}]` : cfg.hote;
   const r = await lancer({
     commande: rsync,
-    args: ['-rt', '--stats', '-e', transport.join(' '), `${dist.replace(/\/+$/, '')}/`, `${cfg.utilisateur}@${cfg.hote}:${cible}/${sha}/`],
+    args: ['-rt', '--stats', '-e', transport.join(' '), `${dist.replace(/\/+$/, '')}/`, `${cfg.utilisateur}@${hote}:${cible}/${sha}/`],
     cwd: '/',
     env: envDeBase(),
     delaiMs: 15 * MIN,
