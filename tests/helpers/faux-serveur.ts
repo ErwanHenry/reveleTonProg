@@ -8,8 +8,10 @@
 //   base/    RTP_BASE de la vraie commande forcée ops/commande-deploiement.sh.
 // Le faux ssh saute les options -F, -i, -o, prend <utilisateur>@<hôte> puis la commande, pose SSH_ORIGINAL_COMMAND
 // et lance la vraie commande forcée avec bash, dans un environnement vidé (env -i). Le faux rsync se présente en
-// rsync 3 (ou en openrsync), refuse -l, -a et --chmod, puis passe par le faux ssh avec la commande serveur
-// « rsync --server -r -t --dirs . <cible>/<sha>/ » : l'envoi traverse donc les filtres de la commande forcée, et le
+// rsync 3 (ou en openrsync), refuse -l, -a et --chmod, puis passe par le faux ssh avec la commande serveur que le
+// vrai rsync 3.5.2 de Homebrew envoie (capturée sans réseau avec un faux ssh, IN-07 de la revue de la phase 9.2) :
+// « -l <utilisateur> <hôte> rsync --server -tre.iLsfxCIvu --stats . <cible>/<sha>/ » ; en openrsync, l'ancienne
+// forme « <utilisateur>@<hôte> rsync --server -r -t --dirs . <cible>/<sha>/ ». L'envoi traverse donc les filtres de la commande forcée, et le
 // faux rrsync copie l'arbre dans incoming/. Le faux curl sert current/version.json de la cible et des en-têtes
 // réglables ; la ligne « user = … » reçue sur son entrée standard est gardée à part, hors des journaux.
 // Valeurs factices seulement : serveur.exemple.invalid, deploy-factice, https://essai.exemple.invalid.
@@ -159,7 +161,7 @@ exit 0
 ${journal('ssh')}
 while [ $# -gt 0 ]; do
   case "$1" in
-    -F|-i|-o) shift 2 ;;
+    -F|-i|-o|-l) shift 2 ;;
     -*) echo "ssh factice : option inattendue $1" >&2; exit 255 ;;
     *) break ;;
   esac
@@ -206,7 +208,8 @@ done
 case "$SRC" in */) ;; *) echo "rsync factice : source sans barre finale" >&2; exit 1 ;; esac
 FAUX_RSYNC_SOURCE=\${SRC%/}
 export FAUX_RSYNC_SOURCE
-$E "\${DEST%%:*}" rsync --server -r -t --dirs . "\${DEST#*:}" || exit $?
+${o.rsync === 'openrsync' ? `$E "\${DEST%%:*}" rsync --server -r -t --dirs . "\${DEST#*:}" || exit $?` : `QUI=\${DEST%%:*}
+$E -l "\${QUI%%@*}" "\${QUI#*@}" rsync --server -tre.iLsfxCIvu --stats . "\${DEST#*:}" || exit $?`}
 N=$(find "$FAUX_RSYNC_SOURCE" -type f | wc -l | tr -d ' ')
 echo "Number of files: $N"
 echo "Total transferred file size: 1 bytes"

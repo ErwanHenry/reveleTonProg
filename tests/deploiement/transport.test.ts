@@ -222,6 +222,8 @@ describe('envoyer et activer (faux serveur)', () => {
       assert.ok(ssh.includes(opt), opt);
     }
     assert.deepEqual(ssh.slice(ssh.indexOf('/dev/null') - 1, ssh.indexOf('/dev/null') + 1), ['-F', '/dev/null']);
+    // IN-07 : la commande serveur du vrai rsync 3 (3.5.2) a traversé les filtres de la vraie commande forcée.
+    assert.deepEqual(ssh.slice(-9), ['-l', UTILISATEUR_FACTICE, HOTE_FACTICE, 'rsync', '--server', '-tre.iLsfxCIvu', '--stats', '.', `essai/${s}/`]);
   });
 
   it('envoyer puis activer : courant = sha ; retour après deux activations donne la précédente', { skip: !BASCULE && RAISON_MV }, async () => {
