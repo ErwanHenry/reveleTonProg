@@ -5,7 +5,8 @@ Ce dossier contient ce qui sert à faire lire le site par des agents qui jouent 
 ## Contenu
 
 - `personas/` : un brief par lecteur simulé. C'est la seule chose donnée à l'agent testé.
-- `journal.jsonl` : écrit uniquement par `scripts/audit-lire.ts`, une ligne par lecture. Il est créé lors de la passe d'audit.
+- `journal.jsonl` : écrit uniquement par `scripts/audit-lire.ts`, une ligne par lecture : passe du 22 novembre 2026 sur la build en ligne.
+- `journal-2026-11-04.jsonl` : journal de la première passe (4 novembre 2026, build locale), gardé comme historique et jamais modifié.
 
 Le scénario, les résultats attendus et la grille de notation sont dans `docs/AUDIT-TEST-CROISE.md`. Ils ne sont jamais donnés aux agents testés.
 

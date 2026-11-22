@@ -326,6 +326,28 @@ describe('docs/AUDIT-TEST-CROISE.md (QUAL-06)', () => {
       assert.equal(Object.keys(o).sort().join(), 'chemin,horodatage,niveau,octets,persona,sha256', `ligne ${i + 1}`);
     }
   });
+
+  // DETTE-04 (plan 09-13) : passe refaite sur la build réellement en ligne ; le journal de la première passe est gardé.
+  it('passe sur la build en ligne : section, commit de 40 caractères, empreinte de 64, preuves d’identité', () => {
+    const debut = audit.indexOf('## Passe du 22 novembre 2026 : build en ligne');
+    assert.ok(debut >= 0, 'section de la passe sur la build en ligne absente');
+    const section = audit.slice(debut, audit.indexOf('\n## ', debut + 1));
+    assert.match(section, /`[0-9a-f]{40}`/, 'commit complet absent');
+    assert.match(section, /`[0-9a-f]{64}`/, 'empreinte complète absente');
+    assert.ok(section.includes('audit-lire.ts --dist'), 'commande de l’empreinte absente');
+    assert.ok(section.includes('0 différence'), 'preuve d’identité avec les pages servies absente');
+    assert.ok(section.includes('audit/journal-2026-11-04.jsonl'), 'renvoi au journal de la première passe absent');
+  });
+
+  it('audit/journal-2026-11-04.jsonl : 131 lignes à 6 clés ; le journal courant nomme les trois personas', () => {
+    const ancien = read('audit/journal-2026-11-04.jsonl').trim().split('\n');
+    assert.equal(ancien.length, 131);
+    for (const [i, l] of ancien.entries()) {
+      assert.equal(Object.keys(JSON.parse(l) as Record<string, unknown>).sort().join(), 'chemin,horodatage,niveau,octets,persona,sha256', `ligne ${i + 1}`);
+    }
+    const personas = new Set(read('audit/journal.jsonl').trim().split('\n').map((l) => (JSON.parse(l) as { persona: string }).persona));
+    for (const p of ['enfant-10-ans', 'retraite-72-ans', 'journaliste']) assert.ok(personas.has(p), `persona ${p} absente du journal courant`);
+  });
 });
 
 /** Texte d'un ADR : de son titre au titre `### ` suivant (ou à la section `## ` suivante). */

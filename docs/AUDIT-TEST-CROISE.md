@@ -2,6 +2,52 @@
 
 Protocole de l'audit où des agents jouent trois lecteurs (un enfant de 10 ans, un retraité de 72 ans, un journaliste) sur une build locale du site. Ce document est écrit et committé avant toute passe : le scénario, les résultats attendus et les critères de notation sont fixés ici, puis les résultats sont ajoutés dans les sections prévues à cet effet.
 
+## Passe du 22 novembre 2026 : build en ligne
+
+Passe refaite sur la build réellement servie au public après l'ouverture du site (DETTE-04, plan 09-13). La copie lue est prise sur le serveur, pas reconstruite.
+
+| Élément | Valeur |
+|---|---|
+| Date | 2026-11-22 |
+| Commit servi à la fin de la passe | `5088ded8066dcb430e87f1dc6c5cd30ad715cb25` |
+| Hôte | site public (domaine de `config/site.yml`), mode production (`RTP_DEPLOIEMENT=1`), déployé depuis le Mac par Erwan (`npm run deploy:local`) |
+| Empreinte de la build en ligne (`audit-lire.ts --dist <copie> --empreinte`) | `8f7fce757ef02b1121d66afae127f1c46a531d68f82e163c905e4920591f836c` |
+| Preuve d'identité avec le serveur | empreinte de l'arbre de `/srv/reveletonprog/current` et de la copie : `13d67e47f73d07bb5f0d2750f041afbe710c90afbf030cb197409d3cf4fd61fe` des deux côtés (aussi l'empreinte de la build de déploiement) |
+| Preuve d'identité avec ce qui est servi | 49 fichiers `.html`, `.txt`, `.xml`, `.json` et `.ico` de la copie comparés au corps servi : 0 différence |
+| Première lecture (avant corrections) | commit `4613f196f4798bf395c3c9d005b5e15a70be8bff`, empreinte `e08e5ae9dbc70e2d1435612d87da184d67f2d3debd7b1eb66ca9a5afc58ffa6b`, mêmes preuves (arbre `11250972…`, 49 fichiers, 0 différence) |
+| Lecteurs simulés | Sonnet 5.5 (`claude-sonnet-5-5`), un agent par persona, puis un agent neuf par question rejouée |
+| Journal | `audit/journal.jsonl` : lignes 1 à 20 sur `4613f19`, lignes 21 à 46 (rejeu) sur `5088ded` ; la passe du 4 novembre est dans `audit/journal-2026-11-04.jsonl` |
+
+**Adaptations du scénario.** La build en ligne n'ouvre qu'un thème et n'affiche que les personnes au statut relu (D-06). Journaliste 4 portait sur la mesure piège de la build de démonstration : rejoué sur la build en ligne sous la forme « le site montre-t-il des mesures d'un thème non publié ? ». Journaliste 5 (pressentis et renoncements) : ces personnes ne sont pas affichées en production ; la question porte sur la façon dont leur absence est dite. Aucune étape n'est supprimée.
+
+| Persona | Question | Note | Bloquant | Appui |
+|---|---|---|---|---|
+| `enfant-10-ans` | 1. Proposition santé reformulée | OK | oui | Reformule la mesure d'Édouard Philippe sur la santé à l'école sans chiffre absent de la source. |
+| `enfant-10-ans` | 2. Mots difficiles expliqués | Partiel | oui | Définitions trouvées dans le texte enfant et « Mots expliqués (19) » ; les titres de mesure et quelques termes restent sans définition (constat S1 de la passe précédente, toujours ouvert). |
+| `enfant-10-ans` | 3. Phrases faciles | OK | oui | Phrases courtes ; quelques textes lourds (Roussel, Retailleau), aucune phrase de plus de 15 mots signalée par le validateur. |
+| `enfant-10-ans` | 4. Qui a écrit ça | Partiel, puis OK au rejeu | non | Première lecture : contradiction entre « Qui sommes-nous » (« L'éditeur relit chaque version ») et « Relue par l'agent d'IA Claude ». Rejeu sur `5088ded` : cite « Ce n'est pas une relecture humaine de chaque texte ». |
+| `retraite-72-ans` | 1. Santé en premier | OK (rejeu) | oui | Première lecture coupée par la longueur de la page (outil) ; rejeu par tranches : encadré « Ce qui me concerne », décompte 27, 3, 7. |
+| `retraite-72-ans` | 2. Source et date | OK (rejeu) | oui | Mesure de Bernard Cazeneuve : source primaire, « Consultée le 4 novembre 2026 », copie archivée, citation exacte. |
+| `retraite-72-ans` | 3. À qui écrire | OK | oui | Contact du domaine sur « Qui sommes-nous » et dans les Mentions légales ; « Signaler une erreur » sous chaque mesure. |
+| `retraite-72-ans` | 4. Lisible sans options | Partiel | non | Texte lisible sans script ; page santé longue, Méthode technique. |
+| `journaliste` | 1. Citation contre archive | Partiel | oui | Citation, source, date et liens trouvés ; l'extrait et la copie sont hors du lecteur, empreinte affichée tronquée (constats S3 et O2 toujours ouverts). |
+| `journaliste` | 2. Case vide expliquée | OK | oui | 7 « Programme non publié à ce jour », 3 « Non précisé dans les sources consultées », sources listées pour ces trois-là ; 27 + 3 + 7 = 37. |
+| `journaliste` | 3. Thèmes pilotes, écart 59 et 51 | OK | oui | Règle de la marge et départage trouvés ; écart « constaté, il n'est pas expliqué ». |
+| `journaliste` | 4. Mesures d'un thème non publié | OK | oui | Seul le thème santé est en ligne ; `/themes/travail/` absent. |
+| `journaliste` | 5. Pressentis et renoncements | KO, puis OK au rejeu | oui | Première lecture : la Méthode promettait une liste à part sur chaque page thème, absente en production. Rejeu sur `5088ded` : la phrase dit qu'elles ne sont affichées qu'une fois leur statut relu ; l'absence est dite sur `/candidats/` et la Méthode. |
+
+Bilan : 13 questions, 0 KO à la fin (1 KO corrigé et rejoué), 3 Partiel dont 2 sur des tests bloquants (enfant 2, journaliste 1, causes déjà connues de la passe du 4 novembre). Pièges §12 rejoués : 7 sur 7 rejetés (`tests/pieges/pieges.test.ts`, 63 tests, 0 échec). Aucune marque de brouillon ni lien vers un thème non publié dans la build en ligne.
+
+**Corrigé et redéployé pendant la passe** (textes validés par Erwan le 2026-11-22, commit `df62296`) : « Qui sommes-nous » disait que l'éditeur relit chaque version ; la Méthode situait la mesure 4G sur l'adresse de test protégée ; la Méthode promettait la liste des personnes qui ne se présentent pas sur chaque page thème.
+
+**Constats pour Erwan (contenu et spécification, rien modifié).** Cases « Programme non publié » sans source citée ; mesures du thème santé surtout tournées vers l'emploi (Arthaud, Labib, Kazib, Collovati) ; départage du choix des thèmes qui retient santé avec moins de positions fortes ; « Son parti veut… » sans nom au niveau enfant ; titres de mesure difficiles ; date de publication des sources non affichée (seule la consultation l'est) ; trois liens de source aux noms proches ; page santé longue ; page Méthode trop technique pour l'enfant et le retraité ; « Qui sommes-nous » sans version simple ; l'accueil ne dit pas que les textes sont rédigés avec une IA.
+
+**Outil.** O3 (pages longues coupées) toujours vrai : la page santé fait plus de 120 Ko de texte ; le rejeu a dû la lire par tranches. Une option qui restreint la sortie à un candidat reste à faire.
+
+Verdict de cette passe : la build en ligne tient ses règles bloquantes (aucun KO à la fin, 7 pièges sur 7), avec deux Partiel bloquants déjà connus. Les trois affirmations fausses trouvées ont été corrigées le jour même.
+
+Ancienne passe : son journal est désormais `audit/journal-2026-11-04.jsonl`.
+
 ## Passe du 4 novembre 2026
 
 | Élément | Valeur |
