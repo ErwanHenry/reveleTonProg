@@ -43,7 +43,7 @@ test.beforeEach(async () => {
   avantReel = empreinteReelle();
   c = corpusRelecture();
   expect(path.relative(REPO_ROOT, c.racine).startsWith('..')).toBe(true); // copie hors du dépôt
-  serveur = creerServeurRelecture({ racine: c.racine, schemasDir: SCHEMAS_DIR, theme: 'logement', maintenant: () => new Date('2026-11-20T10:00:00Z') });
+  serveur = creerServeurRelecture({ racine: c.racine, schemasDir: SCHEMAS_DIR, theme: 'logement', relecteur: 'Erwan Henry', maintenant: () => new Date('2026-11-20T10:00:00Z') });
   await new Promise<void>((ok) => serveur.listen(0, '127.0.0.1', ok));
   const a = serveur.address() as AddressInfo;
   expect(a.address).toBe('127.0.0.1');

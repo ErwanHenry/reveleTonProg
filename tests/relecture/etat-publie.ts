@@ -58,7 +58,7 @@ export function themePret(c: CorpusRelecture): void {
     const cibles = [...cand.mesures, ...(cand.statut ? [cand.statut] : []), ...(cand.case ? [cand.case] : [])];
     for (const t of cibles) {
       const args = t.type === 'mesure' ? ['mesure', t.id] : t.type === 'statut' ? ['statut', t.candidat] : ['case', t.theme, t.candidat];
-      const r = c.lancer('marquer', ...args, '--date', DATE);
+      const r = c.lancer('marquer', ...args, '--date', DATE, '--relecteur', 'Erwan Henry');
       if (r.code !== 0) throw new Error(`marquer ${args.join(' ')} : ${r.stderr}`);
     }
   }

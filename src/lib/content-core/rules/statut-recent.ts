@@ -13,7 +13,7 @@ import type { CorpusRule, Finding } from './types.ts';
 // brouillon (D-07). C'est la même asymétrie de sévérité que celle de l'ADR-060. La définition du statut retenu est
 // unique (equite.ts, ADR-041) : on l'importe, on ne la recopie pas.
 //
-// Cette règle ne corrige rien : relire le statut (`npm run relecture -- marquer statut <candidat>`) reste un geste
+// Cette règle ne corrige rien : relire le statut (`npm run relecture -- marquer statut <candidat> --relecteur <nom>`) reste un geste
 // de l'éditeur. Elle ne dit rien d'une personne sans aucun statut relu (nouvelle personne : invisible en production,
 // les pièges D-05 s'en occupent), ni d'une entrée non relue plus ancienne que le statut relu.
 

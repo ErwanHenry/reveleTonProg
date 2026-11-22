@@ -13,7 +13,7 @@ import { createServer } from 'node:http';
 import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 import { EditionRefusee } from './editer.ts';
 import { marquer, aujourdhuiParis } from './commandes/marquer.ts';
-import { RELECTEUR_DEFAUT, RE_SEGMENT, analyserCible, chargerCorpus, nomCible } from './etat.ts';
+import { RE_SEGMENT, analyserCible, chargerCorpus, nomCible } from './etat.ts';
 import type { Alerte, Chargeur, Cible, Contexte, EtatRelu } from './etat.ts';
 import { RegistreInvalide, ajouterNote, texteNoteValide } from './registre.ts';
 import type { LigneNote } from './registre.ts';
@@ -28,6 +28,8 @@ export interface OptionsServeurRelecture {
   racine: string;
   schemasDir: string;
   theme: string;
+  /** Nom écrit par chaque « Valider » (relecteur, verifie_par) ; obligatoire, aucun défaut (revue de la phase 9, WR-02). */
+  relecteur: string;
   /** Jeton anti-CSRF ; par défaut 32 octets aléatoires en hexadécimal, nouveau à chaque lancement. */
   jeton?: string;
   maintenant?: () => Date;
@@ -223,7 +225,7 @@ ${f.mesures.length === 0 ? '<p>Aucune mesure dans ce thème.</p>' : f.mesures.ma
   );
 }
 
-function pageResume(r: Resume): string {
+function pageResume(r: Resume, relecteur: string): string {
   const lignes = r.candidats
     .map(
       (c) =>
@@ -233,6 +235,7 @@ function pageResume(r: Resume): string {
   return page(
     `Relecture du thème ${r.theme}`,
     `<h1>Relecture du thème ${echapper(r.theme)}</h1>
+<p>Chaque validation est signée : <strong>${echapper(relecteur)}</strong>.</p>
 <p><strong>reste ${r.reste} sur ${r.total}</strong> (à relire ${r.a_relire}, à revoir ${r.a_revoir}, relu ${r.relu}, notes ouvertes ${r.notes_ouvertes})</p>
 <table>
 <thead><tr><th scope="col">Candidat</th><th scope="col">À relire</th><th scope="col">À revoir</th><th scope="col">Relu</th><th scope="col">Notes ouvertes</th></tr></thead>
@@ -436,7 +439,7 @@ export function creerGestionnaire(options: OptionsServeurRelecture): Gestionnair
       let code: number;
       try {
         const deps = charger === undefined ? { ctx } : { ctx, charger };
-        code = marquer(c.cible, { relecteur: RELECTEUR_DEFAUT, date: aujourdhuiParis(maintenant()), malgreNote: false, horsPerimetre: false }, deps);
+        code = marquer(c.cible, { relecteur: options.relecteur, date: aujourdhuiParis(maintenant()), malgreNote: false, horsPerimetre: false }, deps);
       } catch (e) {
         if (e instanceof EditionRefusee || e instanceof RegistreInvalide) {
           code = 1;
@@ -508,7 +511,7 @@ export function creerGestionnaire(options: OptionsServeurRelecture): Gestionnair
       return;
     }
     if (m === null) {
-      envoyer(res, 200, pageResume(resume(racine, schemasDir, theme, { corpus: corpus() })));
+      envoyer(res, 200, pageResume(resume(racine, schemasDir, theme, { corpus: corpus() }), options.relecteur));
       return;
     }
     let id: string;

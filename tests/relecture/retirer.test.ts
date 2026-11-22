@@ -59,8 +59,8 @@ describe('relecture retirer (corpus M1 temporaire, logement publié)', () => {
     const r = lancer(c, { type: 'mesure', id: 'elise-erard/guichet-unique' });
     assert.equal(r.code, 1);
     assert.match(r.erreur, /EQUITE_COUVERTURE_INCOHERENTE/);
-    assert.match(r.erreur, /retirer elise-erard\/guichet-unique --case non_precise --sources programme-commun-fictif$/m);
-    assert.match(r.erreur, /retirer elise-erard\/guichet-unique --case programme_non_publie$/m);
+    assert.match(r.erreur, /retirer elise-erard\/guichet-unique --case non_precise --sources programme-commun-fictif --relecteur "Erwan Henry"$/m);
+    assert.match(r.erreur, /retirer elise-erard\/guichet-unique --case programme_non_publie --relecteur "Erwan Henry"$/m);
     assert.deepEqual(c.arbre(), avant);
   });
 
@@ -161,7 +161,7 @@ describe('relecture retirer (outil en ligne de commande)', () => {
     const c = corpusRelecture();
     const avant = c.arbre();
     for (const args of [[], ['../x/y'], ['a/b', '--zzz'], ['a/b', '--case', 'non_precise'], ['a/b', '--case', 'x'], ['a/b', '--sources', 'x'], ['--theme', 'logement', 'a/b'], ['--theme', '../x']]) {
-      assert.equal(c.lancer('retirer', ...args).code, 2, args.join(' '));
+      assert.equal(c.lancer('retirer', ...args, '--relecteur', 'Erwan Henry').code, 2, args.join(' '));
     }
     assert.deepEqual(c.arbre(), avant);
   });
@@ -169,13 +169,13 @@ describe('relecture retirer (outil en ligne de commande)', () => {
   it('en ligne de commande (--root) : dry-run sans écriture, puis retrait réel d’une mesure', () => {
     const c = corpusRelecture();
     const avant = c.arbre();
-    const seche = c.lancer('retirer', 'marie-fictive/aide-construction', '--dry-run');
+    const seche = c.lancer('retirer', 'marie-fictive/aide-construction', '--dry-run', '--relecteur', 'Erwan Henry');
     assert.equal(seche.code, 0, seche.stderr);
     assert.match(seche.stdout, /essai à blanc/);
     assert.deepEqual(c.arbre(), avant);
-    const r = c.lancer('retirer', 'marie-fictive/aide-construction');
+    const r = c.lancer('retirer', 'marie-fictive/aide-construction', '--relecteur', 'Erwan Henry');
     assert.equal(r.code, 0, r.stderr);
     assert.deepEqual(modifies(avant, c.arbre()), [MESURE_MARIE_1]);
-    assert.equal(c.lancer('retirer', 'marie-fictive/aide-construction').code, 1);
+    assert.equal(c.lancer('retirer', 'marie-fictive/aide-construction', '--relecteur', 'Erwan Henry').code, 1);
   });
 });

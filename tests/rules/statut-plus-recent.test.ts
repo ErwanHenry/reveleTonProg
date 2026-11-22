@@ -165,7 +165,7 @@ describe('D-08 option B : l’avertissement ne bloque jamais (corpus M1 temporai
     assert.equal(avertissements(valider(c.racine, 'production').stdout).length, 1, 'retirer ne règle pas la cause');
 
     // marquer n’est pas bloqué non plus, et relire l’entrée de Luc fait disparaître l’avertissement.
-    const luc = c.lancer('marquer', 'statut', 'luc-retire', '--hors-perimetre');
+    const luc = c.lancer('marquer', 'statut', 'luc-retire', '--hors-perimetre', '--relecteur', 'Erwan Henry');
     assert.equal(luc.code, 0, luc.stderr);
     assert.deepEqual(avertissements(valider(c.racine, 'production').stdout), []);
   });
@@ -207,7 +207,7 @@ describe('D-08 option B : l’avertissement ne bloque jamais (corpus M1 temporai
     assert.equal(avertissements(valider(c.racine, 'production').stdout).length, 1, 'retirer ne règle pas la cause');
 
     const avant = c.lire(LUC);
-    const refus = c.lancer('marquer', 'statut', 'luc-retire', '--date', '2026-11-30');
+    const refus = c.lancer('marquer', 'statut', 'luc-retire', '--date', '2026-11-30', '--relecteur', 'Erwan Henry');
     assert.equal(refus.code, 1, refus.stdout + refus.stderr);
     assert.match(refus.stdout + refus.stderr, /EQUITE_CANDIDAT_MANQUANT/);
     assert.match(refus.stdout + refus.stderr, /fichier restauré/);
@@ -215,7 +215,7 @@ describe('D-08 option B : l’avertissement ne bloque jamais (corpus M1 temporai
     assert.equal(avertissements(valider(c.racine, 'production').stdout).length, 1);
 
     for (const f of COUVERTURES) c.ecrire(f, c.lire(f) + caseLuc);
-    const ok = c.lancer('marquer', 'statut', 'luc-retire', '--date', '2026-11-30');
+    const ok = c.lancer('marquer', 'statut', 'luc-retire', '--date', '2026-11-30', '--relecteur', 'Erwan Henry');
     assert.equal(ok.code, 0, ok.stdout + ok.stderr);
     const fin = valider(c.racine, 'production');
     assert.equal(fin.status, 0, fin.stdout + fin.stderr);

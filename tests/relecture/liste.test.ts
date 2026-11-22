@@ -42,7 +42,7 @@ describe('relecture liste (CLI, corpus M1 temporaire)', () => {
   });
 
   it('après marquer : relu ; après une modification du texte relu : à revoir', () => {
-    assert.equal(c.lancer('marquer', 'mesure', 'elise-erard/guichet-unique', '--date', '2026-11-20').code, 0);
+    assert.equal(c.lancer('marquer', 'mesure', 'elise-erard/guichet-unique', '--date', '2026-11-20', '--relecteur', 'Erwan Henry').code, 0);
     let j = json();
     assert.equal(mesure(j, 'elise-erard/guichet-unique')?.etat, 'relu');
     assert.equal(j.reste, 10);

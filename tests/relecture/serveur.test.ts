@@ -66,7 +66,7 @@ describe('serveur de relecture (corpus M1 temporaire, thème logement)', () => {
 
   beforeEach(async () => {
     c = corpusRelecture();
-    serveur = creerServeurRelecture({ racine: c.racine, schemasDir: SCHEMAS_DIR, theme: 'logement', maintenant: () => new Date('2026-11-20T10:00:00Z') });
+    serveur = creerServeurRelecture({ racine: c.racine, schemasDir: SCHEMAS_DIR, theme: 'logement', relecteur: 'Erwan Henry', maintenant: () => new Date('2026-11-20T10:00:00Z') });
     await new Promise<void>((ok) => serveur.listen(0, '127.0.0.1', ok));
     port = (serveur.address() as AddressInfo).port;
     hote = `127.0.0.1:${port}`;
@@ -250,6 +250,7 @@ describe('journal des requêtes du serveur de relecture (une ligne par requête,
       racine: c.racine,
       schemasDir: SCHEMAS_DIR,
       theme: 'logement',
+      relecteur: 'Erwan Henry',
       maintenant: () => new Date('2026-11-20T10:00:00Z'),
       journal: (l) => lignes.push(l),
     });
@@ -314,7 +315,7 @@ describe('commande servir', () => {
 
   it('démarre sur 127.0.0.1, affiche l’adresse sans le jeton', async () => {
     const lignes: string[] = [];
-    const r = await demarrer({ theme: 'logement', port: 0 }, contexte(lignes));
+    const r = await demarrer({ theme: 'logement', port: 0, relecteur: 'Erwan Henry' }, contexte(lignes));
     assert.ok(typeof r !== 'number');
     const a = r.serveur.address() as AddressInfo;
     assert.equal(a.address, '127.0.0.1');
@@ -330,15 +331,17 @@ describe('commande servir', () => {
     await new Promise<void>((ok) => occupant.listen(0, '127.0.0.1', ok));
     const pris = (occupant.address() as AddressInfo).port;
     const lignes: string[] = [];
-    assert.equal(await demarrer({ theme: 'logement', port: pris }, contexte(lignes)), 1);
+    assert.equal(await demarrer({ theme: 'logement', port: pris, relecteur: 'Erwan Henry' }, contexte(lignes)), 1);
     assert.ok(lignes.some((l) => l.startsWith('E:') && l.includes(String(pris))), lignes.join('\n'));
     // Le message dit quoi faire quand c'est la page de relecture elle-même qui tient le port (cas vécu le 2026-11-17).
     assert.ok(lignes.some((l) => l.includes(`http://127.0.0.1:${pris}/`) && l.includes('rien à relancer')), lignes.join('\n'));
     await new Promise<void>((ok) => occupant.close(() => ok()));
-    assert.equal(await servir(['--theme', 'inexistant', '--port', '0'], contexte([])), 1);
-    assert.equal(await servir(['--theme', '../x'], contexte([])), 2);
-    assert.equal(await servir(['--port', '99999'], contexte([])), 2);
-    assert.equal(await servir(['--port', 'abc'], contexte([])), 2);
+    const R = ['--relecteur', 'Erwan Henry'];
+    assert.equal(await servir(['--theme', 'inexistant', '--port', '0', ...R], contexte([])), 1);
+    assert.equal(await servir(['--theme', '../x', ...R], contexte([])), 2);
+    assert.equal(await servir(['--port', '99999', ...R], contexte([])), 2);
+    assert.equal(await servir(['--port', 'abc', ...R], contexte([])), 2);
+    assert.equal(await servir(['--port', '0', '--relecteur', 'x: y'], contexte([])), 2);
     assert.equal(await servir(['--inconnue'], contexte([])), 2);
   });
 });

@@ -11,8 +11,12 @@ import { dansPerimetre, statutRetenu } from '../../../src/lib/content-core/rules
 import { dernieresEmpreintes, lireJournal, lireNotes, notesOuvertes } from './registre.ts';
 import type { LigneNote } from './registre.ts';
 
-/** Nom public du relecteur par défaut (D-04, D-05) : jamais lu dans l'environnement. */
-export const RELECTEUR_DEFAUT = 'Erwan Henry';
+/**
+ * Aucun relecteur par défaut (revue de la phase 9, WR-02) : toute commande qui écrit une marque de relecture (marquer,
+ * publier, retirer, servir) exige `--relecteur <nom>`. Le nom est celui qui s'affiche sous « Relue par … » : un agent
+ * d'IA écrit le sien (décision du 2026-11-17), jamais celui de l'éditeur sans son geste. Message commun aux commandes.
+ */
+export const RELECTEUR_OBLIGATOIRE = '--relecteur <nom> obligatoire : nom affiché sous « Relue par … », aucun nom par défaut (un agent d’IA donne le sien)';
 
 export interface Contexte {
   racine: string;

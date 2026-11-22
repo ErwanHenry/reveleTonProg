@@ -191,7 +191,7 @@ export function preparerImport(d: DependancesPreparer, o: OptionsPreparer = {}):
     if (t.sortants.length > 0) d.journal(`  - thème ${t.theme} : sortira du périmètre une fois le statut relu : ${t.sortants.map((x) => x.id).join(', ')}`);
   }
   if (classement.entrees.length > 0) d.journal(`  - data/couverture-themes.yaml et cases des thèmes pilotes pour chaque nouvelle personne du périmètre : ${classement.entrees.map((m) => m.id).join(', ')} (RUNBOOK, liste de contrôle, points 6 et 7)`);
-  for (const m of [...classement.sorties, ...classement.entrees, ...classement.retours, ...classement.autres]) d.journal(`  - relire le statut : npm run relecture -- marquer statut ${m.id}${m.apres.startsWith('renonce') || m.apres.startsWith('empeche') ? ' --hors-perimetre' : ''}`);
+  for (const m of [...classement.sorties, ...classement.entrees, ...classement.retours, ...classement.autres]) d.journal(`  - relire le statut : npm run relecture -- marquer statut ${m.id}${m.apres.startsWith('renonce') || m.apres.startsWith('empeche') ? ' --hors-perimetre' : ''} --relecteur <nom>`);
   d.journal('  - textes qui annoncent un compte : README.md, docs/COUVERTURE-THEMES.md');
   d.journal('Puis, quand vous le décidez :');
   d.journal(`  git -C ${worktree} push -u origin ${branche}`);

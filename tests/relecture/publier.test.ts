@@ -141,7 +141,7 @@ describe('relecture publier (corpus M1 temporaire)', () => {
     const couv = c.lire(FICHIER_COUVERTURE);
     c.ecrire(FICHIER_COUVERTURE, couv.replace('  - candidat: elise-erard\n    etat: mesures\n', '  - candidat: elise-erard\n    etat: programme_non_publie\n'));
     // Case relue de nouveau dans cet état (sinon publier la refuse avant d'écrire, « à revoir », WR-01).
-    const relue = c.lancer('marquer', 'case', THEME, 'elise-erard', '--date', DATE);
+    const relue = c.lancer('marquer', 'case', THEME, 'elise-erard', '--date', DATE, '--relecteur', 'Erwan Henry');
     assert.equal(relue.code, 0, relue.stderr);
     const avant = c.arbre();
     const r = lancer(c);
@@ -205,7 +205,7 @@ describe('relecture publier (outil en ligne de commande)', () => {
   it('sur un thème de la liste blanche mais pas relu : refus code 1, thème absent de la liste cité en clair', () => {
     const c = corpusRelecture();
     c.ecrire('config/publication.yml', NOTE_LISTE);
-    const r = c.lancer('publier', '--theme', 'logement', '--dry-run');
+    const r = c.lancer('publier', '--theme', 'logement', '--dry-run', '--relecteur', 'Erwan Henry');
     assert.equal(r.code, 1);
     assert.match(r.stderr, /thème absent de config\/publication\.yml/);
     assert.equal(c.lancer('publier').code, 2);

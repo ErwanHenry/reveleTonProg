@@ -21,7 +21,7 @@ const FICHE = 'src/content/candidats/nouvelle-personne.yaml';
 const COUVERTURE = 'src/content/couverture/logement.yaml';
 
 function marquerStatut(racine: string): { code: number; sortie: string } {
-  const r = spawnSync(process.execPath, [SCRIPT_RELECTURE, '--root', racine, 'marquer', 'statut', 'nouvelle-personne', '--date', '2026-11-12'], {
+  const r = spawnSync(process.execPath, [SCRIPT_RELECTURE, '--root', racine, 'marquer', 'statut', 'nouvelle-personne', '--date', '2026-11-12', '--relecteur', 'Erwan Henry'], {
     cwd: REPO_ROOT,
     encoding: 'utf8',
     env: { ...process.env, TZ: 'Europe/Paris' },

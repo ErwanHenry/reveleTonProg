@@ -27,12 +27,13 @@ Commandes :
   marquer mesure <candidat/slug>                  pose statut_relecture: relu, relecteur, date_relecture
   marquer statut <candidat>                       idem sur le statut retenu du candidat
   marquer case <theme> <candidat>                 pose verifie_le et verifie_par sur la case de couverture
-      options : --relecteur <nom> --date AAAA-MM-JJ --malgre-note --hors-perimetre
+      options : --relecteur <nom> (obligatoire) --date AAAA-MM-JJ --malgre-note --hors-perimetre
   note <cible> <texte> | note --resoudre <cible>  notes de correction (relecture/notes.jsonl)
-  servir [--theme <id>] [--port <n>]              page de relecture locale sur 127.0.0.1 (défaut : sante, 4327)
-  publier --theme <id> [--dry-run]                passe un thème entièrement relu en publie (tout ou rien)
-  retirer <candidat/slug> [--case …] [--dry-run]  retrait d'urgence d'une mesure publiée
-  retirer --theme <id> [--dry-run]                repli : remet tout le thème en brouillon
+  servir --relecteur <nom> [--theme <id>] [--port <n>]  page de relecture locale sur 127.0.0.1 (défaut : sante, 4327)
+  publier --theme <id> --relecteur <nom> [--dry-run]    passe un thème entièrement relu en publie (tout ou rien)
+  retirer <candidat/slug> --relecteur <nom> [--case …] [--dry-run]  retrait d'urgence d'une mesure publiée
+  retirer --theme <id> --relecteur <nom> [--dry-run]    repli : remet tout le thème en brouillon
+  Aucun relecteur par défaut : --relecteur est le nom affiché sous « Relue par … ».
 `;
 
 export async function principal(argv: string[], ctx: Omit<Contexte, 'racine' | 'schemasDir'>, cwd = process.cwd()): Promise<number> {

@@ -8,7 +8,7 @@
 import { parseArgs } from 'node:util';
 import { loadAll } from '../../../../src/lib/content-core/load.ts';
 import { FENETRES_GEL, dateParis } from '../../../garde-gel.ts';
-import { RE_SEGMENT, RELECTEUR_DEFAUT, empreinteCase, empreinteMesure, empreinteStatut, entreesDe } from '../etat.ts';
+import { RE_SEGMENT, RELECTEUR_OBLIGATOIRE, empreinteCase, empreinteMesure, empreinteStatut, entreesDe } from '../etat.ts';
 import type { Contexte } from '../etat.ts';
 import { dateValide, relecteurValide } from '../editer.ts';
 import type { Champ } from '../editer.ts';
@@ -99,9 +99,11 @@ export function retirer(cible: CibleRetrait, options: OptionsRetirer, deps: Depe
     if (besoinCase && options.cas === undefined) {
       ctx.erreur(`refusé : « ${cible.id} » est la seule mesure publiée de ${candidat} sur le thème ${theme} : sans changer sa case de couverture dans la même opération, la CI passerait au rouge (EQUITE_COUVERTURE_INCOHERENTE).`);
       ctx.erreur('Choix éditorial à faire, puis relancer avec l’une de ces deux lignes :');
-      ctx.erreur(`  npm run relecture -- retirer ${cible.id} --case non_precise --sources ${sources.length > 0 ? sources.join(',') : '<id-source,…>'}`);
-      ctx.erreur(`  npm run relecture -- retirer ${cible.id} --case programme_non_publie`);
-      ctx.erreur(`(repli sans décision éditoriale : npm run relecture -- retirer --theme ${theme})`);
+      // Le nom ne contient ni guillemet droit ni signe du shell (relecteurValide) : la ligne se copie telle quelle.
+      const signe = `--relecteur "${options.relecteur}"`;
+      ctx.erreur(`  npm run relecture -- retirer ${cible.id} --case non_precise --sources ${sources.length > 0 ? sources.join(',') : '<id-source,…>'} ${signe}`);
+      ctx.erreur(`  npm run relecture -- retirer ${cible.id} --case programme_non_publie ${signe}`);
+      ctx.erreur(`(repli sans décision éditoriale : npm run relecture -- retirer --theme ${theme} ${signe})`);
       return 1;
     }
     if (besoinCase && options.cas !== undefined) {
@@ -151,8 +153,8 @@ export function retirer(cible: CibleRetrait, options: OptionsRetirer, deps: Depe
 }
 
 const USAGE = [
-  'usage : relecture retirer <candidat/slug> [--case non_precise --sources <id,id> | --case programme_non_publie] [--relecteur <nom>] [--date AAAA-MM-JJ] [--dry-run]',
-  '        relecture retirer --theme <id> [--dry-run]',
+  'usage : relecture retirer <candidat/slug> [--case non_precise --sources <id,id> | --case programme_non_publie] --relecteur <nom> [--date AAAA-MM-JJ] [--dry-run]',
+  '        relecture retirer --theme <id> --relecteur <nom> [--dry-run]',
 ].join('\n');
 
 export default async function commande(argv: string[], ctx: Contexte): Promise<number> {
@@ -175,7 +177,8 @@ export default async function commande(argv: string[], ctx: Contexte): Promise<n
     ctx.erreur(USAGE);
     return 2;
   };
-  const relecteur = v.relecteur ?? RELECTEUR_DEFAUT;
+  if (v.relecteur === undefined) return usage(RELECTEUR_OBLIGATOIRE);
+  const relecteur = v.relecteur;
   if (!relecteurValide(relecteur)) return usage(`nom de relecteur refusé « ${relecteur} »`);
   const date = v.date ?? aujourdhuiParis(ctx.maintenant());
   if (!dateValide(date)) return usage(`date invalide « ${date} » (AAAA-MM-JJ)`);

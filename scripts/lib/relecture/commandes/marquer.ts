@@ -12,7 +12,7 @@ import type { Diagnostic } from '../../../../src/lib/content-core/diagnostics.ts
 import { statutRetenu } from '../../../../src/lib/content-core/rules/equite.ts';
 import { RE_DATE, EditionRefusee, dateValide, definirChamps, ecrireAtomique, relecteurValide } from '../editer.ts';
 import type { Champ, Chemin } from '../editer.ts';
-import { RELECTEUR_DEFAUT, RE_SEGMENT, codeDansPerimetre, empreinteCase, empreinteMesure, empreinteStatut, entreesDe, nomCible } from '../etat.ts';
+import { RELECTEUR_OBLIGATOIRE, RE_SEGMENT, codeDansPerimetre, empreinteCase, empreinteMesure, empreinteStatut, entreesDe, nomCible } from '../etat.ts';
 import type { Chargeur, Cible, Contexte } from '../etat.ts';
 import { ajouterJournal, dernieresEmpreintes, lireJournal, lireNotes, notesOuvertes } from '../registre.ts';
 
@@ -177,7 +177,7 @@ function afficher(ctx: Contexte, d: Diagnostic): string {
   return `${path.relative(ctx.racine, d.file).split(path.sep).join('/')}:${d.line}:${d.col} ${d.code} ${d.message}`;
 }
 
-const USAGE = 'usage : relecture marquer mesure <candidat/slug> | statut <candidat> | case <theme> <candidat> [--relecteur <nom>] [--date AAAA-MM-JJ] [--malgre-note] [--hors-perimetre]';
+const USAGE = 'usage : relecture marquer mesure <candidat/slug> | statut <candidat> | case <theme> <candidat> --relecteur <nom> [--date AAAA-MM-JJ] [--malgre-note] [--hors-perimetre]';
 
 export default async function commande(argv: string[], ctx: Contexte): Promise<number> {
   let v: { relecteur?: string; date?: string; 'malgre-note'?: boolean; 'hors-perimetre'?: boolean };
@@ -214,7 +214,8 @@ export default async function commande(argv: string[], ctx: Contexte): Promise<n
   } else {
     return usage('cible attendue');
   }
-  const relecteur = v.relecteur ?? RELECTEUR_DEFAUT;
+  if (v.relecteur === undefined) return usage(RELECTEUR_OBLIGATOIRE);
+  const relecteur = v.relecteur;
   if (!relecteurValide(relecteur)) return usage(`nom de relecteur refusé « ${relecteur} »`);
   const date = v.date ?? aujourdhuiParis(ctx.maintenant());
   if (!dateValide(date)) return usage(`date invalide « ${date} » (AAAA-MM-JJ)`);

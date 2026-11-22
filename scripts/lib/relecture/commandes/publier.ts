@@ -6,7 +6,7 @@
 import { parseArgs } from 'node:util';
 import { loadAll } from '../../../../src/lib/content-core/load.ts';
 import { loadPublicationConfig } from '../../../../src/lib/publication-config.ts';
-import { RE_SEGMENT, RELECTEUR_DEFAUT, chargerCorpus, empreinteMesure, empreinteStatut, entreesDe, erreursDuTheme, etatRelecture } from '../etat.ts';
+import { RE_SEGMENT, RELECTEUR_OBLIGATOIRE, chargerCorpus, empreinteMesure, empreinteStatut, entreesDe, erreursDuTheme, etatRelecture } from '../etat.ts';
 import type { Contexte } from '../etat.ts';
 import { dateValide, relecteurValide } from '../editer.ts';
 import { afficherDiagnostic, appliquerLot } from '../lot.ts';
@@ -124,7 +124,7 @@ export function publier(theme: string, options: OptionsPublier, deps: Dependance
   return 0;
 }
 
-const USAGE = 'usage : relecture publier --theme <id> [--relecteur <nom>] [--date AAAA-MM-JJ] [--dry-run]';
+const USAGE = 'usage : relecture publier --theme <id> --relecteur <nom> [--date AAAA-MM-JJ] [--dry-run]';
 
 export default async function commande(argv: string[], ctx: Contexte): Promise<number> {
   let v: { theme?: string; relecteur?: string; date?: string; 'dry-run'?: boolean };
@@ -141,7 +141,8 @@ export default async function commande(argv: string[], ctx: Contexte): Promise<n
     return 2;
   };
   if (v.theme === undefined || !RE_SEGMENT.test(v.theme)) return usage('--theme <id> attendu (identifiant, jamais un chemin)');
-  const relecteur = v.relecteur ?? RELECTEUR_DEFAUT;
+  if (v.relecteur === undefined) return usage(RELECTEUR_OBLIGATOIRE);
+  const relecteur = v.relecteur;
   if (!relecteurValide(relecteur)) return usage(`nom de relecteur refusé « ${relecteur} »`);
   const date = v.date ?? aujourdhuiParis(ctx.maintenant());
   if (!dateValide(date)) return usage(`date invalide « ${date} » (AAAA-MM-JJ)`);

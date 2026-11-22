@@ -1,6 +1,6 @@
 import { describe, it, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { loadAll } from '../../src/lib/content-core/load.ts';
 import type { LoadOptions } from '../../src/lib/content-core/load.ts';
@@ -40,7 +40,7 @@ describe('relecture marquer (CLI, corpus M1 temporaire)', () => {
   it('marque une mesure en brouillon : 1 ligne modifiée, 2 ajoutées, aucun autre octet du corpus', () => {
     const avant = c.arbre();
     const original = c.lire(MESURE);
-    const r = c.lancer('marquer', 'mesure', 'elise-erard/guichet-unique', '--date', '2026-11-20');
+    const r = c.lancer('marquer', 'mesure', 'elise-erard/guichet-unique', '--date', '2026-11-20', '--relecteur', 'Erwan Henry');
     assert.equal(r.code, 0, r.stderr);
     assert.match(r.stdout, /^relu : mesure:elise-erard\/guichet-unique \(Erwan Henry, 2026-11-20\)$/m);
     assert.deepEqual(differences(avant, c.arbre()), [MESURE]);
@@ -58,7 +58,7 @@ describe('relecture marquer (CLI, corpus M1 temporaire)', () => {
 
   it('marque un statut déclaré (3 champs sur statuts[0]) et une case (verifie_le, verifie_par)', () => {
     const avant = c.arbre();
-    const s = c.lancer('marquer', 'statut', 'paul-de-villefranche', '--date', '2026-11-20');
+    const s = c.lancer('marquer', 'statut', 'paul-de-villefranche', '--date', '2026-11-20', '--relecteur', 'Erwan Henry');
     assert.equal(s.code, 0, s.stderr);
     assert.ok(c.lire(PAUL).endsWith('    statut_relecture: relu\n    relecteur: Erwan Henry\n    date_relecture: 2026-11-20\n'));
     const k = c.lancer('marquer', 'case', 'logement', 'paul-de-villefranche', '--date', '2026-11-21', '--relecteur', 'Anne Relectrice');
@@ -80,7 +80,7 @@ describe('relecture marquer (CLI, corpus M1 temporaire)', () => {
     for (const [args, motif, preparer] of cas) {
       preparer?.();
       const avant = c.arbre();
-      const r = c.lancer('marquer', ...args, '--date', '2026-11-20');
+      const r = c.lancer('marquer', ...args, '--date', '2026-11-20', '--relecteur', 'Erwan Henry');
       assert.equal(r.code, 1, `${args.join(' ')} : ${r.stderr}`);
       assert.match(r.stderr, motif, args.join(' '));
       assert.deepEqual(differences(avant, c.arbre()), [], args.join(' '));
@@ -116,7 +116,7 @@ describe('relecture marquer (CLI, corpus M1 temporaire)', () => {
   });
 
   it('hors périmètre accepté avec --hors-perimetre (statut pressenti à date complète)', () => {
-    const r = c.lancer('marquer', 'statut', 'nina-pressentie', '--hors-perimetre', '--date', '2026-11-20');
+    const r = c.lancer('marquer', 'statut', 'nina-pressentie', '--hors-perimetre', '--date', '2026-11-20', '--relecteur', 'Erwan Henry');
     assert.equal(r.code, 0, r.stderr);
   });
 
@@ -126,7 +126,7 @@ describe('relecture marquer (CLI, corpus M1 temporaire)', () => {
       ['mesure', '../../etc/passwd'],
       ['mesure', 'src/content/mesures/elise-erard/guichet-unique.yaml'],
       ['mesure', 'elise-erard/guichet-unique', '--relecteur', 'x: y'],
-      ['mesure', 'elise-erard/guichet-unique', '--date', '2026-13-01'],
+      ['mesure', 'elise-erard/guichet-unique', '--date', '2026-13-01', '--relecteur', 'Anne Relectrice'],
       ['mesure'],
       ['tout'],
     ]) {
@@ -136,17 +136,42 @@ describe('relecture marquer (CLI, corpus M1 temporaire)', () => {
     assert.deepEqual(differences(avant, c.arbre()), []);
   });
 
+  it('aucun relecteur par défaut : marquer, publier, retirer et servir sans --relecteur répondent code 2, rien d’écrit (WR-02)', () => {
+    const avant = c.arbre();
+    for (const args of [
+      ['marquer', 'mesure', 'elise-erard/guichet-unique'],
+      ['marquer', 'statut', 'paul-de-villefranche', '--date', '2026-11-20'],
+      ['marquer', 'case', 'logement', 'paul-de-villefranche'],
+      ['publier', '--theme', 'logement'],
+      ['retirer', 'marie-fictive/aide-construction'],
+      ['retirer', '--theme', 'logement'],
+      ['servir', '--port', '0'],
+    ]) {
+      const r = c.lancer(...args);
+      assert.equal(r.code, 2, `${args.join(' ')} : ${r.stderr}`);
+      assert.match(r.stderr, /--relecteur <nom> obligatoire/, args.join(' '));
+    }
+    assert.deepEqual(differences(avant, c.arbre()), []);
+    assert.equal(existsSync(path.join(c.racine, 'relecture', 'journal.jsonl')), false);
+  });
+
+  it('aucun nom de relecteur écrit en dur dans l’outil de relecture (WR-02)', () => {
+    const dossier = path.join(REPO_ROOT, 'scripts', 'lib', 'relecture');
+    const fichiers = [path.join(REPO_ROOT, 'scripts', 'relecture.ts'), ...readdirSync(dossier, { recursive: true, encoding: 'utf8' }).filter((f) => f.endsWith('.ts')).map((f) => path.join(dossier, f))];
+    for (const f of fichiers) assert.doesNotMatch(readFileSync(f, 'utf8'), /Erwan Henry|RELECTEUR_DEFAUT/, path.relative(REPO_ROOT, f));
+  });
+
   it('note ouverte : refus sans --malgre-note, écriture avec ; résolution', () => {
     const n = c.lancer('note', 'mesure:elise-erard/guichet-unique', 'vérifier', 'la', 'page', '2');
     assert.equal(n.code, 0, n.stderr);
     const avant = c.arbre();
     assert.deepEqual(differences(avant, c.arbre()), []);
-    const refus = c.lancer('marquer', 'mesure', 'elise-erard/guichet-unique', '--date', '2026-11-20');
+    const refus = c.lancer('marquer', 'mesure', 'elise-erard/guichet-unique', '--date', '2026-11-20', '--relecteur', 'Erwan Henry');
     assert.equal(refus.code, 1);
     assert.match(refus.stderr, /note\(s\) ouverte\(s\)/);
     assert.match(refus.stderr, /vérifier la page 2/);
     assert.deepEqual(differences(avant, c.arbre()), []);
-    const ok = c.lancer('marquer', 'mesure', 'elise-erard/guichet-unique', '--date', '2026-11-20', '--malgre-note');
+    const ok = c.lancer('marquer', 'mesure', 'elise-erard/guichet-unique', '--date', '2026-11-20', '--malgre-note', '--relecteur', 'Erwan Henry');
     assert.equal(ok.code, 0, ok.stderr);
     const res = c.lancer('note', '--resoudre', 'mesure:elise-erard/guichet-unique');
     assert.equal(res.code, 0, res.stderr);
