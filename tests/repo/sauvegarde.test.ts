@@ -338,13 +338,17 @@ describe('ops/sauvegarder-config.sh : archive de la configuration', () => {
       [],
     );
     assert.ok(!e.some((x) => x.includes('sshd_config')));
-    assert.ok(!e.some((x) => x.startsWith('opt/rtp')));
+    // De /opt/rtp, seul le marqueur de retrait de l'hôte technique est archivé (WR-08), jamais la copie du dépôt.
+    assert.ok(!e.some((x) => x.startsWith('opt/rtp') && x !== 'opt/rtp/essai-retire'));
     assert.ok(!e.some((x) => x.includes('.bak-')));
   });
 
   it('MANIFESTE donne le sha256 exact de chaque fichier ; liens.txt donne la cible des deux liens current', () => {
     extraire(archive, extrait);
-    const manifeste = fs.readFileSync(path.join(extrait, 'MANIFESTE.txt'), 'utf8').split('\n').filter(Boolean);
+    const lignes = fs.readFileSync(path.join(extrait, 'MANIFESTE.txt'), 'utf8').split('\n').filter(Boolean);
+    // Seul chemin facultatif absent de ce banc : le marqueur de retrait de l'hôte technique (WR-08).
+    assert.deepEqual(lignes.filter((l) => l.startsWith('absent ')), ['absent opt/rtp/essai-retire']);
+    const manifeste = lignes.filter((l) => !l.startsWith('absent '));
     const vus = new Set<string>();
     for (const l of manifeste) {
       const m = /^([0-9a-f]{64}) {2}(.+)$/.exec(l);
@@ -372,7 +376,9 @@ describe('ops/sauvegarder-config.sh : archive de la configuration', () => {
     assert.equal(j['date'], AUJOURDHUI);
     assert.equal(j['fichiers'], ATTENDUS.length);
     assert.equal(j['octets'], fs.statSync(archive).size);
-    assert.equal(j['absents'], 0);
+    // Seul chemin facultatif absent de ce banc : le marqueur de retrait de l'hôte technique (pas encore retiré).
+    assert.equal(j['absents'], 1);
+    assert.match(fs.readFileSync(path.join(extrait, 'MANIFESTE.txt'), 'utf8'), /^absent opt\/rtp\/essai-retire$/m);
   });
 
   it('un second passage le même jour remplace l’archive', () => {
@@ -535,6 +541,29 @@ describe("ops/tester-restauration.sh : étapes de l'installateur selon les blocs
     assert.equal(r.status, 0, r.stdout + r.stderr);
     assert.equal(etapesVues(r), `${FIXE},site-public`);
     assert.equal(json(r)['installateur'], 'conforme');
+  });
+
+  it("hôte technique retiré : le marqueur est archivé, site-essai vérifie que le bloc reste absent (WR-08)", () => {
+    const b = banc({ blocs: 'public' });
+    ecrire(path.join(b.racine, 'opt/rtp/essai-retire'), '');
+    const s = sauvegarder(b);
+    assert.equal(s.status, 0, s.stderr);
+    assert.ok(entrees(path.join(b.destination, `${AUJOURDHUI}.tar.gz`)).includes('opt/rtp/essai-retire'));
+    const r = restaurer(b);
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    assert.equal(etapesVues(r), `${FIXE},site-essai,site-public`);
+    assert.equal(json(r)['installateur'], 'conforme');
+  });
+
+  it("marqueur archivé et bloc d'essai remis : l'installateur trouve une action à faire (étape 3), aucun ping (WR-08)", () => {
+    const b = banc({ blocs: 'deux' });
+    ecrire(path.join(b.racine, 'opt/rtp/essai-retire'), '');
+    assert.equal(sauvegarder(b).status, 0);
+    const r = restaurer(b);
+    assert.equal(r.status, 1, r.stdout + r.stderr);
+    assert.equal(json(r)['etape'], 'installateur');
+    assert.match(r.stderr, /\[a faire\].*bloc d'essai présent alors que l'hôte technique est retiré/);
+    assert.equal(lire(b, 'pings'), '');
   });
 
   it("bloc public sans lien current dans l'archive : l'installateur refuse (étape 3), aucun ping", () => {

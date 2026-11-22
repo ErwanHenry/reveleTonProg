@@ -870,6 +870,22 @@ describe('ops/installer-serveur.sh : hôte technique retiré (marqueur /opt/rtp/
     assert.equal(r2.status, 0, r2.stdout + r2.stderr);
   });
 
+  it('marqueur présent et bloc d’essai encore là : « a faire » (code 0 en vérification, 1 en application), le bloc n’est jamais déplacé par le script (WR-08)', () => {
+    const b = banc();
+    lancer(b, ['--appliquer', '--etape', 'montages']);
+    assert.equal(lancer(b, ['--appliquer', '--etape', 'site-essai']).status, 0);
+    assert.ok(fs.existsSync(path.join(b.racine, BLOC_ESSAI)));
+    ecrire(path.join(b.racine, MARQUEUR), '');
+    const v = lancer(b, ['--verifier', '--etape', 'site-essai']);
+    assert.equal(v.status, 0, v.stdout + v.stderr);
+    assert.equal(lignesRetire(v).length, 0, v.stdout);
+    assert.equal(afaire(v).length, 1, v.stdout);
+    assert.match(afaire(v)[0] ?? '', /^\[a faire\] \/opt\/vaultwarden\/sites\.d\/reveletonprog-essai\.caddy : bloc d'essai présent alors que l'hôte technique est retiré .*\/root\/rtp-retire/);
+    const a = lancer(b, ['--appliquer', '--etape', 'site-essai']);
+    assert.equal(a.status, 1, a.stdout + a.stderr);
+    assert.ok(fs.existsSync(path.join(b.racine, BLOC_ESSAI)), 'le script ne déplace jamais le bloc');
+  });
+
   it('sans le marqueur, le bloc d’essai est toujours installé, et sa source manquante reste une erreur (code 1)', () => {
     const b = banc();
     lancer(b, ['--appliquer', '--etape', 'montages']);

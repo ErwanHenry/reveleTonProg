@@ -20,7 +20,8 @@
 #                 historiques de déploiement (.historique) et les liens current changent à chaque déploiement :
 #                 signalés, jamais en échec
 #   blocs         blocs du site présents dans l'arbre restauré : site-essai si
-#                 opt/vaultwarden/sites.d/reveletonprog-essai.caddy y est, site-public si
+#                 opt/vaultwarden/sites.d/reveletonprog-essai.caddy ou le marqueur opt/rtp/essai-retire y est
+#                 (l'installateur dit alors « a faire » si le bloc est là malgré le marqueur), site-public si
 #                 opt/vaultwarden/sites.d/reveletonprog.caddy y est (avant, pendant et après l'ouverture) ;
 #                 aucun des deux : échec
 #   3 installateur  <source>/ops/installer-serveur.sh --verifier --etape
@@ -56,6 +57,7 @@ umask 022
 ETAPES_FIXES='montages,import-caddy,commande,battement,sauvegarde'
 BLOC_ESSAI='opt/vaultwarden/sites.d/reveletonprog-essai.caddy'
 BLOC_PUBLIC='opt/vaultwarden/sites.d/reveletonprog.caddy'
+MARQUEUR_ESSAI='opt/rtp/essai-retire'
 LIEN_PRODUCTION='srv/reveletonprog/current'
 RE_CIBLE_LIEN='^releases/[A-Za-z0-9._-]+$'
 RE_DATE='^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
@@ -216,6 +218,9 @@ ETAPES_INSTALLATEUR=$ETAPES_FIXES
 BLOCS=0
 if [ -f "$EXTRAIT/$BLOC_ESSAI" ] && [ ! -L "$EXTRAIT/$BLOC_ESSAI" ]; then
   ETAPES_INSTALLATEUR="$ETAPES_INSTALLATEUR,site-essai"; BLOCS=$((BLOCS + 1))
+elif [ -e "$EXTRAIT/$MARQUEUR_ESSAI" ] || [ -L "$EXTRAIT/$MARQUEUR_ESSAI" ]; then
+  # Hôte technique retiré : site-essai vérifie que son bloc reste absent (WR-08).
+  ETAPES_INSTALLATEUR="$ETAPES_INSTALLATEUR,site-essai"
 fi
 if [ -f "$EXTRAIT/$BLOC_PUBLIC" ] && [ ! -L "$EXTRAIT/$BLOC_PUBLIC" ]; then
   ETAPES_INSTALLATEUR="$ETAPES_INSTALLATEUR,site-public"; BLOCS=$((BLOCS + 1))

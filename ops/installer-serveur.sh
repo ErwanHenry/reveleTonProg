@@ -752,6 +752,12 @@ installer_bloc() { # source cible : bloc Caddy dans le dossier monté, par fichi
 etape_site_essai() {
   local quand
   if essai_retire; then
+    # Marqueur présent mais bloc encore là (remis à la main, ou restauré d'une sauvegarde) : le retrait n'est pas
+    # effectif. Jamais déplacé par ce script (revue de la phase 9, WR-08) : action à faire, avec l'accord d'Erwan.
+    if [ -e "$BLOC_ESSAI" ] || [ -L "$BLOC_ESSAI" ]; then
+      dire 'a faire' "$(affiche "$BLOC_ESSAI") : bloc d'essai présent alors que l'hôte technique est retiré (marqueur présent) : le déplacer dans /root/rtp-retire, puis valider et recharger la configuration"
+      return 0
+    fi
     quand=$(date -u -r "$MARQUEUR_ESSAI_RETIRE" +%Y-%m-%d 2>/dev/null) || quand='date inconnue'
     [ -n "$quand" ] || quand='date inconnue'
     N_OK=$((N_OK + 1))

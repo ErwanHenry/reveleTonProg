@@ -12,6 +12,8 @@
 #   etc/cron.d/rtp-*, etc/rtp/ (fichiers d'environnement des pings), home/deploy/.ssh/authorized_keys
 #   usr/local/sbin/rtp-*, etc/ssh/ssh_host_*_key.pub (clés d'hôte publiques seulement, jamais les privées)
 #   srv/reveletonprog/.historique, srv/reveletonprog/essai/.historique
+#   opt/rtp/essai-retire (marqueur de retrait de l'hôte technique : sans lui, une reconstruction depuis l'archive
+#   réinstallerait le bloc d'essai ; revue de la phase 9, WR-08)
 # plus MANIFESTE.txt (une ligne « sha256  chemin » par fichier, « absent chemin » pour un chemin facultatif absent)
 # et liens.txt (cible des deux liens current, ou « absent »). Les 6 archives les plus récentes sont gardées.
 #
@@ -54,6 +56,7 @@ FACULTATIFS=(
   'etc/ssh/ssh_host_*_key.pub'
   srv/reveletonprog/.historique
   srv/reveletonprog/essai/.historique
+  opt/rtp/essai-retire
 )
 LIENS=(srv/reveletonprog/current srv/reveletonprog/essai/current)
 
