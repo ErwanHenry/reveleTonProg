@@ -91,6 +91,10 @@ export function verifierPilote(entries: Entry[], couverture: CouvertureThemes): 
   const candidats = par('candidats');
   const sources = new Map(par('sources').map((e) => [e.id, e]));
   const perimetre = new Set(candidats.filter((c) => dansPerimetre(c.data.statuts, MODE_PILOTE)).map((c) => c.id));
+  // Thème publié : les cases exigées sont celles du périmètre de production (statuts relus seulement), comme la règle
+  // d'équité de production (revue de la phase 9, IN-05). Une personne dont le statut n'est pas encore relu n'est pas
+  // affichée ; sa case est exigée par EQUITE_CANDIDAT_MANQUANT dès que son statut est relu (marquer refuse avant).
+  const perimetreProduction = new Set(candidats.filter((c) => dansPerimetre(c.data.statuts, 'production')).map((c) => c.id));
   const mesures = par('mesures').filter((m) => themesPilotes.has(texte(m.data.theme)));
   const fichiersCouverture = par('couverture').filter((c) => themesPilotes.has(texte(c.data.theme)));
 
@@ -181,8 +185,9 @@ export function verifierPilote(entries: Entry[], couverture: CouvertureThemes): 
     // Thème livré : chaque candidat du périmètre a sa case, et la case dit la même chose que les mesures.
     const presents = new Set(cases.map(({ c }) => texte(c.candidat)));
     if (fichiers.length > 0) {
-      for (const id of [...perimetre].sort()) {
-        if (!presents.has(id)) err('PILOTE_CASE_MANQUANTE', fichiers[0]?.file, `le candidat ${id} n’a pas de case dans la couverture du thème livré ${theme}`);
+      const attendus = themePublie(theme) ? perimetreProduction : perimetre;
+      for (const id of [...attendus].sort()) {
+        if (!presents.has(id)) err('PILOTE_CASE_MANQUANTE', fichiers[0]?.file, `le candidat ${id} n’a pas de case dans la couverture du thème livré ${theme}${themePublie(theme) ? ' (thème publié : statut relu)' : ''}`);
       }
     }
     for (const { c, file } of cases) {

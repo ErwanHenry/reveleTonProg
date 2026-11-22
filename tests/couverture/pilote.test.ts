@@ -169,6 +169,27 @@ describe('PILOTE_CASE_MANQUANTE / PILOTE_CASE_DOUBLE', () => {
     cases.splice(cases.findIndex((c) => c.candidat === 'jean-imaginaire'), 1);
     assert.deepEqual(avec(verifierPilote(entries, couverture()), 'PILOTE_CASE_MANQUANTE'), []);
   });
+  it('thème publié : une personne au statut déclaré pas encore relu n’a pas besoin de case (périmètre de production, IN-05)', () => {
+    const entries = copie();
+    assert.equal(trouve(entries, 'themes', 'logement').data.statut_relecture, 'publie');
+    (trouve(entries, 'candidats', 'jean-imaginaire').data.statuts as Record<string, unknown>[])[0]!.statut_relecture = 'brouillon';
+    const cases = trouve(entries, 'couverture', 'logement').data.cases as Record<string, unknown>[];
+    cases.splice(cases.findIndex((c) => c.candidat === 'jean-imaginaire'), 1);
+    assert.deepEqual(avec(verifierPilote(entries, couverture()), 'PILOTE_CASE_MANQUANTE'), []);
+    // Thème non publié : le pilote garde le périmètre de travail (brouillons compris), la case reste exigée.
+    trouve(entries, 'themes', 'logement').data.statut_relecture = 'brouillon';
+    const ps = avec(verifierPilote(entries, couverture()), 'PILOTE_CASE_MANQUANTE');
+    assert.equal(ps.length, 1);
+    assert.match(ps[0]!.message, /jean-imaginaire/);
+  });
+  it('thème publié : une personne au statut relu sans case reste une erreur', () => {
+    const entries = copie();
+    const cases = trouve(entries, 'couverture', 'logement').data.cases as Record<string, unknown>[];
+    cases.splice(cases.findIndex((c) => c.candidat === 'jean-imaginaire'), 1);
+    const ps = avec(verifierPilote(entries, couverture()), 'PILOTE_CASE_MANQUANTE');
+    assert.equal(ps.length, 1);
+    assert.match(ps[0]!.message, /statut relu/);
+  });
   it('une case en double : erreur', () => {
     const entries = copie();
     const cases = trouve(entries, 'couverture', 'logement').data.cases as Record<string, unknown>[];
