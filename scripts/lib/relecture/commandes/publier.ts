@@ -2,11 +2,14 @@
 // passent à `publie`, le thème aussi (relecteur et date), en une seule opération tout ou rien. La commande ne
 // marque jamais rien `relu` elle-même et refuse tant que le périmètre du thème n'est pas entièrement relu.
 // Elle n'écrit jamais config/publication.yml : l'ouverture d'un thème est une décision humaine.
+// `--case-mesures <candidat,…>` (revue de la phase 9, WR-03) : sur un thème où une personne publie sa première mesure,
+// sa case de couverture passe à `mesures` dans le même lot (sinon EQUITE_COUVERTURE_INCOHERENTE fait tout refuser).
+// Le choix reste explicite, comme `--case` de retirer : sans l'option, la commande refuse en nommant la case.
 
 import { parseArgs } from 'node:util';
 import { loadAll } from '../../../../src/lib/content-core/load.ts';
 import { loadPublicationConfig } from '../../../../src/lib/publication-config.ts';
-import { RE_SEGMENT, RELECTEUR_OBLIGATOIRE, chargerCorpus, empreinteMesure, empreinteStatut, entreesDe, erreursDuTheme, etatRelecture } from '../etat.ts';
+import { RE_SEGMENT, RELECTEUR_OBLIGATOIRE, chargerCorpus, empreinteCase, empreinteMesure, empreinteStatut, entreesDe, erreursDuTheme, etatRelecture } from '../etat.ts';
 import type { Contexte } from '../etat.ts';
 import { dateValide, relecteurValide } from '../editer.ts';
 import { afficherDiagnostic, appliquerLot } from '../lot.ts';
@@ -19,6 +22,8 @@ export interface OptionsPublier {
   relecteur: string;
   date: string;
   dryRun: boolean;
+  /** Personnes dont la case passe à `mesures` dans le même lot (WR-03). */
+  caseMesures?: readonly string[];
 }
 
 export const PHRASE_ABSENT_LISTE = 'thème absent de config/publication.yml';
@@ -61,6 +66,21 @@ export function publier(theme: string, options: OptionsPublier, deps: Dependance
     if (notes > 0) raisons.push(`${cible} : ${notes} note(s) ouverte(s)`);
     for (const a of alertes) if (a.code === 'ARCHIVE_WAYBACK_ABSENTE') raisons.push(`${cible} : ${a.message}`);
   };
+  // Cases à passer à `mesures` (WR-03) : seulement pour une personne qui aura au moins une mesure publiée sur le thème
+  // après l'opération et dont la case dit autre chose ; toute autre demande est refusée.
+  const demandees = new Set(options.caseMesures ?? []);
+  const casesAChanger: { candidat: string; file: string; index: number }[] = [];
+  for (const c of etat.candidats) {
+    const aura = c.mesures.some((m) => m.etat === 'relu' || m.etat === 'publie');
+    if (c.case === undefined || c.case.etat_case === 'mesures' || !aura) continue;
+    if (demandees.has(c.id)) casesAChanger.push({ candidat: c.id, file: c.case.file, index: c.case.index });
+    else raisons.push(`${c.case.cible} : la case dit « ${c.case.etat_case} » alors que ${c.id} aura une mesure publiée sur ce thème : relancer avec --case-mesures ${c.id} (la case passe à « mesures » dans la même opération)`);
+  }
+  const changees = new Set(casesAChanger.map((k) => k.candidat));
+  for (const id of demandees) {
+    if (!changees.has(id)) raisons.push(`--case-mesures ${id} : aucune case à changer (personne hors du périmètre, sans case, case déjà « mesures », ou aucune mesure relue ou publiée sur ce thème)`);
+  }
+
   for (const c of etat.candidats) {
     for (const m of c.mesures) {
       signaler(m.cible, m.etat, m.notes.length, m.alertes, 'mesure pas encore relue');
@@ -71,6 +91,9 @@ export function publier(theme: string, options: OptionsPublier, deps: Dependance
     else signaler(c.statut.cible, c.statut.etat, c.statut.notes.length, c.statut.alertes, 'statut déclaré pas encore relu');
     if (c.case === undefined) {
       if (c.mesures.length === 0) raisons.push(`case:${theme}/${c.id} : ni mesure ni case de couverture pour ce candidat du périmètre`);
+    } else if (changees.has(c.id)) {
+      // Case redécidée par cette opération : son ancien état de relecture ne compte plus, ses notes ouvertes si.
+      signaler(c.case.cible, 'relu', c.case.notes.length, c.case.alertes, '');
     } else {
       signaler(c.case.cible, c.case.etat, c.case.notes.length, c.case.alertes, 'case de couverture pas encore relue');
     }
@@ -89,6 +112,17 @@ export function publier(theme: string, options: OptionsPublier, deps: Dependance
   }
 
   const editions: Edition[] = aPublier.map((m) => ({ fichier: m.file, chemin: [], champs: [{ cle: 'statut_relecture', valeur: 'publie' }] }));
+  for (const k of casesAChanger) {
+    editions.push({
+      fichier: k.file,
+      chemin: ['cases', k.index],
+      champs: [
+        { cle: 'etat', valeur: 'mesures' },
+        { cle: 'verifie_le', valeur: options.date },
+        { cle: 'verifie_par', valeur: options.relecteur },
+      ],
+    });
+  }
   editions.push({
     fichier: entreeTheme!.file,
     chemin: [],
@@ -99,7 +133,7 @@ export function publier(theme: string, options: OptionsPublier, deps: Dependance
     ],
   });
   if (options.dryRun) {
-    ctx.sortie(`essai à blanc : ${aPublier.length} mesure(s) passeraient à publie, le thème ${theme} aussi (${options.relecteur}, ${options.date}) ; rien n’est écrit`);
+    ctx.sortie(`essai à blanc : ${aPublier.length} mesure(s) passeraient à publie, le thème ${theme} aussi${casesAChanger.length > 0 ? `, ${casesAChanger.length} case(s) à « mesures » (${casesAChanger.map((k) => k.candidat).join(', ')})` : ''} (${options.relecteur}, ${options.date}) ; rien n’est écrit`);
     for (const e of editions) ctx.sortie(`  ${e.fichier.slice(ctx.racine.length + 1)}`);
     return 0;
   }
@@ -118,18 +152,28 @@ export function publier(theme: string, options: OptionsPublier, deps: Dependance
   for (const m of aPublier) {
     ajouterJournal(ctx.racine, { horodatage, action: 'publier', cible: `mesure:${m.id}`, relecteur: options.relecteur, date: options.date, sha256: empreinteMesure(m.data) });
   }
+  if (casesAChanger.length > 0) {
+    // Empreinte de la case après écriture (son contenu a changé), comme retirer.
+    const apres = charger(ctx.racine, { schemasDir: ctx.schemasDir, mode: 'production' });
+    const couv = entreesDe(apres, 'couverture').find((e) => e.data.theme === theme);
+    const cases = Array.isArray(couv?.data.cases) ? (couv.data.cases as Record<string, unknown>[]) : [];
+    for (const k of casesAChanger) {
+      const laCase = cases.find((x) => x.candidat === k.candidat) ?? {};
+      ajouterJournal(ctx.racine, { horodatage, action: 'publier', cible: `case:${theme}/${k.candidat}`, relecteur: options.relecteur, date: options.date, sha256: empreinteCase(laCase) });
+    }
+  }
   ajouterJournal(ctx.racine, { horodatage, action: 'publier', cible: `theme:${theme}`, relecteur: options.relecteur, date: options.date, sha256: empreinteStatut(entreeTheme!.data) });
-  ctx.sortie(`${aPublier.length} mesures publiées, thème ${theme} publié`);
+  ctx.sortie(`${aPublier.length} mesures publiées, thème ${theme} publié${casesAChanger.length > 0 ? `, ${casesAChanger.length} case(s) passée(s) à « mesures »` : ''}`);
   ctx.sortie('étapes suivantes : relire le diff, commiter, pousser, puis npm run ci:local et npm run deploy:local.');
   return 0;
 }
 
-const USAGE = 'usage : relecture publier --theme <id> --relecteur <nom> [--date AAAA-MM-JJ] [--dry-run]';
+const USAGE = 'usage : relecture publier --theme <id> --relecteur <nom> [--case-mesures <candidat,…>] [--date AAAA-MM-JJ] [--dry-run]';
 
 export default async function commande(argv: string[], ctx: Contexte): Promise<number> {
-  let v: { theme?: string; relecteur?: string; date?: string; 'dry-run'?: boolean };
+  let v: { theme?: string; relecteur?: string; date?: string; 'dry-run'?: boolean; 'case-mesures'?: string };
   try {
-    ({ values: v } = parseArgs({ args: argv, options: { theme: { type: 'string' }, relecteur: { type: 'string' }, date: { type: 'string' }, 'dry-run': { type: 'boolean' } }, allowPositionals: false, strict: true }));
+    ({ values: v } = parseArgs({ args: argv, options: { theme: { type: 'string' }, relecteur: { type: 'string' }, date: { type: 'string' }, 'dry-run': { type: 'boolean' }, 'case-mesures': { type: 'string' } }, allowPositionals: false, strict: true }));
   } catch (e) {
     ctx.erreur(`publier : ${e instanceof Error ? e.message : String(e)}`);
     ctx.erreur(USAGE);
@@ -146,5 +190,10 @@ export default async function commande(argv: string[], ctx: Contexte): Promise<n
   if (!relecteurValide(relecteur)) return usage(`nom de relecteur refusé « ${relecteur} »`);
   const date = v.date ?? aujourdhuiParis(ctx.maintenant());
   if (!dateValide(date)) return usage(`date invalide « ${date} » (AAAA-MM-JJ)`);
-  return publier(v.theme, { relecteur, date, dryRun: v['dry-run'] === true }, { ctx });
+  let caseMesures: string[] | undefined;
+  if (v['case-mesures'] !== undefined) {
+    caseMesures = v['case-mesures'].split(',').filter((s) => s !== '');
+    if (caseMesures.length === 0 || !caseMesures.every((s) => RE_SEGMENT.test(s))) return usage('--case-mesures <candidat,…> : identifiants de candidats séparés par des virgules');
+  }
+  return publier(v.theme, { relecteur, date, dryRun: v['dry-run'] === true, ...(caseMesures !== undefined ? { caseMesures } : {}) }, { ctx });
 }

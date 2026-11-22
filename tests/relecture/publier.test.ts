@@ -6,11 +6,13 @@ import { loadAll } from '../../src/lib/content-core/load.ts';
 import type { LoadOptions } from '../../src/lib/content-core/load.ts';
 import { publier } from '../../scripts/lib/relecture/commandes/publier.ts';
 import { appliquerLot } from '../../scripts/lib/relecture/lot.ts';
+import { etatRelecture } from '../../scripts/lib/relecture/etat.ts';
+import { relecturesPerimees } from '../../scripts/lib/check-dist.ts';
 import { lireJournal } from '../../scripts/lib/relecture/registre.ts';
 import { corpusRelecture, nettoyerCorpusRelecture } from '../helpers/corpus-relecture.ts';
 import type { CorpusRelecture } from '../helpers/corpus-relecture.ts';
 import { REPO_ROOT } from '../helpers/validate-yaml.ts';
-import { DATE, FICHIER_COUVERTURE, FICHIER_THEME, MESURE_ELISE, MESURE_MARIE_1, MESURE_MARIE_2, THEME, contexteTest, themePret } from './etat-publie.ts';
+import { DATE, FICHIER_COUVERTURE, FICHIER_THEME, MESURE_ELISE, MESURE_MARIE_1, MESURE_MARIE_2, THEME, contexteTest, themePret, themePublie } from './etat-publie.ts';
 
 // Commande `publier` (09-06, PUB-02) sur une copie temporaire du corpus fictif M1 : deuxième temps de la relecture,
 // tout ou rien, jamais sur le vrai corpus.
@@ -136,18 +138,58 @@ describe('relecture publier (corpus M1 temporaire)', () => {
     assert.equal(lireJournal(c.racine).length, journal);
   });
 
-  it('échec réel de la validation de production (case incohérente) : restauration complète', () => {
-    // Élise a une mesure publiée mais sa case dit non_precise : la règle d’équité de production refuse.
+  it('case qui ne dit pas « mesures » pour une personne qui publie : refus avant écriture qui nomme --case-mesures ; avec l’option, la case change dans le même lot (WR-03)', () => {
     const couv = c.lire(FICHIER_COUVERTURE);
     c.ecrire(FICHIER_COUVERTURE, couv.replace('  - candidat: elise-erard\n    etat: mesures\n', '  - candidat: elise-erard\n    etat: programme_non_publie\n'));
-    // Case relue de nouveau dans cet état (sinon publier la refuse avant d'écrire, « à revoir », WR-01).
+    // Case relue de nouveau dans cet état (sinon publier la refuse comme « à revoir », WR-01).
     const relue = c.lancer('marquer', 'case', THEME, 'elise-erard', '--date', DATE, '--relecteur', 'Erwan Henry');
     assert.equal(relue.code, 0, relue.stderr);
     const avant = c.arbre();
     const r = lancer(c);
     assert.equal(r.code, 1);
-    assert.match(r.erreur.join('\n'), /EQUITE_COUVERTURE_INCOHERENTE/);
+    assert.match(r.erreur.join('\n'), /case:logement\/elise-erard : la case dit « programme_non_publie ».*--case-mesures elise-erard/);
     assert.deepEqual(c.arbre(), avant);
+    const ok = lancer(c, { ...OPTIONS, caseMesures: ['elise-erard'] });
+    assert.equal(ok.code, 0, ok.erreur.join('\n'));
+    assert.match(c.lire(FICHIER_COUVERTURE), /  - candidat: elise-erard\n    etat: mesures\n    verifie_le: 2026-11-25\n    verifie_par: Erwan Henry\n/);
+    assert.equal(etatRelecture(c.racine, contexteTest(c.racine).ctx.schemasDir, THEME).reste, 0);
+  });
+
+  it('--case-mesures sans objet (case déjà « mesures », personne inconnue) : refus, rien d’écrit', () => {
+    const avant = c.arbre();
+    const r = lancer(c, { ...OPTIONS, caseMesures: ['marie-fictive', 'inconnu'] });
+    assert.equal(r.code, 1);
+    assert.match(r.erreur.join('\n'), /--case-mesures marie-fictive : aucune case à changer/);
+    assert.match(r.erreur.join('\n'), /--case-mesures inconnu : aucune case à changer/);
+    assert.deepEqual(c.arbre(), avant);
+  });
+});
+
+describe('relecture publier sur un thème déjà publié (WR-03)', () => {
+  it('première mesure d’une personne « programme non publié » : publiée avec --case-mesures, sans retirer le thème', () => {
+    const c = corpusRelecture();
+    themePublie(c);
+    const nouvelle = 'src/content/mesures/jean-imaginaire/guichet-unique.yaml';
+    mkdirSync(path.dirname(c.chemin(nouvelle)), { recursive: true });
+    c.ecrire(nouvelle, c.lire(MESURE_ELISE).replaceAll('elise-erard', 'jean-imaginaire').replaceAll('Élise Érard', 'Jean Imaginaire').replace('statut_relecture: publie\n', 'statut_relecture: brouillon\n'));
+    const m = c.lancer('marquer', 'mesure', 'jean-imaginaire/guichet-unique', '--date', DATE, '--relecteur', 'Anne Relectrice');
+    assert.equal(m.code, 0, m.stderr);
+    const refus = lancer(c, { ...OPTIONS, relecteur: 'Anne Relectrice' });
+    assert.equal(refus.code, 1);
+    assert.match(refus.erreur.join('\n'), /--case-mesures jean-imaginaire/);
+    const seche = lancer(c, { ...OPTIONS, relecteur: 'Anne Relectrice', caseMesures: ['jean-imaginaire'], dryRun: true });
+    assert.equal(seche.code, 0, seche.erreur.join('\n'));
+    assert.match(seche.sortie.join('\n'), /1 case\(s\) à « mesures » \(jean-imaginaire\)/);
+    const r = lancer(c, { ...OPTIONS, relecteur: 'Anne Relectrice', caseMesures: ['jean-imaginaire'] });
+    assert.equal(r.code, 0, r.erreur.join('\n'));
+    assert.match(c.lire(nouvelle), /^statut_relecture: publie$/m);
+    assert.match(c.lire(FICHIER_COUVERTURE), /  - candidat: jean-imaginaire\n    etat: mesures\n    verifie_le: 2026-11-25\n    verifie_par: Anne Relectrice\n/);
+    assert.ok(lireJournal(c.racine).some((l) => l.cible === 'case:logement/jean-imaginaire' && l.action === 'publier'));
+    const prod = loadAll(c.racine, { mode: 'production', schemasDir: contexteTest(c.racine).ctx.schemasDir });
+    assert.deepEqual(prod.diagnostics.filter((d) => d.severity === 'error').map((d) => d.code), []);
+    // Le registre suit : rien de « relu » dont le texte diffère (CR-01), plus rien à relire.
+    assert.deepEqual(relecturesPerimees(c.racine, REPO_ROOT, { registreObligatoire: true }).filter((x) => x.cible.startsWith('case:logement/') || x.cible === 'mesure:jean-imaginaire/guichet-unique').map((x) => x.cible), []);
+    assert.equal(etatRelecture(c.racine, contexteTest(c.racine).ctx.schemasDir, THEME).reste, 0);
   });
 });
 
