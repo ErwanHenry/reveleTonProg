@@ -50,17 +50,17 @@ describe('constantes publiques', () => {
   });
 
   it('MESURE_SERVEUR_4G (PERF-02, D-13, 08-14) : mesure derrière le serveur réel, chaque mesure sous le budget de son profil', () => {
-    // Valeurs relevées le 2026-11-09 sur l'hôte technique essai (commit servi 0949633), voir 08-14-SUMMARY.md.
+    // Valeurs relevées le 2026-11-22 sur le site public (commit servi c383a03), voir 09-13-SUMMARY.md.
     // Ne pas relever un budget pour faire passer ce test : une nouvelle mesure au-dessus de 1 s se signale.
-    assert.equal(MESURE_SERVEUR_4G.date, '2026-11-09');
-    assert.equal(MESURE_SERVEUR_4G.page, '/methode/');
-    assert.equal(MESURE_SERVEUR_4G.octetsGzip, 11917);
+    assert.equal(MESURE_SERVEUR_4G.date, '2026-11-22');
+    assert.equal(MESURE_SERVEUR_4G.page, '/themes/sante/');
+    assert.equal(MESURE_SERVEUR_4G.octetsGzip, 31085);
     assert.equal(MESURE_SERVEUR_4G.encodage, 'zstd');
     assert.deepEqual(MESURE_SERVEUR_4G.profils, [
-      { id: 'latence-150', mesuresMs: [345, 300, 304] },
-      { id: 'slow-4g-lighthouse', mesuresMs: [716, 722, 723] },
+      { id: 'latence-150', mesuresMs: [462, 421, 414] },
+      { id: 'slow-4g-lighthouse', mesuresMs: [855, 841, 849] },
     ]);
-    assert.deepEqual(MESURE_SERVEUR_4G.lighthouse, { version: '13.0.3', fcpMs: 791, lcpMs: 791, speedIndexMs: 812 });
+    assert.deepEqual(MESURE_SERVEUR_4G.lighthouse, { version: '13.0.3', fcpMs: 972, lcpMs: 982, speedIndexMs: 972 });
     // Date réelle du calendrier.
     const [an, mois, jour] = MESURE_SERVEUR_4G.date.split('-').map(Number) as [number, number, number];
     assert.equal(new Date(Date.UTC(an, mois - 1, jour)).toISOString().slice(0, 10), MESURE_SERVEUR_4G.date);

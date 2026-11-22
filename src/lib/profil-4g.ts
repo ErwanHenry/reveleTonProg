@@ -68,22 +68,23 @@ export interface MesureServeur4G {
   ecart: string;
 }
 
-// PERF-02 (D-13, 08-14) : mesure derrière le vrai serveur (Caddy en HTTPS, hôte technique protégé, commit servi
-// 0949633), relevée le 2026-11-09 avec e2e/4g.spec.ts en mode distant (en-tête Authorization envoyé d'emblée, aucune
-// réponse 401) et Lighthouse 13.0.3. Publiée sur la page Méthode ; README et RUNBOOK reprennent les mêmes chiffres
+// PERF-02 (D-13, 08-14), mesure refaite par 09-13 : derrière le vrai serveur, sur le site public ouvert le 2026-11-22
+// (domaine de config/site.yml, Caddy en HTTPS, aucun identifiant envoyé, commit servi c383a03), relevée le 2026-11-22
+// avec e2e/4g.spec.ts en mode distant (E2E_DIST = copie de la version servie, prise sur le serveur) et Lighthouse
+// 13.0.3 lancé à la main. Publiée sur la page Méthode ; README et RUNBOOK reprennent les mêmes chiffres
 // (tests/repo/docs.test.ts). Une nouvelle mesure remplace ces valeurs ; un budget ne se relève pas pour la publier.
 export const MESURE_SERVEUR_4G: MesureServeur4G = {
-  date: '2026-11-09',
-  page: '/methode/',
-  octetsGzip: 11917,
+  date: '2026-11-22',
+  page: '/themes/sante/',
+  octetsGzip: 31085,
   encodage: 'zstd',
   profils: [
-    { id: 'latence-150', mesuresMs: [345, 300, 304] },
-    { id: 'slow-4g-lighthouse', mesuresMs: [716, 722, 723] },
+    { id: 'latence-150', mesuresMs: [462, 421, 414] },
+    { id: 'slow-4g-lighthouse', mesuresMs: [855, 841, 849] },
   ],
-  lighthouse: { version: '13.0.3', fcpMs: 791, lcpMs: 791, speedIndexMs: 812 },
+  lighthouse: { version: '13.0.3', fcpMs: 972, lcpMs: 982, speedIndexMs: 972 },
   perimetre:
-    "Aucune page thème n'est encore publiée à cette adresse : la page la plus lourde y est la page Méthode. Les pages thème en préparation, plus lourdes, sont mesurées sur le serveur local par le test décrit plus haut.",
+    "La page du thème santé est publiée à cette adresse : c'est la page la plus lourde du site en ligne, et c'est elle qui est mesurée.",
   ecart:
     "Lighthouse ne chronomètre pas le chargement : il le recalcule à partir d'un chargement sans ralentissement, en comptant 150 ms pour chaque aller-retour réseau, y compris ceux qui ouvrent la connexion chiffrée, et un processeur quatre fois plus lent ; ses chiffres portent sur l'affichage, pas sur la fin du chargement. Le test du site ajoute 562,5 ms à chaque requête, ouvre une vraie connexion chiffrée vers le serveur et ne ralentit pas le processeur. Les deux méthodes donnent des chiffres proches, pas identiques.",
 };
