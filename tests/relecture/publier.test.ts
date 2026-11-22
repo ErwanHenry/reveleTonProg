@@ -5,6 +5,7 @@ import path from 'node:path';
 import { loadAll } from '../../src/lib/content-core/load.ts';
 import type { LoadOptions } from '../../src/lib/content-core/load.ts';
 import { publier } from '../../scripts/lib/relecture/commandes/publier.ts';
+import type { OptionsPublier } from '../../scripts/lib/relecture/commandes/publier.ts';
 import { appliquerLot } from '../../scripts/lib/relecture/lot.ts';
 import { etatRelecture } from '../../scripts/lib/relecture/etat.ts';
 import { relecturesPerimees } from '../../scripts/lib/check-dist.ts';
@@ -19,7 +20,7 @@ import { DATE, FICHIER_COUVERTURE, FICHIER_THEME, MESURE_ELISE, MESURE_MARIE_1, 
 
 after(() => nettoyerCorpusRelecture());
 
-const OPTIONS = { relecteur: 'Erwan Henry', date: '2026-11-25', dryRun: false };
+const OPTIONS: OptionsPublier = { relecteur: 'Erwan Henry', date: '2026-11-25', dryRun: false };
 const NOTE_LISTE = 'themes_ouverts: []\n';
 
 function lancer(c: CorpusRelecture, options = OPTIONS, charger?: (r: string, o: LoadOptions) => ReturnType<typeof loadAll>) {
