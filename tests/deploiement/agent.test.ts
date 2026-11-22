@@ -40,7 +40,7 @@ function ecrireExecutable(p: string, contenu: string): void {
 const quote = (s: string): string => `'${s.replace(/'/g, `'\\''`)}'`;
 const lire = (p: string): string => (existsSync(p) ? readFileSync(p, 'utf8') : '');
 
-type Variante = 'normal' | 'cle-sans-phrase' | 'phrase-refusee';
+type Variante = 'normal' | 'cle-sans-phrase' | 'phrase-refusee' | 'cle-invalide';
 
 interface Banc {
   bin: string;
@@ -63,7 +63,7 @@ env | sed 's/^/ENV /' >> "$LOG"
     path.join(bin, 'ssh-keygen'),
     `#!/bin/sh
 ${journal('ssh-keygen')}
-${variante === 'cle-sans-phrase' ? `echo ${quote(CLE_PUBLIQUE_FACTICE)}; exit 0` : 'echo "Load key: incorrect passphrase supplied to decrypt private key" >&2; exit 255'}
+${variante === 'cle-sans-phrase' ? `echo ${quote(CLE_PUBLIQUE_FACTICE)}; exit 0` : variante === 'cle-invalide' ? 'echo "Load key \\"$5\\": invalid format" >&2; exit 255' : 'echo "Load key: incorrect passphrase supplied to decrypt private key" >&2; exit 255'}
 `,
   );
   ecrireExecutable(
@@ -130,6 +130,16 @@ describe('cleChiffree (ssh-keygen factice)', () => {
     const r = await cleChiffree(b.cle, exeDe(b), lancer);
     assert.equal(r, false);
     assert.ok(!JSON.stringify(r).includes('CLE-PUBLIQUE-FACTICE'));
+  });
+
+  it('IN-08 : clé illisible ou de format inconnu : code 3 qui le dit, au lieu de la croire chiffrée', async () => {
+    const b = banc('cle-invalide');
+    const e = await sortie(cleChiffree(b.cle, exeDe(b), lancer));
+    assert.equal(e.code, 3);
+    assert.match(e.message, /illisible ou de format inconnu/);
+    const e2 = await sortie(ouvrirAgent({ cle: b.cle }, { exe: exeDe(b), lancer, home: HOME_AGENT, ecrire: () => {} }));
+    assert.match(e2.message, /illisible ou de format inconnu/);
+    assert.equal(b.log('ssh-agent'), '', 'aucun agent démarré');
   });
 
   it('ssh-keygen qui ne se termine pas normalement : refus fermé (code 3)', async () => {

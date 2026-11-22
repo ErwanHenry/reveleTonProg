@@ -84,7 +84,11 @@ export async function cleChiffree(cle: string, exe: Executables, lancer: Lanceur
     libelle: 'contrôle de la phrase de passe de la clé',
   });
   if (r.code === null) throw new Sortie(3, `impossible de vérifier que la clé ${cle} a une phrase de passe : refusée`);
-  return r.code !== 0;
+  if (r.code === 0) return false;
+  // IN-08 (revue de la phase 9.2) : seul « incorrect passphrase » dit que la clé est chiffrée ; une clé illisible ou
+  // d'un format inconnu est refusée avec son propre message, au lieu d'un « clé non chargée » qui égare.
+  if (/incorrect passphrase/i.test(r.stderr)) return true;
+  throw new Sortie(3, `clé ${cle} illisible ou de format inconnu (ssh-keygen, code ${r.code}) : refusée ; vérifier le fichier ou le recréer (RUNBOOK, « Créer la clé du Mac »)`);
 }
 
 /**
