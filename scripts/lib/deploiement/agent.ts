@@ -12,7 +12,9 @@
 // lecture comme en écriture, exige la clé protégée ; un agent ne contacte jamais le serveur par ce chemin.
 //
 // Pourquoi un agent de 15 minutes dans un dossier 0700 : le socket ne doit servir qu'à ce déploiement. Il vit dans
-// un dossier lisible du seul utilisateur, la clé y expire au bout de 900 s (`ssh-add -t 900`), et l'agent
+// un dossier lisible du seul utilisateur, ~/.cache/rtp/agents/agent-<hasard>, hors du dossier temporaire et interdit
+// en lecture et en connexion à la build sous bac à sable (CR-01 de la revue de la phase 9.2 : un processus resté de
+// la build ne le trouve pas dans son TMPDIR), la clé y expire au bout de 900 s (`ssh-add -t 900`), et l'agent
 // est tué à la fin (fermer), sur SIGINT, SIGTERM ou SIGHUP, et à la sortie du processus. L'agent ssh habituel
 // d'Erwan n'est jamais utilisé (SSH_AUTH_SOCK n'est pas transmis par envDeBase).
 //
@@ -27,8 +29,7 @@
 // à ce gestionnaire d'appeler fermer, et la sortie du processus le tue de toute façon.
 // N'importe que des modules node: et des modules relatifs.
 import { spawnSync } from 'node:child_process';
-import { chmodSync, existsSync, mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import { envDeBase, type Lanceur } from '../processus.ts';
 import type { ConfigDeploiement } from './config.ts';
@@ -56,6 +57,11 @@ export const DUREE_CLE_S = 900;
 
 const MIN = 60_000;
 const SIGNAUX = ['SIGINT', 'SIGTERM', 'SIGHUP'] as const;
+
+/** Dossier des agents ssh des commandes (CR-01) : hors de TMPDIR, interdit à la build (construire.ts). */
+export function dossierAgents(home: string): string {
+  return path.join(home, '.cache', 'rtp', 'agents');
+}
 
 function chemin(exe: Executables, nom: string): string {
   const e = exe[nom];
@@ -87,7 +93,7 @@ export async function cleChiffree(cle: string, exe: Executables, lancer: Lanceur
  */
 export async function ouvrirAgent(
   cfg: Pick<ConfigDeploiement, 'cle'>,
-  o: { exe: Executables; lancer: Lanceur; ecrire: (l: string) => void; maintenant?: () => number },
+  o: { exe: Executables; lancer: Lanceur; ecrire: (l: string) => void; home: string; maintenant?: () => number },
 ): Promise<Agent> {
   const { exe, lancer, ecrire } = o;
   const maintenant = o.maintenant ?? Date.now;
@@ -97,7 +103,10 @@ export async function ouvrirAgent(
   const sshAgent = chemin(exe, 'ssh-agent');
   const sshAdd = chemin(exe, 'ssh-add');
 
-  const dossier = mkdtempSync(path.join(tmpdir(), 'rtp-agent-'));
+  const agents = dossierAgents(o.home);
+  mkdirSync(agents, { recursive: true, mode: 0o700 });
+  chmodSync(agents, 0o700);
+  const dossier = mkdtempSync(path.join(agents, 'agent-'));
   chmodSync(dossier, 0o700);
   const socket = path.join(dossier, 'agent.sock');
   let pid: string | null = null;

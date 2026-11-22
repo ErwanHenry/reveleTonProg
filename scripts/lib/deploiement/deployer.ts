@@ -9,7 +9,9 @@
 //      --dry-run, instantané d'intégrité A (exécutables, .git/config, .git/hooks, fichiers de configuration et secrets) ;
 //   2. garde de gel au départ ;
 //   3. arbre propre, git fetch réussi, HEAD égal à origin/main (rien de non poussé ne part en ligne) ;
-//   4. reçu vert de ci:local pour ce commit exact, sinon ci:local lancé ici, puis reçu relu ;
+//   4. reçu vert de ci:local pour ce commit exact, sinon refus : ci:local n'est jamais lancé d'ici (CR-01 de la revue
+//      de la phase 9.2 : il fait tourner les dépendances npm sans bac à sable, dans le terminal et juste avant que la
+//      clé ne soit chargée) ;
 //   5. build scellée (construire.ts, WR-04) puis instantané comparé à A : ci:local et la build n'ont rien changé ;
 //   6. --dry-run : écran sans donnée du serveur, arrêt (ni agent, ni etat, ni journal) ;
 //   7. agent ssh (phrase de passe tapée par Erwan), etat, site touché depuis la version en ligne (sinon --forcer),
@@ -27,11 +29,10 @@
 // remise (retrait d'urgence, aucune version avant, current changé entre-temps, retour automatique en échec).
 //
 // ctx.confirmer est obligatoire et sans défaut : la CLI passe toujours confirmerSurTerminal. Les crochets
-// apresConstruction, apresActivation et lancerCiLocal n'existent que pour les tests de la bibliothèque : la CLI ne
-// les expose ni en option, ni en variable d'environnement, ni dans ses Dependances.
+// apresConstruction et apresActivation n'existent que pour les tests de la bibliothèque : la CLI ne les expose ni en
+// option, ni en variable d'environnement, ni dans ses Dependances.
 // Le processus qui tient la clé n'importe que des modules node:, des modules relatifs et scripts/garde-gel.ts.
 import { readFileSync } from 'node:fs';
-import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { envDeBase, type Lanceur } from '../processus.ts';
 import { assurerCle, ouvrirAgent, type Agent } from './agent.ts';
@@ -64,8 +65,6 @@ export interface ContexteDeploiement {
   home: string;
   racine: string;
   ecrire: (l: string) => void;
-  /** Tests seulement : remplace le lancement de ci:local. */
-  lancerCiLocal?: () => Promise<number | null>;
   /** Tests seulement : appelé après la build, avant tout contact avec le serveur. */
   apresConstruction?: (build: BuildDeploiement) => void | Promise<void>;
   /** Tests seulement : appelé juste après le verbe activer. */
@@ -280,26 +279,12 @@ export async function executerDeploiement(o: OptionsDeploiement, ctx: ContexteDe
     ecrire(`Commit : ${s}, tête de origin/main`);
 
     // ---------- 4. reçu de ci:local ----------
-    let recu = verifierRecu(ctx.home, s);
+    // CR-01 : ci:local fait tourner les dépendances npm sans bac à sable ; il n'est plus lancé d'ici, juste avant que
+    // la clé ne soit chargée dans ce même terminal. Erwan le lance lui-même, puis relance deploy:local dans un
+    // nouveau terminal (un processus resté de ci:local ne garde pas ce terminal).
+    const recu = verifierRecu(ctx.home, s);
     if (!recu.ok) {
-      ecrire(`Reçu de ci:local : ${recu.motif} ; lancement de npm run ci:local (long)`);
-      const lancerCi =
-        ctx.lancerCiLocal ??
-        (async () =>
-          (
-            await ctx.lancer({
-              commande: process.execPath,
-              args: [path.join(ctx.racine, 'scripts', 'ci-local.ts')],
-              cwd: ctx.racine,
-              env: envDeBase(),
-              delaiMs: 120 * MIN,
-              libelle: 'ci:local',
-              heriter: true,
-            })
-          ).code);
-      const codeCi = await lancerCi();
-      recu = verifierRecu(ctx.home, s);
-      if (!recu.ok) throw new Sortie(1, `ci:local (code ${String(codeCi)}) : ${recu.motif} ; rien n'est déployé`);
+      throw new Sortie(1, `reçu de ci:local : ${recu.motif} ; lancer fnm exec --using=24 npm run ci:local, puis relancer deploy:local dans un nouveau terminal ; rien n'est déployé`);
     }
     ecrire(`Reçu de ci:local : ${recu.motif}`);
 
@@ -343,7 +328,7 @@ export async function executerDeploiement(o: OptionsDeploiement, ctx: ContexteDe
     }
 
     // ---------- 7. agent, version en ligne, écran, confirmation ----------
-    agent = await ouvrirAgent(c0, { exe, lancer: ctx.lancer, ecrire, maintenant: () => ctx.maintenant().getTime() });
+    agent = await ouvrirAgent(c0, { exe, lancer: ctx.lancer, ecrire, home: ctx.home, maintenant: () => ctx.maintenant().getTime() });
     const ag = agent;
     const etatLu = async (moment: string) => {
       const ligne = await appelerVerbe(c0, ag, exe, 'etat', [c0.cible], ctx.lancer);

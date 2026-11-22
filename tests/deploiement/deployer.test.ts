@@ -245,9 +245,6 @@ async function deployer(
         home: b.home,
         racine: b.racine,
         ecrire: (l) => lignes.push(l),
-        lancerCiLocal: async () => {
-          throw new Error('ci:local lancé alors que le reçu est vert');
-        },
         ...c,
       },
     ),
@@ -400,36 +397,31 @@ describe('gardes avant la build', () => {
     assert.deepEqual(appelsNpm(b), []);
   });
 
-  it('aucun reçu : ci:local lancé une fois, puis déploiement', { skip: !BASCULE && RAISON_MV }, async () => {
+  /** Lanceur qui note tout lancement de ci:local (CR-01 : deploy:local ne le lance jamais). */
+  const espionCi = (vus: string[]) => (l: Lanceur): Lanceur => async (x) => {
+    if (x.args.some((a) => a.includes('ci-local'))) vus.push([x.commande, ...x.args].join(' '));
+    return l(x);
+  };
+
+  it('aucun reçu (CR-01) : code 1, ci:local n\'est pas lancé, consigne de le lancer puis de relancer dans un nouveau terminal', async () => {
     const b = banc();
-    await mettreEnLigne(b, b.P);
-    let appels = 0;
-    const { code, texte } = await deployer(b, {}, {
-      ...confirmateur(phrase(b)),
-      lancerCiLocal: async () => {
-        appels++;
-        recuVert(b);
-        return 0;
-      },
-    });
-    assert.equal(code, 0, texte);
-    assert.equal(appels, 1);
-    assert.match(texte, /aucun reçu/);
+    const vus: string[] = [];
+    const { code, texte } = await deployer(b, {}, { ...confirmateur(phrase(b)), envelopper: espionCi(vus) });
+    assert.equal(code, 1, texte);
+    assert.deepEqual(vus, []);
+    assert.match(texte, /aucun reçu de ci:local/);
+    assert.match(texte, /lancer fnm exec --using=24 npm run ci:local, puis relancer deploy:local dans un nouveau terminal/);
+    assert.deepEqual(appelsNpm(b), []);
+    assert.equal(b.faux.journal('ssh-keygen').length, 0);
   });
 
-  it('reçu sans recherche de secrets : ci:local relancé, toujours non exécutée : code 1 qui nomme gitleaks', async () => {
+  it('reçu sans recherche de secrets : code 1 qui nomme gitleaks, ci:local n\'est pas lancé', async () => {
     const b = banc();
     ecrireRecu(b.home, recu(b.S, 'non_executee'));
-    let appels = 0;
-    const { code, texte } = await deployer(b, {}, {
-      ...confirmateur(phrase(b)),
-      lancerCiLocal: async () => {
-        appels++;
-        return 1;
-      },
-    });
+    const vus: string[] = [];
+    const { code, texte } = await deployer(b, {}, { ...confirmateur(phrase(b)), envelopper: espionCi(vus) });
     assert.equal(code, 1, texte);
-    assert.equal(appels, 1);
+    assert.deepEqual(vus, []);
     assert.match(texte, /gitleaks/);
     assert.deepEqual(appelsNpm(b), []);
   });

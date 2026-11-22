@@ -6,9 +6,13 @@
 //     npm run build, npm run check-dist -- --mode production), avec un environnement en liste blanche
 //     (RTP_CONTENT_ROOT=., RTP_DEPLOIEMENT 1 en production et 0 en essai, GITHUB_SHA pour version.json) ;
 //   - lancée sous sandbox-exec avec un profil qui interdit toute écriture sauf le worktree, son dossier
-//     .git/worktrees/<nom> dans le dépôt principal, TMPDIR et le cache npm, et qui interdit la lecture de chaque
-//     chemin secret configuré, de ~/.config/rtp, ~/.ssh et ~/.config/gh. La build est refusée si l'un de ces chemins
-//     se trouve sous un dossier où elle peut écrire, ou si un tel dossier contient le dossier personnel ou le .git ;
+//     .git/worktrees/<nom> dans le dépôt principal, un dossier temporaire propre à cette build (<worktree>-tmp, donné
+//     comme TMPDIR) et le cache npm, qui interdit la lecture de chaque chemin secret configuré, de ~/.config/rtp,
+//     ~/.ssh, ~/.config/gh et des dossiers d'agents ssh (~/.cache/rtp/agents), et toute connexion à un socket Unix
+//     hors du résolveur DNS. La build est refusée si l'un de ces chemins se trouve sous un dossier où elle peut écrire,
+//     ou si un tel dossier contient le dossier personnel ou le .git ;
+//   - lancée dans sa propre session (setsid, sans terminal de contrôle), groupe de processus tué à la fin de chaque
+//     étape ;
 //   - encadrée par un instantané (executables.ts) pris avant et comparé après : il constate ce que le profil ne
 //     peut pas garantir seul (hooks git, configuration git, fichiers de configuration, binaire du même nom glissé
 //     plus tôt dans le PATH).
@@ -67,13 +71,26 @@ export interface OptionsProfil {
   lecturesInterdites: string[];
 }
 
-/** Profil sandbox-exec de la build : écriture refusée hors liste blanche, lecture refusée pour chaque secret. */
+/** Dossiers interdits en lecture à la build, sous HOME : clés et configuration, et sockets des agents ssh (CR-01). */
+export const DOSSIERS_INTERDITS = ['.config/rtp', '.ssh', '.config/gh', '.cache/rtp/agents'] as const;
+
+/** Socket du résolveur DNS de macOS, seule connexion Unix permise à la build (npm ci résout le registre). */
+const RESOLVEUR = '/private/var/run/mDNSResponder';
+
+/**
+ * Profil sandbox-exec de la build : écriture refusée hors liste blanche, lecture refusée pour chaque secret et chaque
+ * dossier d'agent ssh, connexion refusée à tout socket Unix sauf le résolveur DNS (CR-01 : un processus de la build
+ * ne joint pas l'agent qui tiendra la clé).
+ */
 export function profilSandbox(o: OptionsProfil): string {
   const ecriture = [o.worktree, o.gitWorktreeDir, o.tmpdir, o.cacheNpm].map((p) => `(subpath "${cheminProfil(p)}")`);
   ecriture.push('(literal "/dev/null")', '(literal "/dev/tty")');
   const lecture = o.lecturesInterdites.map((p) => `(literal "${cheminProfil(p)}")`);
-  for (const rel of ['.config/rtp', '.ssh', '.config/gh']) lecture.push(`(subpath "${cheminProfil(path.join(o.home, rel))}")`);
-  return `(version 1)(allow default)(deny file-write*)(allow file-write* ${ecriture.join(' ')})(deny file-read* ${lecture.join(' ')})`;
+  for (const rel of DOSSIERS_INTERDITS) lecture.push(`(subpath "${cheminProfil(path.join(o.home, rel))}")`);
+  return (
+    `(version 1)(allow default)(deny file-write*)(allow file-write* ${ecriture.join(' ')})(deny file-read* ${lecture.join(' ')})` +
+    `(deny network-outbound (remote unix-socket))(allow network-outbound (remote unix-socket (path-literal "${RESOLVEUR}")))`
+  );
 }
 
 /** Environnement de la build : liste blanche de envDeBase plus les variables du job construire de ci.yml. */
@@ -173,7 +190,7 @@ export async function construireDeploiement(o: OptionsConstruction): Promise<Bui
   // 2. Refus avant tout appel de npm : aucun chemin protégé sous un dossier où la build peut écrire.
   const tmp = reel(o.tmpdir ?? source.TMPDIR ?? tmpdirSysteme());
   if (!existsSync(tmp) || !lstatSync(tmp).isDirectory()) throw new Sortie(2, `dossier temporaire de la build absent : ${tmp}`);
-  const protégés = [...o.lecturesInterdites, ...['.config/rtp', '.ssh', '.config/gh'].map((r) => path.join(o.home, r))].map(reel);
+  const protégés = [...o.lecturesInterdites, ...DOSSIERS_INTERDITS.map((r) => path.join(o.home, r))].map(reel);
   const sensibles = [reel(o.home), reel(path.join(o.racine, '.git'))];
   const verifierEcrivable = (ecrivable: string, nom: string): void => {
     for (const p of protégés) {
@@ -194,6 +211,9 @@ export async function construireDeploiement(o: OptionsConstruction): Promise<Bui
   const git = (args: string[], cwd: string, delaiMs = 2 * MIN) => o.lancer({ commande: gitExe, args, cwd, env: envGit, delaiMs, libelle: `git ${args[0] ?? ''}` });
   const nom = `rtp-deploiement-${o.sha.slice(0, 12)}-${randomBytes(4).toString('hex')}`;
   const dossier = path.join(tmp, nom);
+  // CR-01 : dossier temporaire propre à la build (TMPDIR de ses étapes) ; le TMPDIR de l'utilisateur ne lui est plus
+  // ouvert en écriture.
+  const dossierTmp = path.join(tmp, `${nom}-tmp`);
   let admin = path.join(reel(path.join(o.racine, '.git')), 'worktrees', nom);
   o.ecrire(`worktree temporaire du commit ${o.sha.slice(0, 12)} : ${dossier}`);
   const ajout = await git(['-c', 'core.hooksPath=/dev/null', 'worktree', 'add', '--quiet', '--detach', dossier, o.sha], o.racine, 10 * MIN);
@@ -217,6 +237,7 @@ export async function construireDeploiement(o: OptionsConstruction): Promise<Bui
       if (sous(admin, path.join(reel(path.join(o.racine, '.git')), 'worktrees'))) rmSync(admin, { recursive: true, force: true });
     }
     await git(['worktree', 'prune'], o.racine);
+    if (sous(dossierTmp, tmp) && dossierTmp !== tmp) rmSync(dossierTmp, { recursive: true, force: true });
   };
 
   if (ajout.code !== 0) {
@@ -231,6 +252,8 @@ export async function construireDeploiement(o: OptionsConstruction): Promise<Bui
     admin = gitdir;
     verifierEcrivable(dossier, 'le worktree');
     verifierEcrivable(admin, 'le dossier git du worktree');
+    mkdirSync(dossierTmp, { mode: 0o700 });
+    verifierEcrivable(dossierTmp, 'le dossier temporaire de la build');
 
     // 5. Cache npm, résolu hors du bac à sable (npm du système, configuration du commit).
     const envNpm = { ...envDeBase(source), HOME: o.home, TMPDIR: tmp, npm_config_update_notifier: 'false' };
@@ -242,14 +265,15 @@ export async function construireDeploiement(o: OptionsConstruction): Promise<Bui
     verifierEcrivable(cacheNpm, 'le cache npm');
 
     // 6. Les quatre commandes du job construire, sous le bac à sable.
-    const profil = profilSandbox({ home: o.home, worktree: dossier, gitWorktreeDir: admin, tmpdir: tmp, cacheNpm, lecturesInterdites: o.lecturesInterdites });
+    const profil = profilSandbox({ home: o.home, worktree: dossier, gitWorktreeDir: admin, tmpdir: dossierTmp, cacheNpm, lecturesInterdites: o.lecturesInterdites });
     const env = envConstruction(o.cible, o.sha, cacheNpm, source);
     env.HOME = o.home;
-    env.TMPDIR = tmp;
+    env.TMPDIR = dossierTmp;
     for (const e of ETAPES) {
       const libelle = `npm ${e.args.join(' ')}`;
       o.ecrire(`… ${libelle} (bac à sable)`);
-      const r = await o.lancer({ commande: sandboxExec, args: ['-p', profil, npm, ...e.args], cwd: dossier, env, delaiMs: e.delaiMs, libelle });
+      // CR-01, WR-07 : session propre, sans terminal de contrôle, groupe tué à la fin de l'étape.
+      const r = await o.lancer({ commande: sandboxExec, args: ['-p', profil, npm, ...e.args], cwd: dossier, env, delaiMs: e.delaiMs, libelle, isole: true });
       if (r.code !== 0) {
         const delai = r.delaiDepasse ? `, délai de ${Math.round(e.delaiMs / MIN)} min dépassé` : '';
         throw new Sortie(1, `${libelle} en échec (code ${String(r.code)}${delai}) : ${fin(`${r.stdout}\n${r.stderr}`)}`);

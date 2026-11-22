@@ -120,7 +120,7 @@ export async function executerRetour(o: OptionsRetour, ctx: ContexteRetour): Pro
       return code;
     }
 
-    agent = await ouvrirAgent(cfg, { exe, lancer: ctx.lancer, ecrire, maintenant: () => ctx.maintenant().getTime() });
+    agent = await ouvrirAgent(cfg, { exe, lancer: ctx.lancer, ecrire, home: ctx.home, maintenant: () => ctx.maintenant().getTime() });
     const ligneAvant = await appelerVerbe(cfg, agent, exe, 'etat', [cfg.cible], ctx.lancer);
     const avant = lireEtat(ligneAvant);
     if (avant === null || avant.cible !== cfg.cible) throw new Sortie(1, `réponse de etat illisible : ${masquer(ligneAvant, cfg)}`);

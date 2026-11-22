@@ -15,6 +15,16 @@ export interface Lancement {
   libelle: string;
   /** Sorties héritées (affichées en direct) : pour les étapes longues dont Erwan lit la sortie. */
   heriter?: boolean;
+  /**
+   * Nouvelle session et nouveau groupe de processus (setsid) : le processus n'a plus de terminal de contrôle, les
+   * signaux du terminal (Ctrl-C) ne l'atteignent pas, et tout son groupe est tué dès qu'il se termine, comme à
+   * l'expiration du délai ou à l'arrêt demandé. Revue de la phase 9.2 : CR-01 (un descendant resté dans le groupe ne
+   * survit pas à l'étape), WR-04 (un Ctrl-C ne coupe pas un appel au serveur en vol), WR-07 (pas de terminal de
+   * contrôle pour la build). Un descendant qui crée sa propre session y échappe : c'est un filet, pas une garantie.
+   */
+  isole?: boolean;
+  /** Arrêt demandé (WR-05, signal reçu avant l'activation) : le processus, et son groupe s'il est isolé, est tué. */
+  arret?: AbortSignal;
 }
 
 export interface Resultat {
@@ -57,9 +67,27 @@ export const lancer: Lanceur = (l) =>
     let stderr = '';
     let delaiDepasse = false;
     let fini = false;
+    if (l.arret?.aborted === true) {
+      resolve({ code: null, signal: null, stdout: '', stderr: `${l.libelle} : arrêt demandé, non lancé\n`, dureeMs: 0, delaiDepasse: false });
+      return;
+    }
+    const isole = l.isole === true;
     const sortie = l.heriter === true ? 'inherit' : 'pipe';
     const stdio: StdioOptions = [l.entree === undefined ? 'ignore' : 'pipe', sortie, sortie];
-    const enfant = spawn(l.commande, l.args, { cwd: l.cwd, env: l.env, stdio, shell: false });
+    const enfant = spawn(l.commande, l.args, { cwd: l.cwd, env: l.env, stdio, shell: false, detached: isole });
+    /** Isolé : tout le groupe (pgid = pid du chef de session) ; sinon le seul processus. */
+    const tuer = (signal: NodeJS.Signals): void => {
+      if (isole && enfant.pid !== undefined) {
+        try {
+          process.kill(-enfant.pid, signal);
+          return;
+        } catch {
+          // Groupe déjà vide : rien à tuer.
+          return;
+        }
+      }
+      enfant.kill(signal);
+    };
 
     const progression = setInterval(() => {
       const minutes = Math.round((Date.now() - debut) / 60_000);
@@ -68,12 +96,18 @@ export const lancer: Lanceur = (l) =>
     progression.unref();
 
     let tueur: NodeJS.Timeout | undefined;
+    const arreter = (): void => {
+      tuer('SIGTERM');
+      tueur = setTimeout(() => tuer('SIGKILL'), GRACE_KILL_MS);
+      tueur.unref();
+    };
     const minuteur = setTimeout(() => {
       delaiDepasse = true;
-      enfant.kill('SIGTERM');
-      tueur = setTimeout(() => enfant.kill('SIGKILL'), GRACE_KILL_MS);
-      tueur.unref();
+      arreter();
     }, l.delaiMs);
+    const surArret = (): void => arreter();
+    l.arret?.addEventListener('abort', surArret, { once: true });
+    let attenteFermeture: NodeJS.Timeout | undefined;
 
     const terminer = (code: number | null, signal: NodeJS.Signals | null): void => {
       if (fini) return;
@@ -81,6 +115,8 @@ export const lancer: Lanceur = (l) =>
       clearInterval(progression);
       clearTimeout(minuteur);
       if (tueur !== undefined) clearTimeout(tueur);
+      if (attenteFermeture !== undefined) clearTimeout(attenteFermeture);
+      l.arret?.removeEventListener('abort', surArret);
       resolve({ code, signal, stdout, stderr, dureeMs: Date.now() - debut, delaiDepasse });
     };
 
@@ -98,6 +134,18 @@ export const lancer: Lanceur = (l) =>
       terminer(null, null);
     });
     enfant.on('close', (code, signal) => terminer(code, signal));
+    if (isole) {
+      enfant.on('exit', (code, signal) => {
+        // CR-01 : ce qui reste du groupe ne survit pas au processus. Un descendant sorti du groupe qui garderait les
+        // sorties ouvertes ne bloque pas la fin : elles sont fermées après un délai de grâce.
+        tuer('SIGKILL');
+        attenteFermeture = setTimeout(() => {
+          enfant.stdout?.destroy();
+          enfant.stderr?.destroy();
+          terminer(code, signal);
+        }, GRACE_KILL_MS);
+      });
+    }
 
     if (l.entree !== undefined && enfant.stdin) {
       enfant.stdin.on('error', () => {

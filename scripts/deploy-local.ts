@@ -43,8 +43,8 @@ const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const USAGE = `Usage : npm run deploy:local -- etat
         npm run deploy:local -- retour [<sha>] [--urgence --justification "<texte>"] [--dry-run]
         npm run deploy:local [-- --forcer] [--urgence --justification "<texte>"] [--dry-run]
-  sans sous-commande : construit le commit poussé (HEAD égal à origin/main, arbre propre, reçu vert de ci:local,
-         sinon ci:local est lancé), puis l'envoie, l'active et le vérifie sur la cible de
+  sans sous-commande : construit le commit poussé (HEAD égal à origin/main, arbre propre, reçu vert de ci:local
+         exigé : sinon refus, lancer npm run ci:local d'abord), puis l'envoie, l'active et le vérifie sur la cible de
          ~/.config/rtp/deploiement.env. À lancer dans un terminal : phrase de passe de la clé, puis phrase tapée
          (« deployer essai <sha7> », « deployer en production <sha7> »). --forcer : déployer même si le site n'a
          pas changé depuis la version en ligne. --urgence --justification : retrait d'urgence pendant un gel (aucun
@@ -134,7 +134,7 @@ async function etat(deps: Dependances, ecrire: (l: string) => void): Promise<num
   const exe = resoudreExecutables(EXECUTABLES, envDeBase().PATH ?? '');
   const git = exe.git?.chemin ?? 'git';
 
-  const agent = await ouvrirAgent(cfg, { exe, lancer, ecrire });
+  const agent = await ouvrirAgent(cfg, { exe, lancer, ecrire, home });
   let code = 0;
   try {
     const ligne = await appelerVerbe(cfg, agent, exe, 'etat', [cfg.cible], lancer);

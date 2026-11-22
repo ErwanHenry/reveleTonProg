@@ -14,7 +14,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { lancer, type Lanceur, type Resultat } from '../../scripts/lib/processus.ts';
 import { Sortie } from '../../scripts/lib/deploiement/gardes.ts';
 import { resoudreExecutables } from '../../scripts/lib/deploiement/executables.ts';
-import { assurerCle, cleChiffree, DUREE_CLE_S, ouvrirAgent, type Agent } from '../../scripts/lib/deploiement/agent.ts';
+import { assurerCle, cleChiffree, dossierAgents, DUREE_CLE_S, ouvrirAgent, type Agent } from '../../scripts/lib/deploiement/agent.ts';
 
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const CLE_PUBLIQUE_FACTICE = 'ssh-ed25519 AAAAC3-CLE-PUBLIQUE-FACTICE-7b1d rtp-test';
@@ -29,6 +29,9 @@ function temp(prefixe: string): string {
   dossiers.push(d);
   return d;
 }
+/** HOME des agents du test : chemin court (/tmp), le socket d'un vrai ssh-agent est limité à 104 octets. */
+const HOME_AGENT = realpathSync(mkdtempSync('/tmp/rtp-ha-'));
+dossiers.push(HOME_AGENT);
 function ecrireExecutable(p: string, contenu: string): void {
   mkdirSync(path.dirname(p), { recursive: true });
   writeFileSync(p, contenu);
@@ -142,9 +145,14 @@ describe('ouvrirAgent (exécutables factices)', () => {
     const b = banc();
     const avant = comptes();
     const lignes: string[] = [];
-    const agent = await ouvrirAgent({ cle: b.cle }, { exe: exeDe(b), lancer, ecrire: (l) => lignes.push(l) });
+    const agent = await ouvrirAgent({ cle: b.cle }, { exe: exeDe(b), lancer, home: HOME_AGENT, ecrire: (l) => lignes.push(l) });
     const dossier = path.dirname(agent.socket);
     assert.equal(path.basename(agent.socket), 'agent.sock');
+    // CR-01 : hors du dossier temporaire, sous ~/.cache/rtp/agents (interdit à la build), dossiers en 0700.
+    assert.equal(path.dirname(dossier), dossierAgents(HOME_AGENT));
+    assert.equal(dossierAgents(HOME_AGENT), path.join(HOME_AGENT, '.cache', 'rtp', 'agents'));
+    assert.ok(!dossier.startsWith(realpathSync(tmpdir())), dossier);
+    assert.equal(statSync(dossierAgents(HOME_AGENT)).mode & 0o777, 0o700);
     assert.equal(statSync(dossier).mode & 0o777, 0o700);
     assert.ok(existsSync(agent.socket));
     assert.deepEqual(comptes(), avant.map((n) => n + 1), 'un gestionnaire par signal');
@@ -175,7 +183,7 @@ describe('ouvrirAgent (exécutables factices)', () => {
     const b = banc('cle-sans-phrase');
     const avant = comptes();
     const lignes: string[] = [];
-    const e = await sortie(ouvrirAgent({ cle: b.cle }, { exe: exeDe(b), lancer, ecrire: (l) => lignes.push(l) }));
+    const e = await sortie(ouvrirAgent({ cle: b.cle }, { exe: exeDe(b), lancer, home: HOME_AGENT, ecrire: (l) => lignes.push(l) }));
     assert.equal(e.code, 3);
     assert.ok(e.message.includes(b.cle), e.message);
     assert.match(e.message, /ssh-keygen -p -f/);
@@ -188,7 +196,7 @@ describe('ouvrirAgent (exécutables factices)', () => {
   it('ssh-add en échec : code 3 « clé non chargée », agent tué, dossier supprimé', async () => {
     const b = banc('phrase-refusee');
     const avant = comptes();
-    const e = await sortie(ouvrirAgent({ cle: b.cle }, { exe: exeDe(b), lancer, ecrire: () => {} }));
+    const e = await sortie(ouvrirAgent({ cle: b.cle }, { exe: exeDe(b), lancer, home: HOME_AGENT, ecrire: () => {} }));
     assert.equal(e.code, 3);
     assert.match(e.message, /clé non chargée : la phrase de passe doit être tapée par Erwan dans un terminal/);
     const agentLog = b.log('ssh-agent');
@@ -204,7 +212,7 @@ describe('ouvrirAgent (exécutables factices)', () => {
     for (const v of ['normal', 'cle-sans-phrase', 'phrase-refusee'] as const) {
       const b = banc(v);
       try {
-        const a: Agent = await ouvrirAgent({ cle: b.cle }, { exe: exeDe(b), lancer, ecrire: (l) => textes.push(l) });
+        const a: Agent = await ouvrirAgent({ cle: b.cle }, { exe: exeDe(b), lancer, home: HOME_AGENT, ecrire: (l) => textes.push(l) });
         textes.push(JSON.stringify(a), a.socket);
         await a.fermer();
       } catch (e) {
@@ -220,7 +228,7 @@ describe('clé chargée, retirée, rechargée (CR-04, exécutables factices)', (
   it('resteMs suit l\'horloge depuis le chargement ; retirer lance ssh-add -D avec le socket et remet resteMs à 0', async () => {
     const b = banc();
     let t = 1_000_000;
-    const agent = await ouvrirAgent({ cle: b.cle }, { exe: exeDe(b), lancer, ecrire: () => {}, maintenant: () => t });
+    const agent = await ouvrirAgent({ cle: b.cle }, { exe: exeDe(b), lancer, home: HOME_AGENT, ecrire: () => {}, maintenant: () => t });
     try {
       assert.equal(agent.resteMs(), DUREE_CLE_S * 1000);
       t += 14 * 60_000;
@@ -244,7 +252,7 @@ describe('clé chargée, retirée, rechargée (CR-04, exécutables factices)', (
     const b = banc();
     let t = 0;
     const lignes: string[] = [];
-    const agent = await ouvrirAgent({ cle: b.cle }, { exe: exeDe(b), lancer, ecrire: () => {}, maintenant: () => t });
+    const agent = await ouvrirAgent({ cle: b.cle }, { exe: exeDe(b), lancer, home: HOME_AGENT, ecrire: () => {}, maintenant: () => t });
     const chargements = (): number => b.log('ssh-add').match(/^ARGV \[-t\]/gm)?.length ?? 0;
     try {
       await assurerCle(agent, 12 * 60_000, "avant l'activation", (l) => lignes.push(l));
@@ -262,7 +270,7 @@ describe('clé chargée, retirée, rechargée (CR-04, exécutables factices)', (
 
   it('assurerCle : ssh-add -l répond « no identities » même après rechargement : code 3', async () => {
     const b = banc();
-    const agent = await ouvrirAgent({ cle: b.cle }, { exe: exeDe(b), lancer, ecrire: () => {} });
+    const agent = await ouvrirAgent({ cle: b.cle }, { exe: exeDe(b), lancer, home: HOME_AGENT, ecrire: () => {} });
     const sansCle: Agent = { ...agent, presente: async () => false, charger: async () => {} };
     try {
       const e = await sortie(assurerCle(sansCle, 60_000, "avant l'envoi", () => {}));
@@ -275,7 +283,7 @@ describe('clé chargée, retirée, rechargée (CR-04, exécutables factices)', (
 
   it('phrase refusée au rechargement : Sortie 3, resteMs à 0', async () => {
     const b = banc();
-    const agent = await ouvrirAgent({ cle: b.cle }, { exe: exeDe(b), lancer, ecrire: () => {} });
+    const agent = await ouvrirAgent({ cle: b.cle }, { exe: exeDe(b), lancer, home: HOME_AGENT, ecrire: () => {} });
     try {
       writeFileSync(path.join(b.bin, 'ssh-add'), '#!/bin/sh\nexit 1\n');
       const e = await sortie(agent.charger());
@@ -298,9 +306,9 @@ describe('ouvrirAgent : signaux et sortie du processus (processus enfant, exécu
 import { ouvrirAgent } from ${JSON.stringify(url('scripts/lib/deploiement/agent.ts'))};
 import { resoudreExecutables } from ${JSON.stringify(url('scripts/lib/deploiement/executables.ts'))};
 import { lancer } from ${JSON.stringify(url('scripts/lib/processus.ts'))};
-const [bin, cle, mode] = process.argv.slice(2);
+const [bin, cle, mode, home] = process.argv.slice(2);
 const exe = resoudreExecutables(['ssh-keygen', 'ssh-agent', 'ssh-add'], bin);
-const agent = await ouvrirAgent({ cle }, { exe, lancer, ecrire: () => {} });
+const agent = await ouvrirAgent({ cle }, { exe, lancer, ecrire: () => {}, home });
 if (mode === 'autre') {
   process.on('SIGTERM', () => {
     process.stdout.write('autre ' + existsSync(agent.socket) + '\\n');
@@ -317,7 +325,7 @@ setInterval(() => {}, 1000);
 
   function enfant(b: Banc, mode: string): Promise<{ code: number | null; signal: NodeJS.Signals | null; sortie: string; socket: string }> {
     return new Promise((resolve, reject) => {
-      const e = spawn(process.execPath, [script(), b.bin, b.cle, mode], { stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env } });
+      const e = spawn(process.execPath, [script(), b.bin, b.cle, mode, HOME_AGENT], { stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env } });
       let sortie = '';
       let erreurs = '';
       let socket = '';
@@ -442,7 +450,7 @@ describe('vrais outils OpenSSH, clés de test jetables', { skip: OUTILS ? false 
 
   it('clé sans phrase : code 3, aucun agent démarré', async () => {
     const exe = resoudreExecutables(['ssh-keygen', 'ssh-agent', 'ssh-add'], process.env.PATH ?? '');
-    const e = await sortie(ouvrirAgent({ cle: sans }, { exe, lancer: lanceurSansTerminal, ecrire: () => {} }));
+    const e = await sortie(ouvrirAgent({ cle: sans }, { exe, lancer: lanceurSansTerminal, home: HOME_AGENT, ecrire: () => {} }));
     assert.equal(e.code, 3);
     assert.equal(agentsDe(dossier).length, 0);
   });
@@ -454,7 +462,7 @@ describe('vrais outils OpenSSH, clés de test jetables', { skip: OUTILS ? false 
       if (l.args[0] === '-a' && l.args[1] !== undefined) sockets.push(l.args[1]);
       return lanceurSansTerminal(l);
     };
-    const e = await sortie(ouvrirAgent({ cle: avec }, { exe, lancer: lanceurNote, ecrire: (l) => lignes.push(l) }));
+    const e = await sortie(ouvrirAgent({ cle: avec }, { exe, lancer: lanceurNote, home: HOME_AGENT, ecrire: (l) => lignes.push(l) }));
     assert.equal(e.code, 3);
     assert.match(e.message, /clé non chargée/);
     const socket = sockets.at(-1) as string;
@@ -467,7 +475,7 @@ describe('vrais outils OpenSSH, clés de test jetables', { skip: OUTILS ? false 
     const b = banc();
     const reel = resoudreExecutables(['ssh-keygen', 'ssh-agent'], process.env.PATH ?? '');
     const exe = { ...reel, ...resoudreExecutables(['ssh-add'], b.bin) };
-    const agent = await ouvrirAgent({ cle: avec }, { exe, lancer: lanceurSansTerminal, ecrire: () => {} });
+    const agent = await ouvrirAgent({ cle: avec }, { exe, lancer: lanceurSansTerminal, home: HOME_AGENT, ecrire: () => {} });
     sockets.push(agent.socket);
     try {
       assert.ok(existsSync(agent.socket));

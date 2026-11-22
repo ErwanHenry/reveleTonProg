@@ -9,12 +9,14 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import net from 'node:net';
 import path from 'node:path';
 import { lancer } from '../../scripts/lib/processus.ts';
 import { empreinteArbre } from '../../scripts/lib/deploiement/empreinte.ts';
 import { Sortie } from '../../scripts/lib/deploiement/gardes.ts';
 import { comparerInstantanes, prendreInstantane, resoudreExecutables } from '../../scripts/lib/deploiement/executables.ts';
-import { construireDeploiement, envConstruction, profilSandbox, sondeBacASable, type BuildDeploiement } from '../../scripts/lib/deploiement/construire.ts';
+import { construireDeploiement, DOSSIERS_INTERDITS, envConstruction, profilSandbox, sondeBacASable, type BuildDeploiement } from '../../scripts/lib/deploiement/construire.ts';
+import { dossierAgents } from '../../scripts/lib/deploiement/agent.ts';
 
 const CLE = 'CLE-PRIVEE-FACTICE';
 const dossiers: string[] = [];
@@ -90,7 +92,12 @@ function banc(o: { scenario?: Scenario; fauxSandbox?: boolean; attaques?: boolea
   const tmp = temp('rtp-tmp-');
   const cache = temp('rtp-cache-');
   const bin = temp('rtp-bin-');
-  const log = path.join(tmp, 'npm.log');
+  // Journal du faux npm dans le cache npm : seul dossier persistant où le vrai bac à sable laisse écrire la build.
+  const log = path.join(cache, 'npm.log');
+  // Sondes node lancées par la build (lecture permise) : connexion à un socket Unix, résolution DNS locale.
+  const sondes = temp('rtp-sondes-');
+  writeFileSync(path.join(sondes, 'connexion.js'), "require('net').connect(process.argv[2]).on('connect', () => process.exit(0)).on('error', () => process.exit(1));\n");
+  writeFileSync(path.join(sondes, 'dns.js'), "require('dns').lookup('localhost', (e) => process.exit(e ? 1 : 0));\n");
   const profilLog = path.join(temp('rtp-profil-'), 'profil.sb');
 
   const attaques = o.attaques === true
@@ -105,6 +112,10 @@ essai ecriture-git-config 'echo "[intrus]" >> ${quote(path.join(racine, '.git', 
 essai creation-home 'echo intrus > "$HOME/intrus.txt"'
 essai ecriture-worktree 'echo ok > ./ecrit-worktree.txt'
 essai ecriture-tmpdir 'echo ok > "$TMPDIR/ecrit-tmp.txt"'
+essai ecriture-tmpdir-utilisateur 'echo intrus > "${path.join(tmp, 'intrus-tmp.txt')}"'
+essai lecture-agents 'ls "$HOME/.cache/rtp/agents" >> "$LOG"'
+essai connexion-agent '"${process.execPath}" "${path.join(sondes, 'connexion.js')}" "$HOME/.cache/rtp/agents/a/s.sock"'
+essai dns-local '"${process.execPath}" "${path.join(sondes, 'dns.js')}"'
 `
     : '';
   const versionCommit = scenario === 'autre-commit' ? 'b'.repeat(40) : scenario === 'dev' ? 'dev' : '$GITHUB_SHA';
@@ -197,6 +208,15 @@ function sansWorktree(b: Banc): void {
   assert.deepEqual(readdirSync(b.tmp).filter((n) => n.startsWith('rtp-deploiement-')), []);
 }
 
+/** Socket Unix qui écoute dans le dossier des agents du HOME du banc (CR-01 : la build ne doit pas le joindre). */
+async function socketAgent(b: Banc): Promise<() => Promise<void>> {
+  const d = path.join(dossierAgents(b.home), 'a');
+  mkdirSync(d, { recursive: true, mode: 0o700 });
+  const serveur = net.createServer((c) => c.end());
+  await new Promise<void>((r) => serveur.listen(path.join(d, 's.sock'), r));
+  return () => new Promise<void>((r) => serveur.close(() => r()));
+}
+
 async function refuse(p: Promise<unknown>, code: number, motif: RegExp): Promise<void> {
   await assert.rejects(p, (e: unknown) => {
     assert.ok(e instanceof Sortie, String(e));
@@ -214,8 +234,13 @@ describe('profilSandbox', () => {
     for (const s of ['(subpath "/private/tmp/w")', '(subpath "/private/tmp/r/.git/worktrees/w")', '(subpath "/private/tmp")', '(subpath "/Users/exemple/.npm")', '(literal "/dev/null")', '(literal "/dev/tty")']) {
       assert.ok(p.includes(s), s);
     }
-    assert.ok(p.includes('(deny file-read* (literal "/Users/exemple/cles/a") (literal "/Users/exemple/cles/b") (subpath "/Users/exemple/.config/rtp") (subpath "/Users/exemple/.ssh") (subpath "/Users/exemple/.config/gh"))'), p);
+    assert.ok(p.includes('(deny file-read* (literal "/Users/exemple/cles/a") (literal "/Users/exemple/cles/b") (subpath "/Users/exemple/.config/rtp") (subpath "/Users/exemple/.ssh") (subpath "/Users/exemple/.config/gh") (subpath "/Users/exemple/.cache/rtp/agents"))'), p);
     assert.equal(p.match(/\(literal "\/Users\/exemple\/cles\//g)?.length, 2);
+  });
+  it('CR-01 : aucune connexion à un socket Unix sauf le résolveur DNS ; dossier des agents interdit', () => {
+    const p = profilSandbox({ ...base, lecturesInterdites: [] });
+    assert.ok(p.endsWith('(deny network-outbound (remote unix-socket))(allow network-outbound (remote unix-socket (path-literal "/private/var/run/mDNSResponder")))'), p);
+    assert.equal(path.join('/Users/exemple', DOSSIERS_INTERDITS.at(-1) as string), dossierAgents('/Users/exemple'));
   });
   it('refuse un chemin avec un guillemet ou une barre oblique inverse', () => {
     assert.throws(() => profilSandbox({ ...base, lecturesInterdites: ['/Users/exemple/a"b'] }), (e: unknown) => e instanceof Sortie && e.code === 2);
@@ -331,6 +356,7 @@ describe('construireDeploiement (faux sandbox-exec)', () => {
         assert.equal(r.sha, b.sha);
         assert.equal(r.dist, path.join(r.dossierTravail, 'dist'));
         assert.ok(r.dossierTravail.startsWith(`${b.tmp}/rtp-deploiement-${b.sha.slice(0, 12)}-`), r.dossierTravail);
+        assert.ok(existsSync(`${r.dossierTravail}-tmp`), 'dossier temporaire propre à la build');
         assert.equal(git(r.dossierTravail, 'rev-parse', 'HEAD'), b.sha);
         assert.equal(r.empreinte, empreinteArbre(r.dist));
         assert.equal(statSync(path.join(r.dist, 'sous')).mode & 0o777, 0o755);
@@ -344,12 +370,16 @@ describe('construireDeploiement (faux sandbox-exec)', () => {
           assert.equal(a.env.RTP_DEPLOIEMENT, attendu);
           assert.equal(a.env.npm_config_cache, b.cache);
           assert.equal(a.env.HOME, b.home);
+          // CR-01 : TMPDIR propre à la build, jamais celui de l'utilisateur.
+          assert.equal(a.env.TMPDIR, `${r.dossierTravail}-tmp`);
           assert.equal(a.env.SSH_AUTH_SOCK, undefined);
           assert.equal(a.env.RTP_HOTE, undefined);
         }
         const profil = readFileSync(b.profilLog, 'utf8');
         assert.ok(profil.includes('(deny file-write*)'));
         assert.ok(profil.includes(`(subpath "${r.dossierTravail}")`));
+        assert.ok(profil.includes(`(subpath "${r.dossierTravail}-tmp")`));
+        assert.ok(!profil.includes(`(subpath "${b.tmp}")`), 'TMPDIR de l\'utilisateur ouvert en écriture');
         assert.ok(profil.includes(`(literal "${b.cleExterne}")`));
         assert.deepEqual(Object.keys(r.executables).sort(), ['git', 'jq']);
         assert.equal(r.instantane.fichiers[path.join(b.home, '.config', 'rtp', 'deploiement.env')]?.length, 64);
@@ -357,6 +387,7 @@ describe('construireDeploiement (faux sandbox-exec)', () => {
         await r.nettoyer();
       }
       assert.equal(existsSync(r.dossierTravail), false);
+      assert.equal(existsSync(`${r.dossierTravail}-tmp`), false);
       sansWorktree(b);
     }
   });
@@ -430,16 +461,25 @@ describe('sondeBacASable', () => {
 });
 
 describe('bac à sable (vrai sandbox-exec)', { skip: sonde.ok ? false : sonde.raison }, () => {
-  it('la build ne lit aucun secret et n’écrit que dans le worktree, TMPDIR et le cache npm', async () => {
+  it('la build ne lit aucun secret, n’écrit que dans le worktree, son TMPDIR et le cache npm, ne joint aucun agent', async () => {
     const b = banc({ fauxSandbox: false, attaques: true });
     const gitConfig = readFileSync(path.join(b.racine, '.git', 'config'));
     const envFichier = path.join(b.home, '.config', 'rtp', 'deploiement.env');
     const envAvant = readFileSync(envFichier);
-    const r = await construire(b);
+    const fermerSocket = await socketAgent(b);
+    let r: BuildDeploiement;
+    try {
+      r = await construire(b);
+    } finally {
+      await fermerSocket();
+    }
     try {
       const log = readFileSync(b.log, 'utf8');
       assert.ok(!log.includes(CLE), 'un secret factice a été lu par la build');
-      for (const t of ['lecture-cle', 'lecture-cle-externe', 'lecture-ssh', 'lecture-gh', 'ecriture-env', 'ecriture-git-config', 'creation-home']) {
+      assert.ok(!log.includes('s.sock'), 'le dossier des agents a été listé par la build');
+      assert.ok(log.includes('dns-local REUSSI'), 'résolution DNS refusée');
+      assert.equal(existsSync(path.join(b.tmp, 'intrus-tmp.txt')), false);
+      for (const t of ['lecture-cle', 'lecture-cle-externe', 'lecture-ssh', 'lecture-gh', 'ecriture-env', 'ecriture-git-config', 'creation-home', 'ecriture-tmpdir-utilisateur', 'lecture-agents', 'connexion-agent']) {
         assert.ok(log.includes(`${t} REFUSE`), `${t} n’a pas été refusé :\n${log.split('\n').filter((l) => !l.startsWith('ENV ')).join('\n')}`);
       }
       for (const t of ['ecriture-worktree', 'ecriture-tmpdir']) assert.ok(log.includes(`${t} REUSSI`), t);
