@@ -14,7 +14,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { lancer, type Lanceur, type Resultat } from '../../scripts/lib/processus.ts';
 import { Sortie } from '../../scripts/lib/deploiement/gardes.ts';
 import { resoudreExecutables } from '../../scripts/lib/deploiement/executables.ts';
-import { cleChiffree, ouvrirAgent, type Agent } from '../../scripts/lib/deploiement/agent.ts';
+import { assurerCle, cleChiffree, DUREE_CLE_S, ouvrirAgent, type Agent } from '../../scripts/lib/deploiement/agent.ts';
 
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const CLE_PUBLIQUE_FACTICE = 'ssh-ed25519 AAAAC3-CLE-PUBLIQUE-FACTICE-7b1d rtp-test';
@@ -213,6 +213,77 @@ describe('ouvrirAgent (exécutables factices)', () => {
     }
     assert.ok(textes.length > 0);
     for (const t of textes) assert.ok(!t.includes('CLE-PUBLIQUE-FACTICE'), t);
+  });
+});
+
+describe('clé chargée, retirée, rechargée (CR-04, exécutables factices)', () => {
+  it('resteMs suit l\'horloge depuis le chargement ; retirer lance ssh-add -D avec le socket et remet resteMs à 0', async () => {
+    const b = banc();
+    let t = 1_000_000;
+    const agent = await ouvrirAgent({ cle: b.cle }, { exe: exeDe(b), lancer, ecrire: () => {}, maintenant: () => t });
+    try {
+      assert.equal(agent.resteMs(), DUREE_CLE_S * 1000);
+      t += 14 * 60_000;
+      assert.equal(agent.resteMs(), 60_000);
+      t += 2 * 60_000;
+      assert.equal(agent.resteMs(), 0, 'jamais négatif');
+      await agent.retirer();
+      assert.ok(b.log('ssh-add').includes('ARGV [-D]\n'), b.log('ssh-add'));
+      assert.ok(b.log('ssh-add').split('ARGV [-D]')[1]?.includes(`ENV SSH_AUTH_SOCK=${agent.socket}\n`));
+      assert.equal(agent.resteMs(), 0);
+      await agent.charger();
+      assert.equal(agent.resteMs(), DUREE_CLE_S * 1000);
+      assert.equal(await agent.presente(), true);
+      assert.ok(b.log('ssh-add').includes('ARGV [-l]\n'));
+    } finally {
+      await agent.fermer();
+    }
+  });
+
+  it('assurerCle : temps restant suffisant, pas de rechargement ; insuffisant, rechargement puis contrôle', async () => {
+    const b = banc();
+    let t = 0;
+    const lignes: string[] = [];
+    const agent = await ouvrirAgent({ cle: b.cle }, { exe: exeDe(b), lancer, ecrire: () => {}, maintenant: () => t });
+    const chargements = (): number => b.log('ssh-add').match(/^ARGV \[-t\]/gm)?.length ?? 0;
+    try {
+      await assurerCle(agent, 12 * 60_000, "avant l'activation", (l) => lignes.push(l));
+      assert.equal(chargements(), 1);
+      assert.equal(lignes.length, 0);
+      t += 4 * 60_000;
+      await assurerCle(agent, 12 * 60_000, "avant l'activation", (l) => lignes.push(l));
+      assert.equal(chargements(), 2);
+      assert.match(lignes[0] ?? '', /Clé dédiée avant l'activation : tapez de nouveau sa phrase de passe/);
+      assert.equal(agent.resteMs(), DUREE_CLE_S * 1000);
+    } finally {
+      await agent.fermer();
+    }
+  });
+
+  it('assurerCle : ssh-add -l répond « no identities » même après rechargement : code 3', async () => {
+    const b = banc();
+    const agent = await ouvrirAgent({ cle: b.cle }, { exe: exeDe(b), lancer, ecrire: () => {} });
+    const sansCle: Agent = { ...agent, presente: async () => false, charger: async () => {} };
+    try {
+      const e = await sortie(assurerCle(sansCle, 60_000, "avant l'envoi", () => {}));
+      assert.equal(e.code, 3);
+      assert.match(e.message, /clé absente de l'agent avant l'envoi : rien n'a été fait/);
+    } finally {
+      await agent.fermer();
+    }
+  });
+
+  it('phrase refusée au rechargement : Sortie 3, resteMs à 0', async () => {
+    const b = banc();
+    const agent = await ouvrirAgent({ cle: b.cle }, { exe: exeDe(b), lancer, ecrire: () => {} });
+    try {
+      writeFileSync(path.join(b.bin, 'ssh-add'), '#!/bin/sh\nexit 1\n');
+      const e = await sortie(agent.charger());
+      assert.equal(e.code, 3);
+      assert.equal(agent.resteMs(), 0);
+    } finally {
+      await agent.fermer();
+    }
   });
 });
 

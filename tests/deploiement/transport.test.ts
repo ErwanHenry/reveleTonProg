@@ -53,7 +53,7 @@ interface Banc {
   home: string;
   cfg: ConfigDeploiement;
   exe: Executables;
-  agent: Agent;
+  agent: Pick<Agent, 'socket'>;
 }
 
 function banc(o: OptionsFauxServeur = {}, surcharges: Partial<Record<string, string>> = {}): Banc {
@@ -67,7 +67,7 @@ function banc(o: OptionsFauxServeur = {}, surcharges: Partial<Record<string, str
     ...resoudreExecutables(['ssh', 'curl', 'jq'], faux.env.PATH ?? ''),
     rsync: resoudreExecutables([cfg.rsync], faux.env.PATH ?? '')[cfg.rsync] as { chemin: string; empreinte: string },
   };
-  const agent: Agent = { socket: path.join(faux.racine, 'agent', 'agent.sock'), fermer: async () => {} };
+  const agent: Pick<Agent, 'socket'> = { socket: path.join(faux.racine, 'agent', 'agent.sock') };
   return { faux, home, cfg, exe, agent };
 }
 

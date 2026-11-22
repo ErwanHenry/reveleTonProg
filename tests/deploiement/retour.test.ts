@@ -69,12 +69,13 @@ function dist(s: string): string {
 
 /** Envoie et active les versions données, dans l'ordre, par la vraie commande forcée (préparation du banc). */
 async function activer(b: Banc, versions: { s: string }[]): Promise<void> {
+  b.faux.chargerCle();
   const cfg = lireConfig(b.home);
   const exe: Executables = {
     ...resoudreExecutables(['ssh'], b.faux.env.PATH ?? ''),
     rsync: resoudreExecutables([cfg.rsync], b.faux.env.PATH ?? '')[cfg.rsync] as { chemin: string; empreinte: string },
   };
-  const agent: Agent = { socket: path.join(b.faux.racine, 'agent.sock'), fermer: async () => {} };
+  const agent: Pick<Agent, 'socket'> = { socket: path.join(b.faux.racine, 'agent.sock') };
   for (const v of versions) {
     await envoyer(cfg, agent, exe, dist(v.s), cfg.cible, v.s, lancerReel);
     await appelerVerbe(cfg, agent, exe, 'activer', [cfg.cible, v.s], lancerReel);
@@ -87,21 +88,23 @@ async function activer(b: Banc, versions: { s: string }[]): Promise<void> {
 }
 
 async function courant(b: Banc): Promise<string | null> {
+  b.faux.chargerCle();
   const cfg = lireConfig(b.home);
   const exe = resoudreExecutables(['ssh'], b.faux.env.PATH ?? '');
-  const agent: Agent = { socket: path.join(b.faux.racine, 'agent.sock'), fermer: async () => {} };
+  const agent: Pick<Agent, 'socket'> = { socket: path.join(b.faux.racine, 'agent.sock') };
   const e = lireEtat(await appelerVerbe(cfg, agent, exe, 'etat', [cfg.cible], lancerReel));
   return e?.courant ?? null;
 }
 
 /** Confirmateur factice : note la phrase demandée, l'accepte si c'est celle attendue, sinon code 3. */
-function confirmateur(attendue: string | null): { confirmer: Confirmateur; vues: string[] } {
+function confirmateur(attendue: string | null, action?: () => void | Promise<void>): { confirmer: Confirmateur; vues: string[] } {
   const vues: string[] = [];
   return {
     vues,
     confirmer: async (p) => {
       vues.push(p);
       if (attendue === null || p !== attendue) throw new Sortie(3, "confirmation refusée : rien n'a été envoyé");
+      if (action !== undefined) await action();
     },
   };
 }
@@ -182,6 +185,29 @@ describe('executerRetour contre la vraie commande forcée', () => {
     assert.ok(verbesSsh(b).includes(`retour essai ${A}`));
     assert.equal(await courant(b), A);
     assert.equal(journal(b)[0]?.resultat, 'succes');
+  });
+
+  it('CR-04 : clé retirée pendant l\'écran, rechargée après la confirmation (phrase de passe tapée de nouveau), retour fait', { skip: !BASCULE && RAISON_MV }, async () => {
+    const b = banc({ exigerCle: true });
+    await activer(b, [{ s: A }, { s: B }]);
+    let pendant: boolean | null = null;
+    const { code, texte } = await retour(b, {}, confirmateur('retour essai precedente', () => {
+      pendant = b.faux.cleChargee();
+    }));
+    assert.equal(code, 0, texte);
+    assert.equal(pendant, false, 'clé absente du faux agent pendant la confirmation');
+    assert.deepEqual(b.faux.journal('ssh-add').map((a) => a[1]).filter((x) => x !== '-l'), ['-t', '-D', '-t']);
+    assert.match(texte, /Clé dédiée avant le retour : tapez de nouveau sa phrase de passe/);
+    assert.equal(await courant(b), A);
+  });
+
+  it('CR-04 : phrase de passe refusée au rechargement : sortie 3, aucun verbe retour', async () => {
+    const b = banc({ exigerCle: true, chargementsAdmis: 1 });
+    b.faux.chargerCle();
+    b.faux.servirCommit('essai', A, dist(A));
+    const { code, texte } = await retour(b, { version: A }, confirmateur(`retour essai ${A.slice(0, 7)}`));
+    assert.equal(code, 3, texte);
+    assert.ok(!verbesSsh(b).some((v) => v.startsWith('retour')), verbesSsh(b).join(' | '));
   });
 
   it('commit absent du serveur : code 66 du serveur, sortie 1, journal echec', { skip: !BASCULE && RAISON_MV }, async () => {

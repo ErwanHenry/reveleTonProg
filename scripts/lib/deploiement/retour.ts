@@ -24,7 +24,7 @@
 // N'importe que des modules node:, des modules relatifs et scripts/garde-gel.ts (par gardes.ts).
 import { envDeBase, type Lanceur } from '../processus.ts';
 import { prendreVerrou, VerrouPris } from '../ci-local.ts';
-import { ouvrirAgent, type Agent } from './agent.ts';
+import { assurerCle, ouvrirAgent, type Agent } from './agent.ts';
 import { cheminsLocaux, lireConfig, type ConfigDeploiement } from './config.ts';
 import { lignesEcran, phraseAttendue, type Confirmateur } from './confirmation.ts';
 import { resoudreExecutables, type Executables } from './executables.ts';
@@ -52,6 +52,8 @@ export interface ContexteRetour {
 }
 
 const MIN = 60_000;
+/** CR-04 : temps de clé exigé avant le verbe retour (retour, puis etat : 1 min chacun, avec du jeu). */
+const MARGE_RETOUR = 5 * MIN;
 const SHA = /^[0-9a-f]{40}$/;
 export const EXECUTABLES_RETOUR = ['ssh', 'ssh-agent', 'ssh-add', 'ssh-keygen', 'curl', 'jq', 'git'];
 
@@ -118,11 +120,13 @@ export async function executerRetour(o: OptionsRetour, ctx: ContexteRetour): Pro
       return code;
     }
 
-    agent = await ouvrirAgent(cfg, { exe, lancer: ctx.lancer, ecrire });
+    agent = await ouvrirAgent(cfg, { exe, lancer: ctx.lancer, ecrire, maintenant: () => ctx.maintenant().getTime() });
     const ligneAvant = await appelerVerbe(cfg, agent, exe, 'etat', [cfg.cible], ctx.lancer);
     const avant = lireEtat(ligneAvant);
     if (avant === null || avant.cible !== cfg.cible) throw new Sortie(1, `réponse de etat illisible : ${masquer(ligneAvant, cfg)}`);
     courantAvant = avant.courant;
+    // CR-04 : la clé n'attend pas la phrase de confirmation chargée.
+    await agent.retirer();
 
     ecrire('');
     for (const l of lignesEcran({
@@ -134,6 +138,7 @@ export async function executerRetour(o: OptionsRetour, ctx: ContexteRetour): Pro
       ...(courantAvant === null ? {} : { sujetEnLigne: await sujet(ctx, exe, courantAvant) }),
       gel: gel.motif,
     })) ecrire(l);
+    ecrire("Clé retirée de l'agent pendant cet écran : sa phrase de passe sera redemandée juste avant le retour.");
     await ctx.confirmer(phraseAttendue('retour', cfg.cible, version));
 
     // CR-02 : la garde rejouée après la confirmation, avec l'heure du moment.
@@ -142,6 +147,8 @@ export async function executerRetour(o: OptionsRetour, ctx: ContexteRetour): Pro
       refus = true;
       throw new Sortie(1, `garde de gel rejouée après la confirmation : ${gelApres.motif} ; rien n'a été envoyé`);
     }
+    // CR-04 : clé rechargée juste avant d'écrire sur le serveur (phrase de passe tapée de nouveau).
+    await assurerCle(agent, MARGE_RETOUR, 'avant le retour', ecrire);
 
     let ligneRetour: string;
     try {

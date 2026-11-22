@@ -12,9 +12,15 @@
 // lecture comme en écriture, exige la clé protégée ; un agent ne contacte jamais le serveur par ce chemin.
 //
 // Pourquoi un agent de 15 minutes dans un dossier 0700 : le socket ne doit servir qu'à ce déploiement. Il vit dans
-// un dossier temporaire lisible du seul utilisateur, la clé y expire au bout de 900 s (`ssh-add -t 900`), et l'agent
+// un dossier lisible du seul utilisateur, la clé y expire au bout de 900 s (`ssh-add -t 900`), et l'agent
 // est tué à la fin (fermer), sur SIGINT, SIGTERM ou SIGHUP, et à la sortie du processus. L'agent ssh habituel
 // d'Erwan n'est jamais utilisé (SSH_AUTH_SOCK n'est pas transmis par envDeBase).
+//
+// CR-04 (revue de la phase 9.2) : les 900 s courent dès la phrase de passe, quelle que soit l'attente à l'écran. Le
+// déploiement et le retour retirent donc la clé (retirer) avant d'attendre la phrase de confirmation, la rechargent
+// (charger : phrase de passe tapée de nouveau) juste avant d'écrire sur le serveur, et vérifient avant l'activation
+// qu'elle est encore là (presente) avec assez de temps devant elle (resteMs) pour la vérification et le retour
+// automatique.
 //
 // Signaux : si personne d'autre n'écoute le signal, l'agent est fermé puis le signal est relancé (arrêt normal).
 // Si un autre gestionnaire écoute (retour automatique après activation, plan 06), l'agent lui reste ouvert : c'est
@@ -32,7 +38,21 @@ import { Sortie } from './gardes.ts';
 export interface Agent {
   socket: string;
   fermer: () => Promise<void>;
+  /**
+   * CR-04 : charge (ou recharge) la clé pour DUREE_CLE_S ; Erwan tape sa phrase de passe à l'invite de ssh-add.
+   * Échec : Sortie code 3, la clé n'est pas chargée.
+   */
+  charger: () => Promise<void>;
+  /** CR-04 : retire la clé de l'agent (ssh-add -D), pour qu'elle ne reste pas chargée pendant une attente humaine. */
+  retirer: () => Promise<void>;
+  /** CR-04 : temps restant estimé avant l'expiration de la clé, en millisecondes ; 0 si elle n'est pas chargée. */
+  resteMs: () => number;
+  /** CR-04 : la clé est-elle encore dans l'agent ? (ssh-add -l, sortie jetée) */
+  presente: () => Promise<boolean>;
 }
+
+/** Durée de chargement de la clé dans l'agent (ssh-add -t). */
+export const DUREE_CLE_S = 900;
 
 const MIN = 60_000;
 const SIGNAUX = ['SIGINT', 'SIGTERM', 'SIGHUP'] as const;
@@ -67,9 +87,10 @@ export async function cleChiffree(cle: string, exe: Executables, lancer: Lanceur
  */
 export async function ouvrirAgent(
   cfg: Pick<ConfigDeploiement, 'cle'>,
-  o: { exe: Executables; lancer: Lanceur; ecrire: (l: string) => void },
+  o: { exe: Executables; lancer: Lanceur; ecrire: (l: string) => void; maintenant?: () => number },
 ): Promise<Agent> {
   const { exe, lancer, ecrire } = o;
+  const maintenant = o.maintenant ?? Date.now;
   if (!(await cleChiffree(cfg.cle, exe, lancer))) {
     throw new Sortie(3, `la clé ${cfg.cle} n'a pas de phrase de passe : refusée ; la poser avec ssh-keygen -p -f ${cfg.cle}`);
   }
@@ -81,6 +102,8 @@ export async function ouvrirAgent(
   const socket = path.join(dossier, 'agent.sock');
   let pid: string | null = null;
   let ferme: Promise<void> | null = null;
+  /** Instant (ms) où la clé a été chargée pour la dernière fois ; null : non chargée. */
+  let chargeeA: number | null = null;
 
   const envAgent = (): Record<string, string> => ({ ...envDeBase(), SSH_AUTH_SOCK: socket, ...(pid === null ? {} : { SSH_AGENT_PID: pid }) });
 
@@ -131,10 +154,18 @@ export async function ouvrirAgent(
     }
     pid = m[1] ?? null;
 
-    ecrire(`Clé dédiée ${cfg.cle} : tapez sa phrase de passe à l'invite de ssh-add ci-dessous (clé chargée 15 min dans un agent propre à cette commande).`);
+    ecrire(`Clé dédiée ${cfg.cle} : tapez sa phrase de passe à l'invite de ssh-add ci-dessous (clé chargée ${DUREE_CLE_S / 60} min au plus, dans un agent propre à cette commande).`);
+    await charger();
+  } catch (e) {
+    await fermer();
+    throw e;
+  }
+
+  async function charger(): Promise<void> {
+    chargeeA = null;
     const ajout = await lancer({
       commande: sshAdd,
-      args: ['-t', '900', cfg.cle],
+      args: ['-t', String(DUREE_CLE_S), cfg.cle],
       cwd: '/',
       env: { ...envDeBase(), SSH_AUTH_SOCK: socket, SSH_ASKPASS_REQUIRE: 'never' },
       delaiMs: 10 * MIN,
@@ -144,10 +175,37 @@ export async function ouvrirAgent(
     if (ajout.code !== 0) {
       throw new Sortie(3, 'clé non chargée : la phrase de passe doit être tapée par Erwan dans un terminal');
     }
-  } catch (e) {
-    await fermer();
-    throw e;
+    // Noté après ssh-add : la durée court depuis la phrase de passe, l'estimation reste du côté prudent à quelques
+    // secondes près ; presente() fait foi pour la présence.
+    chargeeA = maintenant();
   }
 
-  return { socket, fermer };
+  async function retirer(): Promise<void> {
+    const r = await lancer({ commande: sshAdd, args: ['-D'], cwd: '/', env: envAgent(), delaiMs: MIN, libelle: 'retrait de la clé de l\'agent' });
+    if (r.code !== 0) throw new Sortie(1, 'clé non retirée de l\'agent avant l\'attente de la confirmation : arrêt, rien n\'a été envoyé');
+    chargeeA = null;
+  }
+
+  async function presente(): Promise<boolean> {
+    const r = await lancer({ commande: sshAdd, args: ['-l'], cwd: '/', env: envAgent(), delaiMs: MIN, libelle: 'présence de la clé dans l\'agent' });
+    return r.code === 0;
+  }
+
+  const resteMs = (): number => (chargeeA === null ? 0 : Math.max(0, chargeeA + DUREE_CLE_S * 1000 - maintenant()));
+
+  return { socket, fermer, charger, retirer, resteMs, presente };
+}
+
+const MIN_CLE = 60_000;
+
+/**
+ * CR-04 : avant d'écrire sur le serveur, la clé doit être dans l'agent avec au moins margeMs devant elle. Sinon elle
+ * est rechargée (Erwan tape de nouveau sa phrase de passe) ; encore absente ensuite : Sortie code 3, rien n'est fait.
+ */
+export async function assurerCle(agent: Agent, margeMs: number, moment: string, ecrire: (l: string) => void): Promise<void> {
+  if (agent.resteMs() < margeMs || !(await agent.presente())) {
+    ecrire(`Clé dédiée ${moment} : tapez de nouveau sa phrase de passe à l'invite de ssh-add (${Math.ceil(margeMs / MIN_CLE)} min de clé chargée au moins sont nécessaires).`);
+    await agent.charger();
+  }
+  if (!(await agent.presente())) throw new Sortie(3, `clé absente de l'agent ${moment} : rien n'a été fait`);
 }

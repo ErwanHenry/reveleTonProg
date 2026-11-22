@@ -13,12 +13,14 @@
 //   5. build scellée (construire.ts, WR-04) puis instantané comparé à A : ci:local et la build n'ont rien changé ;
 //   6. --dry-run : écran sans donnée du serveur, arrêt (ni agent, ni etat, ni journal) ;
 //   7. agent ssh (phrase de passe tapée par Erwan), etat, site touché depuis la version en ligne (sinon --forcer),
-//      fichiers qui changent, écran, phrase tapée (confirmation.ts) ;
+//      fichiers qui changent, clé retirée de l'agent (CR-04 de la revue de la phase 9.2), écran, phrase tapée
+//      (confirmation.ts) ;
 //   8. après la confirmation, tout ce qui a pu changer pendant l'attente est rejoué : gel (CR-02), tête de main,
 //      configuration et cible de la build, instantané A, empreinte de l'arbre et absence de lien (CR-01), commit de
-//      version.json ;
-//   9. envoi, etat (version d'avant, WR-01), activer, etat, test de fumée ; échec ou signal après activer : retour
-//      automatique vers la version exacte notée avant (WR-01, IN-07), sauf retrait d'urgence.
+//      version.json ; puis clé rechargée (phrase de passe tapée de nouveau, CR-04) ;
+//   9. envoi, etat (version d'avant, WR-01), clé présente avec 12 min devant elle (sinon rechargée, CR-04), activer,
+//      etat, test de fumée ; échec ou signal après activer : retour automatique vers la version exacte notée avant
+//      (WR-01, IN-07), sauf retrait d'urgence.
 // Codes : 0 déployé, rien à déployer, ou répétition à blanc ; 1 garde ou étape en échec, rien d'activé ; 2 usage ou
 // configuration (rsync 3 absent compris) ; 3 pas de terminal, confirmation refusée, clé sans phrase de passe ;
 // 4 échec après l'activation, version d'avant remise en ligne ; 5 échec après l'activation, version d'avant non
@@ -32,7 +34,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { envDeBase, type Lanceur } from '../processus.ts';
-import { ouvrirAgent, type Agent } from './agent.ts';
+import { assurerCle, ouvrirAgent, type Agent } from './agent.ts';
 import { cheminsSecrets, lireConfig, type ConfigDeploiement } from './config.ts';
 import { lignesEcran, phraseAttendue, type Confirmateur } from './confirmation.ts';
 import { construireDeploiement, type BuildDeploiement } from './construire.ts';
@@ -167,6 +169,13 @@ export const EXCLUSIONS_DEPLOY: readonly ExclusionDeploiement[] = [
 ];
 
 const MIN = 60_000;
+/**
+ * CR-04 : temps de clé exigé avant l'activation : activer et etat (1 min chacun), test de fumée (deux curl de 3 min
+ * et jq), puis, en cas d'échec, retour automatique (etat, retour, etat : 1 min chacun).
+ */
+const MARGE_APRES_ACTIVATION = 12 * MIN;
+/** CR-04 : temps de clé exigé avant l'envoi ; une clé qui expire pendant l'envoi n'active rien (code 1). */
+const MARGE_ENVOI = 5 * MIN;
 const SIGNAUX = ['SIGINT', 'SIGTERM', 'SIGHUP'] as const;
 /** ci.yml du dépôt qui exécute ce code (seule définition de CHEMINS_HORS_SITE), comme ops/site-touche.sh. */
 const CI_YML = fileURLToPath(new URL('../../../.github/workflows/ci.yml', import.meta.url));
@@ -334,7 +343,7 @@ export async function executerDeploiement(o: OptionsDeploiement, ctx: ContexteDe
     }
 
     // ---------- 7. agent, version en ligne, écran, confirmation ----------
-    agent = await ouvrirAgent(c0, { exe, lancer: ctx.lancer, ecrire });
+    agent = await ouvrirAgent(c0, { exe, lancer: ctx.lancer, ecrire, maintenant: () => ctx.maintenant().getTime() });
     const ag = agent;
     const etatLu = async (moment: string) => {
       const ligne = await appelerVerbe(c0, ag, exe, 'etat', [c0.cible], ctx.lancer);
@@ -352,6 +361,8 @@ export async function executerDeploiement(o: OptionsDeploiement, ctx: ContexteDe
       return code;
     }
     const fichiers = await fichiersChanges(gitL, enLigne, s);
+    // CR-04 : la clé n'attend pas la phrase de confirmation chargée (attente sans borne, expiration en cours de route).
+    await ag.retirer();
 
     ecrire('');
     for (const l of lignesEcran({
@@ -368,6 +379,7 @@ export async function executerDeploiement(o: OptionsDeploiement, ctx: ContexteDe
       gel: gel.motif,
     })) ecrire(l);
     for (const l of fichiers.lignes) ecrire(`  ${l}`);
+    ecrire("Clé retirée de l'agent pendant cet écran : sa phrase de passe sera redemandée juste avant l'envoi.");
     await ctx.confirmer(phraseAttendue('deployer', c0.cible, s));
 
     // ---------- 8. tout ce qui a pu changer pendant l'attente est rejoué ----------
@@ -397,6 +409,8 @@ export async function executerDeploiement(o: OptionsDeploiement, ctx: ContexteDe
     if (empreinte !== b.empreinte) throw new Sortie(1, `empreinte de la build modifiée depuis sa construction (${empreinte}, attendue ${b.empreinte}) : rien n'a été envoyé`);
     const v = await ctx.lancer({ commande: chemin(exe, 'jq'), args: ['-e', '--arg', 's', s, '.commit == $s', 'version.json'], cwd: b.dist, env: envDeBase(), delaiMs: MIN, libelle: 'jq version.json' });
     if (v.code !== 0) throw new Sortie(1, `dist/version.json ne porte pas le commit ${s}`);
+    // CR-04 : clé rechargée juste avant d'écrire sur le serveur (phrase de passe tapée de nouveau).
+    await assurerCle(ag, MARGE_ENVOI, "avant l'envoi", ecrire);
 
     // ---------- 9. envoi, version d'avant, activation, vérifications ----------
     const stats = await (async () => {
@@ -411,6 +425,9 @@ export async function executerDeploiement(o: OptionsDeploiement, ctx: ContexteDe
     // WR-01 : la version en ligne juste avant l'activation est la seule cible d'un retour automatique.
     courantAvant = (await etatLu("avant l'activation : rien n'est activé")).courant;
     ecrire(`Version en ligne avant l'activation : ${courantAvant ?? 'aucune'}`);
+    // CR-04 : la vérification d'après l'activation et le retour automatique ont besoin de la clé ; elle doit être là,
+    // avec assez de temps devant elle, avant que activer ne parte (sinon rechargée, phrase de passe tapée de nouveau).
+    await assurerCle(ag, MARGE_APRES_ACTIVATION, "avant l'activation", ecrire);
 
     // IN-07 : un Ctrl-C, SIGTERM ou SIGHUP reçu après l'activation déclenche le retour automatique, comme un run
     // annulé sur GitHub. Gestionnaires posés juste avant ; ils restent jusqu'à la fin (un second signal ne coupe

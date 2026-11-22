@@ -171,7 +171,7 @@ async function mettreEnLigne(b: Banc, s: string): Promise<void> {
   writeFileSync(path.join(d, 'version.json'), JSON.stringify({ commit: s, date: '2026-11-18T00:00:00Z' }));
   const cfg = lireConfig(b.home);
   const exe = { ...resoudreExecutables(['ssh'], b.faux.env.PATH ?? ''), rsync: resoudreExecutables([cfg.rsync], b.faux.env.PATH ?? '')[cfg.rsync] as { chemin: string; empreinte: string } };
-  const agent: Agent = { socket: path.join(b.faux.racine, 'agent.sock'), fermer: async () => {} };
+  const agent: Pick<Agent, 'socket'> = { socket: path.join(b.faux.racine, 'agent.sock') };
   await envoyer(cfg, agent, exe, d, cfg.cible, s, lancerReel);
   await appelerVerbe(cfg, agent, exe, 'activer', [cfg.cible, s], lancerReel);
 }

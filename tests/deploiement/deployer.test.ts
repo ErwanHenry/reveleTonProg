@@ -163,9 +163,10 @@ function distDe(s: string): string {
  * posée par servirCommit seule serait écartée par le ménage de activer. Journaux ssh et rsync vidés ensuite.
  */
 async function mettreEnLigne(b: Banc, s: string): Promise<void> {
+  b.faux.chargerCle();
   const cfg = lireConfig(b.home);
   const exe = { ...resoudreExecutables(['ssh'], b.faux.env.PATH ?? ''), rsync: resoudreExecutables([cfg.rsync], b.faux.env.PATH ?? '')[cfg.rsync] as { chemin: string; empreinte: string } };
-  const agent: Agent = { socket: path.join(b.faux.racine, 'agent.sock'), fermer: async () => {} };
+  const agent: Pick<Agent, 'socket'> = { socket: path.join(b.faux.racine, 'agent.sock') };
   await envoyer(cfg, agent, exe, distDe(s), cfg.cible, s, lancerReel);
   await appelerVerbe(cfg, agent, exe, 'activer', [cfg.cible, s], lancerReel);
   for (const n of ['ssh', 'rsync']) {
@@ -193,9 +194,10 @@ async function avecEnv<T>(b: Banc, f: (lancer: Lanceur) => Promise<T>): Promise<
 }
 
 async function verbe(b: Banc, v: 'etat' | 'retour', args: string[]): Promise<string> {
+  b.faux.chargerCle();
   const cfg = lireConfig(b.home);
   const exe = resoudreExecutables(['ssh'], b.faux.env.PATH ?? '');
-  const agent: Agent = { socket: path.join(b.faux.racine, 'agent.sock'), fermer: async () => {} };
+  const agent: Pick<Agent, 'socket'> = { socket: path.join(b.faux.racine, 'agent.sock') };
   return appelerVerbe(cfg, agent, exe, v, args, lancerReel);
 }
 async function courant(b: Banc): Promise<string | null> {
@@ -230,14 +232,15 @@ function horloge(instants: Date[]): () => Date {
 async function deployer(
   b: Banc,
   o: Partial<OptionsDeploiement>,
-  c: Partial<ContexteDeploiement> & { confirmer: Confirmateur },
+  cc: Partial<ContexteDeploiement> & { confirmer: Confirmateur; envelopper?: (l: Lanceur) => Lanceur },
 ): Promise<{ code: number; texte: string }> {
   const lignes: string[] = [];
+  const { envelopper, ...c } = cc;
   const code = await avecEnv(b, (lancer) =>
     executerDeploiement(
       { forcer: false, urgence: false, justification: '', dryRun: false, ...o },
       {
-        lancer,
+        lancer: envelopper === undefined ? lancer : envelopper(lancer),
         maintenant: () => new Date(HORS_GEL.getTime()),
         home: b.home,
         racine: b.racine,
@@ -669,6 +672,110 @@ describe('après l\'activation : vérifications et retour automatique (WR-01, IN
     assert.equal(code, 0, texte);
     assert.match(texte, /test de fumée HTTPS sauté : RTP_URL vide \(etat fait foi\)/);
     assert.equal(b.faux.journal('curl').length, 0);
+  });
+});
+
+describe('clé chargée seulement quand il le faut (CR-04, IN-07)', () => {
+  const chargements = (b: Banc): number => b.faux.journal('ssh-add').filter((a) => a[1] === '-t').length;
+  const retraits = (b: Banc): number => b.faux.journal('ssh-add').filter((a) => a[1] === '-D').length;
+
+  it('clé expirée pendant l\'écran (confirmation tapée bien après la phrase de passe) : rechargée avant l\'envoi, déployé', { skip: !BASCULE && RAISON_MV }, async () => {
+    const b = banc({ exigerCle: true });
+    await mettreEnLigne(b, b.P);
+    recuVert(b);
+    // Le faux agent n'a plus la clé quand la confirmation arrive : sans rechargement, l'envoi répondrait
+    // « Permission denied (publickey) », comme sur le terrain avant cette correction.
+    const { code, texte } = await deployer(b, {}, confirmateur(phrase(b), () => b.faux.expirerCle()));
+    assert.equal(code, 0, texte);
+    assert.equal(retraits(b), 1, 'clé retirée avant l\'écran');
+    assert.equal(chargements(b), 2, 'phrase de passe avant etat, puis avant l\'envoi');
+    assert.match(texte, /sa phrase de passe sera redemandée juste avant l'envoi/);
+    assert.match(texte, /Clé dédiée avant l'envoi : tapez de nouveau sa phrase de passe/);
+    assert.equal(await courant(b), b.S);
+  });
+
+  it('la clé n\'est pas chargée pendant l\'attente de la confirmation', { skip: !BASCULE && RAISON_MV }, async () => {
+    const b = banc({ exigerCle: true });
+    await mettreEnLigne(b, b.P);
+    recuVert(b);
+    let pendant: boolean | null = null;
+    let appels = '';
+    const { code, texte } = await deployer(b, {}, confirmateur(phrase(b), () => {
+      pendant = b.faux.cleChargee();
+      appels = b.faux.journal('ssh-add').map((a) => a[1]).join(' ');
+    }));
+    assert.equal(code, 0, texte);
+    assert.equal(pendant, false, 'clé absente du faux agent pendant la confirmation');
+    assert.equal(appels, '-t -D', 'chargée pour etat, puis retirée avant l\'écran');
+  });
+
+  it('clé expirée entre l\'envoi et l\'activation : rechargée avant activer, déployé', { skip: !BASCULE && RAISON_MV }, async () => {
+    const b = banc({ exigerCle: true });
+    await mettreEnLigne(b, b.P);
+    recuVert(b);
+    // La clé disparaît juste après le etat qui suit l'envoi (version d'avant notée), avant activer.
+    let apresEnvoi = false;
+    const envelopper = (l: Lanceur): Lanceur => async (x) => {
+      const r = await l(x);
+      if (x.args.includes('--stats')) apresEnvoi = true;
+      else if (apresEnvoi && x.args.at(-1) === 'etat essai') {
+        apresEnvoi = false;
+        b.faux.expirerCle();
+      }
+      return r;
+    };
+    const { code, texte } = await deployer(b, {}, { ...confirmateur(phrase(b)), envelopper });
+    assert.equal(code, 0, texte);
+    assert.equal(chargements(b), 3, texte);
+    assert.match(texte, /Clé dédiée avant l'activation : tapez de nouveau sa phrase de passe/);
+    assert.ok(verbesSsh(b).includes(`activer essai ${b.S}`));
+    assert.equal(await courant(b), b.S);
+  });
+
+  it('moins de 12 min de clé restantes avant l\'activation : rechargée, de quoi vérifier et revenir en arrière', { skip: !BASCULE && RAISON_MV }, async () => {
+    const b = banc({ exigerCle: true });
+    await mettreEnLigne(b, b.P);
+    recuVert(b);
+    let t = HORS_GEL.getTime();
+    // L'envoi « dure » 4 min : il reste 11 min de clé, moins que la vérification et le retour automatique.
+    const envelopper = (l: Lanceur): Lanceur => async (x) => {
+      const r = await l(x);
+      if (x.args.includes('--stats')) t += 4 * 60_000;
+      return r;
+    };
+    const { code, texte } = await deployer(b, {}, { ...confirmateur(phrase(b)), envelopper, maintenant: () => new Date(t) });
+    assert.equal(code, 0, texte);
+    assert.equal(chargements(b), 3, texte);
+    assert.match(texte, /Clé dédiée avant l'activation : tapez de nouveau sa phrase de passe à l'invite de ssh-add \(12 min/);
+  });
+
+  it('phrase de passe refusée au rechargement : code 3, aucun envoi, rien d\'activé', { skip: !BASCULE && RAISON_MV }, async () => {
+    const b = banc({ exigerCle: true, chargementsAdmis: 1 });
+    await mettreEnLigne(b, b.P);
+    recuVert(b);
+    const { code, texte } = await deployer(b, {}, confirmateur(phrase(b)));
+    assert.equal(code, 3, texte);
+    assert.match(texte, /clé non chargée/);
+    assert.equal(b.faux.journal('rsync').length, 0);
+    assert.deepEqual(verbesSsh(b), ['etat essai']);
+    assert.equal(await courant(b), b.P);
+    sansWorktree(b);
+  });
+
+  it('message de ssh masqué quand la clé manque (Permission denied)', async () => {
+    const b = banc({ exigerCle: true });
+    const cfg = lireConfig(b.home);
+    const exe = resoudreExecutables(['ssh'], b.faux.env.PATH ?? '');
+    await assert.rejects(
+      appelerVerbe(cfg, { socket: path.join(b.faux.racine, 'agent.sock') }, exe, 'etat', ['essai'], lancerReel),
+      (e: unknown) => {
+        assert.ok(e instanceof Sortie);
+        assert.equal(e.code, 255);
+        assert.match(e.message, /<utilisateur>@<hôte>: Permission denied \(publickey\)/);
+        sorties.push(e.message);
+        return true;
+      },
+    );
   });
 });
 

@@ -50,6 +50,12 @@ export interface FauxServeur {
   poserEntetes(lignes: string[]): void;
   /** Range <dossier> dans releases/<sha>/ de la cible et y fait pointer current (sans la commande forcée). */
   servirCommit(cible: 'essai' | 'production', sha: string, dossier: string): void;
+  /** Retire la clé du faux agent, comme une expiration (ssh-add -t) : avec exigerCle, ssh répond alors 255. */
+  expirerCle(): void;
+  /** Pose la clé dans le faux agent (aides des tests qui appellent un verbe sans agent). */
+  chargerCle(): void;
+  /** La clé est-elle dans le faux agent ? */
+  cleChargee(): boolean;
   detruire(): void;
   /** false sous macOS sans GNU mv : les cas de bascule (activer, retour) sont alors sautés. */
   basculePossible: boolean;
@@ -59,6 +65,13 @@ export interface OptionsFauxServeur {
   cleSansPhrase?: boolean;
   rsync?: 'rsync3' | 'openrsync';
   echecRetour?: boolean;
+  /**
+   * IN-07, CR-04 : le faux ssh exige que la clé soit chargée dans le faux agent (ssh-add -t, retirée par ssh-add -D
+   * ou expirerCle) ; sinon « Permission denied (publickey) », code 255, comme le vrai.
+   */
+  exigerCle?: boolean;
+  /** Nombre de chargements de la clé (ssh-add -t) acceptés ; les suivants échouent (phrase de passe refusée). */
+  chargementsAdmis?: number;
 }
 
 const quote = (s: string): string => `'${s.replace(/'/g, `'\\''`)}'`;
@@ -90,6 +103,8 @@ export function creerFauxServeur(o: OptionsFauxServeur = {}): FauxServeur {
   const fichierCible = path.join(prive, 'cible');
   const fichierEntetes = path.join(prive, 'entetes');
   const fichierMotDePasse = path.join(prive, 'mot-de-passe-recu');
+  const fichierCleChargee = path.join(prive, 'cle-chargee');
+  const fichierChargements = path.join(prive, 'chargements');
   writeFileSync(fichierCible, 'essai\n');
   writeFileSync(fichierEntetes, `${ENTETES_PAR_DEFAUT.join('\r\n')}\r\n\r\n`);
 
@@ -147,6 +162,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 [ $# -ge 2 ] || { echo "ssh factice : destination et commande attendues" >&2; exit 255; }
+${o.exigerCle === true ? `[ -f ${quote(fichierCleChargee)} ] || { echo "$1: Permission denied (publickey)." >&2; exit 255; }` : ''}
 shift
 CMD="$*"
 ${o.echecRetour === true ? `case "$CMD" in retour*) echo "échec : connexion perdue vers ${HOTE_FACTICE}" >&2; exit 1 ;; esac` : ''}
@@ -241,12 +257,32 @@ ${o.cleSansPhrase === true ? `echo 'ssh-ed25519 AAAAC3-CLE-PUBLIQUE-FACTICE rtp-
 ${journal('ssh-agent')}
 case "$1" in
   -a) : > "$2"; printf 'SSH_AUTH_SOCK=%s; export SSH_AUTH_SOCK;\\nSSH_AGENT_PID=4242; export SSH_AGENT_PID;\\necho Agent pid 4242;\\n' "$2" ;;
-  -k) echo 'unset SSH_AUTH_SOCK;' ;;
+  -k) rm -f ${quote(fichierCleChargee)}; echo 'unset SSH_AUTH_SOCK;' ;;
   *) exit 64 ;;
 esac
 `,
   );
-  ecrireExecutable(path.join(bin, 'ssh-add'), `#!/bin/sh\n${journal('ssh-add')}\nexit 0\n`);
+  // Faux ssh-add avec état : -t charge la clé (fichier témoin), -D la retire, -l dit si elle est là.
+  ecrireExecutable(
+    path.join(bin, 'ssh-add'),
+    `#!/bin/sh
+${journal('ssh-add')}
+case "$1" in
+  -t)
+    N=$(cat ${quote(fichierChargements)} 2>/dev/null || echo 0)
+    N=$((N + 1))
+    echo "$N" > ${quote(fichierChargements)}
+    ${o.chargementsAdmis === undefined ? ':' : `[ "$N" -le ${o.chargementsAdmis} ] || { echo 'Bad passphrase' >&2; exit 1; }`}
+    : > ${quote(fichierCleChargee)}
+    ;;
+  -D) rm -f ${quote(fichierCleChargee)}; echo 'All identities removed.' ;;
+  -l)
+    if [ -f ${quote(fichierCleChargee)} ]; then echo '256 SHA256:EMPREINTE-FACTICE rtp-deploy-mac (ED25519)'; else echo 'The agent has no identities.'; exit 1; fi
+    ;;
+esac
+exit 0
+`,
+  );
 
   const env = { PATH: `${bin}:${pathOrigine}` };
 
@@ -307,6 +343,15 @@ esac
       cpSync(dossier, version, { recursive: true });
       rmSync(path.join(r, 'current'), { force: true });
       symlinkSync(`releases/${sha}`, path.join(r, 'current'));
+    },
+    expirerCle() {
+      rmSync(fichierCleChargee, { force: true });
+    },
+    chargerCle() {
+      writeFileSync(fichierCleChargee, '');
+    },
+    cleChargee() {
+      return existsSync(fichierCleChargee);
     },
     detruire() {
       rmSync(racine, { recursive: true, force: true });
