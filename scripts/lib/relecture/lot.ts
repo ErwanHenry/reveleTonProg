@@ -3,6 +3,8 @@
 // puis les fichiers sont écrits un par un, puis une vérification est lancée ; si elle échoue ou lève, chaque
 // fichier retrouve ses octets d'origine, dans l'ordre inverse des écritures.
 
+import { cpSync, existsSync, mkdtempSync, rmSync } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { readContained } from '../../../src/lib/content-core/load.ts';
 import type { Diagnostic } from '../../../src/lib/content-core/diagnostics.ts';
@@ -80,6 +82,30 @@ export function appliquerLot(racine: string, editions: readonly Edition[], verif
     return { ok: false, erreurs: [...erreurs, ...echecs], fichiers: ecrits };
   }
   return { ok: true, erreurs: [], fichiers: ecrits };
+}
+
+/** Ce que la validation lit dans une racine de contenu (load.ts, règles d'archives, d'identifiants, liste blanche). */
+const COPIE_ESSAI = ['src/content', 'config', 'archives', 'ids.lock'] as const;
+
+/**
+ * Essai à blanc fidèle (revue de la phase 9, IN-04) : le même lot est appliqué à une copie temporaire de ce que lit la
+ * validation, puis `verifier` reçoit la racine de la copie. La vraie racine n'est jamais écrite ; la copie est
+ * effacée dans tous les cas. Les chemins renvoyés sont ceux de la vraie racine.
+ */
+export function essayerLot(racine: string, editions: readonly Edition[], verifier: (racineCopie: string) => string[]): ResultatLot {
+  const reelle = path.resolve(racine);
+  const copie = mkdtempSync(path.join(os.tmpdir(), 'rtp-essai-lot-'));
+  try {
+    for (const rel of COPIE_ESSAI) {
+      const de = path.join(reelle, ...rel.split('/'));
+      if (existsSync(de)) cpSync(de, path.join(copie, ...rel.split('/')), { recursive: true });
+    }
+    const versCopie = (f: string): string => path.join(copie, path.relative(reelle, path.resolve(f)));
+    const r = appliquerLot(copie, editions.map((e) => ({ ...e, fichier: versCopie(e.fichier) })), () => verifier(copie));
+    return { ...r, fichiers: r.fichiers.map((f) => path.join(reelle, path.relative(copie, f))) };
+  } finally {
+    rmSync(copie, { recursive: true, force: true });
+  }
 }
 
 /** Une erreur de validation sur une ligne : fichier relatif, position, code, message. */

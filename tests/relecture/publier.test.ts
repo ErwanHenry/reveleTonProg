@@ -1,6 +1,6 @@
 import { describe, it, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { appendFileSync, chmodSync, mkdirSync } from 'node:fs';
+import { appendFileSync, chmodSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { loadAll } from '../../src/lib/content-core/load.ts';
 import type { LoadOptions } from '../../src/lib/content-core/load.ts';
@@ -114,6 +114,30 @@ describe('relecture publier (corpus M1 temporaire)', () => {
     const r = lancer(c);
     assert.equal(r.code, 1);
     assert.match(r.erreur.join('\n'), /hors du périmètre|luc-retire/);
+  });
+
+  it('--dry-run applique la validation de production d’après écriture, sur une copie : refus annoncé, rien d’écrit (IN-04)', () => {
+    const avant = c.arbre();
+    const journal = lireJournal(c.racine).length;
+    const racines: string[] = [];
+    // Chargeur qui, une fois le thème publié dans la racine qu'on lui donne, déclare une erreur d'équité.
+    const charger = (racine: string, opts: LoadOptions): ReturnType<typeof loadAll> => {
+      const r = loadAll(racine, opts);
+      if (opts.mode === 'production' && readFileSync(path.join(racine, FICHIER_THEME), 'utf8').includes('statut_relecture: publie')) {
+        racines.push(racine);
+        return { ...r, diagnostics: [...r.diagnostics, { code: 'EQUITE_CANDIDAT_MANQUANT', severity: 'error', file: path.join(racine, FICHIER_THEME), line: 1, col: 1, pointer: '', message: 'candidat sans mesure ni case' }] };
+      }
+      return r;
+    };
+    const r = lancer(c, { ...OPTIONS, dryRun: true }, charger);
+    assert.equal(r.code, 1, r.sortie.join('\n'));
+    assert.match(r.erreur.join('\n'), /EQUITE_CANDIDAT_MANQUANT/);
+    assert.match(r.erreur.join('\n'), /serait refusée après écriture/);
+    assert.equal(racines.length, 1);
+    assert.notEqual(path.resolve(racines[0]!), path.resolve(c.racine));
+    assert.equal(existsSync(racines[0]!), false, 'copie temporaire effacée');
+    assert.deepEqual(c.arbre(), avant);
+    assert.equal(lireJournal(c.racine).length, journal);
   });
 
   it('échec après les écritures : chaque fichier retrouve ses octets et le registre reste intact', () => {

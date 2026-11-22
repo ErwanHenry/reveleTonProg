@@ -12,7 +12,7 @@ import { loadPublicationConfig } from '../../../../src/lib/publication-config.ts
 import { RE_SEGMENT, RELECTEUR_OBLIGATOIRE, chargerCorpus, empreinteCase, empreinteMesure, empreinteStatut, entreesDe, erreursDuTheme, etatRelecture } from '../etat.ts';
 import type { Contexte } from '../etat.ts';
 import { dateValide, relecteurValide } from '../editer.ts';
-import { afficherDiagnostic, appliquerLot } from '../lot.ts';
+import { afficherDiagnostic, appliquerLot, essayerLot } from '../lot.ts';
 import type { Edition } from '../lot.ts';
 import { ajouterJournal } from '../registre.ts';
 import { aujourdhuiParis } from './marquer.ts';
@@ -132,17 +132,25 @@ export function publier(theme: string, options: OptionsPublier, deps: Dependance
       { cle: 'date_relecture', valeur: options.date },
     ],
   });
+  const validationProduction = (racine: string): string[] =>
+    charger(racine, { schemasDir: ctx.schemasDir, mode: 'production' })
+      .diagnostics.filter((d) => d.severity === 'error')
+      .map((d) => afficherDiagnostic(racine, d));
   if (options.dryRun) {
+    // Même validation de production d'après écriture que la vraie commande, sur une copie (IN-04) : l'essai à blanc
+    // n'annonce plus un succès que la vraie commande refuserait.
+    const essai = essayerLot(ctx.racine, editions, validationProduction);
+    if (!essai.ok) {
+      for (const e of essai.erreurs) ctx.erreur(`erreur : ${e}`);
+      ctx.erreur(`essai à blanc : la publication de ${theme} serait refusée après écriture (validation de production) ; rien n’est écrit`);
+      return 1;
+    }
     ctx.sortie(`essai à blanc : ${aPublier.length} mesure(s) passeraient à publie, le thème ${theme} aussi${casesAChanger.length > 0 ? `, ${casesAChanger.length} case(s) à « mesures » (${casesAChanger.map((k) => k.candidat).join(', ')})` : ''} (${options.relecteur}, ${options.date}) ; rien n’est écrit`);
     for (const e of editions) ctx.sortie(`  ${e.fichier.slice(ctx.racine.length + 1)}`);
     return 0;
   }
 
-  const lot = appliquerLot(ctx.racine, editions, () =>
-    charger(ctx.racine, { schemasDir: ctx.schemasDir, mode: 'production' })
-      .diagnostics.filter((d) => d.severity === 'error')
-      .map((d) => afficherDiagnostic(ctx.racine, d)),
-  );
+  const lot = appliquerLot(ctx.racine, editions, () => validationProduction(ctx.racine));
   if (!lot.ok) {
     for (const e of lot.erreurs) ctx.erreur(`erreur : ${e}`);
     ctx.erreur(`refusé : publication de ${theme} annulée, ${lot.fichiers.length > 0 ? 'fichiers restaurés' : 'rien n’a été écrit'}`);
