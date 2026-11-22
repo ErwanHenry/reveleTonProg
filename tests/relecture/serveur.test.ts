@@ -89,7 +89,7 @@ describe('serveur de relecture (corpus M1 temporaire, thème logement)', () => {
     // l'origine complète part vers ce serveur et rien ne part vers les sites des sources.
     assert.equal(r.headers['referrer-policy'], 'same-origin');
     assert.match(String(r.headers['content-type']), /^text\/html; charset=utf-8$/);
-    assert.match(r.corps, /reste 7 sur 11/);
+    assert.match(r.corps, /reste 11 sur 11/);
     assert.match(r.corps, /href="\/candidat\/elise-erard"/);
     assert.match(r.corps, /href="\/candidat\/paul-de-villefranche"/);
     assert.ok(!r.corps.toLowerCase().includes('<script'));

@@ -78,7 +78,11 @@ describe('relecture publier (corpus M1 temporaire)', () => {
     ['une mesure pas encore relue', (k) => k.ecrire(MESURE_ELISE, k.lire(MESURE_ELISE).replace('statut_relecture: relu\n', 'statut_relecture: brouillon\n')), /mesure:elise-erard\/guichet-unique : mesure pas encore relue/],
     ['un texte modifié depuis la relecture (a_revoir)', (k) => k.ecrire(MESURE_ELISE, k.lire(MESURE_ELISE).replace(/^(\s+resume: .*)$/m, '$1 Précision.')), /texte modifié depuis la relecture/],
     ['un statut déclaré pas relu', (k) => k.ecrire('src/content/candidats/elise-erard.yaml', k.lire('src/content/candidats/elise-erard.yaml').replace('statut_relecture: relu', 'statut_relecture: brouillon')), /statut:elise-erard/],
-    ['une case de couverture pas relue', (k) => k.ecrire(FICHIER_COUVERTURE, k.lire(FICHIER_COUVERTURE).replace(/(candidat: marie-fictive[\s\S]*?verifie_par: )Erwan Henry/, '$1Autre Relecteur')), /case:logement\//],
+    [
+      'une case de couverture modifiée depuis sa relecture (WR-01)',
+      (k) => k.ecrire(FICHIER_COUVERTURE, k.lire(FICHIER_COUVERTURE).replace('  - candidat: jean-imaginaire\n    etat: programme_non_publie\n', '  - candidat: jean-imaginaire\n    etat: non_precise\n    sources_consultees:\n      - programme-commun-fictif\n')),
+      /case:logement\/jean-imaginaire : texte modifié depuis la relecture/,
+    ],
     ['une note ouverte', (k) => appendFileSync(`${k.racine}/relecture/notes.jsonl`, `${JSON.stringify({ horodatage: '2026-11-21T10:00:00.000Z', cible: 'mesure:marie-fictive/aide-construction', texte: 'à corriger', etat: 'ouverte' })}\n`), /1 note\(s\) ouverte\(s\)/],
   ];
   for (const [nom, preparer, motif] of refus) {
@@ -91,6 +95,14 @@ describe('relecture publier (corpus M1 temporaire)', () => {
       assert.deepEqual(c.arbre(), avant);
     });
   }
+
+  it('cases signées par deux relecteurs différents : publiable, l’état vient du registre (WR-01)', () => {
+    const r1 = c.lancer('marquer', 'case', THEME, 'paul-de-villefranche', '--date', DATE, '--relecteur', 'Anne Relectrice');
+    assert.equal(r1.code, 0, r1.stderr);
+    assert.match(c.lire(FICHIER_COUVERTURE), /verifie_par: Anne Relectrice/);
+    const r = lancer(c);
+    assert.equal(r.code, 0, r.erreur.join('\n'));
+  });
 
   it('refuse une mesure d’un candidat hors du périmètre d’équité', () => {
     const f = 'src/content/mesures/elise-erard/guichet-unique.yaml';
@@ -128,6 +140,9 @@ describe('relecture publier (corpus M1 temporaire)', () => {
     // Élise a une mesure publiée mais sa case dit non_precise : la règle d’équité de production refuse.
     const couv = c.lire(FICHIER_COUVERTURE);
     c.ecrire(FICHIER_COUVERTURE, couv.replace('  - candidat: elise-erard\n    etat: mesures\n', '  - candidat: elise-erard\n    etat: programme_non_publie\n'));
+    // Case relue de nouveau dans cet état (sinon publier la refuse avant d'écrire, « à revoir », WR-01).
+    const relue = c.lancer('marquer', 'case', THEME, 'elise-erard', '--date', DATE);
+    assert.equal(relue.code, 0, relue.stderr);
     const avant = c.arbre();
     const r = lancer(c);
     assert.equal(r.code, 1);

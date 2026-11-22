@@ -75,7 +75,7 @@ export interface CaseFiche {
   sources_consultees: SourceConsultee[];
   verifie_le: string;
   verifie_par: string;
-  etat: 'a_relire' | 'relu';
+  etat: 'a_relire' | 'relu' | 'a_revoir';
   /** Messages COUVERTURE_VERIFIEE_AVANT_SOURCE du validateur sur cette case (D-11, WR-05). */
   contradictions: string[];
   notes: LigneNote[];

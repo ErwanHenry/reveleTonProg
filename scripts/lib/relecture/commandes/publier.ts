@@ -33,7 +33,7 @@ export function publier(theme: string, options: OptionsPublier, deps: Dependance
   const { ctx } = deps;
   const charger = deps.charger ?? loadAll;
   const corpus = chargerCorpus(ctx.racine, ctx.schemasDir, charger);
-  const etat = etatRelecture(ctx.racine, ctx.schemasDir, theme, { corpus, relecteur: options.relecteur });
+  const etat = etatRelecture(ctx.racine, ctx.schemasDir, theme, { corpus });
   const raisons: string[] = [];
 
   const entreeTheme = entreesDe(corpus.preview, 'themes').find((e) => e.id === theme);

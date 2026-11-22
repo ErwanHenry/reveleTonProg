@@ -58,7 +58,8 @@ export interface CibleCase extends CibleBase {
   etat_case: string;
   verifie_le: string;
   verifie_par: string;
-  etat: 'a_relire' | 'relu';
+  /** Même calcul que pour une mesure (revue de la phase 9, WR-01) : l'empreinte du registre, jamais `verifie_par`. */
+  etat: 'a_relire' | 'relu' | 'a_revoir';
 }
 export interface EtatCandidat {
   id: string;
@@ -194,14 +195,12 @@ function alertes(diags: readonly Diagnostic[], filtre: (d: Diagnostic) => boolea
 // --- État d'un thème ----------------------------------------------------------------------------------------
 
 export interface OptionsEtat {
-  relecteur?: string;
   corpus?: Corpus;
   charger?: Chargeur;
 }
 
 export function etatRelecture(racine: string, schemasDir: string, theme: string, options: OptionsEtat = {}): EtatTheme {
   const corpus = options.corpus ?? chargerCorpus(racine, schemasDir, options.charger);
-  const relecteur = options.relecteur ?? RELECTEUR_DEFAUT;
   const r = corpus.preview;
   const diags = corpus.production.diagnostics;
   const empreintes = dernieresEmpreintes(lireJournal(racine));
@@ -211,6 +210,14 @@ export function etatRelecture(racine: string, schemasDir: string, theme: string,
     if (statut !== 'relu' && statut !== 'publie') return 'a_relire';
     if (empreintes.get(cible)?.sha256 !== empreinte) return 'a_revoir';
     return statut === 'publie' ? 'publie' : 'relu';
+  };
+  // Une case n'a pas de statut de relecture : elle est relue si la dernière ligne du registre pour elle a l'empreinte
+  // de son contenu actuel (écrite par marquer ou retirer), à revoir si l'empreinte diffère, à relire sans ligne.
+  // `verifie_par` reste une information affichée, jamais un critère (revue de la phase 9, WR-01).
+  const caseRelue = (cible: string, empreinte: string): CibleCase['etat'] => {
+    const ligne = empreintes.get(cible);
+    if (ligne === undefined) return 'a_relire';
+    return ligne.sha256 === empreinte ? 'relu' : 'a_revoir';
   };
   const sources = new Map(entreesDe(r, 'sources').map((s) => [s.id, s.file]));
   const couverture = entreesDe(r, 'couverture').find((c) => c.data.theme === theme);
@@ -273,7 +280,7 @@ export function etatRelecture(racine: string, schemasDir: string, theme: string,
               etat_case: texte(k.etat),
               verifie_le: texte(k.verifie_le),
               verifie_par: texte(k.verifie_par),
-              etat: k.verifie_par === relecteur ? 'relu' : 'a_relire',
+              etat: caseRelue(cibleCase, empreinteCase(k)),
               alertes: alertes(diags, (d) => d.file === couverture.file && d.pointer.startsWith(`/cases/${indexCase}/`)),
               notes: notes(cibleCase),
             };

@@ -398,7 +398,7 @@ Commandes, toutes sous `fnm exec --using=24` depuis ce dossier (`--root <dossier
 
 | Commande | Effet |
 |---|---|
-| `npm run relecture -- liste --theme sante` | ce qui reste à relire, candidat par candidat, et la ligne `reste N sur M` ; `--format json` pour une sortie lisible par un script, `--relecteur <nom>` pour compter les cases relues par un autre relecteur |
+| `npm run relecture -- liste --theme sante` | ce qui reste à relire, candidat par candidat, et la ligne `reste N sur M` ; `--format json` pour une sortie lisible par un script. Une case est relue quand la dernière ligne du registre pour elle a l'empreinte de son contenu actuel, comme une mesure : `verifie_par` n'est qu'affiché, et des cases signées par deux relecteurs différents se publient ensemble |
 | `npm run relecture -- servir` | page de relecture sur `http://127.0.0.1:4327/` (thème santé par défaut ; `--theme <id>`, `--port <n>`), arrêt par Ctrl+C |
 | `npm run relecture -- marquer mesure <candidat>/<slug>` | passe la mesure à `relu` avec le relecteur et la date du jour (Paris) |
 | `npm run relecture -- marquer statut <candidat>` | idem pour le statut de candidature retenu |

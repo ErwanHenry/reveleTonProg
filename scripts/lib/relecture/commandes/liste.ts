@@ -1,9 +1,9 @@
-// `relecture liste [--theme <id>] [--format texte|json] [--relecteur <nom>]` : ce qui reste à relire, par candidat.
+// `relecture liste [--theme <id>] [--format texte|json]` : ce qui reste à relire, par candidat. L'état d'une case vient
+// du registre, comme celui d'une mesure (revue de la phase 9, WR-01) : plus d'option --relecteur.
 
 import path from 'node:path';
 import { parseArgs } from 'node:util';
-import { relecteurValide } from '../editer.ts';
-import { RELECTEUR_DEFAUT, chargerCorpus, entreesDe, erreursDuTheme, etatRelecture, themesAvecMesures } from '../etat.ts';
+import { chargerCorpus, entreesDe, erreursDuTheme, etatRelecture, themesAvecMesures } from '../etat.ts';
 import type { Alerte, Chargeur, Contexte, EtatTheme } from '../etat.ts';
 
 const LIBELLES: Record<string, string> = { a_relire: 'à relire', relu: 'relu', a_revoir: 'à revoir (modifié depuis la relecture)', publie: 'publié' };
@@ -51,9 +51,9 @@ function enJson(e: EtatTheme, racine: string): unknown {
 }
 
 export async function liste(argv: string[], ctx: Contexte, charger?: Chargeur): Promise<number> {
-  let v: { theme?: string; format?: string; relecteur?: string };
+  let v: { theme?: string; format?: string };
   try {
-    ({ values: v } = parseArgs({ args: argv, options: { theme: { type: 'string' }, format: { type: 'string' }, relecteur: { type: 'string' } }, allowPositionals: false, strict: true }));
+    ({ values: v } = parseArgs({ args: argv, options: { theme: { type: 'string' }, format: { type: 'string' } }, allowPositionals: false, strict: true }));
   } catch (e) {
     ctx.erreur(`liste : ${e instanceof Error ? e.message : String(e)}`);
     return 2;
@@ -61,11 +61,6 @@ export async function liste(argv: string[], ctx: Contexte, charger?: Chargeur): 
   const format = v.format ?? 'texte';
   if (format !== 'texte' && format !== 'json') {
     ctx.erreur(`liste : format inconnu « ${format} » (texte ou json)`);
-    return 2;
-  }
-  const relecteur = v.relecteur ?? RELECTEUR_DEFAUT;
-  if (!relecteurValide(relecteur)) {
-    ctx.erreur(`liste : nom de relecteur refusé « ${relecteur} »`);
     return 2;
   }
   const corpus = chargerCorpus(ctx.racine, ctx.schemasDir, charger);
@@ -82,7 +77,7 @@ export async function liste(argv: string[], ctx: Contexte, charger?: Chargeur): 
     const erreurs = erreursDuTheme(corpus, theme);
     for (const d of erreurs) ctx.erreur(`erreur : ${path.relative(ctx.racine, d.file)}:${d.line}:${d.col} ${d.code} ${d.message}`);
     if (erreurs.length > 0) code = 1;
-    etats.push(etatRelecture(ctx.racine, ctx.schemasDir, theme, { corpus, relecteur }));
+    etats.push(etatRelecture(ctx.racine, ctx.schemasDir, theme, { corpus }));
   }
 
   if (format === 'json') {

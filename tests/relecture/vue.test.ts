@@ -176,10 +176,11 @@ describe('ficheCandidat et resume (corpus M1 temporaire, thème logement)', () =
       ['elise-erard', 'marie-fictive', 'jean-imaginaire', 'paul-de-villefranche'],
     );
     assert.equal(r.total, 11);
-    assert.equal(r.reste, 7);
+    // Cases sans ligne de registre : à relire (WR-01), quel que soit verifie_par.
+    assert.equal(r.reste, 11);
     assert.equal(r.a_relire + r.a_revoir + r.relu, r.total);
     const elise = r.candidats.find((x) => x.id === 'elise-erard');
-    assert.deepEqual(elise && { a_relire: elise.a_relire, relu: elise.relu, a_revoir: elise.a_revoir, notes: elise.notes_ouvertes }, { a_relire: 1, relu: 1, a_revoir: 1, notes: 0 });
+    assert.deepEqual(elise && { a_relire: elise.a_relire, relu: elise.relu, a_revoir: elise.a_revoir, notes: elise.notes_ouvertes }, { a_relire: 2, relu: 0, a_revoir: 1, notes: 0 });
     assert.equal(elise?.nom, 'Élise Érard');
     assert.deepEqual(differencesArbre(avant, c.arbre()), []);
   });
