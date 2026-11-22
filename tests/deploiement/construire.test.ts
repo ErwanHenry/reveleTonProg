@@ -15,7 +15,7 @@ import { lancer } from '../../scripts/lib/processus.ts';
 import { empreinteArbre } from '../../scripts/lib/deploiement/empreinte.ts';
 import { Sortie } from '../../scripts/lib/deploiement/gardes.ts';
 import { comparerInstantanes, prendreInstantane, resoudreExecutables } from '../../scripts/lib/deploiement/executables.ts';
-import { construireDeploiement, DOSSIERS_INTERDITS, envConstruction, profilSandbox, sondeBacASable, type BuildDeploiement } from '../../scripts/lib/deploiement/construire.ts';
+import { cheminCacheNpm, construireDeploiement, DOSSIERS_INTERDITS, envConstruction, profilSandbox, sondeBacASable, type BuildDeploiement } from '../../scripts/lib/deploiement/construire.ts';
 import { dossierAgents } from '../../scripts/lib/deploiement/agent.ts';
 
 const CLE = 'CLE-PRIVEE-FACTICE';
@@ -51,7 +51,6 @@ interface Banc {
   racine: string;
   home: string;
   tmp: string;
-  cache: string;
   bin: string;
   log: string;
   profilLog: string;
@@ -90,10 +89,10 @@ function banc(o: { scenario?: Scenario; fauxSandbox?: boolean; attaques?: boolea
   writeFileSync(cleExterne, `${CLE}\n`);
 
   const tmp = temp('rtp-tmp-');
-  const cache = temp('rtp-cache-');
   const bin = temp('rtp-bin-');
-  // Journal du faux npm dans le cache npm : seul dossier persistant où le vrai bac à sable laisse écrire la build.
-  const log = path.join(cache, 'npm.log');
+  // Journal du faux npm dans le cache npm dédié (CR-03) : seul dossier persistant où le vrai bac à sable laisse
+  // écrire la build ; construireDeploiement le crée avant la première étape.
+  const log = path.join(cheminCacheNpm(home), 'npm.log');
   // Sondes node lancées par la build (lecture permise) : connexion à un socket Unix, résolution DNS locale.
   const sondes = temp('rtp-sondes-');
   writeFileSync(path.join(sondes, 'connexion.js'), "require('net').connect(process.argv[2]).on('connect', () => process.exit(0)).on('error', () => process.exit(1));\n");
@@ -113,6 +112,7 @@ essai creation-home 'echo intrus > "$HOME/intrus.txt"'
 essai ecriture-worktree 'echo ok > ./ecrit-worktree.txt'
 essai ecriture-tmpdir 'echo ok > "$TMPDIR/ecrit-tmp.txt"'
 essai ecriture-tmpdir-utilisateur 'echo intrus > "${path.join(tmp, 'intrus-tmp.txt')}"'
+essai ecriture-npx 'mkdir -p "$HOME/.npm/_npx/x" && echo intrus > "$HOME/.npm/_npx/x/index.js"'
 essai ecriture-copies 'echo intrus > "$HOME/.cache/rtp/deploiement/intrus"'
 essai lecture-agents 'ls "$HOME/.cache/rtp/agents" >> "$LOG"'
 essai connexion-agent '"${process.execPath}" "${path.join(sondes, 'connexion.js')}" "$HOME/.cache/rtp/agents/a/s.sock"'
@@ -127,7 +127,6 @@ LOG=${quote(log)}
 printf 'ARGV %s\\n' "$*" >> "$LOG"
 env | sed 's/^/ENV /' >> "$LOG"
 case "$*" in
-  "config get cache") printf '%s\\n' ${quote(cache)} ;;
   "ci --ignore-scripts") mkdir -p node_modules ;;
   "audit signatures") ${scenario === 'audit-echec' ? 'echo "signature invalide" >&2; exit 1' : ':'} ;;
   "run build")
@@ -164,7 +163,7 @@ exec "$@"
     SSH_AUTH_SOCK: '/tmp/agent-factice.sock',
     RTP_HOTE: 'hote.exemple.invalid',
   };
-  return { racine, home, tmp, cache, bin, log, profilLog, sha, cleExterne, source };
+  return { racine, home, tmp, bin, log, profilLog, sha, cleExterne, source };
 }
 
 // Le processus de test porte aussi ces variables : elles ne doivent jamais atteindre la build.
@@ -379,13 +378,14 @@ describe('construireDeploiement (faux sandbox-exec)', () => {
         assert.equal(statSync(path.join(r.dist, 'sous')).mode & 0o777, 0o755);
         assert.equal(statSync(path.join(r.dist, 'sous', 'page.html')).mode & 0o777, 0o644);
         assert.equal(JSON.parse(readFileSync(path.join(r.dist, 'version.json'), 'utf8')).commit, b.sha);
-        const etapes = appels(b.log).filter((a) => a.argv !== 'config get cache');
+        const etapes = appels(b.log);
+        // CR-03 : npm config get cache n'est plus lu ; seules les quatre étapes du job construire.
         assert.deepEqual(etapes.map((a) => a.argv), ETAPES_NPM);
         for (const a of etapes) {
           assert.equal(a.env.RTP_CONTENT_ROOT, '.');
           assert.equal(a.env.GITHUB_SHA, b.sha);
           assert.equal(a.env.RTP_DEPLOIEMENT, attendu);
-          assert.equal(a.env.npm_config_cache, b.cache);
+          assert.equal(a.env.npm_config_cache, cheminCacheNpm(b.home));
           assert.equal(a.env.HOME, b.home);
           // CR-01 : TMPDIR propre à la build, jamais celui de l'utilisateur.
           assert.equal(a.env.TMPDIR, `${r.worktree}-tmp`);
@@ -403,6 +403,10 @@ describe('construireDeploiement (faux sandbox-exec)', () => {
         assert.equal(ecrivables.length, 4, profil);
         for (const w of ecrivables) assert.ok(!`${r.dist}/`.startsWith(`${w}/`), `${r.dist} sous ${w}`);
         assert.ok(profil.includes(`(literal "${b.cleExterne}")`));
+        // CR-03 : cache npm dédié en 0700 ; celui de l'utilisateur n'est jamais ouvert en écriture.
+        assert.ok(profil.includes(`(subpath "${cheminCacheNpm(b.home)}")`), profil);
+        assert.ok(!profil.includes(path.join(b.home, '.npm')), profil);
+        assert.equal(statSync(cheminCacheNpm(b.home)).mode & 0o777, 0o700);
         assert.deepEqual(Object.keys(r.executables).sort(), ['git', 'jq']);
         assert.equal(r.instantane.fichiers[path.join(b.home, '.config', 'rtp', 'deploiement.env')]?.length, 64);
       } finally {
@@ -502,7 +506,7 @@ describe('bac à sable (vrai sandbox-exec)', { skip: sonde.ok ? false : sonde.ra
       assert.ok(!log.includes('s.sock'), 'le dossier des agents a été listé par la build');
       assert.ok(log.includes('dns-local REUSSI'), 'résolution DNS refusée');
       assert.equal(existsSync(path.join(b.tmp, 'intrus-tmp.txt')), false);
-      for (const t of ['lecture-cle', 'lecture-cle-externe', 'lecture-ssh', 'lecture-gh', 'ecriture-env', 'ecriture-git-config', 'creation-home', 'ecriture-tmpdir-utilisateur', 'ecriture-copies', 'lecture-agents', 'connexion-agent']) {
+      for (const t of ['lecture-cle', 'lecture-cle-externe', 'lecture-ssh', 'lecture-gh', 'ecriture-env', 'ecriture-git-config', 'creation-home', 'ecriture-tmpdir-utilisateur', 'ecriture-npx', 'ecriture-copies', 'lecture-agents', 'connexion-agent']) {
         assert.ok(log.includes(`${t} REFUSE`), `${t} n’a pas été refusé :\n${log.split('\n').filter((l) => !l.startsWith('ENV ')).join('\n')}`);
       }
       for (const t of ['ecriture-worktree', 'ecriture-tmpdir']) assert.ok(log.includes(`${t} REUSSI`), t);
@@ -520,7 +524,7 @@ describe('bac à sable (vrai sandbox-exec)', { skip: sonde.ok ? false : sonde.ra
     const b = banc({ fauxSandbox: false });
     const r = await construire(b, { cible: 'production' });
     try {
-      const etapes = appels(b.log).filter((a) => a.argv !== 'config get cache');
+      const etapes = appels(b.log);
       assert.deepEqual(etapes.map((a) => a.argv), ETAPES_NPM);
       for (const a of etapes) assert.equal(a.env.RTP_DEPLOIEMENT, '1');
     } finally {

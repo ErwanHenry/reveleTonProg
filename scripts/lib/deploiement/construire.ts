@@ -7,7 +7,7 @@
 //     (RTP_CONTENT_ROOT=., RTP_DEPLOIEMENT 1 en production et 0 en essai, GITHUB_SHA pour version.json) ;
 //   - lancée sous sandbox-exec avec un profil qui interdit toute écriture sauf le worktree, son dossier
 //     .git/worktrees/<nom> dans le dépôt principal, un dossier temporaire propre à cette build (<worktree>-tmp, donné
-//     comme TMPDIR) et le cache npm, qui interdit la lecture de chaque chemin secret configuré, de ~/.config/rtp,
+//     comme TMPDIR) et un cache npm propre à ces builds (~/.cache/rtp/npm-build, CR-03), qui interdit la lecture de chaque chemin secret configuré, de ~/.config/rtp,
 //     ~/.ssh, ~/.config/gh et des dossiers d'agents ssh (~/.cache/rtp/agents), et toute connexion à un socket Unix
 //     hors du résolveur DNS. La build est refusée si l'un de ces chemins se trouve sous un dossier où elle peut écrire,
 //     ou si un tel dossier contient le dossier personnel ou le .git ;
@@ -173,6 +173,11 @@ const ETAPES: readonly { args: string[]; delaiMs: number }[] = [
   { args: ['run', 'check-dist', '--', '--mode', 'production'], delaiMs: 10 * MIN },
 ];
 
+/** Cache npm dédié aux builds de déploiement (CR-03), sous HOME, jamais celui de l'utilisateur. */
+export function cheminCacheNpm(home: string): string {
+  return path.join(home, '.cache', 'rtp', 'npm-build');
+}
+
 const fin = (texte: string, lignes = 20): string => texte.trim().split('\n').slice(-lignes).join('\n');
 
 export async function construireDeploiement(o: OptionsConstruction): Promise<BuildDeploiement> {
@@ -276,13 +281,12 @@ export async function construireDeploiement(o: OptionsConstruction): Promise<Bui
     mkdirSync(dossierTmp, { mode: 0o700 });
     verifierEcrivable(dossierTmp, 'le dossier temporaire de la build');
 
-    // 5. Cache npm, résolu hors du bac à sable (npm du système, configuration du commit).
-    const envNpm = { ...envDeBase(source), HOME: o.home, TMPDIR: tmp, npm_config_update_notifier: 'false' };
-    const c = await o.lancer({ commande: npm, args: ['config', 'get', 'cache'], cwd: dossier, env: envNpm, delaiMs: 2 * MIN, libelle: 'npm config get cache' });
-    const brut = c.stdout.trim();
-    if (c.code !== 0 || !path.isAbsolute(brut)) throw new Sortie(1, `cache npm illisible (npm config get cache) : ${fin(c.stderr) || brut}`);
-    mkdirSync(brut, { recursive: true });
-    const cacheNpm = reel(brut);
+    // 5. CR-03 (revue de la phase 9.2) : cache npm propre à la build, qu'aucun autre outil n'emploie. Le cache de
+    // l'utilisateur (~/.npm) n'est plus ouvert en écriture : une build ne peut plus y déposer, sous _npx, du code
+    // qu'un prochain npx lancerait hors de tout bac à sable.
+    const cacheNpm = reel(cheminCacheNpm(o.home));
+    mkdirSync(cacheNpm, { recursive: true, mode: 0o700 });
+    chmodSync(cacheNpm, 0o700);
     verifierEcrivable(cacheNpm, 'le cache npm');
 
     // 6. Les quatre commandes du job construire, sous le bac à sable.

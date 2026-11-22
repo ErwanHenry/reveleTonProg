@@ -101,7 +101,6 @@ function banc(o: OptionsFauxServeur = {}, surcharges: Partial<Record<string, str
   git(racine, 'fetch', '--quiet', 'origin');
 
   const outils = temp('rtp-outils-deployer-');
-  const cache = temp('rtp-cache-deployer-');
   const tmp = temp('rtp-tmp-deployer-');
   const npmLog = path.join(outils, 'npm.log');
   ecrireExecutable(
@@ -111,7 +110,6 @@ LOG=${quote(npmLog)}
 printf 'ARGV %s\\n' "$*" >> "$LOG"
 env | sed 's/^/ENV /' >> "$LOG"
 case "$*" in
-  "config get cache") printf '%s\\n' ${quote(cache)} ;;
   "ci --ignore-scripts"|"audit signatures"|"run check-dist -- --mode production") : ;;
   "run build")
     mkdir -p dist
@@ -299,7 +297,7 @@ describe('déploiement complet contre la vraie commande forcée', () => {
     assert.deepEqual(c.vues, [phrase(b)]);
     assert.deepEqual(verbesSsh(b), ['etat essai', `essai/${b.S}/`, 'etat essai', `activer essai ${b.S}`, 'etat essai']);
     assert.equal(await courant(b), b.S);
-    assert.deepEqual(appelsNpm(b), ['config get cache', 'ci --ignore-scripts', 'audit signatures', 'run build', 'run check-dist -- --mode production']);
+    assert.deepEqual(appelsNpm(b), ['ci --ignore-scripts', 'audit signatures', 'run build', 'run check-dist -- --mode production']);
     assert.match(texte, /Cible : essai/);
     assert.ok(texte.includes(`Commit à déployer : ${b.S}`), texte);
     assert.ok(texte.includes(`Version en ligne : ${b.P}`), texte);
@@ -785,7 +783,7 @@ describe('répétition à blanc et CLI', () => {
     assert.match(texte, /répétition à blanc : rien n'a été envoyé/);
     assert.ok(texte.includes(`Phrase qui sera demandée : ${phrase(b)}`), texte);
     for (const n of ['ssh', 'ssh-agent', 'ssh-add', 'ssh-keygen', 'curl', 'rsync'] as const) assert.equal(b.faux.journal(n).length, 0, n);
-    assert.equal(appelsNpm(b).length, 5, 'la build scellée a tourné');
+    assert.equal(appelsNpm(b).length, 4, 'la build scellée a tourné');
     assert.deepEqual(c.vues, []);
     assert.equal(existsSync(cheminsLocaux(b.home).journal), false);
     sansWorktree(b);
