@@ -23,7 +23,8 @@
 //   9. envoi, etat (version d'avant, WR-01), clé présente avec 12 min devant elle (sinon rechargée, CR-04), activer,
 //      etat, test de fumée ; échec ou signal après activer : retour automatique vers la version exacte notée avant
 //      (WR-01, IN-07), sauf retrait d'urgence.
-// Codes : 0 déployé, rien à déployer, ou répétition à blanc ; 1 garde ou étape en échec, rien d'activé ; 2 usage ou
+// Codes : 0 déployé, rien à déployer, ou répétition à blanc ; 1 garde ou étape en échec, activation refusée (WR-01)
+// ou signal reçu avant l'activation (WR-05), rien d'activé ; 2 usage ou
 // configuration (rsync 3 absent compris) ; 3 pas de terminal, confirmation refusée, clé sans phrase de passe ;
 // 4 échec après l'activation, version d'avant remise en ligne ; 5 échec après l'activation, version d'avant non
 // remise (retrait d'urgence, aucune version avant, current changé entre-temps, retour automatique en échec).
@@ -241,6 +242,29 @@ export async function executerDeploiement(o: OptionsDeploiement, ctx: ContexteDe
   let message: string | undefined;
   let code = 1;
   const gestionnaires: [NodeJS.Signals, (s: NodeJS.Signals) => void][] = [];
+  // WR-05 (revue de la phase 9.2) : gestionnaires de SIGINT, SIGTERM et SIGHUP posés dès le début. Avant l'activation,
+  // un signal arrête la commande (étape de build tuée avec son groupe, phrase de passe ou confirmation interrompues)
+  // et le finally fait tout le nettoyage (agent, worktree, copie, journal, verrou) ; après l'activation, il déclenche
+  // le retour automatique (IN-07).
+  const arret = new AbortController();
+  let signalAvant: NodeJS.Signals | null = null;
+  let apresActivation: ((sig: NodeJS.Signals) => void) | null = null;
+  const surSignal = (sig: NodeJS.Signals): void => {
+    if (apresActivation !== null) {
+      apresActivation(sig);
+      return;
+    }
+    if (signalAvant !== null) return;
+    signalAvant = sig;
+    arret.abort();
+  };
+  for (const sig of SIGNAUX) {
+    process.on(sig, surSignal);
+    gestionnaires.push([sig, surSignal]);
+  }
+  const verifierArret = (): void => {
+    if (signalAvant !== null) throw new Sortie(1, `interrompu par ${signalAvant} avant l'activation : rien n'a été activé`);
+  };
 
   try {
     // ---------- 1. verrou, configuration, outils, instantané A ----------
@@ -317,7 +341,9 @@ export async function executerDeploiement(o: OptionsDeploiement, ctx: ContexteDe
       nomsExecutables: noms,
       lancer: ctx.lancer,
       ecrire,
+      arret: arret.signal,
     });
+    verifierArret();
     const b = build;
     verifierIntegrite(instantaneA, prendreInstantane(optionsInstantane), 'pendant ci:local ou la build');
     if (ctx.apresConstruction !== undefined) await ctx.apresConstruction(b);
@@ -342,7 +368,9 @@ export async function executerDeploiement(o: OptionsDeploiement, ctx: ContexteDe
     }
 
     // ---------- 7. agent, version en ligne, écran, confirmation ----------
-    agent = await ouvrirAgent(c0, { exe, lancer: ctx.lancer, ecrire, home: ctx.home, maintenant: () => ctx.maintenant().getTime() });
+    verifierArret();
+    agent = await ouvrirAgent(c0, { exe, lancer: ctx.lancer, ecrire, home: ctx.home, maintenant: () => ctx.maintenant().getTime(), arret: arret.signal, gereSignaux: true });
+    verifierArret();
     const ag = agent;
     const etatLu = async (moment: string) => {
       const ligne = await appelerVerbe(c0, ag, exe, 'etat', [c0.cible], ctx.lancer);
@@ -362,6 +390,7 @@ export async function executerDeploiement(o: OptionsDeploiement, ctx: ContexteDe
     const fichiers = await fichiersChanges(gitL, enLigne, s);
     // CR-04 : la clé n'attend pas la phrase de confirmation chargée (attente sans borne, expiration en cours de route).
     await ag.retirer();
+    verifierArret();
 
     ecrire('');
     for (const l of lignesEcran({
@@ -379,7 +408,8 @@ export async function executerDeploiement(o: OptionsDeploiement, ctx: ContexteDe
     })) ecrire(l);
     for (const l of fichiers.lignes) ecrire(`  ${l}`);
     ecrire("Clé retirée de l'agent pendant cet écran : sa phrase de passe sera redemandée juste avant l'envoi.");
-    await ctx.confirmer(phraseAttendue('deployer', c0.cible, s));
+    await ctx.confirmer(phraseAttendue('deployer', c0.cible, s), { arret: arret.signal });
+    verifierArret();
 
     // ---------- 8. tout ce qui a pu changer pendant l'attente est rejoué ----------
     // CR-02 : garde de gel rejouée avec l'heure du moment (une confirmation tapée la veille d'un gel ne passe pas).
@@ -409,7 +439,9 @@ export async function executerDeploiement(o: OptionsDeploiement, ctx: ContexteDe
     const v = await ctx.lancer({ commande: chemin(exe, 'jq'), args: ['-e', '--arg', 's', s, '.commit == $s', 'version.json'], cwd: b.dist, env: envDeBase(), delaiMs: MIN, libelle: 'jq version.json' });
     if (v.code !== 0) throw new Sortie(1, `dist/version.json ne porte pas le commit ${s}`);
     // CR-04 : clé rechargée juste avant d'écrire sur le serveur (phrase de passe tapée de nouveau).
+    verifierArret();
     await assurerCle(ag, MARGE_ENVOI, "avant l'envoi", ecrire);
+    verifierArret();
 
     // ---------- 9. envoi, version d'avant, activation, vérifications ----------
     const stats = await (async () => {
@@ -434,23 +466,21 @@ export async function executerDeploiement(o: OptionsDeploiement, ctx: ContexteDe
     await assurerCle(ag, MARGE_APRES_ACTIVATION, "avant l'activation", ecrire);
 
     // IN-07 : un Ctrl-C, SIGTERM ou SIGHUP reçu après l'activation déclenche le retour automatique, comme un run
-    // annulé sur GitHub. Gestionnaires posés juste avant ; ils restent jusqu'à la fin (un second signal ne coupe
-    // pas le retour en cours). L'agent les voit et reste ouvert : il est fermé dans le finally.
+    // annulé sur GitHub. Les gestionnaires posés au début basculent ici, sans attente entre le dernier contrôle
+    // d'arrêt et l'envoi du verbe ; ils restent jusqu'à la fin (un second signal ne coupe pas le retour en cours).
+    // L'agent ne gère pas les signaux (gereSignaux) : il est fermé dans le finally.
     let rejeter: (e: unknown) => void = () => {};
     const interruption = new Promise<never>((_, rej) => {
       rejeter = rej;
     });
     interruption.catch(() => {});
     let signalRecu: NodeJS.Signals | null = null;
-    const surSignal = (sig: NodeJS.Signals): void => {
+    verifierArret();
+    apresActivation = (sig: NodeJS.Signals): void => {
       if (signalRecu !== null) return;
       signalRecu = sig;
       rejeter(new Interruption(sig));
     };
-    for (const sig of SIGNAUX) {
-      process.on(sig, surSignal);
-      gestionnaires.push([sig, surSignal]);
-    }
     const course = <T>(p: Promise<T>): Promise<T> => Promise.race([p, interruption]);
 
     // Marquée active avant l'envoi du verbe : un délai dépassé alors que le serveur a basculé compte comme activé.
@@ -505,7 +535,13 @@ export async function executerDeploiement(o: OptionsDeploiement, ctx: ContexteDe
     code = normaliser(e.code);
     resultat = e.code === 3 || refus ? 'refus' : 'echec';
     message = e.message;
-    ecrire(cfg === null ? e.message : masquer(e.message, cfg));
+    if (signalAvant !== null) {
+      // WR-05 : ce qu'a rendu l'étape tuée importe peu ; la raison est le signal.
+      code = 1;
+      resultat = 'refus';
+      message = `interrompu par ${signalAvant} avant l'activation : rien n'a été activé`;
+    }
+    ecrire(cfg === null ? message : masquer(message, cfg));
     return code;
   } finally {
     try {

@@ -248,6 +248,29 @@ describe('executerRetour contre la vraie commande forcée', () => {
   });
 });
 
+describe('signal reçu avant le verbe retour (WR-05)', () => {
+  it('SIGINT pendant la confirmation : code 1, aucun verbe retour, agent fermé, verrou rendu, journal refus', async () => {
+    const b = banc();
+    b.faux.chargerCle();
+    b.faux.servirCommit('essai', A, dist(A));
+    let signalVu: AbortSignal | undefined;
+    const { code, texte } = await retour(b, { version: A }, {
+      confirmer: async (_p, o) => {
+        signalVu = o?.arret;
+        process.emit('SIGINT', 'SIGINT');
+      },
+    });
+    assert.equal(code, 1, texte);
+    assert.equal(signalVu?.aborted, true);
+    assert.match(texte, /interrompu par SIGINT avant le retour : rien n'a été remis en ligne/);
+    assert.ok(!verbesSsh(b).some((v) => v.startsWith('retour')));
+    assert.ok(b.faux.journal('ssh-agent').some((a) => a[1] === '-k'), 'agent arrêté');
+    assert.equal(journal(b).at(-1)?.resultat, 'refus');
+    assert.equal(existsSync(cheminsLocaux(b.home).verrou), false, 'verrou rendu');
+    assert.equal(process.listenerCount('SIGINT'), 0, 'gestionnaires retirés');
+  });
+});
+
 describe('garde de gel (CR-02)', () => {
   it('gel au départ : sortie 1 avant tout appel (ssh-keygen compris)', async () => {
     const b = banc();

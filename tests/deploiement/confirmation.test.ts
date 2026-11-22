@@ -11,7 +11,8 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Sortie } from '../../scripts/lib/deploiement/gardes.ts';
-import { lignesEcran, phraseAttendue, verifierPhrase } from '../../scripts/lib/deploiement/confirmation.ts';
+import { lignesEcran, lireConfirmation, phraseAttendue, verifierPhrase } from '../../scripts/lib/deploiement/confirmation.ts';
+import { PassThrough } from 'node:stream';
 import { ajouterJournal, type EntreeJournal } from '../../scripts/lib/deploiement/journal.ts';
 import { cheminsLocaux } from '../../scripts/lib/deploiement/config.ts';
 
@@ -114,6 +115,59 @@ describe('confirmerSurTerminal', () => {
     assert.match(sortie, /^CODE=3 /);
     assert.match(sortie, /aucun terminal : la confirmation doit être tapée par Erwan/);
     assert.ok(!sortie.includes('CONFIRME'));
+  });
+});
+
+describe('lireConfirmation (flux factice ; WR-05 : lecture asynchrone, arrêt possible)', () => {
+  const PHRASE = 'retour essai precedente';
+  const plusTard = (ms: number, f: () => void): void => {
+    setTimeout(f, ms);
+  };
+
+  it('ligne tapée après l\'invite : rendue avec sa fin de ligne, consigne écrite', async () => {
+    const flux = new PassThrough();
+    const ecrit: string[] = [];
+    const p = lireConfirmation(flux, (t) => ecrit.push(t), PHRASE, { vidageMs: 10 });
+    plusTard(80, () => flux.write(`${PHRASE}\nreste ignoré\n`));
+    assert.equal(await p, `${PHRASE}\n`);
+    assert.ok(ecrit.join('').includes(`Pour confirmer, tapez exactement : ${PHRASE}\n> `), ecrit.join(''));
+  });
+
+  it('arrêt demandé pendant l\'attente (Ctrl-C) : Sortie 3 tout de suite, sans attendre la touche Entrée', async () => {
+    const flux = new PassThrough();
+    const arret = new AbortController();
+    const debut = Date.now();
+    const p = lireConfirmation(flux, () => {}, PHRASE, { arret: arret.signal, vidageMs: 10 });
+    plusTard(50, () => arret.abort());
+    await assert.rejects(p, (e: unknown) => e instanceof Sortie && e.code === 3 && /confirmation interrompue par un signal/.test(e.message));
+    assert.ok(Date.now() - debut < 10_000);
+    assert.equal(flux.listenerCount('data'), 0, 'lecture arrêtée');
+  });
+
+  it('arrêt déjà demandé : Sortie 3, rien n\'est écrit', async () => {
+    const arret = new AbortController();
+    arret.abort();
+    const ecrit: string[] = [];
+    await assert.rejects(lireConfirmation(new PassThrough(), (t) => ecrit.push(t), PHRASE, { arret: arret.signal }), (e: unknown) => e instanceof Sortie && e.code === 3);
+    assert.equal(ecrit.length, 0);
+  });
+
+  it('fin du flux (Ctrl-D) avant la fin de ligne : saisie incomplète rendue, puis refusée', async () => {
+    const flux = new PassThrough();
+    const p = lireConfirmation(flux, () => {}, PHRASE, { vidageMs: 10 });
+    plusTard(80, () => flux.end('retour ess'));
+    const saisie = await p;
+    assert.equal(saisie, 'retour ess');
+    attendreSortie(() => verifierPhrase(saisie, PHRASE), 3, /confirmation refusée/);
+  });
+
+  it('plus de 1024 octets sans fin de ligne : lecture arrêtée, saisie refusée', async () => {
+    const flux = new PassThrough();
+    const p = lireConfirmation(flux, () => {}, PHRASE, { vidageMs: 10 });
+    plusTard(80, () => flux.write('x'.repeat(2000)));
+    const saisie = await p;
+    assert.ok(saisie.length > 1024);
+    attendreSortie(() => verifierPhrase(saisie, PHRASE), 3, /confirmation refusée/);
   });
 });
 

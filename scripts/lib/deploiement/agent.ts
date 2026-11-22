@@ -93,7 +93,17 @@ export async function cleChiffree(cle: string, exe: Executables, lancer: Lanceur
  */
 export async function ouvrirAgent(
   cfg: Pick<ConfigDeploiement, 'cle'>,
-  o: { exe: Executables; lancer: Lanceur; ecrire: (l: string) => void; home: string; maintenant?: () => number },
+  o: {
+    exe: Executables;
+    lancer: Lanceur;
+    ecrire: (l: string) => void;
+    home: string;
+    maintenant?: () => number;
+    /** WR-05 : arrêt demandé par l'appelant : ssh-add est tué. */
+    arret?: AbortSignal;
+    /** WR-05 : l'appelant gère SIGINT, SIGTERM et SIGHUP et appelle fermer dans son finally ; l'agent ne relance aucun signal. */
+    gereSignaux?: boolean;
+  },
 ): Promise<Agent> {
   const { exe, lancer, ecrire } = o;
   const maintenant = o.maintenant ?? Date.now;
@@ -152,7 +162,7 @@ export async function ouvrirAgent(
     });
   }
 
-  for (const s of SIGNAUX) process.on(s, surSignal);
+  if (o.gereSignaux !== true) for (const s of SIGNAUX) process.on(s, surSignal);
   process.on('exit', surSortie);
 
   try {
@@ -180,6 +190,7 @@ export async function ouvrirAgent(
       delaiMs: 10 * MIN,
       libelle: 'chargement de la clé (phrase de passe)',
       heriter: true,
+      ...(o.arret === undefined ? {} : { arret: o.arret }),
     });
     if (ajout.code !== 0) {
       throw new Sortie(3, 'clé non chargée : la phrase de passe doit être tapée par Erwan dans un terminal');

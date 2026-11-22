@@ -50,7 +50,8 @@ const USAGE = `Usage : npm run deploy:local -- etat
          pas changé depuis la version en ligne. --urgence --justification : retrait d'urgence pendant un gel (aucun
          retour automatique). --dry-run : répétition à blanc (gardes, reçu, build scellée), aucun contact avec le
          serveur, aucun journal.
-         Codes : 0 déployé, rien à déployer ou répétition à blanc ; 1 garde ou étape en échec, rien d'activé ;
+         Codes : 0 déployé, rien à déployer ou répétition à blanc ; 1 garde ou étape en échec, activation
+         refusée ou interruption (Ctrl-C) avant l'activation, rien d'activé ;
          2 usage ou configuration (rsync 3 absent compris) ; 3 pas de terminal, confirmation refusée ou clé sans
          phrase de passe ; 4 échec après l'activation, version d'avant remise en ligne ; 5 échec après
          l'activation, version d'avant non remise (vérifier avec npm run deploy:local -- etat).

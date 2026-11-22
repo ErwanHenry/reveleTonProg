@@ -650,7 +650,8 @@ describe('après l\'activation : vérifications et retour automatique (WR-01, IN
         },
       });
       assert.equal(code, 4, texte);
-      assert.ok(ecoutes >= 2, `gestionnaire du retour et de l'agent posés (${ecoutes})`);
+      // WR-05 : un seul gestionnaire par signal, celui du déploiement (l'agent ne gère pas les signaux).
+      assert.equal(ecoutes, 1, `gestionnaire du déploiement seul (${ecoutes})`);
       assert.ok(texte.includes(signal), texte);
       assert.equal(await courant(b), b.P);
       assert.equal(process.listenerCount(signal), 0, 'gestionnaires retirés');
@@ -855,6 +856,43 @@ describe('clé chargée seulement quand il le faut (CR-04, IN-07)', () => {
         return true;
       },
     );
+  });
+});
+
+describe('signal reçu avant l\'activation : arrêt propre (WR-05)', () => {
+  it('SIGINT pendant la build : code 1, ni agent ni envoi, worktree et copie retirés, verrou rendu, journal refus', async () => {
+    const b = banc();
+    recuVert(b);
+    const { code, texte } = await deployer(b, {}, { ...confirmateur(phrase(b)), apresConstruction: () => void process.emit('SIGINT', 'SIGINT') });
+    assert.equal(code, 1, texte);
+    assert.match(texte, /interrompu par SIGINT avant l'activation : rien n'a été activé/);
+    assert.equal(b.faux.journal('ssh-agent').length, 0);
+    assert.equal(b.faux.journal('rsync').length, 0);
+    assert.equal(journal(b).at(-1)?.resultat, 'refus');
+    assert.equal(process.listenerCount('SIGINT'), 0, 'gestionnaires retirés');
+    sansWorktree(b);
+  });
+
+  it('SIGTERM pendant la confirmation : signal d\'arrêt transmis au confirmateur, code 1, aucun envoi, agent fermé', { skip: !BASCULE && RAISON_MV }, async () => {
+    const b = banc();
+    await mettreEnLigne(b, b.P);
+    recuVert(b);
+    let signalVu: AbortSignal | undefined;
+    const { code, texte } = await deployer(b, {}, {
+      confirmer: async (_p, o) => {
+        signalVu = o?.arret;
+        process.emit('SIGTERM', 'SIGTERM');
+      },
+    });
+    assert.equal(code, 1, texte);
+    assert.equal(signalVu?.aborted, true, 'le confirmateur reçoit le signal d\'arrêt');
+    assert.match(texte, /interrompu par SIGTERM avant l'activation/);
+    assert.equal(b.faux.journal('rsync').length, 0);
+    assert.deepEqual(verbesSsh(b), ['etat essai']);
+    assert.ok(b.faux.journal('ssh-agent').some((a) => a[1] === '-k'), 'agent arrêté');
+    assert.equal(await courant(b), b.P);
+    assert.equal(journal(b).at(-1)?.resultat, 'refus');
+    sansWorktree(b);
   });
 });
 

@@ -164,6 +164,8 @@ export interface OptionsConstruction {
   tmpdir?: string;
   /** Appelé hors du bac à sable après chaque étape npm (tests). */
   apresEtape?: (etape: string) => void | Promise<void>;
+  /** WR-05 : signal reçu : l'étape en cours est tuée avec son groupe, la build s'arrête et se nettoie. */
+  arret?: AbortSignal;
 }
 
 const ETAPES: readonly { args: string[]; delaiMs: number }[] = [
@@ -298,7 +300,8 @@ export async function construireDeploiement(o: OptionsConstruction): Promise<Bui
       const libelle = `npm ${e.args.join(' ')}`;
       o.ecrire(`… ${libelle} (bac à sable)`);
       // CR-01, WR-07 : session propre, sans terminal de contrôle, groupe tué à la fin de l'étape.
-      const r = await o.lancer({ commande: sandboxExec, args: ['-p', profil, npm, ...e.args], cwd: dossier, env, delaiMs: e.delaiMs, libelle, isole: true });
+      const r = await o.lancer({ commande: sandboxExec, args: ['-p', profil, npm, ...e.args], cwd: dossier, env, delaiMs: e.delaiMs, libelle, isole: true, ...(o.arret === undefined ? {} : { arret: o.arret }) });
+      if (o.arret?.aborted === true) throw new Sortie(1, `${libelle} interrompue par un signal : build arrêtée`);
       if (r.code !== 0) {
         const delai = r.delaiDepasse ? `, délai de ${Math.round(e.delaiMs / MIN)} min dépassé` : '';
         throw new Sortie(1, `${libelle} en échec (code ${String(r.code)}${delai}) : ${fin(`${r.stdout}\n${r.stderr}`)}`);

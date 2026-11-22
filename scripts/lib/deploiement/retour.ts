@@ -52,6 +52,7 @@ export interface ContexteRetour {
 }
 
 const MIN = 60_000;
+const SIGNAUX = ['SIGINT', 'SIGTERM', 'SIGHUP'] as const;
 /** CR-04 : temps de clé exigé avant le verbe retour (retour, puis etat : 1 min chacun, avec du jeu). */
 const MARGE_RETOUR = 5 * MIN;
 const SHA = /^[0-9a-f]{40}$/;
@@ -94,6 +95,25 @@ export async function executerRetour(o: OptionsRetour, ctx: ContexteRetour): Pro
   let resultat: EntreeJournal['resultat'] = 'echec';
   let message: string | undefined;
   let code = 1;
+  // WR-05 (revue de la phase 9.2) : SIGINT, SIGTERM et SIGHUP gérés dès le début. Avant l'envoi du verbe retour, un
+  // signal arrête la commande (phrase de passe ou confirmation interrompues) et le finally nettoie (agent, journal,
+  // verrou) ; une fois le verbe envoyé, la vérification est menée à son terme.
+  const arret = new AbortController();
+  let signalAvant: NodeJS.Signals | null = null;
+  let verbeEnvoye = false;
+  const surSignal = (sig: NodeJS.Signals): void => {
+    if (verbeEnvoye) {
+      ecrire(`signal ${sig} reçu après l'envoi du verbe retour : vérification menée à son terme`);
+      return;
+    }
+    if (signalAvant !== null) return;
+    signalAvant = sig;
+    arret.abort();
+  };
+  for (const sig of SIGNAUX) process.on(sig, surSignal);
+  const verifierArret = (): void => {
+    if (signalAvant !== null) throw new Sortie(1, `interrompu par ${signalAvant} avant le retour : rien n'a été remis en ligne`);
+  };
 
   try {
     rendre = prendreVerrouDeploiement(ctx.home, ecrire);
@@ -120,7 +140,8 @@ export async function executerRetour(o: OptionsRetour, ctx: ContexteRetour): Pro
       return code;
     }
 
-    agent = await ouvrirAgent(cfg, { exe, lancer: ctx.lancer, ecrire, home: ctx.home, maintenant: () => ctx.maintenant().getTime() });
+    agent = await ouvrirAgent(cfg, { exe, lancer: ctx.lancer, ecrire, home: ctx.home, maintenant: () => ctx.maintenant().getTime(), arret: arret.signal, gereSignaux: true });
+    verifierArret();
     const ligneAvant = await appelerVerbe(cfg, agent, exe, 'etat', [cfg.cible], ctx.lancer);
     const avant = lireEtat(ligneAvant);
     if (avant === null || avant.cible !== cfg.cible) throw new Sortie(1, `réponse de etat illisible : ${masquer(ligneAvant, cfg)}`);
@@ -139,7 +160,8 @@ export async function executerRetour(o: OptionsRetour, ctx: ContexteRetour): Pro
       gel: gel.motif,
     })) ecrire(l);
     ecrire("Clé retirée de l'agent pendant cet écran : sa phrase de passe sera redemandée juste avant le retour.");
-    await ctx.confirmer(phraseAttendue('retour', cfg.cible, version));
+    await ctx.confirmer(phraseAttendue('retour', cfg.cible, version), { arret: arret.signal });
+    verifierArret();
 
     // CR-02 : la garde rejouée après la confirmation, avec l'heure du moment.
     const gelApres = decisionGel(ctx.maintenant(), o.urgence, o.justification);
@@ -151,6 +173,8 @@ export async function executerRetour(o: OptionsRetour, ctx: ContexteRetour): Pro
     await assurerCle(agent, MARGE_RETOUR, 'avant le retour', ecrire);
 
     let ligneRetour: string;
+    verifierArret();
+    verbeEnvoye = true;
     try {
       ligneRetour = await appelerVerbe(cfg, agent, exe, 'retour', version === null ? [cfg.cible] : [cfg.cible, version], ctx.lancer);
     } catch (e) {
@@ -185,12 +209,18 @@ export async function executerRetour(o: OptionsRetour, ctx: ContexteRetour): Pro
     code = normaliser(e.code);
     resultat = e.code === 3 || refus ? 'refus' : 'echec';
     message = e.message;
-    ecrire(cfg === null ? e.message : masquer(e.message, cfg));
+    if (signalAvant !== null && !verbeEnvoye) {
+      code = 1;
+      resultat = 'refus';
+      message = `interrompu par ${signalAvant} avant le retour : rien n'a été remis en ligne`;
+    }
+    ecrire(cfg === null ? message : masquer(message, cfg));
     return code;
   } finally {
     try {
       if (agent !== null) await agent.fermer();
     } finally {
+      for (const sig of SIGNAUX) process.removeListener(sig, surSignal);
       if (journaliser && cfg !== null) {
         const entree: EntreeJournal = {
           date: ctx.maintenant().toISOString(),

@@ -1176,9 +1176,9 @@ describe('documentation (phase 9.2) : CI et déploiement depuis le Mac', () => {
     }
   });
 
-  it('limites connues écrites : sandbox-exec déprécié, worktree laissé par un Ctrl-C, reçu partiel, tests sautés sous Linux', () => {
+  it('limites connues écrites : sandbox-exec déprécié, nettoyage sur Ctrl-C (WR-05), reçu partiel, tests sautés sous Linux', () => {
     const s = section();
-    for (const needle of ['déprécié', 'worktree temporaire reste', 'reçu partiel (`--etapes`) écrase le reçu complet', 'sous Linux']) {
+    for (const needle of ['déprécié', 'retire le worktree temporaire et la copie de la build', 'reçu partiel (`--etapes`) écrase le reçu complet', 'sous Linux']) {
       assert.ok(s.includes(needle), `${TITRE} doit contenir « ${needle} »`);
     }
   });

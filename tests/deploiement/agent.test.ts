@@ -179,6 +179,25 @@ describe('ouvrirAgent (exécutables factices)', () => {
     assert.ok(lignes.some((l) => l.includes('phrase de passe')), lignes.join('\n'));
   });
 
+  it('gereSignaux (WR-05) : aucun gestionnaire de signal posé, l\'appelant s\'en charge ; fermer tue l\'agent', async () => {
+    const b = banc();
+    const avant = comptes();
+    const agent = await ouvrirAgent({ cle: b.cle }, { exe: exeDe(b), lancer, home: HOME_AGENT, ecrire: () => {}, gereSignaux: true });
+    assert.deepEqual(comptes(), avant);
+    await agent.fermer();
+    assert.ok(b.log('ssh-agent').includes('KILL PID=4242'));
+  });
+
+  it('arrêt demandé (WR-05) pendant la phrase de passe : ssh-add tué ou non lancé, code 3, agent tué', async () => {
+    const b = banc();
+    const arret = new AbortController();
+    arret.abort();
+    const e = await sortie(ouvrirAgent({ cle: b.cle }, { exe: exeDe(b), lancer, home: HOME_AGENT, ecrire: () => {}, arret: arret.signal, gereSignaux: true }));
+    assert.equal(e.code, 3);
+    assert.ok(!b.log('ssh-add').includes('ARGV [-t]'), 'ssh-add non lancé');
+    assert.match(b.log('ssh-agent'), /KILL PID=4242/);
+  });
+
   it('clé sans phrase de passe : code 3, chemin et ssh-keygen -p nommés, aucun agent démarré', async () => {
     const b = banc('cle-sans-phrase');
     const avant = comptes();

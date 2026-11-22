@@ -10,6 +10,8 @@
 // ligne. Ni l'entrée standard, ni une variable d'environnement, ni une option de la ligne de commande ne peuvent
 // répondre à sa place, et la CLI (scripts/deploy-local.ts) refuse en premier une entrée standard qui n'est pas un
 // terminal, puis ne passe jamais d'autre confirmateur que celui-ci.
+// Revue de la phase 9.2 : la lecture est asynchrone (WR-05 : un Ctrl-C à l'invite arrête tout et laisse le
+// nettoyage se faire, au lieu d'attendre la touche Entrée).
 //
 // Limite, dite franchement : la phrase protège contre l'erreur (mauvaise cible, mauvais commit, commande lancée
 // par réflexe), pas contre un attaquant. Tout code qui tourne sous l'utilisateur d'Erwan peut importer cette
@@ -17,17 +19,28 @@
 // vraie barrière est la phrase de passe de la clé dédiée (agent.ts, D-09), que seul Erwan connaît et tape lui-même.
 // Voir ADR-063 et le RUNBOOK.
 // N'importe que des modules node: et des modules relatifs.
-import { closeSync, openSync, readSync, writeSync } from 'node:fs';
+import { closeSync, openSync, writeSync } from 'node:fs';
+import type { Readable } from 'node:stream';
+import tty from 'node:tty';
 import { Sortie } from './gardes.ts';
 
 export type Action = 'deployer' | 'retour';
 export type CibleConfirmation = 'essai' | 'production';
 
+export interface OptionsConfirmation {
+  /** WR-05 : signal reçu avant l'activation : la lecture s'arrête (Sortie code 3), rien n'est envoyé. */
+  arret?: AbortSignal;
+  /** IN-04 : lignes de l'écran, réécrites sur le terminal quand la sortie standard n'en est pas un. */
+  ecran?: readonly string[];
+}
+
 /** Reçoit la phrase attendue ; rend la main si elle a été tapée exactement, lève Sortie code 3 sinon. */
-export type Confirmateur = (phrase: string) => Promise<void>;
+export type Confirmateur = (phrase: string, o?: OptionsConfirmation) => Promise<void>;
 
 const SHA = /^[0-9a-f]{40}$/;
 const SAISIE_MAX = 1024;
+/** Délai avant l'invite. */
+const VIDAGE_MS = 0;
 
 /**
  * Phrase à taper : `<action> [en production|essai] <commit sur 7 caractères | precedente>`. null n'est admis que
@@ -53,39 +66,103 @@ export function verifierPhrase(saisie: string, phrase: string): void {
 }
 
 /**
- * Seul confirmateur de la CLI : écrit la consigne sur /dev/tty, y lit une ligne, la vérifie. Pas de terminal de
- * contrôle (processus détaché, agent, tâche planifiée) : Sortie code 3 sans rien attendre.
+ * Lit une ligne de confirmation sur un flux (le terminal dans la CLI, un flux factice dans les tests). Ce qui arrive
+ * pendant les vidageMs premières millisecondes est jeté (IN-04), puis l'écran éventuel et la consigne sont écrits.
+ * La saisie s'arrête à la première fin de ligne, à la fin du flux (Ctrl-D : saisie incomplète) ou au-delà de
+ * SAISIE_MAX octets. Arrêt demandé (WR-05) ou erreur de lecture : Sortie code 3.
  */
-export const confirmerSurTerminal: Confirmateur = async (phrase) => {
-  let fd: number;
+export function lireConfirmation(
+  flux: Readable,
+  ecrireTerminal: (texte: string) => void,
+  phrase: string,
+  o: { arret?: AbortSignal; ecran?: readonly string[]; vidageMs?: number } = {},
+): Promise<string> {
+  return new Promise<string>((resolve, reject) => {
+    if (o.arret?.aborted === true) {
+      reject(new Sortie(3, "confirmation interrompue par un signal : rien n'a été envoyé"));
+      return;
+    }
+    const morceaux: Buffer[] = [];
+    let taille = 0;
+    let prete = false;
+    let finie = false;
+    const finir = (f: () => void): void => {
+      if (finie) return;
+      finie = true;
+      clearTimeout(minuteur);
+      flux.off('data', surDonnees);
+      flux.off('end', surFin);
+      flux.off('error', surErreur);
+      o.arret?.removeEventListener('abort', surArret);
+      f();
+    };
+    const texte = (): string => Buffer.concat(morceaux).toString('utf8');
+    function surDonnees(d: Buffer | string): void {
+      if (!prete) return; // tapé avant l'invite : jeté (IN-04)
+      const b = typeof d === 'string' ? Buffer.from(d, 'utf8') : d;
+      const fin = b.indexOf(0x0a);
+      const garde = fin === -1 ? b : b.subarray(0, fin + 1);
+      morceaux.push(garde);
+      taille += garde.length;
+      if (fin !== -1 || taille > SAISIE_MAX) finir(() => resolve(texte()));
+    }
+    function surFin(): void {
+      finir(() => resolve(texte()));
+    }
+    function surErreur(): void {
+      finir(() => reject(new Sortie(3, "lecture du terminal impossible : confirmation refusée, rien n'a été envoyé")));
+    }
+    function surArret(): void {
+      finir(() => reject(new Sortie(3, "confirmation interrompue par un signal : rien n'a été envoyé")));
+    }
+    flux.on('data', surDonnees);
+    flux.on('end', surFin);
+    flux.on('error', surErreur);
+    o.arret?.addEventListener('abort', surArret, { once: true });
+    const minuteur = setTimeout(() => {
+      prete = true;
+      try {
+        for (const l of o.ecran ?? []) ecrireTerminal(`${l}\n`);
+        ecrireTerminal(`Pour confirmer, tapez exactement : ${phrase}\n> `);
+      } catch {
+        surErreur();
+      }
+    }, o.vidageMs ?? VIDAGE_MS);
+  });
+}
+
+/**
+ * Seul confirmateur de la CLI : ouvre /dev/tty, y écrit la consigne (et l'écran si la sortie standard n'est pas un
+ * terminal), y lit une ligne sans bloquer la boucle d'événements, la vérifie. Pas de terminal de contrôle (processus
+ * détaché, agent, tâche planifiée) : Sortie code 3 sans rien attendre.
+ */
+export const confirmerSurTerminal: Confirmateur = async (phrase, o = {}) => {
+  let fdEcriture: number;
+  let fdLecture: number;
   try {
-    fd = openSync('/dev/tty', 'r+');
+    fdEcriture = openSync('/dev/tty', 'w');
   } catch {
     throw new Sortie(3, 'aucun terminal : la confirmation doit être tapée par Erwan');
   }
-  let saisie = '';
   try {
-    writeSync(fd, `Pour confirmer, tapez exactement : ${phrase}\n> `);
-    const octets: number[] = [];
-    const tampon = Buffer.alloc(1);
-    for (;;) {
-      let n: number;
-      try {
-        n = readSync(fd, tampon, 0, 1, null);
-      } catch (e) {
-        if ((e as NodeJS.ErrnoException).code === 'EAGAIN') continue;
-        throw new Sortie(3, "lecture du terminal impossible : confirmation refusée, rien n'a été envoyé");
-      }
-      if (n === 0) break; // fin de fichier (Ctrl-D) : la saisie incomplète sera refusée.
-      const o = tampon[0] as number;
-      octets.push(o);
-      if (o === 0x0a || octets.length > SAISIE_MAX) break;
+    try {
+      fdLecture = openSync('/dev/tty', 'r');
+    } catch {
+      throw new Sortie(3, 'aucun terminal : la confirmation doit être tapée par Erwan');
     }
-    saisie = Buffer.from(octets).toString('utf8');
+    // Le flux du terminal prend en charge fdLecture et le ferme à sa destruction.
+    const flux = new tty.ReadStream(fdLecture);
+    try {
+      const saisie = await lireConfirmation(flux, (t) => writeSync(fdEcriture, t), phrase, {
+        ...(o.arret === undefined ? {} : { arret: o.arret }),
+      });
+      verifierPhrase(saisie, phrase);
+    } finally {
+      flux.destroy();
+    }
   } finally {
-    closeSync(fd);
+    closeSync(fdEcriture);
   }
-  verifierPhrase(saisie, phrase);
 };
 
 /** Ce que l'écran de confirmation montre. Aucun champ pour l'hôte, l'utilisateur ou l'URL du serveur. */
