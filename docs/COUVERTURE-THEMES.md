@@ -6,7 +6,7 @@ Ce document explique comment les trois thèmes pilotes du site ont été choisis
 
 ## Méthode
 
-1. **Périmètre.** Les 37 candidats dont le dernier statut est « déclaré » ou « primaire », rangés par nom de tri (collation française). Les personnes qui ont renoncé ou qui sont seulement pressenties n’en font pas partie.
+1. **Périmètre.** Les 38 candidats dont le dernier statut est « déclaré » ou « primaire », rangés par nom de tri (collation française). Les personnes qui ont renoncé ou qui sont seulement pressenties n’en font pas partie.
 2. **Sources admises.** Le programme du candidat, son site de campagne, le site de son parti, ses discours, tribunes et dépôts au Conseil constitutionnel. Jamais la presse, les comparateurs et agrégateurs, Wikipédia, data.gouv.fr, ni les contributions de soutiens, ni les programmes d’élections précédentes. Les documents d’un parti sont comptés comme tels (`parti_du_candidat`), pas comme des paroles du candidat.
 3. **Lecture en direct.** Toutes les adresses ont été relues en direct le 2026-11-03. L’estimation de recherche faite avant (même date) n’est pas reprise : elle servait de piste. Chaque document de programme lu est archivé : l’extrait texte et son empreinte sha256 sont dans le dépôt public, le fichier d’origine dans un dépôt privé.
 4. **Outil et lecture humaine.** Le scanner (`scripts/couverture-scan.ts`) repère, pour chaque thème, les passages qui contiennent des mots-clés du thème. Ces repérages sont des pistes : chaque passage est relu avant de classer la case, et une note d’une ligne dit quelle section, combien d’énoncés, quelle source.
@@ -21,7 +21,7 @@ Ce document explique comment les trois thèmes pilotes du site ont été choisis
 | — | inaccessible | un document existe mais ne peut pas être lu automatiquement (refus HTTP 403, page rendue côté navigateur) |
 
 6. **Accès par candidat.** `ok` : tout ce qui a été trouvé a été lu. `partiel` : au moins un document a été lu, un autre est inaccessible ; les cases sont classées d’après ce qui a été lu et la note le dit. `bloque` : rien n’a pu être lu. `aucun_site` : aucun document de programme n’existe.
-7. **Sur 37 candidats** : 27 en accès `ok`, 3 en `partiel`, 0 en `bloque`, 7 en `aucun_site`.
+7. **Sur 38 candidats** : 27 en accès `ok`, 3 en `partiel`, 0 en `bloque`, 8 en `aucun_site`.
 
 ## Limites
 
@@ -73,11 +73,12 @@ Thèmes dans l’ordre du cahier des charges : Lo Logement, Éc École, Re Retra
 | 30 | Gilles Platret | aucun site | × | × | × | × | × | × | × | × | × | × |
 | 31 | Natacha Polony | ok | ○ | ◐ | ○ | ◐ | ○ | ◐ | ◐ | ○ | ◐ | ◐ |
 | 32 | Bruno Retailleau | ok | ● | ● | ● | ● | ● | ● | ● | ● | ● | ● |
-| 33 | Erwan Rohou | ok | ● | ◐ | ● | ◐ | ◐ | ● | ● | ◐ | ● | ● |
-| 34 | Fabien Roussel | ok | ● | ● | ● | ● | ● | ● | ● | ● | ● | ◐ |
-| 35 | François Ruffin | ok | ● | ● | ◐ | ◐ | ◐ | ● | ● | ● | ● | ● |
-| 36 | Marine Tondelier | partiel | ● | ● | ◐ | ● | ● | ● | ● | ● | ● | ◐ |
-| 37 | Éric Zemmour | ok | ◐ | ● | ○ | ◐ | ◐ | ◐ | ◐ | ● | ● | ○ |
+| 33 | Teddy Riner | aucun site | × | × | × | × | × | × | × | × | × | × |
+| 34 | Erwan Rohou | ok | ● | ◐ | ● | ◐ | ◐ | ● | ● | ◐ | ● | ● |
+| 35 | Fabien Roussel | ok | ● | ● | ● | ● | ● | ● | ● | ● | ● | ◐ |
+| 36 | François Ruffin | ok | ● | ● | ◐ | ◐ | ◐ | ● | ● | ● | ● | ● |
+| 37 | Marine Tondelier | partiel | ● | ● | ◐ | ● | ● | ● | ● | ● | ● | ◐ |
+| 38 | Éric Zemmour | ok | ◐ | ● | ○ | ◐ | ◐ | ◐ | ◐ | ● | ● | ○ |
 
 ## Comptage par thème
 
@@ -85,28 +86,28 @@ Une **position** est une case « fort » ou « partiel » ; « silence », « au
 
 | Rang | Thème | Positions | ● | ◐ | ○ | × | — | Thème Aîné prioritaire |
 |---:|---|---:|---:|---:|---:|---:|---:|:-:|
-| 1 | Travail (`travail`) | 27 | 21 | 6 | 3 | 7 | 0 |  |
-| 2 | Europe et monde (`europe-et-monde`) | 27 | 21 | 6 | 3 | 7 | 0 |  |
-| 3 | Santé (`sante`) | 27 | 15 | 12 | 3 | 7 | 0 | oui |
-| 4 | Institutions (`institutions`) | 26 | 22 | 4 | 4 | 7 | 0 |  |
-| 5 | École (`ecole`) | 26 | 17 | 9 | 4 | 7 | 0 |  |
-| 6 | Climat (`climat`) | 25 | 18 | 7 | 5 | 7 | 0 |  |
-| 7 | Sécurité (`securite`) | 24 | 19 | 5 | 6 | 7 | 0 |  |
-| 8 | Impôts (`impots`) | 23 | 19 | 4 | 7 | 7 | 0 |  |
-| 9 | Logement (`logement`) | 22 | 13 | 9 | 8 | 7 | 0 | oui |
-| 10 | Retraites (`retraites`) | 21 | 13 | 8 | 9 | 7 | 0 | oui |
+| 1 | Travail (`travail`) | 27 | 21 | 6 | 3 | 8 | 0 |  |
+| 2 | Europe et monde (`europe-et-monde`) | 27 | 21 | 6 | 3 | 8 | 0 |  |
+| 3 | Santé (`sante`) | 27 | 15 | 12 | 3 | 8 | 0 | oui |
+| 4 | Institutions (`institutions`) | 26 | 22 | 4 | 4 | 8 | 0 |  |
+| 5 | École (`ecole`) | 26 | 17 | 9 | 4 | 8 | 0 |  |
+| 6 | Climat (`climat`) | 25 | 18 | 7 | 5 | 8 | 0 |  |
+| 7 | Sécurité (`securite`) | 24 | 19 | 5 | 6 | 8 | 0 |  |
+| 8 | Impôts (`impots`) | 23 | 19 | 4 | 7 | 8 | 0 |  |
+| 9 | Logement (`logement`) | 22 | 13 | 9 | 8 | 8 | 0 | oui |
+| 10 | Retraites (`retraites`) | 21 | 13 | 8 | 9 | 8 | 0 | oui |
 
-Les dix thèmes sont séparés par 6 position(s) seulement (de 21 à 27 sur 37 candidats) ; 7 candidats sur 37 n’ont aucun document lisible (accès « aucun site »), donc aucune position sur aucun des 10 thèmes. L’ordre fin du classement est donc dans la marge d’erreur de la mesure, d’où la règle ci-dessous.
+Les dix thèmes sont séparés par 6 position(s) seulement (de 21 à 27 sur 38 candidats) ; 8 candidats sur 38 n’ont aucun document lisible (accès « aucun site »), donc aucune position sur aucun des 10 thèmes. L’ordre fin du classement est donc dans la marge d’erreur de la mesure, d’où la règle ci-dessous.
 
 ## Règle de choix des trois thèmes
 
 Règle fixée avant la mesure : on retient les trois thèmes que les sources primaires des candidats couvrent le mieux ; les thèmes à égalité (à 2 candidats près, la marge d’erreur de la mesure) sont départagés en faveur des thèmes prioritaires pour les lecteurs âgés (retraites, santé, logement). Le calcul est fait par le code (`classer` dans `scripts/lib/couverture.ts`), pas à la main :
 
-- Mesure du 2026-11-03 sur 37 candidats, 10 thèmes.
+- Mesure du 2026-11-03 sur 38 candidats, 10 thèmes.
 - Une position est une case « fort » ou « partiel » : « silence », « aucun » et « inaccessible » ne comptent jamais.
 - Classement : positions décroissantes, puis nombre de cases « fort » décroissant, puis ordre de la spec.
 - Règle des trois thèmes : un écart de 2 candidats au plus = égalité (marge d’erreur de la mesure).
-- Les thèmes qui devancent le quatrième du classement de 2 positions ou plus (P4 = 25, seuil 27) sont retenus d’office, trois au plus.
+- Les thèmes qui devancent le quatrième du classement de 2 positions ou plus (P4 = 26, seuil 28) sont retenus d’office, trois au plus.
 - Pour chaque place restante, on garde les thèmes à 2 positions ou moins du meilleur reste, et on retient d’abord le thème prioritaire Aîné (logement, retraites, sante), puis celui qui a le plus de positions, de cases « fort », puis le premier de l’ordre de la spec.
 - Thèmes retenus (règle de la marge) : sante, travail, europe-et-monde.
 - Trois premiers du classement littéral (sans marge ni départage Aîné) : travail, europe-et-monde, sante.
@@ -157,5 +158,5 @@ Règle commune, appliquée dans le même ordre à tous les candidats :
 
 ## Écart entre la description du jeu de données et le fichier
 
-La description du jeu data.gouv.fr « statuts sourcés » annonce 51 personnes ; le fichier du 28/10/2026 en contient 59 (statuts : 37 « declare », 17 « renonce », 5 « pressenti »). Cet écart est constaté, pas expliqué. Le périmètre de cette mesure est calculé à partir des fiches (37 lignes), jamais à partir de la description.
+La description du jeu data.gouv.fr « statuts sourcés » annonce 51 personnes ; le fichier du 01/11/2026 en contient 61 (statuts : 38 « declare », 18 « renonce », 5 « pressenti »). Cet écart est constaté, pas expliqué. Le périmètre de cette mesure est calculé à partir des fiches (38 lignes), jamais à partir de la description.
 
