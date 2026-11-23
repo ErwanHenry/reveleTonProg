@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: "Lot 3 : hébergement et mise en ligne"
 status: executing
-stopped_at: Completed 09-13-PLAN.md, phase 9 plans all done (site public, audit and 4G on the live build, Erwan confirmed « Ouvert, vérifié ») ; next: phase 9 code review and verification, then phase 10 (10-05 import 10 to 13 December)
-last_updated: "2026-11-22T14:00:00.000Z"
-last_activity: "2026-11-22 (09-13 : 4G refaite sur le site public, 855 ms au plus ; audit refait sur la build en ligne, trois affirmations fausses corrigées et redéployées, 5088ded servi ; Erwan : « Ouvert, vérifié »)"
+stopped_at: Phase 9 closed (verification passed with the PUB-01 derogation) ; next phase 10 (10-05 import of 10 to 13 December 2026)
+last_updated: "2026-11-23T08:00:00.000Z"
+last_activity: "2026-11-23 (phase 9 close : revues de code des phases 9 et 9.2 corrigées, six textes publics alignés, dérogation PUB-01 acceptée, vérification passed ; 3702f7f en production ; sauvegarde du marqueur appliquée sur le serveur)"
 progress:
   total_phases: 8
   completed_phases: 5
@@ -28,8 +28,8 @@ See: .planning/PROJECT.md (updated 2026-11-04)
 
 Phase: 9 of 10 (contenu relu, juridique et ouverture)
 Plan: 09-01 à 09-10, 09-14 et 09-15 done (dernier : 09-10, relecture du thème santé par agents d'IA, fusionnée le 2026-11-18) ; reste 09-11 (publication sur l'hôte d'essai, bloquée tant que la source erwan-rohou-programme-mei n'a pas de copie Wayback lisible ou d'exception décidée par Erwan), puis 09-12 et 09-13
-Status: Phase 9 : 15 plans sur 15 faits, revue de code et vérification de la phase à faire ; phase 10 ensuite (10-05 du 10 au 11 décembre)
-Last activity: 2026-11-22 (09-13 : 4G refaite sur le site public, 855 ms au plus ; audit refait sur la build en ligne, trois affirmations fausses corrigées et redéployées, 5088ded servi ; Erwan : « Ouvert, vérifié »)
+Status: Phases 9, 9.1, 9.2 et 10.1 closes ; phase 10 restante (10-05 du 10 au 11 décembre, 10-06 ensuite) ; durcissement serveur de deploy:local reporté après l'import
+Last activity: 2026-11-23 (phase 9 close : revues de code des phases 9 et 9.2 corrigées, six textes publics alignés, dérogation PUB-01 acceptée, vérification passed ; 3702f7f en production ; sauvegarde du marqueur appliquée sur le serveur)
 
 Progress v1.1: [..........] 0/5 phases, 0 plans
 

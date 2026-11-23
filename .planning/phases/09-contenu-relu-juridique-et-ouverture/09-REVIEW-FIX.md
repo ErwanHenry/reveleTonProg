@@ -162,3 +162,9 @@ Proposition : un jeu `reel-production` dans `scripts/e2e.ts` (build `RTP_CONTENT
 _Corrigé le : 2026-11-22_
 _Correcteur : Claude (gsd-code-fixer)_
 _Itération : 1_
+
+## Décisions d'Erwan (2026-11-23)
+
+- CR-01 (contenu relu ou publié modifié après relecture bloqué par check-dist, mesure relue non publiée comprise) et WR-01 (état « relu » d'une case lu dans le journal) : validés (« Je valide les quatre »).
+- WR-08 appliqué sur le serveur avec son accord (« Oui, fais-la ») le 2026-11-23 : étapes `sauvegarde` et `depot` mises à jour, sauvegarde du jour à 21 fichiers (20 auparavant, le marqueur `/opt/rtp/essai-retire` compris), test de restauration `resultat: ok`, `site-essai` `[ok: retiré]`, aucun rechargement de Caddy.
+- Corrections déployées en production le 2026-11-23 (commit `3702f7f`, test de fumée passé).

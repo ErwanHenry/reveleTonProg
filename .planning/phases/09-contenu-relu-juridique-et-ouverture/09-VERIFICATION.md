@@ -1,7 +1,7 @@
 ---
 phase: 09-contenu-relu-juridique-et-ouverture
 verified: 2026-11-22T18:05:00Z
-status: gaps_found
+status: passed
 score: 3/5 success criteria fully verified (criterion 1 failed as written on "relu par Erwan", criterion 5 partial on the RUNBOOK withdrawal procedure)
 overrides_applied: 0
 re_verification: false
@@ -195,3 +195,4 @@ _Verifier: Claude (gsd-verifier)_
 - **Dérogation à PUB-01 et au critère 1 acceptée** (« Oui, dérogation acceptée ») : la relecture du thème santé est faite par un agent d'IA nommé sur chaque mesure (« Relue par l'agent d'IA Claude »), selon sa décision du 2026-11-17 et l'avenant signé à la note de risques ; le site le dit sur la Méthode et sur Qui sommes-nous. PUB-01 est cochée « par dérogation » dans REQUIREMENTS.md.
 - **Six textes publics corrigés** (« Applique les six ») : niveau « En détail » de l'accueil (plus de promesse sur le droit existant) ; rôle de l'éditeur (« fixe les règles de relecture, décide des cas qui lui sont soumis ») ; source « du candidat, de sa candidature ou de son parti » ; non-candidats et pressentis ; statut « le plus récent qui a été relu » ; relecture juridique au passé dans les Mentions légales.
 - **Corrections de code des deux revues** (« Oui, tout ») et RUNBOOK du retrait d'urgence remis sur le chemin local : en cours.
+- **Clôture (2026-11-23)** : les six textes et les corrections de code des deux revues sont en ligne (commit `3702f7f`, vérifiés sur le site public) ; le RUNBOOK du retrait d'urgence décrit le chemin local. Avec la dérogation à PUB-01 acceptée, la vérification passe à `passed`.
