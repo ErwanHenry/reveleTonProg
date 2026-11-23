@@ -371,3 +371,16 @@ correspondances:
     nom_tri: Brun
     motif: elimine_primaire
     type_source_statut: presse
+  riner:
+    id: teddy-riner
+    prenom: Teddy
+    nom: Riner
+    nom_tri: Riner
+    type_source_statut: candidat
+  lagarde:
+    id: christine-lagarde
+    prenom: Christine
+    nom: Lagarde
+    nom_tri: Lagarde Christine
+    motif: non_candidat
+    type_source_statut: candidat
