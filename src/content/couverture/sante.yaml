@@ -140,6 +140,10 @@ cases:
     etat: mesures
     verifie_le: 2026-11-17
     verifie_par: l'agent d'IA Claude
+  - candidat: teddy-riner
+    etat: programme_non_publie
+    verifie_le: 2026-11-23
+    verifie_par: l'agent d'IA Claude
   - candidat: erwan-rohou
     etat: mesures
     verifie_le: 2026-11-17

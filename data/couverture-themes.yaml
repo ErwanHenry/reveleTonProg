@@ -1531,6 +1531,46 @@ candidats:
       institutions:
         niveau: fort
         note: "page thème « Pour le peuple et par le peuple » (12 mesures : référendum sur toute la matière législative, dernier mot au peuple quand une loi est censurée, seuil du référendum d’initiative partagée) et manifeste du peuple souverain (20 pages)"
+  - id: teddy-riner
+    acces: aucun_site
+    urls_bloquees: []
+    sources: []
+    urls_consultees:
+      - "https://x.com/teddyriner/status/2119740524064322005 (vidéo de déclaration de candidature du 9 novembre 2026, HTTP 402 à l'outil, non archivée ; d'après les comptes rendus, aucune mesure)"
+      - "https://teddyriner2027.fr/ (domaine parqué chez l'hébergeur, aucun contenu de campagne)"
+      - "https://www.teddyriner.com/ (site officiel du sportif : carrière, académie, partenaires ; aucun contenu de campagne, non archivé)"
+      - "https://www.teddyriner.com/les-engagements/ (engagements associatifs du sportif, pas de programme, non archivé)"
+    cellules:
+      logement:
+        niveau: aucun
+        note: "aucune source de programme : pas de site de campagne trouvé au 2026-11-23 (teddyriner2027.fr est un domaine parqué, teddyriner.com est le site sportif sans contenu de campagne) ; la déclaration de candidature du 9 novembre 2026 (vidéo sur X) ne contient aucune mesure ; les positions connues viennent d'un entretien de presse, qui n'est pas une source primaire"
+      ecole:
+        niveau: aucun
+        note: "aucune source de programme : pas de site de campagne trouvé au 2026-11-23 (teddyriner2027.fr est un domaine parqué, teddyriner.com est le site sportif sans contenu de campagne) ; la déclaration de candidature du 9 novembre 2026 (vidéo sur X) ne contient aucune mesure ; les positions connues viennent d'un entretien de presse, qui n'est pas une source primaire"
+      retraites:
+        niveau: aucun
+        note: "aucune source de programme : pas de site de campagne trouvé au 2026-11-23 (teddyriner2027.fr est un domaine parqué, teddyriner.com est le site sportif sans contenu de campagne) ; la déclaration de candidature du 9 novembre 2026 (vidéo sur X) ne contient aucune mesure ; les positions connues viennent d'un entretien de presse, qui n'est pas une source primaire"
+      sante:
+        niveau: aucun
+        note: "aucune source de programme : pas de site de campagne trouvé au 2026-11-23 (teddyriner2027.fr est un domaine parqué, teddyriner.com est le site sportif sans contenu de campagne) ; la déclaration de candidature du 9 novembre 2026 (vidéo sur X) ne contient aucune mesure ; les positions connues viennent d'un entretien de presse, qui n'est pas une source primaire"
+      securite:
+        niveau: aucun
+        note: "aucune source de programme : pas de site de campagne trouvé au 2026-11-23 (teddyriner2027.fr est un domaine parqué, teddyriner.com est le site sportif sans contenu de campagne) ; la déclaration de candidature du 9 novembre 2026 (vidéo sur X) ne contient aucune mesure ; les positions connues viennent d'un entretien de presse, qui n'est pas une source primaire"
+      climat:
+        niveau: aucun
+        note: "aucune source de programme : pas de site de campagne trouvé au 2026-11-23 (teddyriner2027.fr est un domaine parqué, teddyriner.com est le site sportif sans contenu de campagne) ; la déclaration de candidature du 9 novembre 2026 (vidéo sur X) ne contient aucune mesure ; les positions connues viennent d'un entretien de presse, qui n'est pas une source primaire"
+      travail:
+        niveau: aucun
+        note: "aucune source de programme : pas de site de campagne trouvé au 2026-11-23 (teddyriner2027.fr est un domaine parqué, teddyriner.com est le site sportif sans contenu de campagne) ; la déclaration de candidature du 9 novembre 2026 (vidéo sur X) ne contient aucune mesure ; les positions connues viennent d'un entretien de presse, qui n'est pas une source primaire"
+      impots:
+        niveau: aucun
+        note: "aucune source de programme : pas de site de campagne trouvé au 2026-11-23 (teddyriner2027.fr est un domaine parqué, teddyriner.com est le site sportif sans contenu de campagne) ; la déclaration de candidature du 9 novembre 2026 (vidéo sur X) ne contient aucune mesure ; les positions connues viennent d'un entretien de presse, qui n'est pas une source primaire"
+      europe-et-monde:
+        niveau: aucun
+        note: "aucune source de programme : pas de site de campagne trouvé au 2026-11-23 (teddyriner2027.fr est un domaine parqué, teddyriner.com est le site sportif sans contenu de campagne) ; la déclaration de candidature du 9 novembre 2026 (vidéo sur X) ne contient aucune mesure ; les positions connues viennent d'un entretien de presse, qui n'est pas une source primaire"
+      institutions:
+        niveau: aucun
+        note: "aucune source de programme : pas de site de campagne trouvé au 2026-11-23 (teddyriner2027.fr est un domaine parqué, teddyriner.com est le site sportif sans contenu de campagne) ; la déclaration de candidature du 9 novembre 2026 (vidéo sur X) ne contient aucune mesure ; les positions connues viennent d'un entretien de presse, qui n'est pas une source primaire"
   - id: erwan-rohou
     acces: ok
     urls_bloquees: []
