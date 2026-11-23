@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Maquette A · Tribune : Révèle ton prog</title><style>*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}body{margin:0;line-height:1.55;font-size:1.0625rem}
+a{color:inherit}.conteneur{max-width:70rem;margin:0 auto;padding:0 1.25rem}
+.proto{display:flex;gap:1rem;justify-content:space-between;align-items:center;flex-wrap:wrap;padding:.4rem 1rem;background:#111;color:#fff;font:600 .8rem/1.4 system-ui,sans-serif}
+.proto nav{display:flex;gap:.35rem;flex-wrap:wrap}.proto a{white-space:nowrap}.proto a{color:#fff;text-decoration:none;padding:.2rem .6rem;border:1px solid #666;border-radius:99px}.proto a[aria-current]{background:#fff;color:#111;border-color:#fff}
+.entete-in{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;padding-top:.9rem;padding-bottom:.9rem}
+.marque{display:flex;align-items:center;gap:.75rem;text-decoration:none}.marque-txt{display:flex;flex-direction:column}.marque small{font-size:.8rem}
+.menu{display:flex;gap:1.25rem;flex-wrap:wrap}.menu a{text-decoration:none;font-weight:600}
+.hero-in{display:grid;grid-template-columns:1.25fr .75fr;gap:2.5rem;align-items:center}
+.actions{display:flex;gap:1.25rem;align-items:center;flex-wrap:wrap;margin:1.75rem 0 0}
+.bouton{display:inline-block;text-decoration:none;font-weight:700;padding:.85rem 1.4rem}
+.garanties ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem}.garanties b{display:block;margin-bottom:.25rem}
+.bloc{padding:3.5rem 0}.tuiles{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:1.25rem}
+.tuile{display:flex;flex-direction:column;gap:.35rem;padding:1.5rem;text-decoration:none;min-height:11rem}.tuile strong{font-size:1.6rem}.tuile em{margin-top:auto;font-style:normal;font-weight:700}
+.niveaux{display:grid;grid-template-columns:repeat(4,1fr);gap:1.25rem}.niveaux p{margin:.35rem 0 0;font-size:.95rem}
+.selecteur{display:flex;gap:.5rem;flex-wrap:wrap;margin:1.5rem 0}.selecteur span{padding:.5rem 1rem;font-weight:600;font-size:.95rem}
+.cartes{display:grid;grid-template-columns:1.4fr 1fr;gap:1.5rem;align-items:start}.carte{padding:1.5rem}
+.carte-tete{display:flex;gap:1rem;align-items:center;margin-bottom:1rem}.carte h3{margin:0;font-size:1.3rem}.parti{margin:.1rem 0 0;font-size:.9rem}
+.portrait{flex:none;display:grid;place-items:center;width:4.25rem;height:4.25rem;font:700 1.05rem system-ui,sans-serif}
+.carte h4{margin:0 0 .5rem;font-size:1.05rem}.mesure{margin:0 0 .75rem;font-size:1.15rem}.relue{font-size:.85rem;margin:0 0 1rem}
+.source{padding:.9rem 1rem;font-size:.9rem}.source p{margin:.2rem 0}.source-titre{font-weight:700;font-size:.78rem;text-transform:uppercase;letter-spacing:.06em}
+.vide{margin:0;font-size:1.05rem}.note-photo{font-size:.85rem;margin:1.5rem 0 0}.etiquette{font:700 .78rem system-ui,sans-serif;text-transform:uppercase;letter-spacing:.08em;margin:0 0 .5rem}
+.pied-in{display:flex;justify-content:space-between;gap:1.5rem;flex-wrap:wrap;padding-top:2rem;padding-bottom:2rem;font-size:.9rem}.pied nav{display:flex;gap:1.25rem;flex-wrap:wrap}.pied p{margin:0;max-width:34rem}
+@media (max-width:760px){.hero-in,.cartes,.tuiles,.garanties ul{grid-template-columns:1fr}.niveaux{grid-template-columns:1fr 1fr}.hero-deco{display:none}.bloc{padding:2.5rem 0}}
+body{background:#fff;color:#1a1d29;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+h1,h2,h3,.tuile strong,.marque strong{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;color:#101c4c;font-weight:700}
+.entete{border-top:6px solid;border-image:linear-gradient(90deg,#16308f 0 33.3%,#fff 33.3% 66.6%,#c1121f 66.6%) 1;border-bottom:1px solid #d9dce6}
+.logo{display:grid;place-items:center;width:2.5rem;height:2.5rem;background:#101c4c;border-bottom:5px solid #c1121f}.logo i{display:none}.logo::before{content:"R";color:#fff;font:700 1.45rem/1 "Iowan Old Style",Palatino,Georgia,serif}
+.marque strong{font-size:1.35rem}.marque small{color:#5a607a}.menu a{color:#101c4c}
+.hero{padding:4.5rem 0 3.5rem}.surtitre{color:#c1121f;font-weight:700;letter-spacing:.04em;text-transform:uppercase;font-size:.82rem;margin:0 0 1rem}
+h1{font-size:clamp(2.2rem,4.6vw,3.6rem);line-height:1.08;margin:0 0 1.25rem}.chapo{font-size:1.25rem;max-width:36rem;margin:0}
+.bouton{background:#101c4c;color:#fff}.lien-fort{color:#101c4c;font-weight:700;text-underline-offset:.25em;text-decoration-color:#c1121f;text-decoration-thickness:2px}
+.hero-deco{border-left:6px solid #c1121f;padding:.5rem 0 .5rem 1.75rem}.hero-deco span{display:none}.hero-deco::before{content:"2027";display:block;font:700 clamp(4rem,9vw,7.5rem)/.9 "Iowan Old Style",Palatino,Georgia,serif;color:#16308f;letter-spacing:-.03em}.hero-deco::after{content:"1er tour le 18 avril, 2d tour le 2 mai";display:block;margin-top:.9rem;font:600 1rem system-ui,sans-serif;color:#101c4c}
+.garanties{border-block:1px solid #d9dce6;padding:2rem 0;background:#f6f7fb}.garanties b{color:#101c4c;font-size:.82rem;letter-spacing:.06em;text-transform:uppercase}.garanties li{font-size:.98rem}
+h2{font-size:2rem;margin:0 0 1.5rem;padding-bottom:.6rem;border-bottom:2px solid #101c4c}
+.tuile{border:1px solid #101c4c;color:#101c4c}.tuile-num{font:700 .8rem system-ui;color:#c1121f}.tuile-ouverte{background:#101c4c;color:#fff}.tuile-ouverte strong{color:#fff}.tuile-ouverte .tuile-num{color:#fff}.tuile-avenir{border-style:dashed;color:#5a607a}.tuile-avenir strong{color:#5a607a}
+.bloc-alt{background:#f6f7fb}.niveaux div{border-top:3px solid #16308f;padding-top:.9rem}.niveaux div:nth-child(even){border-color:#c1121f}.niveaux strong{color:#101c4c}
+.etiquette{color:#c1121f}.titre-theme{border:0;font-size:2.6rem;margin-bottom:.5rem}.compte{max-width:44rem}
+.selecteur span{border:1px solid #101c4c;color:#101c4c}.selecteur .actif{background:#101c4c;color:#fff}
+.carte{border:1px solid #d9dce6;border-top:4px solid #16308f}.portrait{border:1px solid #101c4c;color:#101c4c;background:#f6f7fb}
+.parti{color:#5a607a}.carte h4{color:#c1121f;font-family:system-ui,sans-serif}.relue{color:#5a607a}.source{background:#f6f7fb;border-left:3px solid #101c4c}.source a{color:#16308f}
+.carte-vide{border-top-color:#9aa0b8}.vide{color:#5a607a;font-style:italic}.note-photo{color:#5a607a}
+.pied{background:#101c4c;color:#fff}.pied a{color:#fff}</style></head><body>
+<div class="proto"><span>Maquette, pas le site réel</span><nav><a href="a.html" aria-current="page">A · Tribune</a><a href="b.html">B · Affiche</a><a href="c.html">C · Atelier</a><a href="d.html">D · Synthèse A+B</a></nav></div>
+<header class="entete"><div class="conteneur entete-in">
+  <a class="marque" href="#"><span class="logo" aria-hidden="true"><i></i><i></i><i></i></span><span class="marque-txt"><strong>Révèle ton prog</strong><small>Présidentielle 2027 : les programmes, expliqués et sourcés</small></span></a>
+  <nav class="menu" aria-label="Principal"><a href="#">Thèmes</a><a href="#">Candidats</a><a href="#">Méthode</a></nav>
+</div></header>
+<main>
+<section class="hero"><div class="conteneur hero-in">
+  <div class="hero-txt">
+    <p class="surtitre">Élection présidentielle des 18 avril et 2 mai 2027</p>
+    <h1>Les programmes de la présidentielle 2027, à votre niveau</h1>
+    <p class="chapo">Ce site explique ce que proposent les candidats à l'élection présidentielle de 2027, un thème à la fois. Il ne prend jamais parti.</p>
+    <p class="actions"><a class="bouton" href="#theme">Lire le thème Santé</a><a class="lien-fort" href="#">Voir les 37 candidats</a></p>
+  </div>
+  <div class="hero-deco" aria-hidden="true"><span></span><span></span><span></span></div>
+</div></section>
+<section class="garanties"><div class="conteneur"><ul role="list">
+  <li><b>Sourcé</b>Chaque mesure décrit ce que le candidat propose, sans jugement, et renvoie à son texte, daté et archivé.</li>
+  <li><b>Sans classement</b>Par défaut, les candidats sont classés par ordre alphabétique, jamais selon les sondages.</li>
+  <li><b>Sans traceur</b>Aucun cookie, aucune publicité, aucun service extérieur.</li>
+</ul></div></section>
+<section class="bloc"><div class="conteneur">
+  <h2>Les thèmes</h2>
+  <div class="tuiles">
+    <a class="tuile tuile-ouverte" href="#theme"><span class="tuile-num">01</span><strong>Santé</strong><span>37 candidats · 47 mesures</span><em>Lire</em></a>
+    <div class="tuile tuile-avenir"><span class="tuile-num">02</span><strong>Travail</strong><span>Publié après relecture</span></div>
+    <div class="tuile tuile-avenir"><span class="tuile-num">03</span><strong>Europe et monde</strong><span>Publié après relecture</span></div>
+  </div>
+</div></section>
+<section class="bloc bloc-alt"><div class="conteneur">
+  <h2>Quatre façons de lire</h2>
+  <div class="niveaux">
+    <div><strong>En bref</strong><p>Une phrase par mesure.</p></div>
+    <div><strong>En détail</strong><p>Le coût annoncé, le calendrier, ce que le texte ne précise pas et la citation du programme.</p></div>
+    <div><strong>Pour les enfants</strong><p>Des mots simples, avec les mots difficiles expliqués.</p></div>
+    <div><strong>Gros caractères</strong><p>Un texte plus grand et les thèmes qui touchent souvent les retraités en premier.</p></div>
+  </div>
+</div></section>
+<section class="bloc" id="theme"><div class="conteneur">
+  <p class="etiquette">Extrait de la page d'un thème</p>
+  <h2 class="titre-theme">Santé</h2>
+  <p class="compte">Sur ce thème, 27 candidats sur 37 ont une position publiée, 3 n'ont rien de précisé dans les sources consultées, 7 n'ont pas publié de programme.</p>
+  <div class="selecteur" role="group" aria-label="Niveau de lecture"><span class="actif">En bref</span><span>En détail</span><span>Pour les enfants</span><span>Gros caractères</span></div>
+  <div class="cartes">
+    <article class="carte">
+      <header class="carte-tete"><span class="portrait" aria-hidden="true">ÉP</span><div><h3>Édouard Philippe</h3><p class="parti">Parti revendiqué : Horizons</p></div></header>
+      <h4>Renforcement de la santé à l'école</h4>
+      <p class="mesure">Édouard Philippe veut renforcer la santé à l'école, avec des tiers de confiance, des conseils et la détection en matière de santé mentale.</p>
+      <p class="relue">Relue par l'agent d'IA Claude le 17 novembre 2026.</p>
+      <div class="source"><span class="source-titre">Source primaire</span><p>Édouard Philippe, Les priorités : Pour une France plus attentive à ses enfants</p><p class="source-meta">Consultée le 4 novembre 2026 · <a href="#">Document original</a> · <a href="#">Copie archivée</a></p></div>
+    </article>
+    <article class="carte carte-vide">
+      <header class="carte-tete"><span class="portrait" aria-hidden="true">MLP</span><div><h3>Marine Le Pen</h3><p class="parti">Parti revendiqué : Rassemblement national</p></div></header>
+      <p class="vide">Programme non publié à ce jour. Vérifié le 17 novembre 2026.</p>
+    </article>
+  </div>
+  <p class="note-photo">Les vignettes à initiales tiennent la place des portraits (photos libres de Wikimedia Commons, avec auteur et licence).</p>
+</div></section>
+</main>
+<footer class="pied"><div class="conteneur pied-in"><p>Révèle ton prog présente les programmes des candidats sans prendre parti, sans publicité et sans cookie.</p><nav aria-label="Pied de page"><a href="#">Méthode</a><a href="#">Mentions légales</a><a href="#">Qui sommes-nous</a></nav></div></footer>
+</body></html>
