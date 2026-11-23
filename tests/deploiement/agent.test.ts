@@ -29,8 +29,12 @@ function temp(prefixe: string): string {
   dossiers.push(d);
   return d;
 }
-/** HOME des agents du test : chemin court (/tmp), le socket d'un vrai ssh-agent est limité à 104 octets. */
-const HOME_AGENT = realpathSync(mkdtempSync('/tmp/rtp-ha-'));
+/**
+ * HOME des agents du test : chemin court, le socket d'un vrai ssh-agent est limité à 104 octets.
+ * /var/tmp et non /tmp : sous Linux, /tmp est le dossier temporaire lui-même, et le test de CR-01
+ * exige justement un socket hors de ce dossier (rouge sur la CI GitHub, vert sur le Mac).
+ */
+const HOME_AGENT = realpathSync(mkdtempSync('/var/tmp/rtp-ha-'));
 dossiers.push(HOME_AGENT);
 function ecrireExecutable(p: string, contenu: string): void {
   mkdirSync(path.dirname(p), { recursive: true });
