@@ -10,7 +10,7 @@ statuts:
   - code: declare
     date: 2026-11-09
     source:
-      type: candidat
+      type: presse
       titre: franceinfo
       url: https://www.franceinfo.fr/elections/presidentielle/la-resignation-n-est-pas-une-option-teddy-riner-annonce-sa-candidature-a-l-election-presidentielle-2027_8274359.html
       date_publication: 2026-11-09

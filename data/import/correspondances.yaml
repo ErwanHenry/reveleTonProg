@@ -376,11 +376,11 @@ correspondances:
     prenom: Teddy
     nom: Riner
     nom_tri: Riner
-    type_source_statut: candidat
+    type_source_statut: presse
   lagarde:
     id: christine-lagarde
     prenom: Christine
     nom: Lagarde
     nom_tri: Lagarde Christine
     motif: non_candidat
-    type_source_statut: candidat
+    type_source_statut: presse
