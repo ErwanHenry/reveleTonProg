@@ -1,0 +1,21 @@
+version_schema: 1
+id: christine-lagarde
+prenom: Christine
+nom: Lagarde
+nom_tri: Lagarde Christine
+parti: null
+ids_externes:
+  2027etmoi: lagarde
+statuts:
+  - code: renonce
+    motif: non_candidat
+    date: 2026-10-29
+    source:
+      type: presse
+      titre: "Euronews — « I'm not a candidate for anything »: what Lagarde told Euronews before quitting the ECB"
+      url: https://www.euronews.com/2026/10/29/im-not-a-candidate-for-anything-what-lagarde-told-euronews-before-quitting-the-ecb
+      date_publication: 2026-10-29
+      date_consultation: 2026-11-09
+    statut_relecture: relu
+    relecteur: l'agent d'IA Claude
+    date_relecture: 2026-11-24

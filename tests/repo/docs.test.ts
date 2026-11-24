@@ -927,14 +927,17 @@ describe('documentation (phase 10) : import de décembre (IMP-03)', () => {
     assert.match(s, /aucun agent/i);
   });
 
-  it('la liste de contrôle des mises à jour à la main compte huit points et nomme les deux décisions de l’éditeur', () => {
+  it('la liste de contrôle des mises à jour à la main compte huit points et nomme la délégation des points 6 et 7 à l’agent d’IA', () => {
     const s = sectionRunbook(IMPORT);
     const debut = s.indexOf('Liste de contrôle');
     assert.ok(debut >= 0, 'liste de contrôle absente');
     const liste = s.slice(debut);
     const points = [...liste.matchAll(/^\s*(\d+)\.\s+`/gm)].map((m) => Number(m[1]));
     assert.deepEqual(points.slice(0, 8), [1, 2, 3, 4, 5, 6, 7, 8]);
-    assert.ok((liste.match(/Décision d'Erwan/g) ?? []).length >= 2, 'les points 6 et 7 doivent nommer la décision d’Erwan');
+    // Délégation d'Erwan du 2026-11-24 : points 6 et 7 écrits par un agent d'IA, revérifiés par un second agent.
+    assert.ok(liste.includes("délégués à l'agent d'IA par Erwan le 2026-11-24"), 'le point 6 doit dater la délégation d’Erwan');
+    assert.ok(liste.includes('second agent les revérifie'), 'le point 6 doit exiger la revérification par un second agent');
+    assert.ok(liste.includes("Délégué à l'agent d'IA, comme le point 6"), 'le point 7 doit renvoyer à la délégation du point 6');
     for (const f of ['data/dataset-datagouv.yaml', 'data/import/ATTRIBUTION.md', 'LICENSE', 'tests/corpus/dataset-datagouv.test.ts', 'tests/dist/cas/methode.cas.ts', 'README.md', 'docs/COUVERTURE-THEMES.md']) {
       assert.ok(liste.includes(f), `${f} absent de la liste de contrôle`);
     }
