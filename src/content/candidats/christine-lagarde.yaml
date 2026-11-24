@@ -16,4 +16,6 @@ statuts:
       url: https://www.euronews.com/2026/10/29/im-not-a-candidate-for-anything-what-lagarde-told-euronews-before-quitting-the-ecb
       date_publication: 2026-10-29
       date_consultation: 2026-11-09
-    statut_relecture: brouillon
+    statut_relecture: relu
+    relecteur: l'agent d'IA Claude
+    date_relecture: 2026-11-24
