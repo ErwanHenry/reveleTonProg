@@ -42,15 +42,18 @@ const valeurRoot = (prop: string): string | undefined =>
     .flatMap((r) => r.declarations)
     .find((d) => d.prop === prop)?.valeur;
 
+// Contrat 10.2 (UI-SPEC §4.1) : palette de la charte D, valeurs en majuscules ; --bord-fort sort de la liste.
 const JETONS_COULEUR: Record<string, string> = {
-  '--fond': '#FAFAF8',
+  '--fond': '#FFFFFF',
   '--carte': '#FFFFFF',
-  '--panneau': '#F0EEE9',
-  '--encre': '#1F2328',
-  '--encre-douce': '#4D535B',
-  '--vide': '#575C63',
-  '--bord-fort': '#6B7078',
-  '--bord-carte': '#8A8F96',
+  '--panneau': '#F3F5FC',
+  '--encre': '#161A2B',
+  '--encre-douce': '#3B4263',
+  '--vide': '#3B4263',
+  '--bord-carte': '#7C83A3',
+  '--nuit': '#101C4C',
+  '--lien-fort': '#16308F',
+  '--rouge': '#C1121F',
 };
 
 const JETONS_TYPE: Record<string, string> = {
@@ -489,5 +492,47 @@ describe('styles : grille M1-08 09.1, cartes à leur hauteur', () => {
     assert.deepEqual(base.map((d) => d.prop), ['font-size']);
     assert.equal(valeur('.pied .signalement-intro', 'margin'), '0 0 1rem');
     assert.equal(valeur('.pied .signalement-intro', 'color'), 'var(--encre)');
+  });
+});
+
+describe('charte 10.2 : jetons et interdits', () => {
+  it('(f) la pile des titres est une pile de polices système', () => {
+    assert.equal(valeurRoot('--police-titres'), '"Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif');
+  });
+
+  it('(g) les trois rayons sont des jetons', () => {
+    assert.equal(valeurRoot('--rayon-carte'), '0.875rem');
+    assert.equal(valeurRoot('--rayon-bloc'), '0.625rem');
+    assert.equal(valeurRoot('--rayon-pastille'), '1.5rem');
+  });
+
+  it('--bord-fort et --picto-fond ne sont ni définis ni employés', () => {
+    assert.equal(valeurRoot('--bord-fort'), undefined);
+    assert.equal(valeurRoot('--picto-fond'), undefined);
+    for (const { fichier, texte } of sourcesCss) {
+      assert.ok(!/--bord-fort|--picto-fond/.test(texte), `${fichier} cite un jeton supprimé`);
+    }
+  });
+
+  it('(d) aucune casse forcée, aucun dégradé linéaire, aucune police ni ressource externe', () => {
+    for (const { fichier, texte } of sourcesCss) {
+      for (const interdit of [/text-transform:\s*uppercase/, /small-caps/, /linear-gradient/, /@font-face/, /url\(/, /@import/]) {
+        assert.ok(!interdit.test(texte), `${fichier} : ${interdit}`);
+      }
+      assert.ok(!/letter-spacing:\s*\+?(?:0?\.\d*[1-9]|[1-9])/.test(texte), `${fichier} : letter-spacing positif`);
+    }
+  });
+
+  it('(h) aucune couleur en dur hors :root et [data-theme], sauf le voile de la définition', () => {
+    for (const r of regles) {
+      if (r.selecteur === ':root' || r.selecteur.startsWith('[data-theme=')) continue;
+      for (const d of r.declarations) {
+        if (r.selecteur === '.definition::backdrop' && d.prop === 'background') {
+          assert.equal(d.valeur, 'rgba(22, 26, 43, 0.4)');
+          continue;
+        }
+        assert.ok(!/#[0-9a-f]{3,8}\b|rgba?\(/i.test(d.valeur), `${r.fichier} ${r.selecteur} { ${d.prop}: ${d.valeur} }`);
+      }
+    }
   });
 });

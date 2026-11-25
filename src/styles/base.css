@@ -4,7 +4,9 @@
 
   Échelle d'espacement : 4, 8, 16, 24, 32, 48, 64 px (0.25, 0.5, 1, 1.5, 2, 3, 4 rem). Les marges, remplissages
   et gouttières n'utilisent que ces valeurs.
-  Exceptions (traits et décalages, pas des espacements) : bordures 1/2/3/4/8 px, outline-offset 2px,
+  Exceptions (traits et décalages, pas des espacements) : traits 1, 2, 3, 4, 8 px ; rayons en jetons
+  --rayon-carte (14 px), --rayon-bloc (10 px), --rayon-pastille (24 px) et 4 px sur badge, bandeau d'aperçu et
+  définition : ce sont des traits et des rayons, pas des espacements ; outline-offset 2px,
   text-underline-offset 3px (liens) et 4px (termes), halo de focus 2px.
 
   Quatre tailles de texte, toutes en jetons (--t-label, --t-corps, --t-titre, --t-affiche) : le mode
@@ -13,20 +15,26 @@
 
 :root {
   color-scheme: light;
-  --fond: #FAFAF8;
+  --fond: #FFFFFF;
   --carte: #FFFFFF;
-  --panneau: #F0EEE9;
-  --encre: #1F2328;
-  --encre-douce: #4D535B;
-  --vide: #575C63;
-  --bord-fort: #6B7078;
-  --bord-carte: #8A8F96;
-  --picto-fond: #D5D2CB;
+  --panneau: #F3F5FC;
+  --encre: #161A2B;
+  --encre-douce: #3B4263;
+  --vide: #3B4263;
+  --bord-carte: #7C83A3;
+  --nuit: #101C4C;
+  --lien-fort: #16308F;
+  --rouge: #C1121F;
   --theme: var(--encre-douce);
   --t-label: 1rem;
   --t-corps: 1.125rem;
   --t-titre: 1.5rem;
   --t-affiche: 2rem;
+  /* polices système, aucun fichier ; Iowan, Palatino et Georgia n'ont pas de graisse 600 : les titres sont rendus en gras (700), une seule graisse de rendu pour tous les titres */
+  --police-titres: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --rayon-carte: 0.875rem;
+  --rayon-bloc: 0.625rem;
+  --rayon-pastille: 1.5rem;
 }
 
 /* Une couleur dominante par thème (jamais par candidat ni par parti). Un thème sans règle garde --theme neutre. */
@@ -368,11 +376,12 @@ main:has(> .lecteur > .niveaux #niv-aine:checked) details.acces-candidats :is(a,
   flex: none;
   width: 3rem;
   height: 3rem;
+  border: 2px solid var(--nuit);
   border-radius: 50%;
   background:
-    radial-gradient(circle at 50% 36%, var(--bord-fort) 0 0.5rem, transparent 0.5rem),
-    radial-gradient(ellipse at 50% 100%, var(--bord-fort) 0 1.25rem, transparent 1.25rem),
-    var(--picto-fond);
+    radial-gradient(circle at 50% 36%, var(--nuit) 0 0.5rem, transparent 0.5rem),
+    radial-gradient(ellipse at 50% 100%, var(--nuit) 0 1.25rem, transparent 1.25rem),
+    var(--panneau);
 }
 
 /* Mesure */
@@ -437,7 +446,7 @@ main:has(> .lecteur > .niveaux #niv-aine:checked) details.acces-candidats :is(a,
 blockquote[data-citation] {
   margin: 0 0 1rem;
   padding-inline-start: 1rem;
-  border-inline-start: 4px solid var(--bord-fort);
+  border-inline-start: 4px solid var(--bord-carte);
 }
 
 blockquote[data-citation] p {

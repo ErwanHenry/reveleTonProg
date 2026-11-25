@@ -87,7 +87,7 @@ html[data-js-niveau] .aide-sansjs {
   padding: 0.5rem 1rem;
   background: var(--carte);
   color: var(--encre);
-  border: 2px solid var(--bord-fort);
+  border: 2px solid var(--nuit);
   border-radius: 4px;
   font-size: var(--t-label);
   font-weight: 600;
