@@ -269,10 +269,14 @@ Plans:
   3. Aucun texte public nouveau sans accord d'Erwan, aucune police ni script externe, aucune dépendance npm nouvelle ; `npm test`, `npm run e2e` (axe AA, sans JS, 320 px, 4G, poids) et check-dist restent verts, contrastes vérifiés au moins à 4,5:1 pour le texte.
   4. Une pull request vers `main` montre des captures avant et après (bureau et mobile) ; Erwan déploie lui-même par `ci:local` puis `deploy:local`.
 
-**Plans**: 0 plans
+**Plans**: 5 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 10.2 to break down)
+- [ ] 10.2-01-PLAN.md : jetons de la charte D, police des titres et rayons en jetons, image de partage figée, icône régénérée
+- [ ] 10.2-02-PLAN.md : titres à empattements bleu nuit, en-tête, accueil et tuiles, rouge en trois accents, premier écran mesuré en serif
+- [ ] 10.2-03-PLAN.md : pastilles de niveau et d'ordre, cartes au cadre unique, états vides sans boîte
+- [ ] 10.2-04-PLAN.md : bloc source teinté, relecture, statut, encadrés repliables, listes et pied bleu nuit
+- [ ] 10.2-05-PLAN.md : recensement navigateur, textes inchangés, garde complète, mesures, captures avant et après, renvoi dans 04-UI-SPEC
 
 ### Phase 10.3: Mise à jour autonome des statuts (INSÉRÉE)
 
