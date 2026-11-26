@@ -133,8 +133,8 @@
   min-height: 2.75rem;
 }
 
-/* R-3 : soulignement rouge des deux liens autonomes. :where garde la spécificité sous a:hover (0,1,1) : le survol à 3px
-   s'applique sans règle :hover de plus. */
+/* R-3 : soulignement rouge des deux liens autonomes. :where garde la spécificité sous la règle de survol de base.css
+   (0,1,1) : le survol à 3px s'applique sans règle de survol de plus. */
 :where(.hall-candidats, .hall-methode) a {
   color: var(--nuit);
   font-weight: 600;
