@@ -137,6 +137,7 @@ describe('lireConfig : fichier valide', () => {
     const home = '/tmp/rtp-home-x';
     assert.deepEqual(cheminsLocaux(home), {
       config: '/tmp/rtp-home-x/.config/rtp/deploiement.env',
+      configAuto: '/tmp/rtp-home-x/.config/rtp/deploiement-auto.env',
       recus: '/tmp/rtp-home-x/.cache/rtp/ci',
       journal: '/tmp/rtp-home-x/.local/state/rtp/deploiements.jsonl',
       verrou: '/tmp/rtp-home-x/.cache/rtp/deploiement/.verrou',
