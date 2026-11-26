@@ -3,7 +3,7 @@
 // le vrai ~/.config/rtp n'est jamais lu. Valeurs factices seulement (exemple.invalid).
 import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { chmodSync, mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { Sortie } from '../../scripts/lib/deploiement/gardes.ts';
@@ -264,6 +264,33 @@ describe('masquer', () => {
 
   it('utilisateur pris comme mot entier seulement', () => {
     assert.equal(masquer('xdeploy-facticex reste', cfg), 'xdeploy-facticex reste');
+  });
+
+  it('10.3 point 8 : les noms de commandes ne sont pas pris pour l\'utilisateur', () => {
+    const c = { hote: HOTE, utilisateur: 'deploy', url: null };
+    for (const t of [
+      'deploy:local',
+      'npm run deploy:local',
+      'deploy-local.ts',
+      'scripts/deploy-local.ts',
+      'deploy.ts',
+      'deploy-production',
+      'lancer fnm exec --using=24 npm run deploy:local',
+    ]) assert.equal(masquer(t, c), t);
+    const usage = /const USAGE = `([^`]*)`/.exec(readFileSync(new URL('../../scripts/deploy-local.ts', import.meta.url), 'utf8'))?.[1];
+    assert.ok(usage !== undefined && usage.includes('deploy:local'));
+    assert.equal(masquer(usage, c), usage);
+  });
+
+  it('10.3 point 8 : l\'utilisateur seul reste masqué', () => {
+    const c = { hote: HOTE, utilisateur: 'deploy', url: null };
+    assert.equal(masquer(`deploy@${HOTE}`, c), '<utilisateur>@<hôte>');
+    assert.equal(masquer('compte deploy refusé', c), 'compte <utilisateur> refusé');
+    assert.equal(masquer('utilisateur deploy.', c), 'utilisateur <utilisateur>.');
+    assert.equal(masquer('utilisateur deploy. Suite', c), 'utilisateur <utilisateur>. Suite');
+    assert.equal(masquer('(deploy)', c), '(<utilisateur>)');
+    assert.equal(masquer('deploy: Permission denied', c), '<utilisateur>: Permission denied');
+    assert.equal(masquer('xdeploy-facticex', c), 'xdeploy-facticex');
   });
 
   it('valeurs vides ou nulles ignorées', () => {
