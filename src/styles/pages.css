@@ -225,7 +225,7 @@ main:has(> .lecteur > .niveaux #niv-aine:checked) :is(.hall-candidats, .hall-met
 .lignes {
   margin: 1.5rem 0 2rem;
   list-style: none;
-  border-top: 1px solid var(--bord-carte);
+  border-top: 2px solid var(--nuit);
 }
 
 .ligne {
@@ -268,7 +268,9 @@ main:has(> .lecteur > .niveaux #niv-aine:checked) :is(.hall-candidats, .hall-met
   margin: 0 0 2rem;
   padding: 1rem;
   background: var(--panneau);
-  border: 1px solid var(--bord-carte);
+  border: 0;
+  border-inline-start: 4px solid var(--nuit);
+  border-radius: var(--rayon-bloc);
   font-size: var(--t-label);
 }
 
@@ -384,6 +386,7 @@ main:has(> .lecteur > .niveaux #niv-aine:checked) :is(.hall-candidats, .hall-met
   display: list-item;
   min-height: 2.75rem;
   padding-block: 0.5rem;
+  color: var(--nuit);
   font-weight: 600;
   cursor: pointer;
 }

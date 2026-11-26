@@ -491,7 +491,7 @@ describe('styles : grille M1-08 09.1, cartes à leur hauteur', () => {
     const base = regles.filter((r) => r.fichier === 'base.css' && r.selecteur === '.signalement-intro').flatMap((r) => r.declarations);
     assert.deepEqual(base.map((d) => d.prop), ['font-size']);
     assert.equal(valeur('.pied .signalement-intro', 'margin'), '0 0 1rem');
-    assert.equal(valeur('.pied .signalement-intro', 'color'), 'var(--encre)');
+    assert.equal(valeur('.pied .signalement-intro', 'color'), 'var(--carte)');
   });
 });
 
@@ -650,5 +650,83 @@ describe('charte 10.2 : contrôles et cartes', () => {
     assert.ok(props.indexOf('border') < props.indexOf('border-inline-start'));
     assert.equal(decl(r, 'border-inline-start'), '8px solid var(--theme)');
     assert.equal(decl(r, 'border-radius'), 'var(--rayon-bloc)');
+  });
+});
+
+describe('charte 10.2 : contenu sourcé et pied', () => {
+  const sel = (fichier: string, s: string): Regle | undefined => regles.find((r) => r.fichier === fichier && r.selecteur === s);
+  const props = (r: Regle | undefined): string[] => r?.declarations.map((d) => d.prop) ?? [];
+
+  it('(1) .mesure-titre : taille du corps, sans police propre, jamais rouge', () => {
+    const r = sel('base.css', '.mesure-titre');
+    assert.equal(decl(r, 'font-size'), 'var(--t-corps)');
+    assert.ok(!props(r).includes('font-family'));
+    assert.ok(!r?.declarations.some((d) => d.valeur.includes('--rouge')));
+  });
+
+  it('(2) .relecture en encre, graisse 600', () => {
+    const r = sel('base.css', '.relecture');
+    assert.equal(decl(r, 'color'), 'var(--encre)');
+    assert.equal(decl(r, 'font-weight'), '600');
+  });
+
+  it('(3) .source : encadré teinté à filet gauche, liens forts gras', () => {
+    const r = sel('base.css', '.source');
+    assert.equal(decl(r, 'background'), 'var(--panneau)');
+    assert.equal(decl(r, 'border-inline-start'), '4px solid var(--nuit)');
+    assert.equal(decl(r, 'border-radius'), 'var(--rayon-bloc)');
+    assert.equal(decl(r, 'padding'), '1rem');
+    assert.equal(decl(r, 'color'), 'var(--encre)');
+    assert.ok(!props(r).includes('border-top'));
+    const a = sel('base.css', '.source a');
+    assert.equal(decl(a, 'color'), 'var(--lien-fort)');
+    assert.equal(decl(a, 'font-weight'), '600');
+    assert.equal(decl(a, 'min-height'), '2.75rem');
+    assert.ok(regles.some((x) => x.fichier === 'base.css' && x.selecteur.split(/\s*,\s*/).includes('.source') && decl(x, 'border') === '1px solid CanvasText'));
+  });
+
+  it('(4) .statut : filet gauche, rayon, sans max-width', () => {
+    const r = sel('pages.css', '.statut');
+    const p = props(r);
+    assert.equal(decl(r, 'border'), '0');
+    assert.ok(p.indexOf('border') < p.indexOf('border-inline-start'));
+    assert.equal(decl(r, 'border-inline-start'), '4px solid var(--nuit)');
+    assert.equal(decl(r, 'border-radius'), 'var(--rayon-bloc)');
+    assert.ok(!p.includes('max-width'));
+  });
+
+  it('(5) encadrés repliables : cadre 2 px, rayon, jamais overflow hidden', () => {
+    for (const [fichier, d, interieur] of [['base.css', 'details.renonce', 'details.renonce ul'], ['enfant.css', 'details.mots-expliques', 'details.mots-expliques dl']] as const) {
+      const r = sel(fichier, d);
+      assert.equal(decl(r, 'border'), '2px solid var(--nuit)', d);
+      assert.equal(decl(r, 'border-radius'), 'var(--rayon-bloc)', d);
+      assert.equal(decl(sel(fichier, interieur), 'border-radius'), '0 0 0.5rem 0.5rem', interieur);
+    }
+    for (const r of regles.filter((x) => /details\./.test(x.selecteur))) {
+      assert.ok(!r.declarations.some((x) => x.prop === 'overflow' && x.valeur === 'hidden'), r.selecteur);
+    }
+  });
+
+  it('(6) .pied bleu nuit, texte blanc, liens blancs gras, focus blanc', () => {
+    const r = sel('base.css', '.pied');
+    assert.equal(decl(r, 'background'), 'var(--nuit)');
+    assert.equal(decl(r, 'color'), 'var(--carte)');
+    assert.equal(decl(r, 'border-top'), '0');
+    const a = sel('base.css', '.pied a');
+    assert.equal(decl(a, 'color'), 'var(--carte)');
+    assert.equal(decl(a, 'font-weight'), '600');
+    const f = sel('base.css', '.pied :focus-visible');
+    assert.equal(decl(f, 'outline-color'), 'var(--carte)');
+    assert.equal(decl(f, 'box-shadow'), '0 0 0 2px var(--nuit)');
+  });
+
+  it('(7) toute ombre portée est une règle de focus', () => {
+    for (const r of regles) {
+      if (r.declarations.some((d) => d.prop === 'box-shadow')) assert.ok(r.selecteur.includes('focus'), r.selecteur);
+    }
+  });
+
+  it('(8) .lignes : filet haut de 2 px bleu nuit', () => {
+    assert.equal(decl(sel('pages.css', '.lignes'), 'border-top'), '2px solid var(--nuit)');
   });
 });
