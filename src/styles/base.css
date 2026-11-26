@@ -302,6 +302,7 @@ details.acces-candidats {
 
 details.acces-candidats summary {
   min-height: 2.75rem;
+  color: var(--nuit);
   padding: 0.5rem 0;
   font-size: var(--t-corps);
   font-weight: 600;
@@ -330,6 +331,7 @@ main:has(> .lecteur > .niveaux #niv-aine:checked) details.acces-candidats :is(a,
 .couverture {
   padding: 1rem;
   background: var(--panneau);
+  border-radius: var(--rayon-bloc);
   font-size: var(--t-label);
 }
 
@@ -351,9 +353,8 @@ main:has(> .lecteur > .niveaux #niv-aine:checked) details.acces-candidats :is(a,
   gap: 1rem;
   padding: 1rem;
   background: var(--carte);
-  border: 1px solid var(--bord-carte);
-  border-top: 4px solid var(--theme);
-  border-radius: 4px;
+  border: 2px solid var(--nuit);
+  border-radius: var(--rayon-carte);
   /* Mots longs (« NPA-Révolutionnaires, ») à 320 px + texte 160 % : passage à la ligne plutôt que défilement horizontal */
   min-inline-size: 0;
   overflow-wrap: anywhere;
@@ -377,6 +378,7 @@ main:has(> .lecteur > .niveaux #niv-aine:checked) details.acces-candidats :is(a,
 
 .cellule-nom {
   margin: 0;
+  font-family: var(--police-titres);
   overflow-wrap: break-word;
 }
 
@@ -529,9 +531,9 @@ blockquote[data-citation] p {
 /* États vides typés et datés : gris, jamais rouge */
 .vide {
   margin: 0;
-  padding: 1rem;
-  background: var(--panneau);
-  border: 1px solid var(--bord-carte);
+  padding: 0;
+  background: none;
+  border: 0;
   color: var(--vide);
   font-size: var(--t-corps);
 }
@@ -586,7 +588,6 @@ details.renonce li + li {
 
 @media (forced-colors: active) {
   .cellule,
-  .vide,
   details.renonce,
   .couverture {
     border: 1px solid CanvasText;

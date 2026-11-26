@@ -48,6 +48,7 @@ html[data-ordre-js] .ordre-aide-sansjs {
 
 .ordre-champ legend {
   margin-bottom: 0.5rem;
+  color: var(--nuit);
   padding: 0;
   font-size: var(--t-label);
   font-weight: 600;
@@ -79,9 +80,9 @@ html[data-ordre-js] .ordre-aide-sansjs {
   min-height: 2.75rem;
   padding: 0.5rem 1rem;
   background: var(--carte);
-  color: var(--encre);
+  color: var(--nuit);
   border: 2px solid var(--nuit);
-  border-radius: 4px;
+  border-radius: var(--rayon-pastille);
   font-size: var(--t-label);
   font-weight: 600;
   line-height: 1.2;
@@ -110,9 +111,9 @@ html[data-ordre-js] .ordre-aide-sansjs {
 }
 
 .ordre-option input:checked + label {
-  background: var(--encre);
+  background: var(--nuit);
   color: var(--carte);
-  border-color: var(--encre);
+  border-color: var(--nuit);
 }
 
 .ordre-option input:checked + label::before {

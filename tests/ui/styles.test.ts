@@ -593,3 +593,62 @@ describe('charte 10.2 : titres et rouge', () => {
     assert.equal(decl(parSel('.tuile-lien'), 'font-size'), 'var(--t-titre)');
   });
 });
+
+describe('charte 10.2 : contrôles et cartes', () => {
+  const premiere = (fichier: string, sel: string): Regle | undefined => regles.find((r) => r.fichier === fichier && r.selecteur === sel);
+  const parSel = (sel: string): Regle | undefined => regles.find((r) => r.fichier === 'base.css' && r.selecteur === sel);
+
+  it('(1) pastilles de niveau et d\'ordre : cadre, rayon, état choisi, jamais nowrap', () => {
+    for (const [fichier, base, choisi] of [
+      ['niveaux.css', '.niveau label', '.niveau input:checked + label'],
+      ['ordre.css', '.ordre-option label', '.ordre-option input:checked + label'],
+    ] as const) {
+      const p = premiere(fichier, base);
+      assert.equal(decl(p, 'border'), '2px solid var(--nuit)', base);
+      assert.equal(decl(p, 'border-radius'), 'var(--rayon-pastille)', base);
+      assert.equal(decl(p, 'color'), 'var(--nuit)', base);
+      assert.equal(decl(p, 'min-height'), '2.75rem', base);
+      const c = premiere(fichier, choisi);
+      assert.equal(decl(c, 'background'), 'var(--nuit)', choisi);
+      assert.equal(decl(c, 'border-color'), 'var(--nuit)', choisi);
+      assert.equal(decl(c, 'color'), 'var(--carte)', choisi);
+      for (const r of regles.filter((x) => x.fichier === fichier && x.selecteur.includes('label'))) {
+        assert.ok(!r.declarations.some((d) => d.prop === 'white-space' && d.valeur === 'nowrap'), `${r.selecteur} : nowrap`);
+      }
+    }
+  });
+
+  it('(2) .cellule : cadre unique sans couleur de thème ni état (règle 4)', () => {
+    const c = parSel('.cellule');
+    assert.equal(decl(c, 'border'), '2px solid var(--nuit)');
+    assert.equal(decl(c, 'border-radius'), 'var(--rayon-carte)');
+    assert.ok(!c?.declarations.some((d) => d.prop === 'border-top'), 'border-top sur .cellule');
+    assert.ok(!c?.declarations.some((d) => d.valeur.includes('var(--theme)')), 'var(--theme) sur .cellule');
+    for (const r of regles) {
+      if (!/\.cellule|\.vide/.test(r.selecteur)) continue;
+      assert.ok(!/data-etat|data-statut-relecture/.test(r.selecteur), `${r.selecteur} dépend de l'état`);
+    }
+  });
+
+  it('(3) nom du candidat en empattements', () => {
+    assert.equal(decl(parSel('.cellule-nom'), 'font-family'), 'var(--police-titres)');
+  });
+
+  it('(4) .vide sans boîte et hors forced-colors', () => {
+    const v = parSel('.vide');
+    assert.equal(decl(v, 'background'), 'none');
+    assert.equal(decl(v, 'border'), '0');
+    assert.equal(decl(v, 'padding'), '0');
+    assert.equal(decl(v, 'color'), 'var(--vide)');
+    assert.ok(!regles.some((r) => r.selecteur.split(/\s*,\s*/).includes('.vide') && decl(r, 'border') === '1px solid CanvasText'));
+  });
+
+  it('(5) « Ce qui me concerne » cadré', () => {
+    const r = premiere('niveaux.css', '.concerne-liste li');
+    const props = r?.declarations.map((d) => d.prop) ?? [];
+    assert.equal(decl(r, 'border'), '2px solid var(--nuit)');
+    assert.ok(props.indexOf('border') < props.indexOf('border-inline-start'));
+    assert.equal(decl(r, 'border-inline-start'), '8px solid var(--theme)');
+    assert.equal(decl(r, 'border-radius'), 'var(--rayon-bloc)');
+  });
+});
