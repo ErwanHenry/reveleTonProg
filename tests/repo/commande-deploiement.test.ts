@@ -12,6 +12,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { creerFauxServeur, HOTE_FACTICE, UTILISATEUR_FACTICE } from '../helpers/faux-serveur.ts';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const SCRIPT = path.join(ROOT, 'ops/commande-deploiement.sh');
@@ -93,7 +94,7 @@ interface Resultat {
   stderr: string;
 }
 
-function lancer(b: Banc, commande: string | undefined, extra: Record<string, string> = {}): Resultat {
+function lancer(b: Banc, commande: string | undefined, extra: Record<string, string> = {}, args: string[] = []): Resultat {
   const env: Record<string, string> = {
     PATH: `${b.stubs}:${process.env.PATH ?? '/usr/bin:/bin'}`,
     LC_ALL: 'C',
@@ -104,7 +105,7 @@ function lancer(b: Banc, commande: string | undefined, extra: Record<string, str
     ...extra,
   };
   if (commande !== undefined) env.SSH_ORIGINAL_COMMAND = commande;
-  const r = spawnSync('bash', [SCRIPT], { env, encoding: 'utf8' });
+  const r = spawnSync('bash', [SCRIPT, ...args], { env, encoding: 'utf8' });
   return { status: r.status, stdout: r.stdout, stderr: r.stderr };
 }
 
@@ -274,7 +275,7 @@ describe('ops/commande-deploiement.sh : activer', () => {
     assert.equal(lignes.length, 1);
     const ligne = String(lignes[0]);
     assert.ok(ligne.startsWith('-t rtp-deploy '), ligne);
-    assert.deepEqual(JSON.parse(ligne.slice('-t rtp-deploy '.length)), { verbe: 'activer', cible: 'essai', sha: S, code: 0 });
+    assert.deepEqual(JSON.parse(ligne.slice('-t rtp-deploy '.length)), { verbe: 'activer', cible: 'essai', sha: S, code: 0, auto: false });
   });
 
   it('production : racine RTP_BASE, sans toucher essai/', (t) => {
@@ -544,5 +545,120 @@ describe('ops/commande-deploiement.sh : code', () => {
   it('commence par l’en-tête bash strict', () => {
     assert.ok(script.startsWith('#!/usr/bin/env bash\n'));
     assert.match(code, /^set -euo pipefail$/m);
+  });
+});
+
+describe('ops/commande-deploiement.sh : mode --auto (10.3, D-04)', () => {
+  const AUTO = ['--auto'];
+  const auto = (b: Banc, commande: string | undefined): Resultat => lancer(b, commande, {}, AUTO);
+
+  it('etat production : 0 ; etat essai : 64', () => {
+    const b = banc();
+    assert.equal(auto(b, 'etat production').status, 0);
+    assert.equal(auto(b, 'etat essai').status, 64);
+  });
+
+  it('activer production : 0 ; activer essai : 64, current d’essai inchangé', (t) => {
+    if (SANS_MV_T) return t.skip(RAISON_MV);
+    const b = banc();
+    deposer(b, 'production', sha(1));
+    const r = auto(b, `activer production ${sha(1)}`);
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(lien(b, 'production'), `releases/${sha(1)}`);
+    deposer(b, 'essai', sha(2));
+    const r2 = auto(b, `activer essai ${sha(2)}`);
+    assert.equal(r2.status, 64);
+    assert.equal(lien(b, 'essai'), null);
+  });
+
+  it('envoi vers essai : 64, rrsync non lancé', () => {
+    const b = banc();
+    const r = auto(b, `rsync --server -tre.iLsfxCIvu --stats . essai/${sha(1)}/`);
+    assert.equal(r.status, 64);
+    assert.equal(fs.existsSync(b.sortieRrsync), false);
+  });
+
+  it('envoi vers production : rrsync lancé', () => {
+    const b = banc();
+    const r = auto(b, `rsync --server -tre.iLsfxCIvu --stats . production/${sha(1)}/`);
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(fs.existsSync(b.sortieRrsync), true);
+  });
+
+  it('retour production sans sha : bascule sur la précédente', (t) => {
+    if (SANS_MV_T) return t.skip(RAISON_MV);
+    const b = banc();
+    activer(b, 'production', sha(1));
+    activer(b, 'production', sha(2));
+    const r = auto(b, 'retour production');
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(lien(b, 'production'), `releases/${sha(1)}`);
+  });
+
+  it('retour production avec le sha de la précédente : 0 ; plus ancien : 64, current inchangé ; essai : 64', (t) => {
+    if (SANS_MV_T) return t.skip(RAISON_MV);
+    const b = banc();
+    activer(b, 'production', sha(1));
+    activer(b, 'production', sha(2));
+    activer(b, 'production', sha(3));
+    const ancien = auto(b, `retour production ${sha(1)}`);
+    assert.equal(ancien.status, 64);
+    assert.equal(lien(b, 'production'), `releases/${sha(3)}`);
+    assert.equal(auto(b, 'retour essai').status, 64);
+    assert.equal(auto(b, `retour essai ${sha(2)}`).status, 64);
+    const r = auto(b, `retour production ${sha(2)}`);
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(lien(b, 'production'), `releases/${sha(2)}`);
+  });
+
+  it('sha inconnu au retour : 64 (hors précédente)', (t) => {
+    if (SANS_MV_T) return t.skip(RAISON_MV);
+    const b = banc();
+    activer(b, 'production', sha(1));
+    activer(b, 'production', sha(2));
+    assert.equal(auto(b, `retour production ${sha(9)}`).status, 64);
+    assert.equal(lien(b, 'production'), `releases/${sha(2)}`);
+  });
+
+  for (const arg of [['--autre'], ['auto'], ['--auto', 'x'], ['']]) {
+    it(`premier argument ${JSON.stringify(arg)} refusé (64) même avec une commande valide`, () => {
+      const b = banc();
+      const r = lancer(b, 'etat production', {}, arg);
+      assert.equal(r.status, 64);
+      assert.equal(r.stdout, '');
+    });
+  }
+
+  it('journal : "auto":true en mode --auto, "auto":false sinon', () => {
+    const b = banc();
+    auto(b, 'etat production');
+    lancer(b, 'etat production');
+    const lignes = fs.readFileSync(b.sortieLogger, 'utf8').split('\n').filter((l) => l !== '');
+    assert.equal(lignes.length, 2);
+    assert.match(lignes[0], /"auto":true/);
+    assert.match(lignes[1], /"auto":false/);
+  });
+
+  it('sans argument : toujours accepté sur essai (comportement inchangé)', () => {
+    const b = banc();
+    assert.equal(lancer(b, 'etat essai').status, 0);
+  });
+
+  it('faux serveur modeAuto : etat essai 64, etat production 0, sans agent désactivé 255', () => {
+    const fs_ = creerFauxServeur({ modeAuto: true });
+    try {
+      const cle = path.join(fs_.racine, 'cle-factice');
+      fs.writeFileSync(cle, 'CLE-FACTICE\n', { mode: 0o600 });
+      const env = { ...process.env, ...fs_.env };
+      const ssh = (args: string[]): number | null =>
+        spawnSync('ssh', args, { env, encoding: 'utf8' }).status;
+      const dest = `${UTILISATEUR_FACTICE}@${HOTE_FACTICE}`;
+      const sain = ['-i', cle, '-o', 'IdentityAgent=none', dest];
+      assert.equal(ssh([...sain, 'etat essai']), 64);
+      assert.equal(ssh([...sain, 'etat production']), 0);
+      assert.equal(ssh(['-i', cle, dest, 'etat production']), 255);
+    } finally {
+      fs_.detruire();
+    }
   });
 });
