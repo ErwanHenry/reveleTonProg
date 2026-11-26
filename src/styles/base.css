@@ -74,11 +74,17 @@ h2,
 h3,
 h4 {
   margin: 0 0 1rem;
+  color: var(--nuit);
   font-weight: 600;
   line-height: 1.2;
   overflow-wrap: break-word;
   /* Titres : la césure automatique est réservée aux noms, titres et adresses (contrat 04-UI-SPEC) */
   hyphens: auto;
+}
+
+h1,
+h2 {
+  font-family: var(--police-titres);
 }
 
 h1 {
@@ -87,6 +93,22 @@ h1 {
 
 h2 {
   font-size: var(--t-titre);
+}
+
+/* R-1 : filet rouge court sous les h2 de contenu (hors h2 de section). 4 px au lieu des 5 px de la maquette D
+   (ensemble de traits 1, 2, 3, 4, 8 px), posé à 4 px sous la boîte du titre, sans hauteur prise. */
+main h2:not(.section-titre) {
+  position: relative;
+}
+
+main h2:not(.section-titre)::after {
+  content: "";
+  position: absolute;
+  inset-block-start: calc(100% + 0.25rem);
+  inset-inline-start: 0;
+  inline-size: 4rem;
+  block-size: 0.25rem;
+  background: var(--rouge);
 }
 
 h3 {
@@ -110,7 +132,7 @@ ol {
 a {
   /* Longues adresses (mentions légales, qui sommes-nous) : jamais de défilement horizontal à 320 px */
   overflow-wrap: anywhere;
-  color: var(--encre);
+  color: var(--nuit);
   text-decoration: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 3px;
@@ -147,7 +169,7 @@ a {
   inset-inline-start: 0;
   top: -6rem;
   padding: 1rem;
-  background: var(--encre);
+  background: var(--nuit);
   color: var(--carte);
   z-index: 1;
 }
@@ -166,13 +188,14 @@ a {
 
 .entete {
   background: var(--fond);
-  border-bottom: 1px solid var(--bord-carte);
+  border-bottom: 3px solid var(--nuit);
 }
 
 .site-nom {
   display: inline-flex;
   align-items: center;
   min-height: 2.75rem;
+  font-family: var(--police-titres);
   font-size: var(--t-corps);
   font-weight: 600;
   text-decoration: none;
@@ -268,7 +291,7 @@ main {
 }
 
 .theme-titre {
-  color: var(--theme);
+  color: var(--nuit);
 }
 
 /* « Aller à un candidat (N) » (09.1, proposition 3) : repli fermé en tête de la page d'un thème, noms en ligne,

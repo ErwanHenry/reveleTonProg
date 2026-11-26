@@ -536,3 +536,60 @@ describe('charte 10.2 : jetons et interdits', () => {
     }
   });
 });
+
+describe('charte 10.2 : titres et rouge', () => {
+  const R1 = 'main h2:not(.section-titre)::after';
+  const parSel = (sel: string): Regle | undefined => regles.find((r) => r.selecteur === sel);
+
+  it('(a) le rouge n\'a que trois emplois : R-1, R-2, R-3', () => {
+    const emplois = new Set(regles.filter((r) => r.declarations.some((d) => /var\(--rouge\)/.test(d.valeur))).map((r) => r.selecteur));
+    assert.deepEqual([...emplois].sort(), [R1, '.site-sous-titre', ':where(.hall-candidats, .hall-methode) a'].sort());
+  });
+
+  it('(b) le rouge ne touche ni mesure, ni carte, ni statut, ni titre de section ; filet R-1 exact', () => {
+    for (const r of regles) {
+      if (!r.declarations.some((d) => /var\(--rouge\)/.test(d.valeur))) continue;
+      const sel = r.selecteur.replace(/:not\(\.section-titre\)/g, '');
+      for (const interdit of ['.cellule', '.mesure', '.statut', '.ligne', '.vide', '.badge', '.pied', 'h1', '.section-titre']) {
+        assert.ok(!sel.includes(interdit), `${r.selecteur} emploie le rouge avec ${interdit}`);
+      }
+    }
+    const r1 = parSel(R1);
+    assert.ok(r1, 'règle R-1 absente');
+    assert.equal(decl(r1, 'content'), '""');
+    assert.equal(decl(r1, 'position'), 'absolute');
+    assert.equal(decl(r1, 'inline-size'), '4rem');
+    assert.equal(decl(r1, 'block-size'), '0.25rem');
+    assert.equal(decl(r1, 'inset-block-start'), 'calc(100% + 0.25rem)');
+    assert.equal(decl(r1, 'inset-inline-start'), '0');
+    assert.equal(decl(r1, 'background'), 'var(--rouge)');
+    assert.equal(decl(parSel('main h2:not(.section-titre)'), 'position'), 'relative');
+  });
+
+  it('(c) la police des titres va aux h1 et h2 seulement', () => {
+    assert.equal(decl(parSel('h1, h2'), 'font-family'), 'var(--police-titres)');
+    for (const r of regles) {
+      if (r.selecteur === ':root' || !r.declarations.some((d) => /--police-titres/.test(d.valeur))) continue;
+      for (const s of r.selecteur.split(/\s*,\s*/)) {
+        assert.ok(!/(^|[\s>])(h3|h4)$|\.mesure-titre/.test(s), `${s} reçoit la police des titres`);
+      }
+    }
+  });
+
+  it('(d) aucune couleur de texte à la couleur du thème (T-05)', () => {
+    for (const r of regles) {
+      for (const d of r.declarations) {
+        if (d.prop === 'color') assert.notEqual(d.valeur, 'var(--theme)', `${r.selecteur} { color: var(--theme) }`);
+      }
+    }
+  });
+
+  it('(e) en-tête et tuiles de la charte D', () => {
+    assert.equal(decl(parSel('.entete'), 'border-bottom'), '3px solid var(--nuit)');
+    const t = parSel('.tuile');
+    assert.equal(decl(t, 'border'), '2px solid var(--nuit)');
+    assert.equal(decl(t, 'border-radius'), 'var(--rayon-carte)');
+    assert.equal(decl(t, 'border-inline-start'), '8px solid var(--theme)');
+    assert.equal(decl(parSel('.tuile-lien'), 'font-size'), 'var(--t-titre)');
+  });
+});
