@@ -507,6 +507,7 @@ blockquote[data-citation] p {
   border-inline-start: 4px solid var(--nuit);
   border-radius: var(--rayon-bloc);
   color: var(--encre);
+  overflow-wrap: anywhere;
   font-size: var(--t-label);
 }
 

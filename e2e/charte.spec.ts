@@ -3,6 +3,7 @@
 // lignes. Le filet n'existe ni sous le h1 ni sous un h2 de section de la page candidat.
 import { expect, test, type Page } from '@playwright/test';
 import { PAGES, premierePage } from './pages.ts';
+import { readFileSync } from 'node:fs';
 import { THEME } from './chemin.ts';
 
 const PAGES_TEXTE = ['/', '/methode/', '/mentions-legales/', '/qui-sommes-nous/'].map((url) =>
@@ -168,5 +169,115 @@ test.describe('charte 10.2 : cartes et pastilles', () => {
     expect(choisie.fond).toBe(NUIT);
     expect(choisie.couleur).toBe('rgb(255, 255, 255)');
     console.log(`pastilles sur deux lignes à 375 px : ${m.filter((l) => l.lignes >= 2).length} (normal), ${a.filter((l) => l.lignes >= 2).length} (Gros caractères)`);
+  });
+});
+
+const BLANC = 'rgb(255, 255, 255)';
+const ROUGE = 'rgb(193, 18, 31)';
+
+test.describe('charte 10.2 : contenu sourcé et pied', () => {
+  test('bloc source, relecture et titre de mesure', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(THEME.url);
+    const r = await page.evaluate(() => {
+      const vis = (e: Element): boolean => {
+        const b = e.getBoundingClientRect();
+        return b.width > 0 && b.height > 0;
+      };
+      const src = [...document.querySelectorAll('.source')].find(vis);
+      const cs = src ? getComputedStyle(src) : null;
+      return {
+        source: cs && {
+          fond: cs.backgroundColor, largeur: cs.borderLeftWidth, couleur: cs.borderLeftColor, rayon: cs.borderTopLeftRadius,
+        },
+        liens: [...document.querySelectorAll('.source a')].filter(vis).map((a) => {
+          const c = getComputedStyle(a);
+          return { couleur: c.color, graisse: Number(c.fontWeight), trait: c.textDecorationLine, haut: a.getBoundingClientRect().height };
+        }),
+        relectures: [...document.querySelectorAll('.relecture')].filter(vis).map((e) => {
+          const c = getComputedStyle(e);
+          return { couleur: c.color, graisse: Number(c.fontWeight) };
+        }),
+        titres: [...document.querySelectorAll('.mesure-titre')].filter(vis).map((e) => {
+          const c = getComputedStyle(e);
+          return { taille: c.fontSize, couleur: c.color, police: c.fontFamily };
+        }),
+      };
+    });
+    expect(r.source, 'aucun bloc source visible').not.toBeNull();
+    expect(r.source).toEqual({ fond: 'rgb(243, 245, 252)', largeur: '4px', couleur: NUIT, rayon: '10px' });
+    expect(r.liens.length, 'aucun lien de source').toBeGreaterThan(0);
+    for (const l of r.liens) {
+      expect(l.couleur).toBe('rgb(22, 48, 143)');
+      expect(l.graisse).toBeGreaterThanOrEqual(600);
+      expect(l.trait).toContain('underline');
+      expect(l.haut).toBeGreaterThanOrEqual(44);
+    }
+    for (const l of r.relectures) {
+      expect(l.couleur).toBe('rgb(22, 26, 43)');
+      expect(l.graisse).toBeGreaterThanOrEqual(600);
+    }
+    for (const t of r.titres) {
+      expect(t.taille).toBe('18px');
+      expect(t.couleur).toBe(NUIT);
+      expect(t.police).not.toMatch(/Georgia|Palatino|Iowan/);
+    }
+  });
+
+  for (const url of ['/', THEME.url]) {
+    test(`pied bleu nuit lisible et focus visible : ${url}`, async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 900 });
+      await page.goto(url);
+      expect(await page.locator('.pied').evaluate((e) => getComputedStyle(e).backgroundColor)).toBe(NUIT);
+      const textes = await page.locator('.pied').evaluate((pied) => {
+        const sortie: { texte: string; taille: number; couleur: string }[] = [];
+        const w = document.createTreeWalker(pied, NodeFilter.SHOW_TEXT);
+        for (let n = w.nextNode(); n; n = w.nextNode()) {
+          const el = n.parentElement!;
+          if ((n.textContent ?? '').trim() === '') continue;
+          const b = el.getBoundingClientRect();
+          if (b.width === 0 || b.height === 0) continue;
+          const c = getComputedStyle(el);
+          sortie.push({ texte: (n.textContent ?? '').trim().slice(0, 30), taille: parseFloat(c.fontSize), couleur: c.color });
+        }
+        return sortie;
+      });
+      expect(textes.length).toBeGreaterThan(0);
+      for (const t of textes) {
+        expect(t.taille, t.texte).toBeGreaterThanOrEqual(16);
+        expect(t.couleur, t.texte).toBe(BLANC);
+      }
+      await page.keyboard.press('Tab');
+      const lien = page.locator('.pied a').first();
+      await lien.focus();
+      const o = await lien.evaluate((e) => ({ c: getComputedStyle(e).outlineColor, w: getComputedStyle(e).outlineWidth }));
+      expect(o).toEqual({ c: BLANC, w: '3px' });
+    });
+  }
+
+  test('le test du focus du pied échoue sans la règle (contrôle)', async ({ page }) => {
+    await page.goto('/');
+    await page.addStyleTag({ content: '.pied :focus-visible { outline-color: rgb(22, 26, 43) !important; }' });
+    await page.keyboard.press('Tab');
+    const lien = page.locator('.pied a').first();
+    await lien.focus();
+    expect(await lien.evaluate((e) => getComputedStyle(e).outlineColor)).not.toBe(BLANC);
+  });
+
+  test('statut du candidat : filet bleu nuit, jamais rouge', async ({ page }) => {
+    const cand = PAGES.find((p) => /^\/candidats\/[^/]+\/$/.test(p.url) && readFileSync(p.fichier, 'utf8').includes('class="statut'));
+    expect(cand, 'aucune page candidat avec statut').toBeDefined();
+    await page.goto(cand!.url);
+    const r = await page.locator('.statut').first().evaluate((e, rouge) => ({
+      gauche: getComputedStyle(e).borderLeftColor,
+      haut: getComputedStyle(e).borderTopWidth,
+      rouge: [e, ...e.querySelectorAll('*')].some((x) => {
+        const c = getComputedStyle(x);
+        return [c.color, c.backgroundColor, c.borderTopColor, c.borderLeftColor].includes(rouge);
+      }),
+    }), ROUGE);
+    expect(r.gauche).toBe(NUIT);
+    expect(r.haut).toBe('0px');
+    expect(r.rouge).toBe(false);
   });
 });
