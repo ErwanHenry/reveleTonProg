@@ -7,7 +7,6 @@
 import { randomBytes } from 'node:crypto';
 import { readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { parse } from 'yaml';
 import { dansPerimetre } from '../../../src/lib/content-core/rules/equite.ts';
 import { lireYamlPlafonne } from '../../../src/lib/content-core/yaml-plafonne.ts';
 import { THEMES_SPEC, lireCouverture } from '../couverture.ts';
@@ -70,7 +69,7 @@ function lireFiches(racine: string): Fiche[] {
   return readdirSync(dir)
     .filter((f) => f.endsWith('.yaml'))
     .sort()
-    .map((f) => parse(readFileSync(path.join(dir, f), 'utf8'), { schema: 'core' }) as Fiche);
+    .map((f) => lireYamlPlafonne(readFileSync(path.join(dir, f), 'utf8'), f) as unknown as Fiche);
 }
 
 /** Périmètre d'équité dans l'ordre nom_tri (collation française), comme l'exige le test du tableau de couverture. */
@@ -173,7 +172,7 @@ export function ecrireCasesManquantes(racine: string, date: string): { theme: st
   for (const f of readdirSync(dir).filter((x) => x.endsWith('.yaml')).sort()) {
     const fichier = path.join(dir, f);
     const original = readFileSync(fichier, 'utf8');
-    const doc = parse(original, { schema: 'core' }) as { theme: string; cases?: { candidat: string }[] };
+    const doc = lireYamlPlafonne(original, fichier) as unknown as { theme: string; cases?: { candidat: string }[] };
     const presents = new Set((doc.cases ?? []).map((c) => c.candidat));
     const manquants = ids.filter((i) => !presents.has(i));
     if (manquants.length === 0) continue;
@@ -203,7 +202,7 @@ export function ecrireCasesManquantes(racine: string, date: string): { theme: st
       lignes = [...lignes.slice(0, position), `  - candidat: ${id}`, '    etat: programme_non_publie', `    verifie_le: ${date}`, `    verifie_par: ${RELECTEUR_AGENT}`, ...lignes.slice(position)];
     }
     const texte = lignes.join('\n');
-    const relu = parse(texte, { schema: 'core' }) as { cases: { candidat: string }[] };
+    const relu = lireYamlPlafonne(texte, fichier) as unknown as { cases: { candidat: string }[] };
     if (relu.cases.length !== (doc.cases ?? []).length + manquants.length) throw new EcritureRefusee(`${f} : le résultat serait invalide`);
     sorties.push([fichier, texte]);
     for (const id of manquants) ecrites.push({ theme: doc.theme, candidat: id });
