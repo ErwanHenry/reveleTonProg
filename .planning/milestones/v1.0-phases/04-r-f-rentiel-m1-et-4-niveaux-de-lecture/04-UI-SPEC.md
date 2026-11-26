@@ -94,6 +94,8 @@ Light theme, neutral warm-grey surfaces, near-black ink. All colours are tokens 
 | Accent (10 %) | `--theme` | one of the 10 values below, set per theme by `[data-theme="<id>"]` | Reserved list below |
 | Destructive | none | not applicable | No destructive action exists in this phase (read-only site). Red is never used anywhere in this phase. |
 
+> Amendé par la phase 10.2 (charte D) : le rouge #C1121F est un accent à trois emplois, liste fermée au §4.3 de `.planning/phases/10.2-charte-graphique-d-bleu-blanc-rouge/10.2-UI-SPEC.md`, qui fait aussi foi pour les couleurs, la police des titres et les rayons.
+
 ### Contrast, computed (WCAG relative luminance)
 
 | Pair | Ratio | Requirement | Pass |

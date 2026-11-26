@@ -21,8 +21,11 @@ const PAGES = [
   ['candidat', '/candidats/edouard-philippe/', null],
   ['candidats', '/candidats/', null],
   ['methode', '/methode/', null],
+  // 4e champ : radio à cocher avant la capture. Entrée placée en dernier car le niveau est mémorisé dans le contexte.
+  ['theme-gros', '/themes/sante/', '#concerne-titre', '#niv-aine'],
 ];
-const FORMATS = [['bureau', 1280, 900], ['mobile', 375, 812]];
+// Le format « etroit » (320 px) ne s'applique qu'aux entrées qui portent un 4e champ.
+const FORMATS = [['bureau', 1280, 900], ['mobile', 375, 812], ['etroit', 320, 812]];
 
 const serveur = creerServeur(dist);
 await new Promise((ok, ko) => serveur.once('error', ko).listen(port, '127.0.0.1', ok));
@@ -31,8 +34,10 @@ try {
   for (const [format, w, h] of FORMATS) {
     const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1 });
     const page = await ctx.newPage();
-    for (const [nom, url, ancre] of PAGES) {
+    for (const [nom, url, ancre, radio] of PAGES) {
+      if (format === 'etroit' && !radio) continue;
       await page.goto(`http://127.0.0.1:${port}${url}`, { waitUntil: 'load' });
+      if (radio) await page.locator(radio).check({ force: true });
       if (ancre) {
         const el = page.locator(ancre).first();
         if ((await el.count()) === 0) continue;
