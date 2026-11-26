@@ -14,6 +14,8 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import { lireYamlPlafonne } from '../../../src/lib/content-core/yaml-plafonne.ts';
+import { evaluerGelAuto } from '../deploiement/gel-auto.ts';
+import { prendreVerrou, VerrouPris } from '../ci-local.ts';
 import { lireCheminsHorsSite, siteTouche, verifierRecu } from '../deploiement/gardes.ts';
 import { dernierCommitEnLigne } from '../deploiement/journal.ts';
 import { lireCorrespondances } from '../datagouv.ts';
@@ -25,15 +27,20 @@ import type { CodeStatut, ConfigAgent, QuestionAgent, ResultatDouble } from './a
 import type { Fetch } from './alertes.ts';
 import { classerVeille, comptesVeille } from './classer.ts';
 import type { ClassementVeille, Mouvement } from './classer.ts';
-import type { CodeArret } from './codes-auto.ts';
+import { CODES_TRANSITOIRES } from './codes-auto.ts';
+import type { CodeArret, CodeAuto } from './codes-auto.ts';
+import { ajouterBoite, envoyerAlerteAuto, texteAlerteAuto, viderBoite } from './alertes-auto.ts';
+import { ecrireEtatAuto, lireEtatAuto } from './etat-auto.ts';
+import type { EtatAuto } from './etat-auto.ts';
 import { ligneAmont } from './decider.ts';
-import { ecrirePrive, lireEtat } from './etat.ts';
+import { dossierVerrou, ecrirePrive, lireEtat } from './etat.ts';
 import { ID_CANDIDAT, idsPris, ligneCorrespondance } from './identite.ts';
 import type { LigneCorrespondanceAuto } from './identite.ts';
 import { ecartsCouverture, ecrireCasesManquantes, ecrireCorrespondances, relireParAgent, synchroniserCouverture } from './ecriture-auto.ts';
-import { cheminsAuto } from './mode-auto.ts';
+import { cheminsAuto, modeAuto } from './mode-auto.ts';
 import { verifierPerimetre } from './perimetre-ecriture.ts';
 import { miseAJourMecanique } from './preparer.ts';
+import { lireConfigPush, preparerPush, pousserAvanceRapide } from './pousser.ts';
 import type { ExecuterEnv } from './pousser.ts';
 import { lireDomainesInstitutions } from './type-source.ts';
 import type { TexteSource } from './sources-texte.ts';
@@ -406,5 +413,285 @@ function verrouTenu(dossier: string): boolean {
     return true;
   } catch (e) {
     return (e as NodeJS.ErrnoException).code === 'EPERM';
+  }
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Plan 10.3-09 : passage complet (mode, verrou, boîte d'envoi, reprise, préparation, poussée, déploiement, alertes).
+// Aucun pingHealthchecks ici : un contrôle partagé avec la veille masquerait la panne de l'une par le succès de l'autre.
+// La supervision de l'automate passe par ses alertes et par `npm run veille -- etat`.
+// ---------------------------------------------------------------------------------------------------------------
+
+export interface OptionsAuto {
+  reprendre?: boolean;
+  sansAlerte?: boolean;
+}
+
+export interface ResultatAuto {
+  code: CodeAuto;
+  /** 0 issue (ou interrupteur), 3 arrêt, 1 exception inattendue rattrapée. */
+  sortie: 0 | 1 | 3;
+  sha: string | null;
+  rapport: string | null;
+}
+
+type PhaseAuto = EtatAuto['phase'];
+
+/** Traduction de la ligne `resultat=` de deploy:auto : code de l'automate et phase qui en découle. */
+export const SUITE_DEPLOIEMENT: Record<string, { code: CodeAuto; phase: PhaseAuto }> = {
+  publie: { code: 'publie', phase: 'repos' },
+  deja_en_ligne: { code: 'deja_en_ligne', phase: 'repos' },
+  smoke_echec_retour_ok: { code: 'smoke_echec_retour_ok', phase: 'retenu' },
+  smoke_echec_retour_ko: { code: 'smoke_echec_retour_ko', phase: 'retenu' },
+  serveur_non_restreint: { code: 'serveur_non_restreint', phase: 'retenu' },
+  gel: { code: 'gel', phase: 'pousse_non_deploye' },
+  verrou_pris: { code: 'verrou_pris', phase: 'pousse_non_deploye' },
+  hors_ligne: { code: 'hors_ligne', phase: 'pousse_non_deploye' },
+  deploiement_refuse: { code: 'deploiement_refuse', phase: 'pousse_non_deploye' },
+  config_absente: { code: 'config_absente', phase: 'pousse_non_deploye' },
+};
+
+/** Issues qui sont annoncées à chaque fois (une publication n'est jamais « déjà dite »). */
+const TOUJOURS_ANNONCEES: readonly CodeAuto[] = ['publie', 'deja_en_ligne'];
+const SHA40 = /^[0-9a-f]{40}$/;
+const REPORTS_VERROU_ALERTE = 3;
+
+interface Passage {
+  d: DependancesAuto;
+  o: OptionsAuto;
+  etat: EtatAuto;
+  mode: 'a_blanc' | 'publier';
+  chemins: ReturnType<typeof cheminsAuto>;
+}
+
+const modeLisible = (m: 'a_blanc' | 'publier'): string => (m === 'publier' ? 'publication' : 'à blanc');
+
+function sauver(p: Passage, code: CodeAuto): void {
+  p.etat.dernierCode = code;
+  p.etat.dernierPassage = p.d.maintenant().toISOString();
+  ecrireEtatAuto(p.d.dossier, p.etat);
+}
+
+async function envoyerTexte(p: Passage, texte: string): Promise<boolean> {
+  const r = await envoyerAlerteAuto(texte, { executer: p.d.executer, fetch: p.d.fetch, sansAlerte: false });
+  // Telegram configuré : seul son succès compte. Non configuré : la notification macOS tient lieu d'envoi.
+  return r.telegram || (r.incident === 'Telegram non configuré' && r.mac);
+}
+
+async function vider(p: Passage): Promise<void> {
+  if (p.o.sansAlerte === true || p.etat.boite.length === 0) return;
+  const r = await viderBoite(p.etat.boite, (t) => envoyerTexte(p, t));
+  p.etat.boite = r.restantes;
+}
+
+interface ContenuAlerte {
+  code: CodeAuto;
+  empreinte: string | null;
+  comptes?: string | null;
+  sha?: string | null;
+  rapport?: string | null;
+  fiches?: string[];
+  mode?: 'a_blanc' | 'publier';
+}
+
+/** Une même alerte (code, empreinte) n'est envoyée qu'une fois, sauf les publications. Un envoi raté va en boîte. */
+async function alerter(p: Passage, a: ContenuAlerte): Promise<void> {
+  if (p.o.sansAlerte === true) return;
+  const dejaDit = !TOUJOURS_ANNONCEES.includes(a.code) && p.etat.derniereAlerte?.code === a.code && p.etat.derniereAlerte.empreinte === a.empreinte;
+  if (dejaDit) return;
+  const texte = texteAlerteAuto({ code: a.code, mode: a.mode ?? p.mode, comptes: a.comptes ?? null, sha: a.sha ?? null, rapport: a.rapport ?? null, fiches: a.fiches ?? [], home: p.d.home });
+  let envoye = false;
+  try {
+    envoye = await envoyerTexte(p, texte);
+  } catch {
+    envoye = false;
+  }
+  if (!envoye) {
+    const b = ajouterBoite(p.etat.boite, texte);
+    p.etat.boite = b.boite;
+    p.etat.perdues += b.perdues;
+  }
+  p.etat.derniereAlerte = { code: a.code, empreinte: a.empreinte };
+}
+
+function termine(p: Passage, code: CodeAuto, sortie: 0 | 3, sha: string | null, rapport: string | null): ResultatAuto {
+  sauver(p, code);
+  p.d.journal(`auto : ${code} (${p.mode})${sha !== null ? ` commit ${sha.slice(0, 12)}` : ''}`);
+  return { code, sortie, sha, rapport };
+}
+
+/** Dernière ligne `resultat=<code>` de deploy:auto ; tout autre texte devient un refus (aucune confiance dans le reste). */
+function lireResultat(sortie: string): string {
+  const tous = [...sortie.matchAll(/^resultat=(\w+)$/gm)];
+  const dernier = tous[tous.length - 1]?.[1] ?? '';
+  return Object.hasOwn(SUITE_DEPLOIEMENT, dernier) ? dernier : 'deploiement_refuse';
+}
+
+/** Applique un résultat de déploiement (ou un code d'arrêt équivalent) à l'état, alerte, et termine le passage. */
+async function appliquerSuite(p: Passage, resultat: string, sha: string): Promise<ResultatAuto> {
+  const suite = SUITE_DEPLOIEMENT[resultat] ?? (SUITE_DEPLOIEMENT.deploiement_refuse as { code: CodeAuto; phase: PhaseAuto });
+  const e = p.etat;
+  const empreinte = e.empreinteEnCours;
+  p.etat.phase = suite.phase;
+  if (suite.phase === 'repos') {
+    e.empreinteTraitee = e.empreinteEnCours ?? e.empreinteTraitee;
+    e.empreinteEnCours = null;
+  }
+  const contenu: ContenuAlerte = { code: suite.code, empreinte, comptes: e.comptes, sha, rapport: e.rapport, fiches: e.fiches, mode: 'publier' };
+  await alerter(p, contenu);
+  if (suite.phase === 'repos') e.sha = null;
+  return termine(p, suite.code, suite.phase === 'repos' ? 0 : 3, sha, e.rapport);
+}
+
+/** Lance deploy:auto deployer <sha> dans le worktree dédié et applique le résultat. */
+async function deployer(p: Passage, sha: string): Promise<ResultatAuto> {
+  const r = p.d.executer(p.d.node, ['scripts/deploy-auto.ts', 'deployer', sha], { cwd: p.chemins.worktree, timeoutMs: 45 * MIN, env: envDeBase() });
+  return appliquerSuite(p, lireResultat(`${r.stdout}\n${r.stderr}`), sha);
+}
+
+/** Reprise d'un commit poussé mais non déployé : aucun nouveau commit, aucune réécriture d'historique. */
+async function reprendreDeploiement(p: Passage, gel: { gele: boolean; motif: string }): Promise<ResultatAuto> {
+  const { d, etat, chemins } = p;
+  const sha = etat.sha;
+  if (sha === null || !SHA40.test(sha)) {
+    etat.phase = 'repos';
+    return termine(p, 'rien_a_faire', 0, null, etat.rapport);
+  }
+  if (p.mode !== 'publier') {
+    d.journal(`auto : reprise du déploiement suspendue (${gel.gele ? gel.motif : "automate non activé"})`);
+    await alerter(p, { code: 'gel', empreinte: etat.empreinteEnCours, comptes: etat.comptes, sha, rapport: etat.rapport, fiches: etat.fiches, mode: 'a_blanc' });
+    return termine(p, 'gel', 3, sha, etat.rapport);
+  }
+  const git = (args: string[], cwd: string): { status: number | null; stdout: string } => d.executer('git', args, { cwd, timeoutMs: 120_000 });
+  if (git(['fetch', '--quiet', 'origin'], d.depot).status !== 0) return appliquerSuite(p, 'hors_ligne', sha);
+  if (git(['merge-base', '--is-ancestor', sha, 'origin/main'], d.depot).status !== 0) return refuserReprise(p, sha);
+  if (!existsSync(path.join(chemins.worktree, '.git'))) {
+    git(['worktree', 'prune'], d.depot);
+    if (git(['worktree', 'add', '--quiet', '--detach', chemins.worktree, sha], d.depot).status !== 0) return appliquerSuite(p, 'deploiement_refuse', sha);
+  }
+  const enLigne = await versionEnLigne(d, 'publier', chemins.worktree);
+  if (!enLigne.ok) return appliquerSuite(p, enLigne.code, sha);
+  if (enLigne.courant !== null && (enLigne.courant === sha || git(['merge-base', '--is-ancestor', sha, enLigne.courant], d.depot).status === 0)) {
+    return appliquerSuite(p, 'deja_en_ligne', sha);
+  }
+  if (git(['checkout', '--quiet', '--detach', sha], chemins.worktree).status !== 0) return appliquerSuite(p, 'deploiement_refuse', sha);
+  return deployer(p, sha);
+}
+
+/** Historique d'origin/main réécrit : le commit à reprendre n'existe plus, plus aucune tentative avant `--reprendre`. */
+async function refuserReprise(p: Passage, sha: string): Promise<ResultatAuto> {
+  p.etat.phase = 'retenu';
+  await alerter(p, { code: 'deploiement_refuse', empreinte: p.etat.empreinteEnCours, comptes: p.etat.comptes, sha, rapport: p.etat.rapport, fiches: p.etat.fiches, mode: 'publier' });
+  return termine(p, 'deploiement_refuse', 3, sha, p.etat.rapport);
+}
+
+export async function executerPassageAuto(d: DependancesAuto, o: OptionsAuto = {}): Promise<ResultatAuto> {
+  const gel = evaluerGelAuto(d.maintenant());
+  const calcul = modeAuto({ home: d.home, dossier: d.dossier, gel });
+  const chemins = cheminsAuto(d.home, d.dossier);
+  const empreinteVeille = (): string | null => lireEtat(d.dossier).derniereEmpreinte;
+
+  // (1) Interrupteur : avant toute action, sans alerte.
+  if (calcul.mode === 'desactive') {
+    const e = lireEtatAuto(d.dossier);
+    const p0: Passage = { d, o, etat: e, mode: 'a_blanc', chemins };
+    d.journal(`auto : desactive (${calcul.raison})`);
+    sauver(p0, 'desactive');
+    return { code: 'desactive', sortie: 0, sha: null, rapport: null };
+  }
+  const mode: 'a_blanc' | 'publier' = calcul.mode;
+
+  // (2) Verrou de la veille : un seul passage à la fois.
+  let rendre: () => void;
+  try {
+    rendre = prendreVerrou(dossierVerrou(d.dossier), (m) => d.journal(m));
+  } catch (e) {
+    if (!(e instanceof VerrouPris)) throw e;
+    const pv: Passage = { d, o, etat: lireEtatAuto(d.dossier), mode, chemins };
+    pv.etat.reportsVerrou += 1;
+    if (pv.etat.reportsVerrou >= REPORTS_VERROU_ALERTE) await alerter(pv, { code: 'verrou_pris', empreinte: empreinteVeille() });
+    return termine(pv, 'verrou_pris', 3, null, null);
+  }
+  const p: Passage = { d, o, etat: lireEtatAuto(d.dossier), mode, chemins };
+  try {
+    p.etat.reportsVerrou = 0;
+    // (3) Boîte d'envoi : les alertes en attente partent en premier.
+    await vider(p);
+    // (4) --reprendre : sort de l'état retenu et fait retraiter le jeu.
+    if (o.reprendre === true && p.etat.phase === 'retenu') {
+      p.etat.phase = 'repos';
+      p.etat.empreinteTraitee = null;
+      p.etat.derniereAlerte = null;
+    }
+    // (5) Reprise d'un commit poussé mais non déployé, ou état retenu.
+    if (p.etat.phase === 'pousse_non_deploye') return await reprendreDeploiement(p, gel);
+    if (p.etat.phase === 'retenu') {
+      const code = p.etat.dernierCode ?? 'deploiement_refuse';
+      d.journal(`auto : retenu (${code}) : examiner puis npm run veille -- auto --reprendre`);
+      sauver(p, code);
+      return { code, sortie: 3, sha: p.etat.sha, rapport: p.etat.rapport };
+    }
+    // (6) Rien de nouveau depuis la veille, ou jeu déjà traité.
+    const empreinte = empreinteVeille();
+    if (empreinte === null || empreinte === p.etat.empreinteTraitee) return termine(p, 'rien_a_faire', 0, null, null);
+
+    // (7) Préparation jusqu'au commit testé.
+    const prep = await preparerPassage(d, { mode });
+    if (prep.code === 'rien_a_faire') {
+      p.etat.empreinteTraitee = prep.empreinte || empreinte;
+      return termine(p, 'rien_a_faire', 0, null, null);
+    }
+    if (prep.code !== 'pret') {
+      await alerter(p, { code: prep.code, empreinte: prep.empreinte, comptes: prep.comptes, rapport: prep.rapport, fiches: prep.fiches });
+      if (!CODES_TRANSITOIRES.includes(prep.code)) p.etat.empreinteTraitee = prep.empreinte;
+      return termine(p, prep.code, 3, null, prep.rapport);
+    }
+    const base = { empreinte: prep.empreinte, comptes: prep.comptes, sha: prep.sha, rapport: prep.rapport, fiches: prep.fiches };
+    // (8) Mode à blanc : tout est prêt, rien n'est poussé.
+    if (mode === 'a_blanc') {
+      const parGel = gel.gele && calcul.raison === gel.motif;
+      const code: CodeAuto = parGel ? 'gel' : 'pret_a_blanc';
+      await alerter(p, { ...base, code });
+      if (!parGel) p.etat.empreinteTraitee = prep.empreinte;
+      return termine(p, code, parGel ? 3 : 0, prep.sha, prep.rapport);
+    }
+    // (9) Publication : gel rejoué, moyen de poussée, avance rapide, état avant déploiement.
+    const gelTardif = evaluerGelAuto(d.maintenant());
+    if (gelTardif.gele) {
+      await alerter(p, { ...base, code: 'gel' });
+      return termine(p, 'gel', 3, prep.sha, prep.rapport);
+    }
+    let moyen: ReturnType<typeof preparerPush>;
+    try {
+      moyen = d.push?.() ?? preparerPush(lireConfigPush(d.home));
+    } catch {
+      await alerter(p, { ...base, code: 'config_absente' });
+      return termine(p, 'config_absente', 3, prep.sha, prep.rapport);
+    }
+    const issue = pousserAvanceRapide({ worktree: chemins.worktree, sha: prep.sha, destination: moyen.destination, env: moyen.env, configGit: moyen.configGit, executer: d.executer });
+    if (issue !== 'pousse') {
+      await alerter(p, { ...base, code: issue });
+      return termine(p, issue, 3, prep.sha, prep.rapport);
+    }
+    p.etat.phase = 'pousse_non_deploye';
+    p.etat.sha = prep.sha;
+    p.etat.empreinteEnCours = prep.empreinte;
+    p.etat.fiches = prep.fiches;
+    p.etat.comptes = prep.comptes;
+    p.etat.rapport = prep.rapport;
+    sauver(p, p.etat.dernierCode ?? 'rien_a_faire');
+    return await deployer(p, prep.sha);
+  } catch (e) {
+    d.journal(`auto : exception inattendue (${e instanceof Error ? e.name : 'inconnue'})`);
+    try {
+      await alerter(p, { code: 'controle_rouge', empreinte: empreinteVeille() });
+    } catch {
+      // l'alerte ne doit pas masquer l'exception
+    }
+    sauver(p, 'controle_rouge');
+    return { code: 'controle_rouge', sortie: 1, sha: null, rapport: null };
+  } finally {
+    ecrireEtatAuto(d.dossier, p.etat);
+    rendre();
   }
 }
