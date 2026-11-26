@@ -19,7 +19,7 @@ import { masquer } from './masque.ts';
 export interface EntreeJournal {
   /** Instant UTC (ISO 8601, suffixe Z). */
   date: string;
-  action: 'deployer' | 'retour' | 'retour-auto';
+  action: 'deployer' | 'deployer-auto' | 'retour' | 'retour-auto';
   cible: 'essai' | 'production';
   /** Commit mis en ligne (ou visé) ; null : inconnu (version précédente non atteinte). */
   commit: string | null;
@@ -33,7 +33,7 @@ export interface EntreeJournal {
 
 const CLES_OBLIGATOIRES = ['date', 'action', 'cible', 'commit', 'precedent', 'resultat', 'urgence'] as const;
 const CLES_FACULTATIVES = ['justification', 'message'] as const;
-const ACTIONS: readonly string[] = ['deployer', 'retour', 'retour-auto'];
+const ACTIONS: readonly string[] = ['deployer', 'deployer-auto', 'retour', 'retour-auto'];
 const CIBLES: readonly string[] = ['essai', 'production'];
 const RESULTATS: readonly string[] = ['succes', 'echec', 'refus', 'retour-auto', 'sans-retour'];
 const SHA = /^[0-9a-f]{40}$/;
@@ -74,6 +74,31 @@ export function retraitUrgenceEnLigne(home: string, cible: 'essai' | 'production
  */
 export function dejaDeploye(home: string, cible: 'essai' | 'production', commit: string): boolean {
   return chercherJournal(home, (e) => e.action === 'deployer' && e.resultat === 'succes' && e.cible === cible && e.commit === commit);
+}
+
+/**
+ * 10.3 : commit mis en ligne en dernier sur cette cible d'après le journal local (dernière ligne réussie :
+ * déploiement manuel ou automatique, retour ou retour automatique), sans contacter le serveur. Journal absent, vide ou
+ * illisible : null.
+ */
+export function dernierCommitEnLigne(home: string, cible: 'essai' | 'production'): string | null {
+  let texte: string;
+  try {
+    texte = readFileSync(cheminsLocaux(home).journal, 'utf8');
+  } catch {
+    return null;
+  }
+  let dernier: string | null = null;
+  for (const ligne of texte.split('\n')) {
+    if (ligne.trim() === '') continue;
+    try {
+      const e = JSON.parse(ligne) as Partial<EntreeJournal>;
+      if (e.cible === cible && e.resultat === 'succes' && typeof e.commit === 'string' && SHA.test(e.commit) && ACTIONS.includes(e.action ?? '')) dernier = e.commit;
+    } catch {
+      // ligne illisible : ignorée
+    }
+  }
+  return dernier;
 }
 
 /** Une ligne du journal local satisfait-elle le critère ? Journal absent ou ligne illisible : non. */

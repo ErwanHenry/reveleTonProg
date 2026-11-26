@@ -46,7 +46,7 @@ import { arbrePropre, decisionGel, lireCheminsHorsSite, SITE_TOUCHE, siteTouche,
 import { ajouterJournal, dejaDeploye, type EntreeJournal } from './journal.ts';
 import { masquer } from './masque.ts';
 import { prendreVerrouDeploiement } from './retour.ts';
-import { appelerVerbe, EchecVerbe, envoyer, exigerRsync3, lireEtat, varianteRsync, versionServie } from './transport.ts';
+import { appelerVerbe, type AgentSsh, EchecVerbe, envoyer, exigerRsync3, lireEtat, varianteRsync, versionServie } from './transport.ts';
 
 export interface OptionsDeploiement {
   /** Déployer même si le site n'a pas changé depuis la version en ligne. */
@@ -199,7 +199,7 @@ class Interruption extends Error {
 }
 
 /** Fin d'un déploiement après l'activation : code 4 ou 5 (ou 1), résultat du journal. */
-class FinApresActivation extends Error {
+export class FinApresActivation extends Error {
   readonly code: number;
   readonly resultat: EntreeJournal['resultat'];
   constructor(code: number, resultat: EntreeJournal['resultat'], message: string) {
@@ -616,11 +616,11 @@ async function fichiersChanges(
   return { resume: `${toutes.length} fichier(s) depuis ${enLigne.slice(0, 12)}`, lignes };
 }
 
-interface EntreeRetourAuto {
-  o: OptionsDeploiement;
-  ctx: ContexteDeploiement;
+export interface EntreeRetourAuto {
+  o: Pick<OptionsDeploiement, 'urgence'>;
+  ctx: Pick<ContexteDeploiement, 'ecrire' | 'maintenant' | 'home' | 'lancer'>;
   cfg: ConfigDeploiement;
-  agent: Agent;
+  agent: AgentSsh;
   exe: Executables;
   sha: string;
   courantAvant: string | null;
@@ -632,7 +632,8 @@ interface EntreeRetourAuto {
  * « Retour arrière automatique » de ci.yml. Rend toujours une FinApresActivation (code 4, 5 ou 1). Le retour vise la
  * version exacte notée avant l'activation, jamais « la précédente » de l'historique du serveur.
  */
-async function retourAutomatique(r: EntreeRetourAuto): Promise<FinApresActivation> {
+// exportée pour deploy:auto (10.3)
+export async function retourAutomatique(r: EntreeRetourAuto): Promise<FinApresActivation> {
   const { ctx, cfg, agent, exe, sha, courantAvant } = r;
   const ecrire = (l: string): void => ctx.ecrire(masquer(l, cfg));
   const sha12 = sha.slice(0, 12);

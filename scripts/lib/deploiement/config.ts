@@ -16,6 +16,10 @@
 //   RTP_FUMEE_MOT_DE_PASSE=~/.config/rtp/sonde-pass   chemin du fichier du mot de passe (jamais le mot de passe), mode 0600
 //   RTP_RSYNC=/opt/homebrew/bin/rsync                 rsync 3 de Homebrew attendu (openrsync refusé pour un envoi réel)
 // Lignes vides et commentaires `#` admis ; guillemets doubles autour d'une valeur retirés ; `~/` développé.
+//
+// 10.3 : deploy:auto lit un second fichier, ~/.config/rtp/deploiement-auto.env, de même forme (lireConfigAuto) :
+// RTP_CIBLE=production obligatoire, RTP_CLE=~/.config/rtp/rtp-deploy-auto (clé SANS phrase de passe, restreinte côté
+// serveur par --auto), mêmes autres clés ; valeurs factices comme ci-dessus, jamais d'hôte réel dans le dépôt.
 // N'importe que des modules node: et des modules relatifs ; aucun processus lancé.
 import { readFileSync, statSync, type Stats } from 'node:fs';
 import path from 'node:path';
@@ -55,9 +59,10 @@ const NOM_EXECUTABLE = /^[A-Za-z0-9._-]+$/;
 const LIGNE = /^([A-Z_][A-Z0-9_]*)=(.*)$/;
 
 /** Emplacements locaux de la phase, tous sous HOME (les tests posent un HOME temporaire). */
-export function cheminsLocaux(home: string): { config: string; recus: string; journal: string; verrou: string } {
+export function cheminsLocaux(home: string): { config: string; configAuto: string; recus: string; journal: string; verrou: string } {
   return {
     config: path.join(home, '.config', 'rtp', 'deploiement.env'),
+    configAuto: path.join(home, '.config', 'rtp', 'deploiement-auto.env'),
     recus: path.join(home, '.cache', 'rtp', 'ci'),
     journal: path.join(home, '.local', 'state', 'rtp', 'deploiements.jsonl'),
     verrou: path.join(home, '.cache', 'rtp', 'deploiement', '.verrou'),
@@ -88,8 +93,7 @@ function statOuNull(p: string): Stats | null {
  * Lit et valide ~/.config/rtp/deploiement.env. Toute anomalie : Sortie code 2 qui liste chaque cause, sans aucune
  * valeur du fichier.
  */
-export function lireConfig(home: string): ConfigDeploiement {
-  const fichier = cheminsLocaux(home).config;
+export function lireConfig(home: string, fichier: string = cheminsLocaux(home).config): ConfigDeploiement {
   let texte: string;
   try {
     texte = readFileSync(fichier, 'utf8');
@@ -253,4 +257,14 @@ export function lireConfig(home: string): ConfigDeploiement {
     rsync,
     fichier,
   };
+}
+
+/**
+ * 10.3 : configuration de deploy:auto (~/.config/rtp/deploiement-auto.env), production seulement. Mêmes contrôles que
+ * lireConfig ; la cible doit être production (la clé automatique n'ouvre que la production côté serveur).
+ */
+export function lireConfigAuto(home: string): ConfigDeploiement {
+  const cfg = lireConfig(home, cheminsLocaux(home).configAuto);
+  if (cfg.cible !== 'production') throw new Sortie(2, 'deploiement-auto.env : RTP_CIBLE=production attendu');
+  return cfg;
 }
