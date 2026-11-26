@@ -30,6 +30,7 @@ Détail complet : [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) ; exi
 - [x] **Phase 9.2: CI et déploiement depuis le Mac** (INSÉRÉE le 2026-11-18, premier déploiement local le 2026-11-19) : commandes locales de contrôle et de déploiement, mêmes gardes que le pipeline GitHub, confirmation humaine au clavier, clé dédiée
 - [ ] **Phase 10: Import de décembre** : analyseur plafonné, cohérence de l'instantané, import des statuts en pull request relue (10 au 13 décembre, gel du 13 au 15)
 - [x] **Phase 10.1: Veille des candidatures** (INSÉRÉE le 2026-11-20, demande d'Erwan) : veille planifiée des entrées et des désistements, rapport et alerte, décisions d'Erwan saisies par lui seul, branche d'import préparée sans push ; à livrer avant le 10 décembre
+- [ ] **Phase 10.3: Mise à jour autonome des statuts** (INSÉRÉE le 2026-11-26, demande d'Erwan, niveau 2) : quand le jeu public change, statuts, entrées, sorties et cases de couverture sont importés, relus par agent d'IA et mis en ligne sans geste d'Erwan, avec alerte Telegram ; textes de mesures hors périmètre
 
 ## Piste 0 (Erwan, hors code)
 
@@ -254,6 +255,20 @@ Plans:
 - [x] 10.1-03-PLAN.md — `npm run veille` : worktree propre, jeu gardé par empreinte, rapport et état hors dépôt, alertes macOS, Telegram et Healthchecks (vague 2)
 - [x] 10.1-04-PLAN.md — `decider` au terminal par Erwan seul, `preparer` jusqu'à la branche locale sans push, refus pendant les gels (vague 3)
 - [x] 10.1-05-PLAN.md — launchd 8 h et 19 h, RUNBOOK, ADR-064, mise en service avec Erwan (vague 4, point de contrôle humain)
+
+### Phase 10.3: Mise à jour autonome des statuts (INSÉRÉE)
+
+**Goal**: Un changement du jeu public des candidatures arrive en ligne sans geste d'Erwan, relu par agent d'IA, avec les mêmes gardes que la chaîne manuelle, et Erwan en est averti à chaque publication ou refus.
+**Depends on**: Phase 10.1 (veille), Phase 9.2 (ci:local, deploy:local)
+**Context**: `.planning/phases/10.3-mise-a-jour-autonome-des-statuts/10.3-CONTEXT.md` (décisions D-01 à D-04)
+**Success Criteria** (what must be TRUE):
+
+  1. Une entrée, une sortie ou un changement de statut du jeu public est en ligne au plus tard au passage planifié suivant, sans geste d'Erwan, avec ligne d'identité, cases de couverture et statut relus par agent d'IA.
+  2. Au moindre doute de l'agent, contrôle rouge, gel ou cas réservé (date au mois, garde de volume), rien n'est publié et Erwan reçoit une alerte qui dit pourquoi.
+  3. La mise en ligne automatique utilise une clé dédiée sans phrase de passe, restreinte côté serveur ; chaque publication déclenche test de fumée, retour automatique en cas d'échec et alerte Telegram.
+  4. Aucun secret dans le dépôt ni dans les journaux ; procédure de retrait de la clé automatique au RUNBOOK, gardée par un test de documentation.
+
+**Plans**: à planifier
 
 ## Progress
 
