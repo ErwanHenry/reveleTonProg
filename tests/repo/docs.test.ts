@@ -1269,3 +1269,25 @@ describe('documentation (phase 10.1) : veille des candidatures', () => {
     assert.ok(sectionRunbook('Monitoring').includes('`veille-candidatures`'));
   });
 });
+
+describe('documentation (phase 10.3) : règles d’écriture et comptes', () => {
+  const titre = 'Import de décembre (10 au 13 décembre 2026)';
+  it('le README n’annonce aucun compte écrit en dur', () => {
+    assert.doesNotMatch(readme, /\b\d+ (candidats importés|personnalités)\b/);
+  });
+  it('le RUNBOOK cite D-02 et la délégation, et garde l’interdiction pour les agents interactifs', () => {
+    assert.ok(!runbook.includes("Aucun agent n'écrit jamais une entrée sur une personne"));
+    const s = sectionRunbook(titre);
+    assert.ok(s.includes("Aucun agent interactif n'écrit une entrée sur une personne"));
+    assert.ok(s.includes('D-02'));
+    assert.ok(s.includes('2026-11-24'));
+  });
+  it('les paragraphes modifiés n’ont ni tiret long ni mot interdit', () => {
+    const l = runbook.split('\n').filter((x) => x.includes("Aucun agent interactif n'écrit") || x.includes('Pour une nouvelle personne, la ligne de'));
+    assert.equal(l.length, 2);
+    for (const x of l) {
+      assert.doesNotMatch(x, /[–—]/);
+      assert.deepEqual(motsInterdits(x, { exempterCitations: false }), []);
+    }
+  });
+});
