@@ -8,7 +8,8 @@
 #
 # Usage :
 #   installer-serveur.sh [--verifier|--appliquer] --etape <liste séparée par des virgules> [--racine <dir>]
-#                        [--source <dir>] [--cle-publique <fichier>] [--horodatage <AAAAMMJJhhmm>]
+#                        [--source <dir>] [--cle-publique <fichier>] [--cle-publique-auto <fichier>]
+#                        [--horodatage <AAAAMMJJhhmm>]
 #
 #   --verifier      (défaut) ne change rien ; une ligne par action : « [ok] ... » ou « [a faire] ... »
 #   --appliquer     fait les actions : « [fait] ... » ou « [ok] ... » ; une seconde application ne fait plus rien
@@ -18,6 +19,11 @@
 #   --cle-publique  fichier d'une ou deux lignes « ssh-ed25519 <clé> [commentaire] », clés distinctes (étape
 #                   utilisateur) : la clé de GitHub et, depuis la phase 9.2 (D-09), celle du Mac. Ce fichier est la
 #                   seule source : une application avec une seule clé retire l'autre
+#   --cle-publique-auto  fichier d'une seule ligne « ssh-ed25519 <clé> [commentaire] », distincte des autres clés
+#                   (10.3, D-04) : clé de la tâche planifiée du Mac, écrite avec la commande forcée « --auto »
+#                   (production seulement, retour limité à la version précédente). Exige --cle-publique et un
+#                   script installé qui porte le marqueur « # rtp-capacite: auto-v1 » (étape commande d'abord,
+#                   sinon code 4). Réappliquer l'étape utilisateur sans cette option retire la ligne (retrait)
 #   --horodatage    suffixe des copies de sauvegarde (défaut : minute courante UTC)
 #
 # Étapes (exécutées dans cet ordre, quel que soit l'ordre de la liste) :
@@ -32,8 +38,9 @@
 #                           inode ; inode comparé avant et après
 #   utilisateur             utilisateur deploy (sans sudo ni groupe d'administration ou de conteneurs), dossier
 #                           personnel /home/deploy root:root 0755 et tout ce qu'il contient à root, .ssh
-#                           root:root 0755, authorized_keys root:root 0644 avec une ou deux lignes (deux lignes au
-#                           plus, une par clé, dans l'ordre du fichier) restrict,command=<commande forcée> <clé> ;
+#                           root:root 0755, authorized_keys root:root 0644 avec une à trois lignes (deux clés
+#                           manuelles au plus, une clé automatique au plus, dans l'ordre du fichier)
+#                           restrict,command=<commande forcée> <clé> ;
 #                           /srv/reveletonprog et ses dossiers à deploy
 #   commande                ops/commande-deploiement.sh en /usr/local/sbin/rtp-deploy-command (root, 0755)
 #   battement               rtp-battement (0755), /etc/rtp (0700), /etc/rtp/battement.env (0600, depuis l'entrée
@@ -74,6 +81,8 @@ umask 022
 
 LIGNE_IMPORT='import /etc/caddy/sites.d/*.caddy'
 PREFIXE_CLE='restrict,command="/usr/local/sbin/rtp-deploy-command"'
+PREFIXE_CLE_AUTO='restrict,command="/usr/local/sbin/rtp-deploy-command --auto"'
+MARQUEUR_CAPACITE='# rtp-capacite: auto-v1'
 RE_BCRYPT='^\$2[aby]\$[0-9]{2}\$[./A-Za-z0-9]{53}$'
 RE_CLE='^ssh-ed25519 [A-Za-z0-9+/=]+( [A-Za-z0-9._@-]+)?$'
 # Même motif que ops/battement.sh et ops/tester-restauration.sh (port facultatif ; test de dérive, IN-03).
@@ -89,8 +98,10 @@ GROUPE_CONTENEURS='dock''er'
 usage() {
   cat <<'FIN'
 Usage : installer-serveur.sh [--verifier|--appliquer] --etape <liste> [--racine <dir>] [--source <dir>]
-                             [--cle-publique <fichier>] [--horodatage <AAAAMMJJhhmm>]
+                             [--cle-publique <fichier>] [--cle-publique-auto <fichier>] [--horodatage <AAAAMMJJhhmm>]
 --cle-publique : une ou deux lignes ssh-ed25519 distinctes (clé de GitHub, clé du Mac), deux lignes au plus
+--cle-publique-auto : une seule ligne ssh-ed25519, clé de la tâche planifiée du Mac, restreinte à la production
+                      par --auto ; exige le script installé à jour (étape commande d'abord)
 Étapes : sauvegarde-caddy, montages, env-caddy, import-caddy, utilisateur, commande, battement, sauvegarde,
          restauration-mensuelle, site-essai, site-public, depot
 FIN
@@ -113,19 +124,21 @@ ETAPES_DONNEES=0
 RACINE_ARG=/
 SOURCE=''
 CLE_FICHIER=''
+CLE_AUTO_FICHIER=''
 HORODATAGE=''
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --verifier) MODE=verifier; shift ;;
     --appliquer) MODE=appliquer; shift ;;
-    --etape | --racine | --source | --cle-publique | --horodatage)
+    --etape | --racine | --source | --cle-publique | --cle-publique-auto | --horodatage)
       [ $# -ge 2 ] || erreur_usage "valeur manquante après $1"
       case "$1" in
         --etape) ETAPES=$2; ETAPES_DONNEES=1 ;;
         --racine) RACINE_ARG=$2 ;;
         --source) SOURCE=$2 ;;
         --cle-publique) CLE_FICHIER=$2 ;;
+        --cle-publique-auto) CLE_AUTO_FICHIER=$2 ;;
         --horodatage) HORODATAGE=$2 ;;
       esac
       shift 2
@@ -138,6 +151,8 @@ while [ $# -gt 0 ]; do
       ;;
   esac
 done
+
+[ -z "$CLE_AUTO_FICHIER" ] || [ -n "$CLE_FICHIER" ] || erreur_usage "--cle-publique-auto exige --cle-publique"
 
 # --- Étapes demandées -------------------------------------------------------------------------------------------
 [ "$ETAPES_DONNEES" = 1 ] || erreur_usage "--etape est obligatoire"
@@ -260,6 +275,25 @@ if [ -n "$CLE_FICHIER" ]; then
     CLES="$CLES$PREFIXE_CLE $ligne"$'\n'
   done <"$CLE_FICHIER"
   [ "$n" -ge 1 ] || echec 4 "--cle-publique : une ou deux lignes attendues"
+fi
+
+# Clé automatique (10.3, D-04) : une seule ligne, distincte des clés manuelles, ajoutée en dernier avec le préfixe
+# restreint « --auto ». Les doublons sont comparés au corps de clé (commentaire exclu).
+CLE_AUTO_DONNEE=0
+if [ -n "$CLE_AUTO_FICHIER" ]; then
+  [ -f "$CLE_AUTO_FICHIER" ] || echec 4 "--cle-publique-auto : fichier introuvable"
+  n=0
+  while IFS= read -r ligne || [ -n "$ligne" ]; do
+    n=$((n + 1))
+    [ "$n" -le 1 ] || echec 4 "--cle-publique-auto : une seule ligne attendue"
+    [[ "$ligne" =~ $RE_CLE ]] || echec 4 "--cle-publique-auto : ligne « ssh-ed25519 <clé> [commentaire] » attendue"
+    corps=${ligne#ssh-ed25519 }
+    corps=${corps%% *}
+    case "$vus" in *" $corps "*) echec 4 "--cle-publique-auto : clé identique à une clé de --cle-publique" ;; esac
+    CLES="$CLES$PREFIXE_CLE_AUTO $ligne"$'\n'
+  done <"$CLE_AUTO_FICHIER"
+  [ "$n" -eq 1 ] || echec 4 "--cle-publique-auto : une ligne attendue"
+  CLE_AUTO_DONNEE=1
 fi
 
 # Blocs du site : refusés tant qu'une adresse est un domaine réservé (le certificat ne pourrait pas être obtenu et
@@ -589,13 +623,14 @@ etape_import_caddy() {
   fi
 }
 
-cles_autorisees_conformes() { # une ou deux lignes, préfixe restreint exact sur chacune, clé ed25519 valide, sans double
-  local ligne n=0 reste corps vus=' '
+cles_autorisees_conformes() { # une à trois lignes (au plus deux manuelles, une automatique), préfixe exact, sans double
+  local ligne n=0 reste corps vus=' ' manuelles=0 automatiques=0
   [ -f "$CLES_AUTORISEES" ] || return 1
   while IFS= read -r ligne || [ -n "$ligne" ]; do
     n=$((n + 1))
     case "$ligne" in
-      "$PREFIXE_CLE "*) reste=${ligne#"$PREFIXE_CLE "}; [[ "$reste" =~ $RE_CLE ]] || return 1 ;;
+      "$PREFIXE_CLE "*) reste=${ligne#"$PREFIXE_CLE "}; [[ "$reste" =~ $RE_CLE ]] || return 1; manuelles=$((manuelles + 1)) ;;
+      "$PREFIXE_CLE_AUTO "*) reste=${ligne#"$PREFIXE_CLE_AUTO "}; [[ "$reste" =~ $RE_CLE ]] || return 1; automatiques=$((automatiques + 1)) ;;
       *) return 1 ;;
     esac
     corps=${reste#ssh-ed25519 }
@@ -603,7 +638,7 @@ cles_autorisees_conformes() { # une ou deux lignes, préfixe restreint exact sur
     case "$vus" in *" $corps "*) return 1 ;; esac
     vus="$vus$corps "
   done <"$CLES_AUTORISEES"
-  [ "$n" -ge 1 ] && [ "$n" -le 2 ]
+  [ "$n" -ge 1 ] && [ "$n" -le 3 ] && [ "$manuelles" -le 2 ] && [ "$automatiques" -le 1 ]
 }
 
 etape_utilisateur() {
@@ -653,19 +688,25 @@ etape_utilisateur() {
   nom=$(affiche "$CLES_AUTORISEES")
   if [ -n "$CLES" ]; then
     if [ -f "$CLES_AUTORISEES" ] && printf '%s' "$CLES" | cmp -s - "$CLES_AUTORISEES"; then
-      dire ok "$nom : une ou deux lignes restreintes, à jour"
+      dire ok "$nom : une à trois lignes restreintes, à jour"
+    elif [ "$CLE_AUTO_DONNEE" = 1 ] && ! grep -qxF "$MARQUEUR_CAPACITE" "$SBIN/rtp-deploy-command" 2>/dev/null; then
+      if verification; then
+        dire 'a faire' "$nom : script installé sans --auto, appliquer d'abord l'étape commande"
+      else
+        echec 4 "script installé sans --auto : appliquer d'abord l'étape commande, puis l'étape utilisateur"
+      fi
     elif verification || [ ! -d "$SSH_DEPLOY" ]; then
-      dire 'a faire' "$nom : écrire une ou deux lignes restreintes (commande forcée)"
+      dire 'a faire' "$nom : écrire une à trois lignes restreintes (commande forcée)"
     else
       temporaire "$SSH_DEPLOY"
       printf '%s' "$CLES" >"$TMP_CREE"
       chmod 644 "$TMP_CREE"
       mv -f "$TMP_CREE" "$CLES_AUTORISEES"
       chown root:root "$CLES_AUTORISEES"
-      dire fait "$nom : une ou deux lignes restreintes écrites"
+      dire fait "$nom : une à trois lignes restreintes écrites"
     fi
   elif cles_autorisees_conformes; then
-    dire ok "$nom : une ou deux lignes restreintes"
+    dire ok "$nom : une à trois lignes restreintes"
   else
     dire 'a faire' "$nom : absent ou non conforme, fournir --cle-publique"
   fi
