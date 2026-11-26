@@ -111,11 +111,11 @@ Sans passer par GitHub : `RTP_MODE=preview npm run build -- --outDir dist-previe
 
 ### Racine du contenu : `RTP_CONTENT_ROOT`
 
-Les commandes lisent le contenu dans la racine indiquée par la variable `RTP_CONTENT_ROOT`. Par défaut (variable absente ou vide), la racine est `.` : le **vrai corpus** (`src/content/`, 61 candidats importés, 3 thèmes pilotes en brouillon). Le corpus fictif de test s'obtient explicitement : `RTP_CONTENT_ROOT=tests/fixtures/corpus-valide npm run validate`. Pour voir les brouillons dans le site : `RTP_MODE=preview npm run build`.
+Les commandes lisent le contenu dans la racine indiquée par la variable `RTP_CONTENT_ROOT`. Par défaut (variable absente ou vide), la racine est `.` : le **vrai corpus** (`src/content/`, candidats importés du jeu data.gouv, thèmes pilotes en brouillon). Le corpus fictif de test s'obtient explicitement : `RTP_CONTENT_ROOT=tests/fixtures/corpus-valide npm run validate`. Pour voir les brouillons dans le site : `RTP_MODE=preview npm run build`.
 
 ### Données : import, archives, couverture
 
-- `npm run import:datagouv` importe les 61 personnalités du jeu data.gouv « statuts sourcés » en fiches candidats (voir [data/import/README.md](./data/import/README.md)).
+- `npm run import:datagouv` importe les personnalités du jeu data.gouv « statuts sourcés » en fiches candidats (voir [data/import/README.md](./data/import/README.md)).
 - `npm run archive -- <url> --candidat … --source-id …` archive une source primaire (extrait texte et sha256 dans `archives/`, binaire dans le dépôt privé `ErwanHenry/reveleTonProg-archives`, désigné par `RTP_ARCHIVES_DIR` ; Wayback en corroboration).
 - `npm run couverture -- --check-data` recalcule la couverture des thèmes et le choix des trois thèmes pilotes ([docs/COUVERTURE-THEMES.md](./docs/COUVERTURE-THEMES.md)).
 - Tout le contenu pilote est en `brouillon` : la relecture s'ouvre via `pilote.relecture_ouverte` (voir le runbook, « Ouvrir la relecture »).
