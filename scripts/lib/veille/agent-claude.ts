@@ -13,6 +13,7 @@ import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { lireFichierCles, ErreurConfigLocale } from '../config-locale.ts';
 import { envDeBase, type Lanceur } from '../processus.ts';
+import { TEXTE_MAX } from './sources-texte.ts';
 
 /** Verdict attendu de l'agent : indication seulement, la sortie est revalidée par du code (lireSortieAgent). */
 export const SCHEMA_VERDICT = {
@@ -129,8 +130,6 @@ export const LIBELLES_CODE: Record<CodeStatut, string> = {
   renonce: "a renoncé à se présenter à l'élection présidentielle de 2027",
 };
 
-/** Taille maximale du texte source donné à l'agent (même valeur que TEXTE_MAX de sources-texte.ts). */
-const TEXTE_PROMPT_MAX = 30_000;
 
 /** Une valeur issue du jeu public tient sur une ligne et reste courte : elle ne peut pas porter de consigne longue. */
 const uneLigne = (s: string): string => s.replace(/[\u0000-\u001f\u007f<>]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120);
@@ -149,7 +148,7 @@ export function promptVerification(role: 'verificateur' | 'contradicteur', q: Qu
     role === 'contradicteur'
       ? `Tu es le contradicteur : cherche d'abord dans le texte ce qui contredit l'affirmation, puis conclus honnêtement. Tu ne connais aucune autre réponse que la tienne.`
       : `Tu es le vérificateur : lis le texte avec attention puis conclus honnêtement.`;
-  const corps = texte.length > TEXTE_PROMPT_MAX ? texte.slice(0, TEXTE_PROMPT_MAX) : texte;
+  const corps = texte.length > TEXTE_MAX ? texte.slice(0, TEXTE_MAX) : texte;
   return [
     `Tu relis une source pour un site pédagogique, neutre et sourcé, sur l'élection présidentielle française de 2027.`,
     posture,
@@ -269,7 +268,7 @@ async function appeler(cfg: ConfigAgent, role: 'verificateur' | 'contradicteur',
  * « ok » ne signifie que « confirmé ». Toute autre issue a une raison fermée.
  */
 export async function verifierAvecDeuxAgents(o: { cfg: ConfigAgent; question: QuestionAgent; texte: string; lancer: Lanceur }): Promise<ResultatDouble> {
-  const texte = o.texte.length > TEXTE_PROMPT_MAX ? o.texte.slice(0, TEXTE_PROMPT_MAX) : o.texte;
+  const texte = o.texte.length > TEXTE_MAX ? o.texte.slice(0, TEXTE_MAX) : o.texte;
   const premier = await appeler(o.cfg, 'verificateur', o.question, texte, o.lancer);
   if (!premier.ok) return premier;
   if (premier.verdict.verdict === 'insuffisant') return { ok: false, raison: 'insuffisant', coutUsd: premier.coutUsd };
@@ -288,4 +287,44 @@ export async function verifierAvecDeuxAgents(o: { cfg: ConfigAgent; question: Qu
     dates: [premier.verdict.date_page, second.verdict.date_page],
     coutUsd: cout,
   };
+}
+
+// ---------- sonde ----------
+
+export const TEXTE_SONDE = 'Texte de sonde de reveleTonProg : la sonde de relecture automatique fonctionne correctement.';
+
+export interface ResultatSonde {
+  ok: boolean;
+  version: string | null;
+  forme: 'structured_output' | 'result' | null;
+  coutUsd: number | null;
+  raison: string;
+}
+
+/**
+ * Sonde de mise en service : version du binaire, puis un appel réel de l'agent sur le texte de sonde (verdict
+ * « confirme » attendu, citation retrouvée). La raison est un texte fixe, jamais la sortie brute de claude.
+ */
+export async function sonderAgent(cfg: ConfigAgent, lancer: Lanceur): Promise<ResultatSonde> {
+  const v = await lancer({ commande: cfg.claude, args: ['--version'], cwd: cfg.dossierTravail, env: envAgent(cfg), delaiMs: 30_000, libelle: 'version de claude', isole: true });
+  if (v.delaiDepasse || v.code !== 0) return { ok: false, version: null, forme: null, coutUsd: null, raison: 'binaire claude inutilisable (version illisible)' };
+  const version = v.stdout.trim().split('\n')[0]?.slice(0, 80) ?? null;
+  const r = await lancer({
+    commande: cfg.claude,
+    args: argumentsAgent(cfg),
+    cwd: cfg.dossierTravail,
+    env: envAgent(cfg),
+    entree: promptVerification('verificateur', { genre: 'programme', personne: 'Sonde' }, TEXTE_SONDE),
+    delaiMs: cfg.delaiMs,
+    libelle: 'sonde de l\'agent de relecture',
+    isole: true,
+  });
+  if (r.delaiDepasse) return { ok: false, version, forme: null, coutUsd: null, raison: 'délai dépassé' };
+  if (r.code !== 0) return { ok: false, version, forme: null, coutUsd: null, raison: 'le processus claude a échoué' };
+  const s = lireSortieAgent(r.stdout);
+  if (!s.ok) return { ok: false, version, forme: null, coutUsd: null, raison: 'sortie illisible' };
+  if (s.verdict.verdict !== 'confirme' || !citationRetrouvee(s.verdict.citation, TEXTE_SONDE)) {
+    return { ok: false, version, forme: s.forme, coutUsd: s.coutUsd, raison: 'verdict inattendu' };
+  }
+  return { ok: true, version, forme: s.forme, coutUsd: s.coutUsd, raison: 'sonde réussie' };
 }

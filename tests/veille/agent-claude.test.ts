@@ -17,6 +17,8 @@ import {
   lireConfigAgent,
   lireSortieAgent,
   promptVerification,
+  sonderAgent,
+  TEXTE_SONDE,
   verifierAvecDeuxAgents,
   type ConfigAgent,
   type QuestionAgent,
@@ -327,5 +329,33 @@ describe('verifierAvecDeuxAgents', { concurrency: 4 }, () => {
     const r = await verifierAvecDeuxAgents({ cfg, question: QUESTION, texte: long, lancer });
     assert.equal(r.ok ? null : r.raison, 'citation_introuvable');
     assert.ok((faux.entrees()[0] ?? '').length < 31_500);
+  });
+});
+
+describe('sonderAgent', () => {
+  const sonde = (verdict: string, citation: string): ScenarioClaude => sc(verdict, citation);
+  const CIT_SONDE = TEXTE_SONDE.slice(0, 40);
+
+  it('structured_output confirmé : ok, version lue', async () => {
+    const { cfg } = monde([sonde('confirme', CIT_SONDE)]);
+    const r = await sonderAgent(cfg, lancer);
+    assert.deepEqual({ ok: r.ok, forme: r.forme, version: r.version }, { ok: true, forme: 'structured_output', version: '2.1.105 (Claude Code)' });
+    assert.equal(r.coutUsd, 0.01);
+  });
+
+  it('seulement result : forme result', async () => {
+    const { cfg } = monde([{ stdout: JSON.stringify({ is_error: false, result: JSON.stringify({ verdict: 'confirme', citation: CIT_SONDE, date_page: null }) }) }]);
+    const r = await sonderAgent(cfg, lancer);
+    assert.ok(r.ok);
+    assert.equal(r.forme, 'result');
+  });
+
+  it('sortie illisible, verdict inattendu ou citation inventée : pas ok, raison fixe', async () => {
+    for (const s of [{ stdout: 'illisible SENTINELLE-BRUTE' }, sonde('infirme', CIT_SONDE), sonde('confirme', 'une citation qui ne figure pas dans la sonde')]) {
+      const { cfg } = monde([s]);
+      const r = await sonderAgent(cfg, lancer);
+      assert.equal(r.ok, false);
+      assert.ok(!r.raison.includes('SENTINELLE-BRUTE'));
+    }
   });
 });
