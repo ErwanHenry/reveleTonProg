@@ -17,6 +17,8 @@ import { SOUS_COMMANDES_VEILLE } from '../../scripts/lib/veille/commandes.ts';
 import { SERVICES } from '../../scripts/lib/veille/alertes.ts';
 import { HEURES, LABEL } from '../../scripts/lib/veille/launchd.ts';
 import { MOTIFS_RENONCEMENT } from '../../scripts/lib/rapport-import.ts';
+import { CODES_ARRET, CODES_ISSUE } from '../../scripts/lib/veille/codes-auto.ts';
+import { GEL_AUTO } from '../../scripts/lib/deploiement/gel-auto.ts';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const read = (f: string): string => fs.readFileSync(path.join(ROOT, f), 'utf8');
@@ -1288,6 +1290,119 @@ describe('documentation (phase 10.3) : règles d’écriture et comptes', () => 
     for (const x of l) {
       assert.doesNotMatch(x, /[–—]/);
       assert.deepEqual(motsInterdits(x, { exempterCitations: false }), []);
+    }
+  });
+});
+
+describe('documentation (phase 10.3) : mise à jour autonome des statuts', () => {
+  const titre = 'Mise à jour autonome des statuts';
+  const section = sectionRunbook(titre);
+  const sousTitres = [
+    "Ce que fait l'automate",
+    'Codes et alertes',
+    "Mise en service (session principale, accord d'Erwan)",
+    "Interrupteur d'arrêt",
+    'Retirer la clé automatique',
+    'Pannes',
+    'Questions à confirmer par Erwan',
+    'Règle pour les agents',
+  ];
+  const sous = (t: string): string => {
+    const m = section.match(new RegExp(`^### ${t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'm'));
+    assert.ok(m && m.index !== undefined, `sous-section « ${t} » absente de « ${titre} »`);
+    const corps = section.slice(m.index + m[0].length);
+    const fin = corps.search(/^### /m);
+    return fin < 0 ? corps : corps.slice(0, fin);
+  };
+
+  it('la section est entre « Veille des candidatures » et « Incidents fréquents », sous-sections dans l’ordre', () => {
+    const pos = (t: string): number => runbook.search(new RegExp(`^## ${t}$`, 'm'));
+    assert.ok(pos('Veille des candidatures') < pos(titre), 'après la veille');
+    assert.ok(pos(titre) < pos('Incidents fréquents'), 'avant les incidents');
+    let dernier = -1;
+    for (const t of sousTitres) {
+      const i = section.indexOf(`\n### ${t}\n`);
+      assert.ok(i > dernier, `sous-section « ${t} » absente ou hors ordre`);
+      dernier = i;
+    }
+  });
+
+  it('chaque code de l’automate figure entre backquotes dans « Codes et alertes »', () => {
+    const s = sous('Codes et alertes');
+    for (const c of [...CODES_ISSUE, ...CODES_ARRET]) assert.ok(s.includes(`\`${c}\``), `code « ${c} » absent de « Codes et alertes »`);
+  });
+
+  it('chaque option, script et sous-commande cités existent dans le code', () => {
+    const installeur = read('ops/installer-serveur.sh');
+    const veille = read('scripts/veille.ts');
+    const pkg = read('package.json');
+    for (const o of ['--cle-publique-auto', '--etape']) assert.ok(installeur.includes(o), `${o} absent de ops/installer-serveur.sh`);
+    for (const o of ['--reprendre', '--sonde-agent', '--sonde-push', '--sans-alerte']) {
+      assert.ok(section.includes(o), `${o} non cité au RUNBOOK`);
+      assert.ok(veille.includes(o), `${o} absent de scripts/veille.ts`);
+    }
+    assert.ok(pkg.includes('"deploy:auto"'), 'script npm deploy:auto absent');
+    assert.ok(installeur.includes('rtp-capacite: auto-v1'), 'marqueur de capacité absent du script serveur');
+    const citees = [...section.matchAll(/npm run veille -- ([a-z]+)/g)].map((m) => m[1] ?? '');
+    assert.ok(citees.length > 0);
+    for (const c of citees) assert.ok((SOUS_COMMANDES_VEILLE as readonly string[]).includes(c), `sous-commande inconnue : ${c}`);
+  });
+
+  it('mise en service : étape commande avant la clé automatique, sondes avant le marqueur, marqueur en dernier', () => {
+    const s = sous("Mise en service (session principale, accord d'Erwan)");
+    assert.ok(s.includes('son retour arrière sont montrés à Erwan'), 'retour arrière montré avant chaque écriture serveur');
+    const iCommande = s.indexOf('--etape commande');
+    const iAuto = s.indexOf('--cle-publique-auto');
+    assert.ok(iCommande >= 0 && iAuto >= 0 && iCommande < iAuto, '--etape commande doit précéder --cle-publique-auto');
+    const iMarqueur = s.indexOf('touch ~/.config/rtp/auto-actif');
+    assert.ok(iMarqueur > s.indexOf('--sonde-agent') && iMarqueur > s.indexOf('--sonde-push'), 'sondes avant le marqueur');
+    const etapes = [...s.matchAll(/^(\d+)\. (.*)$/gm)];
+    const derniere = etapes[etapes.length - 1];
+    assert.ok(derniere?.[2]?.includes('auto-actif'), 'le marqueur est créé à la dernière étape');
+    assert.equal(etapes.filter((e) => e[2]?.includes('touch ~/.config/rtp/auto-actif')).length, 1);
+  });
+
+  it('retrait de la clé automatique : commande sans --cle-publique-auto, fichiers, marqueur, interrupteur, launchd', () => {
+    const s = sous('Retirer la clé automatique');
+    const lignes = s.split('\n').filter((l) => l.includes('--etape utilisateur'));
+    assert.ok(lignes.length >= 1, 'commande --etape utilisateur absente');
+    for (const l of lignes) assert.ok(!l.includes('--cle-publique-auto'), 'la commande de retrait ne doit pas citer --cle-publique-auto');
+    for (const n of ['rtp-deploy-auto', 'deploiement-auto.env', 'push-auto.env', 'agent-claude.env', 'auto-actif', 'auto-desactive', 'launchctl']) {
+      assert.ok(s.includes(n), `« ${n} » absent de « Retirer la clé automatique »`);
+    }
+  });
+
+  it('retenue : mêmes dates que GEL_AUTO', () => {
+    const q = sous('Questions à confirmer par Erwan');
+    assert.ok(q.includes('10 décembre 2026') && q.includes('15 décembre 2026 à 23:59'));
+    assert.equal(GEL_AUTO.debut.toISOString(), new Date('2026-12-10T00:00:00+01:00').toISOString());
+    assert.equal(GEL_AUTO.fin.toISOString(), new Date('2026-12-15T23:59:59+01:00').toISOString());
+  });
+
+  it('la section n’a ni tiret long ni mot interdit, ni jeton, ni valeur de jeton d’agent', () => {
+    assert.doesNotMatch(section, /[–—]/);
+    assert.deepEqual(motsInterdits(section, { exempterCitations: false }), []);
+    assert.doesNotMatch(section, /\b\d{6,}:[A-Za-z0-9_-]{20,}\b/);
+    assert.doesNotMatch(section, /CLAUDE_CODE_OAUTH_TOKEN=[^<\s`]/);
+    assert.ok(sous('Règle pour les agents').includes('ne crée ni `auto-actif` ni la clé'));
+  });
+
+  it('ADR-065 unique, après ADR-064, avec les décisions et le risque résiduel', () => {
+    assert.equal((architecture.match(/^### ADR-065 : /gm) ?? []).length, 1);
+    assert.ok(architecture.indexOf('### ADR-065 : ') > architecture.indexOf('### ADR-064 : '));
+    const debut = architecture.indexOf('### ADR-065 : ');
+    const fin = architecture.indexOf('\n## ', debut);
+    const adr = architecture.slice(debut, fin < 0 ? undefined : fin);
+    for (const n of ['**Contexte**', '**Décision**', '**Conséquence**', 'D-01', 'D-02', 'D-03', 'D-04', '--auto', 'avance rapide', '--tools', 'risque résiduel']) {
+      assert.ok(adr.includes(n), `ADR-065 doit contenir « ${n} »`);
+    }
+  });
+
+  it('REQUIREMENTS : AUTO-01 à AUTO-04 dans le texte et la traçabilité', () => {
+    const req = read('.planning/REQUIREMENTS.md');
+    for (const i of [1, 2, 3, 4]) {
+      assert.ok(req.includes(`**AUTO-0${i}**`), `AUTO-0${i} absente du texte`);
+      assert.match(req, new RegExp(`\\| AUTO-0${i} \\| Phase 10\\.3 \\|`));
     }
   });
 });
