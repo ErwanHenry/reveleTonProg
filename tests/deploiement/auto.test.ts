@@ -19,6 +19,7 @@ import { lancer as lancerReel, type Lanceur } from '../../scripts/lib/processus.
 import { ETAPES, ecrireRecu, type Recu } from '../../scripts/lib/ci-local.ts';
 import { resoudreExecutables } from '../../scripts/lib/deploiement/executables.ts';
 import { appelerVerbe, envoyer, lireEtat } from '../../scripts/lib/deploiement/transport.ts';
+import { executer } from '../../scripts/deploy-auto.ts';
 import { executerDeploiementAuto, RESULTATS_DEPLOIEMENT_AUTO, type ContexteAuto } from '../../scripts/lib/deploiement/auto.ts';
 import { HOTE_FACTICE, MOT_DE_PASSE_FACTICE, UTILISATEUR_FACTICE, creerFauxServeur, type FauxServeur, type OptionsFauxServeur } from '../helpers/faux-serveur.ts';
 
@@ -490,6 +491,46 @@ describe('deploy:auto contre la vraie commande forcée en mode --auto', () => {
     const { code, texte, lignes } = await deployerAuto(b, { apresActivation });
     assert.equal(code, 5, texte);
     assert.equal(derniereLigne(lignes), `resultat=smoke_echec_retour_ko sha=${b.S.slice(0, 12)}`);
+  });
+});
+
+describe('CLI deploy:auto', () => {
+  const SHA40 = 'a'.repeat(40);
+  it('arguments refusés : code 2 et usage, ni configuration lue ni verrou pris', async () => {
+    const refuses: string[][] = [
+      [],
+      ['deployer'],
+      ['deployer', 'abc1234'],
+      ['deployer', 'A'.repeat(40)],
+      ['deployer', SHA40, 'autre'],
+      ['deployer', SHA40, '--forcer'],
+      ['deployer', '--urgence', SHA40],
+      ['deployer', '--dry-run', SHA40],
+      ['etat', 'x'],
+      ['inconnu'],
+    ];
+    for (const argv of refuses) {
+      const home = temp('rtp-home-auto-cli-');
+      const lignes: string[] = [];
+      const code = await executer(argv, { home, ecrire: (l) => lignes.push(l) });
+      assert.equal(code, 2, argv.join(' '));
+      assert.match(lignes.join('\n'), /Usage : npm run deploy:auto/);
+      assert.equal(existsSync(path.join(home, '.cache')), false, `aucun verrou pour ${argv.join(' ')}`);
+      assert.equal(lignes.some((l) => l.startsWith('resultat=')), false);
+    }
+  });
+  it('deployer <sha> et etat sont aiguillés (configuration absente : code 2, resultat=config_absente)', async () => {
+    const home = temp('rtp-home-auto-cli2-');
+    const l1: string[] = [];
+    assert.equal(await executer(['deployer', SHA40], { home, ecrire: (l) => l1.push(l) }), 2);
+    assert.equal(l1.at(-1), `resultat=config_absente sha=${SHA40.slice(0, 12)}`);
+    const l2: string[] = [];
+    assert.equal(await executer(['etat'], { home, ecrire: (l) => l2.push(l) }), 2);
+    assert.equal(l2.at(-1), 'resultat=config_absente');
+  });
+  it('la CLI ne lit pas l\'entrée standard (aucun terminal requis)', () => {
+    const t = readFileSync(path.join(import.meta.dirname, '..', '..', 'scripts', 'deploy-auto.ts'), 'utf8');
+    assert.equal(/process\.stdin|\/dev\/tty|readline/.test(t), false);
   });
 });
 
