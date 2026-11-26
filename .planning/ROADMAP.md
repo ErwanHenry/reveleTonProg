@@ -272,11 +272,11 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
-- [ ] 10.2-01-PLAN.md : jetons de la charte D, police des titres et rayons en jetons, image de partage figée, icône régénérée
-- [ ] 10.2-02-PLAN.md : titres à empattements bleu nuit, en-tête, accueil et tuiles, rouge en trois accents, premier écran mesuré en serif
-- [ ] 10.2-03-PLAN.md : pastilles de niveau et d'ordre, cartes au cadre unique, états vides sans boîte
-- [ ] 10.2-04-PLAN.md : bloc source teinté, relecture, statut, encadrés repliables, listes et pied bleu nuit
-- [ ] 10.2-05-PLAN.md : recensement navigateur, textes inchangés, garde complète, mesures, captures avant et après, renvoi dans 04-UI-SPEC
+- [x] 10.2-01-PLAN.md : jetons de la charte D, police des titres et rayons en jetons, image de partage figée, icône régénérée
+- [x] 10.2-02-PLAN.md : titres à empattements bleu nuit, en-tête, accueil et tuiles, rouge en trois accents, premier écran mesuré en serif
+- [x] 10.2-03-PLAN.md : pastilles de niveau et d'ordre, cartes au cadre unique, états vides sans boîte
+- [x] 10.2-04-PLAN.md : bloc source teinté, relecture, statut, encadrés repliables, listes et pied bleu nuit
+- [x] 10.2-05-PLAN.md : recensement navigateur, textes inchangés, garde complète, mesures, captures avant et après, renvoi dans 04-UI-SPEC
 
 ### Phase 10.3: Mise à jour autonome des statuts (INSÉRÉE)
 
@@ -309,4 +309,4 @@ Plans:
 | 9.2 CI et déploiement depuis le Mac | v1.1 | 8/8 | Complete | 2026-11-19 |
 | 10. Import de décembre | v1.1 | 1/6 | In Progress|  |
 | 10.1 Veille des candidatures | v1.1 | 5/5 | Complete (Telegram et Healthchecks à configurer par Erwan) | 2026-11-20 |
-| 10.2 Charte graphique D bleu blanc rouge | v1.1 | 0/? | Not started |  |
+| 10.2 Charte graphique D bleu blanc rouge | v1.1 | 5/5 | Exécutée, PR ouverte, en attente de la validation d'Erwan |  |
