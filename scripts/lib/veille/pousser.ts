@@ -77,7 +77,8 @@ const HORS_LIGNE = /Could not resolve host|Network is unreachable|Operation time
 const REFUSE = /\[rejected\]|non-fast-forward|fetch first/i;
 
 export function pousserAvanceRapide(o: { worktree: string; sha: string; destination: string; env: Record<string, string>; configGit: string[]; executer: ExecuterEnv }): IssuePush {
-  const r = o.executer('git', [...o.configGit, '-C', o.worktree, 'push', '--porcelain', o.destination, `${o.sha}:refs/heads/main`], { timeoutMs: 120_000, env: o.env });
+  const poussee = ['push', '--porcelain', o.destination, `${o.sha}:refs/heads/main`];
+  const r = o.executer('git', [...o.configGit, '-C', o.worktree, ...poussee], { timeoutMs: 120_000, env: o.env });
   if (r.status === 0) return 'pousse';
   const sortie = `${r.stdout}\n${r.stderr}`;
   if (REFUSE.test(sortie)) return 'main_a_avance';
