@@ -57,7 +57,11 @@ describe('lanceur de la veille', () => {
     assert.match(t, /git -C "\$DEPOT" worktree add --detach --quiet "\$ARBRE" "\$REFERENCE"/);
     assert.match(t, /git -C "\$ARBRE" checkout --quiet --detach "\$REFERENCE" \|\| true/);
     assert.match(t, /^cd "\$ARBRE"$/m);
-    assert.match(t, /^exec "\$FNM" exec --using=24 node scripts\/veille\.ts lancer --reference "\$REFERENCE"$/m);
+    assert.match(t, /^"\$FNM" exec --using=24 node scripts\/veille\.ts lancer --reference "\$REFERENCE" \|\| echo "veille lancer : code \$\?"$/m);
+    assert.match(t, /^exec "\$FNM" exec --using=24 node scripts\/veille\.ts auto$/m);
+    assert.equal(t.trimEnd().split('\n').at(-1), 'exec "$FNM" exec --using=24 node scripts/veille.ts auto');
+    assert.match(t, /"\$FNM" exec --using=24 npm ci --ignore-scripts --no-audit --no-fund --silent/);
+    assert.match(t, /^if ! git -C "\$DEPOT" fetch --quiet origin; then echo "fetch impossible : passage hors ligne"; fi$/m);
     assert.doesNotMatch(t, /push|telegram|hc-ping|security /i);
     assert.equal(cheminLanceur(P.dossier), `${P.dossier}/lancer.sh`);
   });

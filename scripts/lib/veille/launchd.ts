@@ -6,6 +6,8 @@
 //   - <dossier de la veille>/lancer.sh : aligne le worktree de la veille sur la référence suivie, installe les
 //     dépendances si le lockfile a changé, puis exécute la veille DEPUIS ce worktree, jamais depuis le dossier de
 //     travail d'Erwan (quelle que soit la branche qui y est ouverte).
+//     lancer détecte, auto met à jour (phase 10.3) ; auto reprend seul un commit poussé non déployé, même hors
+//     ligne au moment de lancer.
 // Aucun secret dans ces fichiers : la veille lit le Trousseau à chaque passage.
 import path from 'node:path';
 
@@ -78,7 +80,7 @@ REFERENCE=${sh(p.reference)}
 FNM=${sh(p.fnm)}
 ARBRE="$RTP_VEILLE_DIR/arbre"
 echo "--- veille $(date '+%Y-%m-%d %H:%M:%S') ---"
-git -C "$DEPOT" fetch --quiet origin
+if ! git -C "$DEPOT" fetch --quiet origin; then echo "fetch impossible : passage hors ligne"; fi
 if [ ! -e "$ARBRE/.git" ]; then
   git -C "$DEPOT" worktree add --detach --quiet "$ARBRE" "$REFERENCE"
 else
@@ -88,9 +90,10 @@ fi
 cd "$ARBRE"
 LOCK=$(shasum -a 256 package-lock.json | cut -d ' ' -f 1)
 if [ ! -d node_modules ] || [ "$LOCK" != "$(cat "$RTP_VEILLE_DIR/arbre-lock.sha256" 2>/dev/null || true)" ]; then
-  "$FNM" exec --using=24 npm ci --no-audit --no-fund --silent
+  "$FNM" exec --using=24 npm ci --ignore-scripts --no-audit --no-fund --silent
   printf '%s\\n' "$LOCK" > "$RTP_VEILLE_DIR/arbre-lock.sha256"
 fi
-exec "$FNM" exec --using=24 node scripts/veille.ts lancer --reference "$REFERENCE"
+"$FNM" exec --using=24 node scripts/veille.ts lancer --reference "$REFERENCE" || echo "veille lancer : code $?"
+exec "$FNM" exec --using=24 node scripts/veille.ts auto
 `;
 }

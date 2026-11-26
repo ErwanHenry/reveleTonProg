@@ -935,11 +935,14 @@ Phase 10.1, demande d'Erwan du 2026-11-20 : sortir les candidats qui se désiste
 
 Deux fois par jour, à 8 h et à 19 h (heure du Mac), `launchd` lance la veille sur le Mac d'Erwan ; un passage manqué pendant la veille du Mac est rattrapé au réveil, pas un Mac éteint. Un passage : récupère `origin` en lecture ; aligne son propre worktree détaché (`~/.cache/rtp/veille/arbre`) sur `origin/main` ; télécharge le jeu data.gouv « statuts sourcés » (seule source, décision du 2026-11-20 ; le Conseil constitutionnel viendra dans une phase ultérieure, avant fin février 2027) ; garde les octets sous `amont/<sha256>.json` ; si l'empreinte est déjà connue, s'arrête là ; sinon lance `import:datagouv -- --dry-run --format json` dans son worktree, classe les changements et écrit un rapport daté. Il n'écrit jamais dans le dossier de travail d'Erwan, ne crée aucune branche, ne pousse rien, n'ouvre aucune pull request.
 
+Après chaque passage, le même lanceur exécute `npm run veille -- auto`, la mise à jour autonome des statuts (voir « Mise à jour autonome des statuts ») ; sans le marqueur d'activation, elle s'arrête au commit local, sans rien publier. Un passage à blanc marque le jeu comme traité : après création du marqueur `auto-actif`, le jeu déjà vu à blanc n'est republié qu'avec `npm run veille -- auto --reprendre`.
+
 Le jeu amont change d'octets sans changer `mise_a_jour` : la veille dédoublonne sur l'empreinte SHA-256, jamais sur la date.
 
 | Commande | Effet |
 |---|---|
 | `npm run veille` | un passage (sous-commande `lancer` par défaut) ; `--sans-alerte` pour un essai, `--reference <ref>` pour suivre une autre référence |
+| `npm run veille -- auto` | mise à jour autonome des statuts ; `--reprendre`, `--sans-alerte`, `--sonde-agent`, `--sonde-push` |
 | `npm run veille -- etat` | dernier passage, dernière empreinte, dernier rapport, canaux configurés (oui ou non, jamais la valeur) |
 | `npm run veille -- decider <id-amont>` | décision d'Erwan sur une personne, tapée dans un terminal (voir plus bas) |
 | `npm run veille -- preparer` | branche d'import locale, jamais poussée (voir plus bas) |

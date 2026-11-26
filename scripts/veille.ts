@@ -5,6 +5,7 @@
 //   npm run veille -- etat              état du dernier passage, sans aucun secret
 //   npm run veille -- decider <id-amont> décision d'Erwan sur une personne, tapée dans un terminal
 //   npm run veille -- preparer          branche d'import locale (jamais poussée)
+//   npm run veille -- auto [--reprendre] [--sans-alerte] [--sonde-agent] [--sonde-push]   mise à jour autonome (phase 10.3)
 //   npm run veille -- installer | retirer   planification launchd (8 h et 19 h)
 //
 // La veille détecte et propose ; Erwan décide. Voir docs/RUNBOOK.md, section « Veille des candidatures ».
@@ -15,7 +16,13 @@ import os from 'node:os';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { fetchSafe } from './lib/fetch-safe.ts';
-import type { Executer } from './lib/veille/alertes.ts';
+import { ErreurConfigLocale } from './lib/config-locale.ts';
+import { lancer as lancerProcessus } from './lib/processus.ts';
+import { lireConfigAgent, sonderAgent } from './lib/veille/agent-claude.ts';
+import { executerPassageAuto } from './lib/veille/auto.ts';
+import { lignesEtatAuto, lireEtatAuto } from './lib/veille/etat-auto.ts';
+import { type ExecuterEnv, lireConfigPush, preparerPush, sonderPush } from './lib/veille/pousser.ts';
+import { recupererTexte } from './lib/veille/sources-texte.ts';
 import { SOUS_COMMANDES_VEILLE } from './lib/veille/commandes.ts';
 import { RefusDecider, decider, ligneAmont, ouvrirTerminal } from './lib/veille/decider.ts';
 import { dossierVeille, lireEtat, lignesEtat } from './lib/veille/etat.ts';
@@ -29,6 +36,7 @@ const PLAFOND_OCTETS = 5 * 1024 * 1024;
 const SOUS_COMMANDES = SOUS_COMMANDES_VEILLE;
 
 const USAGE = `Usage : npm run veille -- [lancer] [--reference <ref>] [--sans-alerte]
+        npm run veille -- auto [--reprendre] [--sans-alerte] [--sonde-agent] [--sonde-push]
         npm run veille -- etat
         npm run veille -- decider <id-amont>
         npm run veille -- preparer [--dossier-import <dossier>]
@@ -37,6 +45,11 @@ const USAGE = `Usage : npm run veille -- [lancer] [--reference <ref>] [--sans-al
 
   lancer          un passage : jeu data.gouv lu, répétition à blanc dans le worktree de la veille, rapport daté,
                   alerte seulement s'il y a une sortie, une entrée, un retour ou une décision à prendre
+  auto            passage de la mise à jour autonome des statuts ; à blanc tant que ~/.config/rtp/auto-actif n'existe pas ;
+                  arrêt immédiat par le fichier ~/.cache/rtp/veille/auto-desactive ; un passage à blanc marque le jeu comme
+                  traité : après création de auto-actif, le jeu déjà vu à blanc n'est republié qu'avec --reprendre ;
+                  --reprendre sort de l'état retenu ; --sonde-agent et --sonde-push vérifient l'agent et le moyen de push
+                  sans rien écrire (exclusives) ; sortie 0, 1 ou 3 ; voir RUNBOOK « Mise à jour autonome des statuts »
   etat            dernier passage, dernière empreinte, dernier rapport, canaux configurés (oui ou non)
   decider         décision d'Erwan sur une personne (ligne de correspondances.yaml ou motif d'un désistement), tapée
                   dans un terminal ; refusée sans terminal ; écrite dans le worktree d'import seulement
@@ -50,8 +63,8 @@ const USAGE = `Usage : npm run veille -- [lancer] [--reference <ref>] [--sans-al
 Dossier de données : ~/.cache/rtp/veille (RTP_VEILLE_DIR pour un autre dossier). Rien n'est écrit dans le dépôt.
 `;
 
-const executer: Executer = (commande, args, options = {}) => {
-  const r = spawnSync(commande, args, { cwd: options.cwd, encoding: 'utf8', timeout: options.timeoutMs, maxBuffer: 64 * 1024 * 1024 });
+const executer: ExecuterEnv = (commande, args, options = {}) => {
+  const r = spawnSync(commande, args, { cwd: options.cwd, ...(options.env !== undefined ? { env: options.env } : {}), encoding: 'utf8', timeout: options.timeoutMs, maxBuffer: 64 * 1024 * 1024 });
   return { status: r.status, stdout: r.stdout ?? '', stderr: r.stderr ?? (r.error ? String(r.error.message) : '') };
 };
 
@@ -77,7 +90,64 @@ const dossier = dossierVeille(process.env, os.homedir());
 if (sousCommande === 'etat') {
   if (reste.length > 0) usage('veille etat : aucune option');
   for (const l of lignesEtat(dossier, lireEtat(dossier))) console.log(l);
+  for (const l of lignesEtatAuto(lireEtatAuto(dossier))) console.log(l);
   process.exit(0);
+}
+
+if (sousCommande === 'auto') {
+  let o: { reprendre?: boolean; 'sans-alerte'?: boolean; 'sonde-agent'?: boolean; 'sonde-push'?: boolean };
+  try {
+    ({ values: o } = parseArgs({
+      args: reste,
+      options: { reprendre: { type: 'boolean' }, 'sans-alerte': { type: 'boolean' }, 'sonde-agent': { type: 'boolean' }, 'sonde-push': { type: 'boolean' } },
+      strict: true,
+      allowPositionals: false,
+    }));
+  } catch (e) {
+    usage(e instanceof Error ? e.message : String(e));
+  }
+  const sondes = [o['sonde-agent'], o['sonde-push']].filter((x) => x === true).length;
+  if (sondes > 1 || (sondes === 1 && o.reprendre === true)) usage('veille auto : --sonde-agent, --sonde-push et --reprendre sont exclusives');
+  const home = os.homedir();
+  try {
+    if (o['sonde-agent'] === true) {
+      const r = await sonderAgent(lireConfigAgent(home, dossier), lancerProcessus);
+      console.log(`agent : ${r.ok ? 'ok' : 'ko'}`);
+      console.log(`version : ${r.version ?? 'inconnue'}`);
+      console.log(`forme : ${r.forme ?? 'inconnue'}`);
+      console.log(`coût : ${r.coutUsd === null ? 'inconnu' : `${r.coutUsd} USD`}`);
+      console.log(`raison : ${r.raison}`);
+      process.exit(r.ok ? 0 : 1);
+    }
+    if (o['sonde-push'] === true) {
+      const r = sonderPush({ ...preparerPush(lireConfigPush(home)), executer });
+      console.log(r.ok ? `push : ok (main ${r.main.slice(0, 12)})` : `push : ko (${r.raison})`);
+      process.exit(r.ok ? 0 : 1);
+    }
+    const r = await executerPassageAuto(
+      {
+        dossier,
+        depot: racineDepot(),
+        home,
+        executer,
+        lancer: lancerProcessus,
+        recupererTexte: (u) => recupererTexte(u),
+        fetch: (u, i) => fetch(u, i),
+        maintenant: () => new Date(),
+        node: process.execPath,
+        journal: (l) => console.log(l),
+      },
+      { reprendre: o.reprendre === true, sansAlerte: o['sans-alerte'] === true },
+    );
+    process.exit(r.sortie);
+  } catch (e) {
+    if (e instanceof ErreurConfigLocale) {
+      process.stderr.write(`veille auto : configuration refusée\n${e.erreurs.map((x) => `- ${x}`).join('\n')}\n`);
+      process.exit(2);
+    }
+    process.stderr.write(`veille auto : ${e instanceof Error ? e.message : 'erreur inattendue'}\n`);
+    process.exit(1);
+  }
 }
 
 if (sousCommande === 'decider') {
