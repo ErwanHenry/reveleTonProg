@@ -5,7 +5,8 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { lireYamlPlafonne } from '../../src/lib/content-core/yaml-plafonne.ts';
 import { lireCorrespondances } from '../../scripts/lib/datagouv.ts';
-import { deriverIdentite, idsPris, slug } from '../../scripts/lib/veille/identite.ts';
+import { deriverIdentite, idsPris, ligneCorrespondance, slug } from '../../scripts/lib/veille/identite.ts';
+import { domaineEnregistrable, lireDomainesInstitutions, typeSourceStatut } from '../../scripts/lib/veille/type-source.ts';
 
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const vide = new Set<string>();
@@ -87,8 +88,8 @@ test('particules enchaînées : un seul découpage retenu, particules gardées d
   assert.equal(r.nom_tri, 'Villepin');
 });
 test('refus : tiret long ou moyen', () => {
-  refus({ id: 'dupont', nom: 'Jean — Dupont' });
-  refus({ id: 'dupont', nom: 'Jean–Dupont' });
+  refus({ id: 'dupont', nom: 'Jean \u2014 Dupont' });
+  refus({ id: 'dupont', nom: 'Jean\u2013Dupont' });
 });
 test('refus : espaces doubles', () => {
   refus({ id: 'dupont', nom: 'Jean  Dupont' });
@@ -128,4 +129,61 @@ test('oracle : les règles reproduisent les lignes réelles de correspondances.y
   assert.deepEqual([...vus].sort(), Object.keys(ECARTS_CONNUS).sort(), 'un écart listé a disparu');
   console.log(`oracle identité : ${conformes} lignes conformes`);
   assert.ok(conformes >= 60);
+});
+
+const INST = ['gouv.fr', 'elysee.fr'];
+
+test('domaineEnregistrable', () => {
+  assert.equal(domaineEnregistrable('https://www.lafranceinsoumise.fr/x'), 'lafranceinsoumise.fr');
+  assert.equal(domaineEnregistrable('https://melenchon2027.fr/'), 'melenchon2027.fr');
+  assert.equal(domaineEnregistrable('pas une url'), null);
+});
+
+test('typeSourceStatut : candidat, parti, institution, presse', () => {
+  const liens = { campagne: 'https://melenchon2027.fr/', parti: 'https://parti.fr/' };
+  assert.equal(typeSourceStatut({ source: { url: 'https://melenchon2027.fr/annonce' }, liens }, INST), 'candidat');
+  assert.equal(typeSourceStatut({ source: { url: 'https://www.parti.fr/a' }, liens }, INST), 'parti');
+  assert.equal(typeSourceStatut({ source: { url: 'https://www.elysee.fr/a' }, liens }, INST), 'institution');
+  assert.equal(typeSourceStatut({ source: { url: 'https://www.interieur.gouv.fr/a' } }, INST), 'institution');
+  assert.equal(typeSourceStatut({ source: { url: 'https://www.lemonde.fr/a' }, liens }, INST), 'presse');
+  assert.equal(typeSourceStatut({ source: { url: 'nimporte quoi' } }, INST), 'presse');
+});
+
+test('lireDomainesInstitutions lit la liste versionnée', () => {
+  assert.ok(lireDomainesInstitutions(RACINE).includes('gouv.fr'));
+});
+
+test('oracle : type de source reproduit les lignes réelles (écart connu : Retailleau)', () => {
+  const table = lireCorrespondances(lireYamlPlafonne(readFileSync(path.join(RACINE, 'data/import/correspondances.yaml'), 'utf8'), 'correspondances.yaml'));
+  const jeu = JSON.parse(readFileSync(path.join(RACINE, 'data/import/2027etmoi-candidats-2026-11-01-332914fc603e.json'), 'utf8')) as { candidats: { id: string; source: { url: string }; liens?: Record<string, string> }[] };
+  const inst = lireDomainesInstitutions(RACINE);
+  const ecarts: string[] = [];
+  for (const l of jeu.candidats) {
+    const attendu = table[l.id];
+    if (attendu !== undefined && typeSourceStatut(l, inst) !== attendu.type_source_statut) ecarts.push(l.id);
+  }
+  assert.deepEqual(ecarts, ['retailleau']);
+});
+
+const base = { id: 'dupont', nom: 'Jean Dupont', source: { url: 'https://www.lemonde.fr/a', date: '2026-11-01' } };
+
+test('ligneCorrespondance : motif non_candidat pour renonce, aucun pour declare', () => {
+  const r = ligneCorrespondance({ ...base, statut: 'renonce' }, vide, INST);
+  assert.ok(!('refus' in r));
+  assert.equal(r.entree.motif, 'non_candidat');
+  assert.equal(r.entree.type_source_statut, 'presse');
+  assert.equal(r.idAmont, 'dupont');
+  const d = ligneCorrespondance({ ...base, statut: 'declare' }, vide, INST);
+  assert.ok(!('refus' in d));
+  assert.equal(d.entree.motif, undefined);
+  assert.equal(d.entree.id, 'jean-dupont');
+});
+
+test('ligneCorrespondance : refus propagés', () => {
+  const r = ligneCorrespondance({ ...base, id: 'martin', statut: 'declare' }, vide, INST);
+  assert.ok('refus' in r && r.refus === 'identite_ambigue');
+  const p = ligneCorrespondance({ ...base, statut: 'declare', liens: { programme: 'https://x.fr/p' } }, vide, INST);
+  assert.ok('refus' in p && p.refus === 'programme_signale');
+  const pr = ligneCorrespondance({ ...base, statut: 'pressenti', liens: { programme: 'https://x.fr/p' } }, vide, INST);
+  assert.ok(!('refus' in pr));
 });

@@ -5,13 +5,15 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { lireYamlPlafonne } from '../../../src/lib/content-core/yaml-plafonne.ts';
 import { lireCorrespondances } from '../datagouv.ts';
+import { typeSourceStatut } from './type-source.ts';
+import type { LigneAmont, TYPES_SOURCE } from './decider.ts';
 
 export const ID_CANDIDAT = /^[a-z][a-z0-9]*(-[a-z0-9]+)+$/;
 /** Particules en minuscules : gardées dans `nom`, retirées de `nom_tri`. « Le » (majuscule) est un mot du nom. */
 export const PARTICULES = ['de', 'du', 'des', "d'", 'von', 'van', 'der', 'den', 'ben', 'el', 'al'] as const;
 const ID_MAX = 80;
 // Tirets long et moyen écrits par échappements : la règle projet les interdit dans le dépôt.
-const TIRET_LONG_OU_MOYEN = /[–—]/;
+const TIRET_LONG_OU_MOYEN = /[\u2013\u2014]/;
 const ALPHABET = /^[\p{L}\p{M}' ’-]+$/u;
 
 export interface Identite {
@@ -115,4 +117,29 @@ export function idsPris(racine: string): Set<string> {
     for (const f of readdirSync(dossier)) if (f.endsWith('.yaml')) pris.add(f.slice(0, -'.yaml'.length));
   }
   return pris;
+}
+
+export type LigneCorrespondanceAuto = {
+  idAmont: string;
+  entree: { id: string; prenom: string; nom: string; nom_tri: string; motif?: 'non_candidat'; type_source_statut: (typeof TYPES_SOURCE)[number] };
+};
+export type RefusProgramme = { refus: 'programme_signale'; raison: string };
+
+/**
+ * Ligne de correspondances d'une personne NOUVELLE. Motif : `non_candidat` seulement si le statut amont est `renonce`.
+ * Le motif d'une personne déjà connue n'est jamais produit ici (cas réservé `motif_a_decider`, plan 10.3-08).
+ */
+export function ligneCorrespondance(
+  ligne: LigneAmont & { liens?: Record<string, string> },
+  pris: ReadonlySet<string>,
+  institutions: readonly string[],
+): LigneCorrespondanceAuto | RefusIdentite | RefusProgramme {
+  if (ligne.liens?.programme !== undefined && (ligne.statut === 'declare' || ligne.statut === 'primaire')) {
+    return { refus: 'programme_signale', raison: 'le jeu amont signale un programme : cas réservé' };
+  }
+  const id = deriverIdentite(ligne, pris);
+  if ('refus' in id) return id;
+  const entree: LigneCorrespondanceAuto['entree'] = { ...id, type_source_statut: typeSourceStatut(ligne, institutions) };
+  if (ligne.statut === 'renonce') entree.motif = 'non_candidat';
+  return { idAmont: ligne.id, entree };
 }

@@ -1,0 +1,8 @@
+# suffixes de domaines dont une source de statut est classée institution par l'automate (D-02, phase 10.3)
+version: 1
+suffixes:
+  - gouv.fr
+  - assemblee-nationale.fr
+  - senat.fr
+  - elysee.fr
+  - conseil-constitutionnel.fr
