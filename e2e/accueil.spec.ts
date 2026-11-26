@@ -34,6 +34,32 @@ test.describe('accueil 09.1 : thèmes au premier écran', () => {
     expect(m.haut! - m.bandeau + PART_VISIBLE).toBeLessThan(812);
   });
 
+  // Même mesure, titres en serif (charte 10.2, UI-SPEC §7.2 parade 2) : DejaVu Serif en CI, Georgia sur macOS.
+  // Si ce test est rouge en CI, appliquer la parade 3 du §7.2 (h2.hall-themes plus serré sous 37.5em).
+  test('375 x 812, titres en serif : au moins 48 px de la première tuile dans le premier écran', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto(accueil);
+    await page.addStyleTag({
+      content:
+        '* { font-family: Verdana, "DejaVu Sans", sans-serif !important } ' +
+        'h1, h2, .site-nom, .tuile-lien, .cellule-nom { font-family: "DejaVu Serif", Georgia, serif !important }',
+    });
+    const m = await page.evaluate(() => {
+      const t = document.querySelector('.tuile');
+      const b = document.querySelector('.bandeau-apercu');
+      return {
+        haut: t === null ? null : t.getBoundingClientRect().top + window.scrollY,
+        bandeau: b === null ? 0 : b.getBoundingClientRect().height,
+      };
+    });
+    expect(m.haut, 'aucune tuile de thème').not.toBeNull();
+    const marge = 812 - PART_VISIBLE - (m.haut! - m.bandeau);
+    console.log(
+      `accueil 375 x 812 (police large, titres serif) : première tuile à ${Math.round(m.haut!)} px, bandeau de préversion ${Math.round(m.bandeau)} px, marge restante ${Math.round(marge)} px`,
+    );
+    expect(m.haut! - m.bandeau + PART_VISIBLE).toBeLessThan(812);
+  });
+
   test('« Gros caractères » : la phrase de présentation passe à 22 px', async ({ page }) => {
     await page.goto(accueil);
     await page.locator('#niv-aine').check();
