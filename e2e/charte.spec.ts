@@ -281,3 +281,106 @@ test.describe('charte 10.2 : contenu sourcé et pied', () => {
     expect(r.rouge).toBe(false);
   });
 });
+
+// Recensement transversal (UI-SPEC §4.2, §4.3) : le rouge n'existe qu'aux trois emplois R-1, R-2, R-3, sans capitale
+// forcée, sans dégradé (les radial-gradient à arrêts nets de la silhouette .picto sont des formes plates, pas des
+// dégradés), sans ombre hors focus, sur un exemplaire de chaque type de page, à deux largeurs.
+const TYPES_DE_PAGES: { nom: string; url: string }[] = [
+  ['accueil', (p: { url: string }) => p.url === '/'],
+  ['liste des thèmes', (p: { url: string }) => p.url === '/themes/'],
+  ['page thème', (p: { url: string }) => /^\/themes\/[^/]+\/$/.test(p.url)],
+  ['liste des candidats', (p: { url: string }) => p.url === '/candidats/'],
+  ['page candidat', (p: { url: string }) => /^\/candidats\/[^/]+\/$/.test(p.url)],
+  ['Méthode', (p: { url: string }) => p.url === '/methode/'],
+  ['Mentions légales', (p: { url: string }) => p.url === '/mentions-legales/'],
+  ['Qui sommes-nous', (p: { url: string }) => p.url === '/qui-sommes-nous/'],
+].flatMap(([nom, pred]) => {
+  const p = PAGES.find(pred as (p: { url: string }) => boolean);
+  return p ? [{ nom: nom as string, url: p.url }] : [];
+});
+// La 404 n'est pas un index.html : le serveur la sert pour tout chemin inconnu (comme Caddy).
+TYPES_DE_PAGES.push({ nom: '404', url: '/chemin-inexistant-charte/' });
+
+interface Releve {
+  rouges: string[];
+  interdits: string[];
+}
+
+async function releverCharte(page: Page): Promise<Releve> {
+  return page.evaluate(() => {
+    const ROUGE_ = 'rgb(193, 18, 31)';
+    const rouges: string[] = [];
+    const interdits: string[] = [];
+    const nom = (e: Element, pseudo: string): string => {
+      const h2 = e.tagName === 'H2' && e.closest('main') !== null && !e.classList.contains('section-titre');
+      if (pseudo === '::after' && h2) return 'R-1 h2::after';
+      if (e.classList.contains('site-sous-titre')) return 'R-2 .site-sous-titre';
+      if (e.closest('.hall-candidats, .hall-methode') && e.tagName === 'A') return 'R-3 lien d\'accueil';
+      return `${e.tagName.toLowerCase()}${e.className && typeof e.className === 'string' ? '.' + e.className.trim().split(/\s+/).join('.') : ''}${pseudo}`;
+    };
+    const examiner = (e: Element, pseudo: string): void => {
+      const cs = getComputedStyle(e, pseudo || null);
+      if (pseudo !== '' && (cs.content === 'none' || cs.content === 'normal')) return;
+      if (pseudo === '' && e.getClientRects().length === 0) return;
+      if (cs.display === 'none') return;
+      const id = nom(e, pseudo);
+      const rouge = (prop: string, v: string): void => {
+        if (v === ROUGE_) rouges.push(`${prop}|${id}`);
+      };
+      rouge('color', cs.color);
+      rouge('backgroundColor', cs.backgroundColor);
+      for (const c of ['Top', 'Right', 'Bottom', 'Left']) {
+        if (parseFloat(cs.getPropertyValue(`border-${c.toLowerCase()}-width`)) > 0 && cs.getPropertyValue(`border-${c.toLowerCase()}-style`) !== 'none')
+          rouge(`border${c}Color`, cs.getPropertyValue(`border-${c.toLowerCase()}-color`));
+      }
+      if (cs.outlineStyle !== 'none') rouge('outlineColor', cs.outlineColor);
+      if (cs.textDecorationLine !== 'none') rouge('textDecorationColor', cs.textDecorationColor);
+      if (cs.textTransform === 'uppercase') interdits.push(`uppercase|${id}`);
+      if (/small-caps/.test(cs.fontVariantCaps)) interdits.push(`${cs.fontVariantCaps}|${id}`);
+      if (parseFloat(cs.letterSpacing) > 0) interdits.push(`letterSpacing ${cs.letterSpacing}|${id}`);
+      if (/linear-gradient|conic-gradient/.test(cs.backgroundImage)) interdits.push(`gradient|${id}`);
+      if (cs.boxShadow !== 'none') interdits.push(`boxShadow ${cs.boxShadow}|${id}`);
+    };
+    for (const e of document.body.querySelectorAll('*')) {
+      if (['SCRIPT', 'STYLE'].includes(e.tagName)) continue;
+      examiner(e, '');
+      examiner(e, '::before');
+      examiner(e, '::after');
+    }
+    return { rouges: [...new Set(rouges)].sort(), interdits: [...new Set(interdits)].sort() };
+  });
+}
+
+const AUTORISES = [
+  'backgroundColor|R-1 h2::after',
+  'borderLeftColor|R-2 .site-sous-titre',
+  "textDecorationColor|R-3 lien d'accueil",
+];
+
+test.describe('charte 10.2 : recensement sur toutes les pages', () => {
+  for (const taille of [
+    { width: 1280, height: 900 },
+    { width: 375, height: 812 },
+  ]) {
+    for (const p of TYPES_DE_PAGES) {
+      test(`${p.nom} à ${taille.width} x ${taille.height} : rouge aux trois emplois, aucun interdit`, async ({ page }) => {
+        await page.setViewportSize(taille);
+        await page.goto(p.url);
+        const r = await releverCharte(page);
+        for (const rouge of r.rouges) expect(AUTORISES, `rouge hors R-1, R-2, R-3 : ${rouge}`).toContain(rouge);
+        expect(r.interdits, 'capitale forcée, espacement positif, dégradé ou ombre hors focus').toEqual([]);
+      });
+    }
+  }
+
+  test('le survol d\'un lien R-3 garde la priorité : 3px survolé, 2px au repos', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto('/');
+    const lien = page.locator('.hall-methode a').first();
+    await expect(lien).toBeVisible();
+    await page.mouse.move(0, 0);
+    expect(await lien.evaluate((e) => getComputedStyle(e).textDecorationThickness)).toBe('2px');
+    await lien.hover();
+    expect(await lien.evaluate((e) => getComputedStyle(e).textDecorationThickness)).toBe('3px');
+  });
+});
