@@ -551,6 +551,11 @@ describe('ops/commande-deploiement.sh : code', () => {
 describe('ops/commande-deploiement.sh : mode --auto (10.3, D-04)', () => {
   const AUTO = ['--auto'];
   const auto = (b: Banc, commande: string | undefined): Resultat => lancer(b, commande, {}, AUTO);
+  /** Envoi réel par la commande forcée en --auto (le faux rrsync ne copie rien : deposer() pose l'arbre). */
+  const envoyerAuto = (b: Banc, s: string): void => {
+    const r = auto(b, `rsync --server -tre.iLsfxCIvu --stats . production/${s}/`);
+    assert.equal(r.status, 0, `envoi ${s} : ${r.stderr}`);
+  };
 
   it('etat production : 0 ; etat essai : 64', () => {
     const b = banc();
@@ -561,6 +566,7 @@ describe('ops/commande-deploiement.sh : mode --auto (10.3, D-04)', () => {
   it('activer production : 0 ; activer essai : 64, current d’essai inchangé', (t) => {
     if (SANS_MV_T) return t.skip(RAISON_MV);
     const b = banc();
+    envoyerAuto(b, sha(1));
     deposer(b, 'production', sha(1));
     const r = auto(b, `activer production ${sha(1)}`);
     assert.equal(r.status, 0, r.stderr);
@@ -609,6 +615,89 @@ describe('ops/commande-deploiement.sh : mode --auto (10.3, D-04)', () => {
     const r = auto(b, `retour production ${sha(2)}`);
     assert.equal(r.status, 0, r.stderr);
     assert.equal(lien(b, 'production'), `releases/${sha(2)}`);
+  });
+
+  it('WR-01 : l’envoi note son sha dans .dernier-envoi-production, hors de incoming/ et de l’arbre servi', () => {
+    const b = banc();
+    envoyerAuto(b, sha(1));
+    assert.equal(fs.readFileSync(path.join(b.base, '.dernier-envoi-production'), 'utf8'), `${sha(1)}\n`);
+    envoyerAuto(b, sha(2));
+    assert.equal(fs.readFileSync(path.join(b.base, '.dernier-envoi-production'), 'utf8'), `${sha(2)}\n`);
+    assert.equal(fs.existsSync(path.join(b.base, 'releases')), false);
+  });
+
+  it('WR-01 : activer sans aucun envoi : 64, rien de rangé ni de basculé', () => {
+    const b = banc();
+    deposer(b, 'production', sha(1));
+    const r = auto(b, `activer production ${sha(1)}`);
+    assert.equal(r.status, 64);
+    assert.match(r.stderr, /dernier envoi/);
+    assert.equal(r.stdout, '');
+    assert.equal(lien(b, 'production'), null);
+    assert.ok(fs.existsSync(path.join(b.base, 'incoming', 'production', sha(1))), 'l’envoi n’est pas touché');
+  });
+
+  it('WR-01 : activer un sha autre que le dernier envoyé : 64, même déposé dans incoming/', () => {
+    const b = banc();
+    envoyerAuto(b, sha(2));
+    deposer(b, 'production', sha(1));
+    deposer(b, 'production', sha(2));
+    assert.equal(auto(b, `activer production ${sha(1)}`).status, 64);
+    assert.equal(lien(b, 'production'), null);
+  });
+
+  it('WR-01 : une version déjà rangée ne se rebascule pas par activer (64, current inchangé) ; le dernier envoi passe', (t) => {
+    if (SANS_MV_T) return t.skip(RAISON_MV);
+    const b = banc();
+    activer(b, 'production', sha(1));
+    activer(b, 'production', sha(2));
+    activer(b, 'production', sha(3));
+    envoyerAuto(b, sha(4));
+    for (const ancien of [sha(1), sha(2), sha(3)]) {
+      const r = auto(b, `activer production ${ancien}`);
+      assert.equal(r.status, 64, `activer ${ancien} : ${r.stderr}`);
+      assert.equal(lien(b, 'production'), `releases/${sha(3)}`);
+    }
+    const avant = historique(b, 'production').length;
+    deposer(b, 'production', sha(4));
+    const r = auto(b, `activer production ${sha(4)}`);
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(lien(b, 'production'), `releases/${sha(4)}`);
+    assert.equal(historique(b, 'production').length, avant + 1);
+    // Rejouer activer sur le dernier envoi, déjà courant : accepté, rien ne change.
+    const r2 = auto(b, `activer production ${sha(4)}`);
+    assert.equal(r2.status, 0, r2.stderr);
+    assert.equal(lien(b, 'production'), `releases/${sha(4)}`);
+    assert.equal(historique(b, 'production').length, avant + 1);
+    // Le retour reste limité à la précédente.
+    assert.equal(auto(b, `retour production ${sha(2)}`).status, 64);
+    assert.equal(auto(b, `retour production ${sha(3)}`).status, 0);
+    // Puis activer la version rangée sha(4) sans la renvoyer : accepté, car c'est encore le dernier envoi.
+    assert.equal(auto(b, `activer production ${sha(4)}`).status, 0);
+    assert.equal(lien(b, 'production'), `releases/${sha(4)}`);
+  });
+
+  it('WR-01 : un fichier .dernier-envoi-production illisible ou lien symbolique : 64', () => {
+    const b = banc();
+    deposer(b, 'production', sha(1));
+    fs.writeFileSync(path.join(b.base, '.dernier-envoi-production'), `${sha(1).toUpperCase()}\n`);
+    assert.equal(auto(b, `activer production ${sha(1)}`).status, 64);
+    const cible = path.join(b.base, 'ailleurs');
+    fs.writeFileSync(cible, `${sha(1)}\n`);
+    fs.rmSync(path.join(b.base, '.dernier-envoi-production'));
+    fs.symlinkSync(cible, path.join(b.base, '.dernier-envoi-production'));
+    assert.equal(auto(b, `activer production ${sha(1)}`).status, 64);
+    assert.equal(lien(b, 'production'), null);
+  });
+
+  it('WR-01 : sans --auto, activer une version déjà rangée reste accepté (comportement manuel inchangé)', (t) => {
+    if (SANS_MV_T) return t.skip(RAISON_MV);
+    const b = banc();
+    activer(b, 'production', sha(1));
+    activer(b, 'production', sha(2));
+    const r = lancer(b, `activer production ${sha(1)}`);
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(lien(b, 'production'), `releases/${sha(1)}`);
   });
 
   it('sha inconnu au retour : 64 (hors précédente)', (t) => {

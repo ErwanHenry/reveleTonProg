@@ -11,13 +11,18 @@
 # Mode --auto (10.3, D-04) : la clé de la tâche planifiée du Mac (sans phrase de passe) utilise la ligne
 #   restrict,command="/usr/local/sbin/rtp-deploy-command --auto" ssh-ed25519 ... rtp-deploy-auto
 # L'argument vient de authorized_keys (écrit par root), jamais du client. Il limite la commande à la production,
-# aux quatre verbes ci-dessous, et le retour à la version immédiatement précédente (sans sha, ou avec son sha).
+# aux quatre verbes ci-dessous, le retour à la version immédiatement précédente (sans sha, ou avec son sha), et
+# activer au seul sha du dernier envoi reçu pour la production (fichier $RTP_BASE/.dernier-envoi-production, écrit
+# par le verbe d'envoi) : une version déjà rangée ne peut pas être rebasculée par activer sans être renvoyée.
+# Portée réelle : la clé peut toujours envoyer puis activer un arbre dont version.json porte le sha demandé ; la
+# restriction est « production seulement, sans suppression, sans retour au-delà de la précédente ».
 # Tout autre premier argument, ou plus d'un argument, est refusé (64) avant toute lecture de SSH_ORIGINAL_COMMAND.
 # Le marqueur « rtp-capacite » de la deuxième ligne est lue par l'installateur avant d'écrire la ligne --auto.
 #
 # Verbes acceptés, tout le reste est refusé (code 64) :
 #   rsync --server <options> . <cible>/<sha>/   envoi dans incoming/<cible>/<sha>/ par rrsync -wo -no-del -munge
 #   activer <cible> <sha>                       vérifie l'envoi, le range dans releases/<sha>/, bascule current
+#                                               (en --auto : <sha> doit être celui du dernier envoi, sinon 64)
 #   retour <cible> [<sha>]                      rebascule current sur la version précédente (ou sur <sha>)
 #   etat <cible>                                version courante, nombre de versions, espace libre
 # <cible> : essai (racine $RTP_BASE/essai) ou production (racine $RTP_BASE).
@@ -27,6 +32,7 @@
 # résolve aussi dans le montage du conteneur Caddy), .historique en ajout seul (lignes « <ISO 8601 UTC> <sha> »).
 # Les envois arrivent dans $RTP_BASE/incoming/<cible>/<sha>/ : rsync n'écrit jamais dans l'arbre servi, seul
 # activer y range une version vérifiée. Verrou $RTP_BASE/.verrou (flock -w 20) autour de activer et retour.
+# Chaque envoi accepté note son sha dans $RTP_BASE/.dernier-envoi-<cible>, hors de incoming/ (rrsync n'y écrit pas).
 #
 # Sortie : une ligne sur stdout, lue par les workflows.
 #   active cible=<cible> courant=<sha> versions=<n>
@@ -86,6 +92,16 @@ echouer() { # code message
 
 exiger_production() { # mode --auto : production seulement
   [ "$AUTO" -eq 0 ] || [ "$1" = "production" ] || refuser "mode auto : production seulement"
+}
+
+exiger_dernier_envoi() { # mode --auto : activer seulement le sha du dernier envoi de la cible (WR-01)
+  [ "$AUTO" -eq 1 ] || return 0
+  local dernier=""
+  if [ -f "$BASE/.dernier-envoi-$CIBLE" ] && [ ! -L "$BASE/.dernier-envoi-$CIBLE" ]; then
+    IFS= read -r dernier <"$BASE/.dernier-envoi-$CIBLE" || true
+  fi
+  [[ $dernier =~ $RE_SHA ]] && [ "$dernier" = "$SHA" ] ||
+    refuser "mode auto : activer limité à la version du dernier envoi (un retour passe par retour)"
 }
 
 choisir_racine() {
@@ -216,6 +232,9 @@ verbe_envoi() {
   nettoyer_incoming
   garde_espace
   mkdir -p "$BASE/incoming/$CIBLE"
+  # Dernier envoi de la cible : seul sha que le mode --auto pourra activer (WR-01). Noté avant rrsync, qui remplace
+  # ce processus ; un envoi interrompu laisse un sha sans arbre, que activer refuse (65) s'il n'est pas déjà rangé.
+  printf '%s\n' "$SHA" >"$BASE/.dernier-envoi-$CIBLE" || echouer 1 "dernier envoi impossible à noter"
   journal envoi "$CIBLE" "$SHA" 0
   # rrsync relit SSH_ORIGINAL_COMMAND et enferme l'écriture dans incoming/ (écriture seule, sans suppression).
   # -munge (rrsync de rsync 3.2.x) fait ajouter --munge-links côté serveur : un lien symbolique reçu est préfixé
@@ -318,6 +337,7 @@ case "${t[0]}" in
     choisir_racine "${t[1]}"
     [[ ${t[2]} =~ $RE_SHA ]] || refuser "sha invalide"
     SHA=${t[2]}
+    exiger_dernier_envoi
     VERBE=activer
     verrouiller
     nettoyer_incoming
