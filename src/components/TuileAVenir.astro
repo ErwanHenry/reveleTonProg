@@ -1,0 +1,17 @@
+---
+// Thème connu du corpus mais pas encore publié (P-05, U-09), lu dans `corpus.themesAVenir` ; accueil seulement.
+// Tuile pleine et lisible, sans lien, sans couleur de thème, sans badge : seul le nom sort.
+interface Props {
+  theme: { id: string; nom: string };
+  /** Rang dans la liste rendue (après les tuiles publiées), calculé par la page. */
+  rang: number;
+}
+
+const { theme, rang } = Astro.props;
+const numero = String(rang).padStart(2, '0');
+---
+<li class="tuile-avenir">
+  <span class="tuile-num" aria-hidden="true">{numero}</span>
+  <p class="tuile-avenir-nom">{theme.nom}</p>
+  <p class="tuile-avenir-etat">Publié après relecture</p>
+</li>
