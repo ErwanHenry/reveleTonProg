@@ -14,6 +14,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, rmSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { lireYamlPlafonne } from '../../../src/lib/content-core/yaml-plafonne.ts';
+import { lireLigneResultat } from '../deploiement/auto.ts';
 import { evaluerGelAuto } from '../deploiement/gel-auto.ts';
 import { prendreVerrou, VerrouPris } from '../ci-local.ts';
 import { lireCheminsHorsSite, siteTouche, verifierRecu } from '../deploiement/gardes.ts';
@@ -108,7 +109,7 @@ export async function versionEnLigne(d: DependancesAuto, mode: 'a_blanc' | 'publ
   if (mode === 'a_blanc') return { ok: true, courant: dernierCommitEnLigne(d.home, 'production') };
   const r = d.executer(d.node, ['scripts/deploy-auto.ts', 'etat'], { cwd: worktree, timeoutMs: 600_000, env: envDeBase() });
   const sortie = `${r.stdout}\n${r.stderr}`;
-  const resultat = [...sortie.matchAll(LIGNE_RESULTAT)].pop()?.[1];
+  const resultat = lireLigneResultat(sortie)?.resultat;
   if (resultat === 'etat_lu') {
     const courant = /^courant=([0-9a-f]{40}|aucun)(?: |$)/m.exec(sortie)?.[1];
     if (courant === undefined) return { ok: false, code: 'deploiement_refuse' };
@@ -563,20 +564,14 @@ function termine(p: Passage, code: CodeAuto, sortie: 0 | 3, sha: string | null, 
 }
 
 /**
- * Ligne `resultat=` de deploy:auto, au format réel : `resultat=<code>` (lecture d'état) ou `resultat=<code> sha=<12 hex>`
- * (déploiement, scripts/lib/deploiement/auto.ts). Ancrée en début et en fin de ligne : rien d'autre n'est accepté.
- */
-export const LIGNE_RESULTAT = /^resultat=(\w+)(?: sha=[0-9a-f]{12})?$/gm;
-
-/**
  * Dernière ligne `resultat=` de deploy:auto ; tout autre texte devient un refus (aucune confiance dans le reste).
  * Double contrôle par le code de sortie, dans le seul sens prudent : une issue de succès (code de sortie 0 attendu,
  * `publie` ou `deja_en_ligne`) annoncée avec un autre code de sortie devient un refus, qui garde la phase
  * `pousse_non_deploye` et fait relire la version en ligne au passage suivant. Une issue d'échec est toujours crue.
  */
 export function lireResultat(sortie: string, status: number | null = null): string {
-  const tous = [...sortie.matchAll(LIGNE_RESULTAT)];
-  const dernier = tous[tous.length - 1]?.[1] ?? '';
+  // Contrat unique avec scripts/lib/deploiement/auto.ts : même analyseur que l'écriture (aller-retour testé là-bas).
+  const dernier = lireLigneResultat(sortie)?.resultat ?? '';
   if (!Object.hasOwn(SUITE_DEPLOIEMENT, dernier)) return 'deploiement_refuse';
   if (status !== null && (dernier === 'publie' || dernier === 'deja_en_ligne') && status !== 0) return 'deploiement_refuse';
   return dernier;

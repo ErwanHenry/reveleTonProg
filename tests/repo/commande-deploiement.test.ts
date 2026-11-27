@@ -724,8 +724,8 @@ describe('ops/commande-deploiement.sh : mode --auto (10.3, D-04)', () => {
     lancer(b, 'etat production');
     const lignes = fs.readFileSync(b.sortieLogger, 'utf8').split('\n').filter((l) => l !== '');
     assert.equal(lignes.length, 2);
-    assert.match(lignes[0], /"auto":true/);
-    assert.match(lignes[1], /"auto":false/);
+    assert.match(lignes[0] ?? '', /"auto":true/);
+    assert.match(lignes[1] ?? '', /"auto":false/);
   });
 
   it('sans argument : toujours accepté sur essai (comportement inchangé)', () => {

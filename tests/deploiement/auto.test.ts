@@ -229,7 +229,9 @@ function recu(sha: string, etat: 'ok' | 'rouge' | 'partiel' = 'ok'): Recu {
   };
   return r;
 }
-const recuVert = (b: Banc, sha = b.S): void => ecrireRecu(b.home, recu(sha));
+const recuVert = (b: Banc, sha = b.S): void => {
+  ecrireRecu(b.home, recu(sha));
+};
 
 function distDe(s: string): string {
   const d = temp('rtp-dist-auto-');
