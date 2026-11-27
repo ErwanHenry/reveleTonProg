@@ -1031,6 +1031,8 @@ Tant que le marqueur `~/.config/rtp/auto-actif` est absent, le passage s'arrête
 
 `--reprendre` efface la marque « jeu traité » et fait retraiter le jeu courant, quel que soit l'état non transitoire : repos après un passage à blanc, arrêt définitif (`ci_rouge`, `controle_rouge`, `doute_agent` et les autres codes non transitoires du tableau) ou état `retenu`. Seule exception : un commit poussé mais non déployé (`pousse_non_deploye`) garde la priorité ; sa mise en ligne est reprise d'abord, sans nouveau commit, et l'option n'y change rien. L'automate ne touche jamais un texte de mesure, une source citée ni `archives/`.
 
+Frontière de confiance (IN-04) : l'automate exécute le code de `origin/main` (import, `ci:local`, validation, `deploy:auto`) dans son worktree dédié, sous le compte d'Erwan, avec la clé de déploiement automatique, la configuration de l'agent et le moyen de push à portée dans `~/.config/rtp/`. Tout commit sur `main`, quelle que soit la session qui le pousse, est donc du code de confiance, exécuté au passage suivant. Mesures en place : une seule personne pousse sur `main` ; clé restreinte côté serveur par `--auto` ; push en avance rapide seulement, sans forçage ; agents sans outil ; alerte à chaque publication ; interrupteur d'arrêt. Risque accepté : un commit erroné ou malveillant sur `main` agirait avec ces moyens ; la protection de `main` côté GitHub (avance rapide seulement, auteurs limités) reste à envisager.
+
 Commandes : `npm run veille -- auto [--reprendre] [--sans-alerte] [--sonde-agent] [--sonde-push]`, `npm run veille -- etat`, `npm run deploy:auto -- etat` (lecture) ; `npm run deploy:auto -- deployer <sha>` n'est appelé que par l'automate. Codes de sortie de `auto` : 0 (passage terminé sans arrêt), 3 (arrêt avec alerte, voir le tableau), 1 (exception inattendue, alerte `controle_rouge`), 2 (usage ou configuration locale invalide). Les sondes impriment des lignes fixes : `agent : ok` ou `agent : ko`, `push : ok` ou `push : ko`.
 
 ### Codes et alertes
@@ -1086,6 +1088,8 @@ Faite par la session principale, jamais par l'exécuteur de la phase. Avant chaq
 
 Après un échec de mise en ligne d'un commit déjà poussé, la garde `main_non_deploye` bloque l'automate : faire d'abord la mise en ligne manuelle `deploy:local`.
 
+Ne jamais réinstaller un script serveur sans le marqueur `# rtp-capacite: auto-v1` tant qu'une ligne `--auto` existe dans `authorized_keys` ; l'installateur le refuse et `--verifier` le signale.
+
 ### Interrupteur d'arrêt
 
 `touch ~/.cache/rtp/veille/auto-desactive` arrête tout passage avant toute action, sans alerte. Retirer le fichier pour reprendre. Retirer `~/.config/rtp/auto-actif` ramène au mode à blanc.
@@ -1098,6 +1102,8 @@ Après un échec de mise en ligne d'un commit déjà poussé, la garde `main_non
 4. Supprimer `~/.config/rtp/rtp-deploy-auto`, `~/.config/rtp/rtp-deploy-auto.pub`, `deploiement-auto.env`, `push-auto.env` et `agent-claude.env`.
 5. Révoquer le moyen de push sur GitHub et le jeton de l'agent (depuis le compte, pour celui de `claude setup-token`).
 6. L'automate reste désactivé par l'interrupteur. Pour arrêter aussi la veille : `npm run veille -- retirer`, puis `launchctl print gui/$(id -u)/fr.reveletonprog.veille` pour vérifier qu'elle n'est plus chargée.
+
+Tant que la ligne `--auto` n'a pas disparu d'`authorized_keys` (étape 3), ne jamais réinstaller un script serveur sans le marqueur `# rtp-capacite: auto-v1` ; l'installateur le refuse et `--verifier` le signale.
 
 ### Pannes
 
