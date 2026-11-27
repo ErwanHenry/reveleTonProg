@@ -30,7 +30,7 @@ import type { ClassementVeille, Mouvement } from './classer.ts';
 import { CODES_TRANSITOIRES } from './codes-auto.ts';
 import type { CodeArret, CodeAuto } from './codes-auto.ts';
 import { ajouterBoite, envoyerAlerteAuto, texteAlerteAuto, viderBoite } from './alertes-auto.ts';
-import { ecrireEtatAuto, lireEtatAuto } from './etat-auto.ts';
+import { ecrireEtatAuto, ecrireReportsVerrou, lireEtatAuto, lireReportsVerrou } from './etat-auto.ts';
 import type { EtatAuto } from './etat-auto.ts';
 import { ligneAmont } from './decider.ts';
 import { dossierVerrou, ecrirePrive, lireEtat } from './etat.ts';
@@ -629,6 +629,42 @@ async function reprendreDeploiement(p: Passage, gel: { gele: boolean; motif: str
   return deployer(p, sha);
 }
 
+function nettoyerIntention(p: Passage): void {
+  p.etat.phase = 'repos';
+  p.etat.sha = null;
+  p.etat.empreinteEnCours = null;
+}
+
+/**
+ * Intention `poussee_en_cours` laissée par un passage interrompu entre l'écriture de l'intention et celle de
+ * `pousse_non_deploye` (WR-09). Commit présent sur origin/main (égal ou ancêtre de sa tête) : reprise comme
+ * `pousse_non_deploye` ; sinon intention nettoyée et passage normal. Réseau coupé : intention gardée, `hors_ligne`.
+ * Renvoie un résultat seulement si le passage s'arrête là.
+ */
+async function resoudreIntention(p: Passage): Promise<ResultatAuto | null> {
+  const { d, etat } = p;
+  if (etat.phase !== 'poussee_en_cours') return null;
+  const sha = etat.sha;
+  if (sha === null || !SHA40.test(sha)) {
+    nettoyerIntention(p);
+    return null;
+  }
+  const git = (args: string[]): number | null => d.executer('git', args, { cwd: d.depot, timeoutMs: 120_000 }).status;
+  if (git(['fetch', '--quiet', 'origin']) !== 0) {
+    await alerter(p, { code: 'hors_ligne', empreinte: etat.empreinteEnCours, comptes: etat.comptes, sha, rapport: etat.rapport, fiches: etat.fiches, mode: 'publier' });
+    return termine(p, 'hors_ligne', 3, sha, etat.rapport);
+  }
+  if (git(['merge-base', '--is-ancestor', sha, 'origin/main']) === 0) {
+    d.journal(`auto : intention de poussée retrouvée sur origin/main (${sha.slice(0, 12)}) : reprise du déploiement`);
+    etat.phase = 'pousse_non_deploye';
+  } else {
+    d.journal(`auto : intention de poussée non suivie d'effet (${sha.slice(0, 12)}) : nettoyée`);
+    nettoyerIntention(p);
+  }
+  sauver(p, etat.dernierCode ?? 'rien_a_faire');
+  return null;
+}
+
 /** Historique d'origin/main réécrit : le commit à reprendre n'existe plus, plus aucune tentative avant `--reprendre`. */
 async function refuserReprise(p: Passage, sha: string): Promise<ResultatAuto> {
   p.etat.phase = 'retenu';
@@ -642,32 +678,54 @@ export async function executerPassageAuto(d: DependancesAuto, o: OptionsAuto = {
   const chemins = cheminsAuto(d.home, d.dossier);
   const empreinteVeille = (): string | null => lireEtat(d.dossier).derniereEmpreinte;
 
-  // (1) Interrupteur : avant toute action, sans alerte.
+  // (1) Interrupteur : avant toute action, sans alerte. L'état n'est écrit que sous le verrou (WR-09).
   if (calcul.mode === 'desactive') {
-    const e = lireEtatAuto(d.dossier);
-    const p0: Passage = { d, o, etat: e, mode: 'a_blanc', chemins };
     d.journal(`auto : desactive (${calcul.raison})`);
-    sauver(p0, 'desactive');
+    let rendre0: (() => void) | null = null;
+    try {
+      rendre0 = prendreVerrou(dossierVerrou(d.dossier), (m) => d.journal(m));
+    } catch (e) {
+      if (!(e instanceof VerrouPris)) throw e;
+    }
+    if (rendre0 !== null) {
+      try {
+        sauver({ d, o, etat: lireEtatAuto(d.dossier), mode: 'a_blanc', chemins }, 'desactive');
+      } finally {
+        rendre0();
+      }
+    }
     return { code: 'desactive', sortie: 0, sha: null, rapport: null };
   }
   const mode: 'a_blanc' | 'publier' = calcul.mode;
 
-  // (2) Verrou de la veille : un seul passage à la fois.
+  // (2) Verrou de la veille : un seul passage à la fois. Un passage bloqué ne touche jamais etat-auto.json (WR-09) :
+  // il compte ses reports dans un fichier séparé et alerte une fois, au troisième report d'affilée.
   let rendre: () => void;
   try {
     rendre = prendreVerrou(dossierVerrou(d.dossier), (m) => d.journal(m));
   } catch (e) {
     if (!(e instanceof VerrouPris)) throw e;
-    const pv: Passage = { d, o, etat: lireEtatAuto(d.dossier), mode, chemins };
-    pv.etat.reportsVerrou += 1;
-    if (pv.etat.reportsVerrou >= REPORTS_VERROU_ALERTE) await alerter(pv, { code: 'verrou_pris', empreinte: empreinteVeille() });
-    return termine(pv, 'verrou_pris', 3, null, null);
+    const reports = lireReportsVerrou(d.dossier) + 1;
+    ecrireReportsVerrou(d.dossier, reports);
+    d.journal(`auto : verrou_pris (${modeLisible(mode)}), report ${reports}`);
+    if (reports === REPORTS_VERROU_ALERTE && o.sansAlerte !== true) {
+      const texte = texteAlerteAuto({ code: 'verrou_pris', mode, comptes: null, sha: null, rapport: null, fiches: [], home: d.home });
+      try {
+        await envoyerAlerteAuto(texte, { executer: d.executer, fetch: d.fetch, sansAlerte: false });
+      } catch {
+        d.journal('auto : alerte verrou_pris non envoyée');
+      }
+    }
+    return { code: 'verrou_pris', sortie: 3, sha: null, rapport: null };
   }
   const p: Passage = { d, o, etat: lireEtatAuto(d.dossier), mode, chemins };
   try {
-    p.etat.reportsVerrou = 0;
+    ecrireReportsVerrou(d.dossier, 0);
     // (3) Boîte d'envoi : les alertes en attente partent en premier.
     await vider(p);
+    // (3 bis) Intention de poussée laissée par un passage interrompu (WR-09) : résolue avant tout le reste.
+    const resolution = await resoudreIntention(p);
+    if (resolution !== null) return resolution;
     // (4) --reprendre : fait retraiter le jeu courant quel que soit l'état non transitoire (repos après un passage à
     // blanc ou après un arrêt définitif, état retenu) en effaçant l'empreinte traitée. Un commit poussé mais non
     // déployé garde la priorité : sa reprise de mise en ligne passe d'abord, l'option n'y change rien.
@@ -724,17 +782,24 @@ export async function executerPassageAuto(d: DependancesAuto, o: OptionsAuto = {
       await alerter(p, { ...base, code: 'config_absente' });
       return termine(p, 'config_absente', 3, prep.sha, prep.rapport);
     }
-    const issue = pousserAvanceRapide({ worktree: chemins.worktree, sha: prep.sha, destination: moyen.destination, env: moyen.env, configGit: moyen.configGit, executer: d.executer });
-    if (issue !== 'pousse') {
-      await alerter(p, { ...base, code: issue });
-      return termine(p, issue, 3, prep.sha, prep.rapport);
-    }
-    p.etat.phase = 'pousse_non_deploye';
+    // Intention écrite AVANT la poussée (WR-09) : un arrêt brutal entre la poussée et l'écriture de
+    // `pousse_non_deploye` laisse une trace que le passage suivant résout contre origin/main.
+    p.etat.phase = 'poussee_en_cours';
     p.etat.sha = prep.sha;
     p.etat.empreinteEnCours = prep.empreinte;
     p.etat.fiches = prep.fiches;
     p.etat.comptes = prep.comptes;
     p.etat.rapport = prep.rapport;
+    sauver(p, p.etat.dernierCode ?? 'rien_a_faire');
+    const issue = pousserAvanceRapide({ worktree: chemins.worktree, sha: prep.sha, destination: moyen.destination, env: moyen.env, configGit: moyen.configGit, executer: d.executer });
+    if (issue !== 'pousse') {
+      // Refus certain (main a avancé) : intention nettoyée. Échec ambigu (réseau, autre erreur) : la poussée a pu
+      // aboutir côté distant, l'intention reste et le passage suivant la résout.
+      if (issue === 'main_a_avance') nettoyerIntention(p);
+      await alerter(p, { ...base, code: issue });
+      return termine(p, issue, 3, prep.sha, prep.rapport);
+    }
+    p.etat.phase = 'pousse_non_deploye';
     sauver(p, p.etat.dernierCode ?? 'rien_a_faire');
     return await deployer(p, prep.sha);
   } catch (e) {

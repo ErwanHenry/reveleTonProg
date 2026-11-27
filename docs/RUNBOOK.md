@@ -1101,6 +1101,7 @@ Après un échec de mise en ligne d'un commit déjà poussé, la garde `main_non
 - `hors_ligne` : reprise seule au passage suivant.
 - `verrou_pris` : un `ci:local` ou un `deploy:local` manuel est en cours ; attendre sa fin.
 - `main_a_avance` : rien à faire, nouvel essai au passage suivant.
+- Phase `poussee_en_cours` (lue par `npm run veille -- etat`) : intention écrite avant chaque push, avec le commit ; un passage interrompu (Mac en veille, arrêt brutal) la laisse en place et le passage suivant la résout seul : commit présent sur `origin/main`, reprise de la mise en ligne comme `pousse_non_deploye` ; commit absent, intention nettoyée. Un passage bloqué par le verrou n'écrit jamais l'état de l'automate : il compte ses reports à part et alerte au troisième.
 - `pousse_non_deploye` qui dure : `npm run veille -- etat` et `npm run deploy:auto -- etat`, puis mise en ligne manuelle si besoin.
 - `retenu` après une fumée en échec : examiner la version en ligne, puis `npm run veille -- auto --reprendre`.
 - Arrêt définitif (`ci_rouge`, `controle_rouge`, `doute_agent`, par exemple après un e2e instable ou un `npm ci` en échec réseau) : corriger la cause, puis `npm run veille -- auto --reprendre` fait retraiter le jeu courant.

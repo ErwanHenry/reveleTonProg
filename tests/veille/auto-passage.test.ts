@@ -14,7 +14,7 @@ import type { DependancesAuto, OptionsAuto } from '../../scripts/lib/veille/auto
 import { LIBELLES } from '../../scripts/lib/veille/alertes-auto.ts';
 import { CODES_ARRET, CODES_ISSUE } from '../../scripts/lib/veille/codes-auto.ts';
 import type { CodeAuto } from '../../scripts/lib/veille/codes-auto.ts';
-import { ETAT_AUTO_VIDE, ecrireEtatAuto, lireEtatAuto } from '../../scripts/lib/veille/etat-auto.ts';
+import { ETAT_AUTO_VIDE, cheminEtatAuto, ecrireEtatAuto, lireEtatAuto, lireReportsVerrou } from '../../scripts/lib/veille/etat-auto.ts';
 import { dossierVerrou } from '../../scripts/lib/veille/etat.ts';
 import { cheminsAuto } from '../../scripts/lib/veille/mode-auto.ts';
 import type { TexteSource } from '../../scripts/lib/veille/sources-texte.ts';
@@ -282,7 +282,7 @@ describe('passage : verrou, boîte d\'envoi, répétitions', () => {
     for (let i = 1; i <= 3; i++) {
       const r = await passer(m);
       assert.equal(r.code, 'verrou_pris');
-      assert.equal(lireEtatAuto(m.dossier).reportsVerrou, i);
+      assert.equal(lireReportsVerrou(m.dossier), i);
       assert.equal(alertes(m).length, i < 3 ? 0 : 1, `alertes après le report ${i}`);
     }
     assert.equal(m.appels().filter((a) => a.commande === 'git').length, 0, 'aucune action git tant que le verrou est tenu');
@@ -290,7 +290,7 @@ describe('passage : verrou, boîte d\'envoi, répétitions', () => {
     rmSync(verrou, { recursive: true, force: true });
     const r = await passer(m);
     assert.equal(r.code, 'rien_a_faire');
-    assert.equal(lireEtatAuto(m.dossier).reportsVerrou, 0);
+    assert.equal(lireReportsVerrou(m.dossier), 0);
   });
 
   it('Telegram en échec : l\'alerte va en boîte, puis part en premier au passage suivant', async () => {
@@ -482,6 +482,81 @@ describe('déploiement : retenue, reprise, état pousse_non_deploye', () => {
     const r = await passer(m, deps);
     assert.equal(r.code, 'deploiement_refuse');
     assert.equal(lireEtatAuto(m.dossier).phase, 'pousse_non_deploye');
+  });
+});
+
+describe('intention de poussée et état sous verrou (WR-09)', () => {
+  it('l\'intention poussee_en_cours est écrite avec le sha avant la poussée', async () => {
+    const m = avecPersonne({ marqueurActif: true });
+    const vu: { phase: string; sha: string | null }[] = [];
+    const base = m.deps.executer;
+    const { deps } = scripter(m, {}, {
+      executer: (c, a, o) => {
+        if (c === 'git' && a.includes('push')) {
+          const e = lireEtatAuto(m.dossier);
+          vu.push({ phase: e.phase, sha: e.sha });
+        }
+        return base(c, a, o);
+      },
+    });
+    const r = await passer(m, deps);
+    assert.equal(r.code, 'publie', JSON.stringify(r));
+    assert.equal(vu.length, 1);
+    assert.equal(vu[0]?.phase, 'poussee_en_cours');
+    assert.equal(vu[0]?.sha, r.sha);
+  });
+
+  it('arrêt brutal après une poussée réussie : le passage suivant reprend comme pousse_non_deploye et publie', async () => {
+    const m = monde({ marqueurActif: true });
+    const sha = m.shaOrigine();
+    ecrireEtatAuto(m.dossier, { ...ETAT_AUTO_VIDE, phase: 'poussee_en_cours', sha, empreinteEnCours: m.empreinte, fiches: ['jeanne-duval'], comptes: '1 entrée' });
+    const { deps, suivi } = scripter(m, { courant: parent(m) });
+    const r = await passer(m, deps);
+    assert.equal(r.code, 'publie', JSON.stringify(r));
+    assert.equal(suivi.deployer.length, 1);
+    assert.equal(suivi.deployer[0]?.sha, sha);
+    assert.equal(suivi.deployer[0]?.phase, 'pousse_non_deploye', 'intention résolue et écrite avant le déploiement');
+    assert.equal(lireEtatAuto(m.dossier).empreinteTraitee, m.empreinte);
+  });
+
+  it('intention non suivie d\'effet (commit absent d\'origin/main) : nettoyée, passage normal, rien déployé', async () => {
+    const m = monde({ marqueurActif: true });
+    ecrireEtatAuto(m.dossier, { ...ETAT_AUTO_VIDE, phase: 'poussee_en_cours', sha: 'f'.repeat(40), empreinteEnCours: m.empreinte });
+    const { deps, suivi } = scripter(m);
+    const r = await passer(m, deps);
+    assert.equal(r.code, 'rien_a_faire', JSON.stringify(r));
+    assert.equal(suivi.deployer.length, 0);
+    const e = lireEtatAuto(m.dossier);
+    assert.equal(e.phase, 'repos');
+    assert.equal(e.sha, null);
+    assert.equal(e.empreinteEnCours, null);
+  });
+
+  it('poussée en échec ambigu (réseau) : intention gardée, résolue au passage suivant qui publie', async () => {
+    const m = avecPersonne({ marqueurActif: true });
+    const s1 = scripter(m, {}, { executer: poussee(m, 128, 'fatal: Could not resolve host: exemple.invalid') });
+    const r1 = await passer(m, s1.deps);
+    assert.equal(r1.code, 'hors_ligne', JSON.stringify(r1));
+    assert.equal(lireEtatAuto(m.dossier).phase, 'poussee_en_cours');
+    const s2 = scripter(m);
+    const r2 = await passer(m, s2.deps);
+    assert.equal(r2.code, 'publie', JSON.stringify(r2));
+    assert.equal(s2.suivi.deployer.length, 1);
+  });
+
+  it('passage bloqué par le verrou : etat-auto.json n\'est jamais réécrit', async () => {
+    const m = monde({ marqueurActif: true });
+    semerPousse(m, m.shaOrigine());
+    const avant = readFileSync(cheminEtatAuto(m.dossier), 'utf8');
+    const verrou = dossierVerrou(m.dossier);
+    mkdirSync(verrou, { recursive: true });
+    writeFileSync(path.join(verrou, 'pid'), `${process.pid}\n`);
+    for (let i = 0; i < 3; i++) assert.equal((await passer(m)).code, 'verrou_pris');
+    assert.equal(readFileSync(cheminEtatAuto(m.dossier), 'utf8'), avant, 'état du détenteur intact');
+    writeFileSync(cheminsAuto(m.home, m.dossier).desactive, 'stop\n');
+    assert.equal((await passer(m)).code, 'desactive');
+    assert.equal(readFileSync(cheminEtatAuto(m.dossier), 'utf8'), avant, 'interrupteur sous verrou tenu : aucune écriture');
+    rmSync(verrou, { recursive: true, force: true });
   });
 });
 

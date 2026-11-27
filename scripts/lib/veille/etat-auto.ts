@@ -9,14 +9,17 @@ import { ID_CANDIDAT } from './identite.ts';
 
 export interface EtatAuto {
   version: 1;
-  phase: 'repos' | 'pousse_non_deploye' | 'retenu';
+  /**
+   * `poussee_en_cours` (WR-09, revue 10.3) : intention écrite AVANT la poussée, avec le sha ; le passage suivant la
+   * résout (commit présent sur origin/main : reprise comme `pousse_non_deploye` ; sinon intention nettoyée).
+   */
+  phase: 'repos' | 'poussee_en_cours' | 'pousse_non_deploye' | 'retenu';
   sha: string | null;
   empreinteTraitee: string | null;
   empreinteEnCours: string | null;
   dernierCode: CodeAuto | null;
   dernierPassage: string | null;
   derniereAlerte: { code: CodeAuto; empreinte: string | null } | null;
-  reportsVerrou: number;
   boite: string[];
   perdues: number;
   fiches: string[];
@@ -33,7 +36,6 @@ export const ETAT_AUTO_VIDE: EtatAuto = {
   dernierCode: null,
   dernierPassage: null,
   derniereAlerte: null,
-  reportsVerrou: 0,
   boite: [],
   perdues: 0,
   fiches: [],
@@ -58,7 +60,7 @@ export function lireEtatAuto(dossier: string): EtatAuto {
     return { ...ETAT_AUTO_VIDE };
   }
   if (j.version !== 1) return { ...ETAT_AUTO_VIDE };
-  const phase = j.phase === 'pousse_non_deploye' || j.phase === 'retenu' ? j.phase : 'repos';
+  const phase = j.phase === 'poussee_en_cours' || j.phase === 'pousse_non_deploye' || j.phase === 'retenu' ? j.phase : 'repos';
   const da = j.derniereAlerte as { code?: unknown; empreinte?: unknown } | null | undefined;
   return {
     version: 1,
@@ -69,7 +71,6 @@ export function lireEtatAuto(dossier: string): EtatAuto {
     dernierCode: estCodeAuto(j.dernierCode) ? j.dernierCode : null,
     dernierPassage: texte(j.dernierPassage, 40),
     derniereAlerte: da !== null && da !== undefined && typeof da === 'object' && estCodeAuto(da.code) ? { code: da.code, empreinte: sha64(da.empreinte) } : null,
-    reportsVerrou: entier(j.reportsVerrou),
     boite: Array.isArray(j.boite) ? j.boite.filter((t): t is string => typeof t === 'string' && t.length <= 2000) : [],
     perdues: entier(j.perdues),
     fiches: Array.isArray(j.fiches) ? j.fiches.filter((f): f is string => typeof f === 'string' && ID_CANDIDAT.test(f)) : [],
@@ -78,8 +79,29 @@ export function lireEtatAuto(dossier: string): EtatAuto {
   };
 }
 
+/** À n'appeler que sous le verrou de l'automate (WR-09) : un passage bloqué par le verrou n'écrit jamais cet état. */
 export function ecrireEtatAuto(dossier: string, etat: EtatAuto): void {
   ecrirePrive(cheminEtatAuto(dossier), `${JSON.stringify(etat, null, 2)}\n`);
+}
+
+/**
+ * Compteur des passages reportés faute de verrou (WR-09) : fichier séparé, seul écrit par un passage qui ne tient pas
+ * le verrou, pour ne jamais réécrire etat-auto.json (et écraser un `pousse_non_deploye` écrit par le détenteur).
+ * Remis à zéro par le passage qui tient le verrou.
+ */
+export const cheminReportsVerrou = (dossier: string): string => path.join(dossier, 'reports-verrou-auto.json');
+
+export function lireReportsVerrou(dossier: string): number {
+  try {
+    const j: unknown = JSON.parse(readFileSync(cheminReportsVerrou(dossier), 'utf8'));
+    return typeof j === 'object' && j !== null ? entier((j as Record<string, unknown>).reports) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+export function ecrireReportsVerrou(dossier: string, reports: number): void {
+  ecrirePrive(cheminReportsVerrou(dossier), `${JSON.stringify({ reports })}\n`);
 }
 
 /** Lignes d'affichage : aucune valeur de secret, aucun chemin de configuration. */
