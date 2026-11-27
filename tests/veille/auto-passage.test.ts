@@ -32,7 +32,9 @@ const statutReel = (): string => git(REPO_ROOT, ['status', '--porcelain']);
 const PHRASE = "Cette page officielle présente la personne et sa démarche pour l'élection présidentielle de deux mille vingt-sept.";
 const URL_S = 'https://exemple.test/s';
 const URL_C = 'https://jeanne2027.example/';
-const texte = (url: string): TexteSource => ({ ok: true, url, texte: `Titre de la page. ${PHRASE} Fin du texte.`, tronque: false });
+// WR-04 : le nom de famille de la personne vérifiée figure dans la source (personnes fictives seulement).
+const NOMS_PAGE = 'Page de Jeanne Duval ; mention de Essai Fictif.';
+const texte = (url: string): TexteSource => ({ ok: true, url, texte: `Titre de la page. ${NOMS_PAGE} ${PHRASE} Fin du texte.`, tronque: false });
 const TEXTES: Record<string, TexteSource> = { [URL_S]: texte(URL_S), [URL_C]: texte(URL_C) };
 const CONFIRME = { stdout: sortieAgent('confirme', PHRASE) };
 

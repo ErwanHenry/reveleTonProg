@@ -82,7 +82,6 @@ class Arret extends Error {
 }
 
 const DATE_JOUR = /^\d{4}-\d{2}-\d{2}$/;
-const SEPARATEUR_TEXTES = '\n\n=====\n\n';
 const MIN = 60_000;
 
 const dateParis = (t: Date): string => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit' }).format(t);
@@ -304,17 +303,21 @@ async function executerPassage(
     throw new Arret('config_absente', "configuration de l'agent absente ou refusée");
   }
 
-  // (7) Statuts : deux agents par statut, sur le texte de la source récupéré par le code.
-  const aVerifier: { m: Mouvement; code: CodeStatut; nom: string; fiche: string }[] = [];
+  // (7) Statuts : deux agents par statut, sur le texte de la source récupéré par le code. Le nom de famille de la fiche
+  // (ligne écrite par règles fixes, ou ligne existante de la table) doit figurer dans la source (WR-04).
+  const tableAvant = lireCorrespondances(lireYamlPlafonne(readFileSync(path.join(wt, 'data', 'import', 'correspondances.yaml'), 'utf8'), 'correspondances.yaml'));
+  const aVerifier: { m: Mouvement; code: CodeStatut; nom: string; nomFamille: string; fiche: string }[] = [];
   for (const m of mouvements) {
     const code = codeSansMotif(m.apres);
     if (!Object.hasOwn(LIBELLES_CODE, code)) throw new Arret('controle_rouge', `code de statut amont inattendu : ${code}`);
-    aVerifier.push({ m, code: code as CodeStatut, nom: ligneAmont(octets, m.idAmont).nom, fiche: ficheDe(m.idAmont, m.id) });
+    const nomFamille = lignes.find((l) => l.idAmont === m.idAmont)?.entree.nom ?? (Object.hasOwn(tableAvant, m.idAmont) ? tableAvant[m.idAmont]?.nom : undefined);
+    if (nomFamille === undefined || nomFamille === '') throw new Arret('controle_rouge', 'nom de famille introuvable pour un statut à vérifier', ficheValide(ficheDe(m.idAmont, m.id)));
+    aVerifier.push({ m, code: code as CodeStatut, nom: ligneAmont(octets, m.idAmont).nom, nomFamille, fiche: ficheDe(m.idAmont, m.id) });
   }
   for (const v of aVerifier) {
     const t = await d.recupererTexte(v.m.url);
     if (!t.ok) throw new Arret('source_inaccessible', `source du statut inaccessible (${t.echec})`, ficheValide(v.fiche));
-    const q: QuestionAgent = { genre: 'statut', personne: v.nom, code: v.code, date: v.m.date };
+    const q: QuestionAgent = { genre: 'statut', personne: v.nom, code: v.code, date: v.m.date, nomFamille: v.nomFamille };
     const res = await verifierAvecDeuxAgents({ cfg, question: q, texte: t.texte, lancer: d.lancer });
     j.coutUsd += res.coutUsd;
     j.verdicts.push(resumeVerdict(v.nom, `statut ${v.code} au ${v.m.date}`, res));
@@ -353,7 +356,8 @@ async function executerPassage(
       textes.push(t.texte);
       if (!urls[id].includes(t.url)) urls[id].push(t.url);
     }
-    const res = await verifierAvecDeuxAgents({ cfg, question: { genre: 'programme', personne: l.nom }, texte: textes.join(SEPARATEUR_TEXTES), lancer: d.lancer });
+    // Une part du budget de texte par source (WR-03) ; constat d'absence : appréciation des agents sur les pages lues.
+    const res = await verifierAvecDeuxAgents({ cfg, question: { genre: 'programme', personne: l.nom }, texte: textes, lancer: d.lancer });
     j.coutUsd += res.coutUsd;
     j.verdicts.push(resumeVerdict(l.nom, 'programme non publié', res));
     if (!res.ok) throw new Arret(res.raison === 'infirme' ? 'programme_signale' : 'doute_agent', `constat de programme non confirmé (${res.raison})`, ficheValide(id));

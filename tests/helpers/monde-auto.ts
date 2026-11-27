@@ -197,8 +197,8 @@ function gabarit(): string {
 const sha256 = (b: Buffer | string): string => createHash('sha256').update(b).digest('hex');
 
 /** Sortie JSON de claude pour un verdict (forme `structured_output`, lue par lireSortieAgent). */
-export function sortieAgent(verdict: 'confirme' | 'infirme' | 'insuffisant', citation: string, cout = 0.01): string {
-  return JSON.stringify({ type: 'result', is_error: false, total_cost_usd: cout, structured_output: { verdict, citation: verdict === 'insuffisant' ? '' : citation, date_page: null } });
+export function sortieAgent(verdict: 'confirme' | 'infirme' | 'insuffisant', citation: string, cout = 0.01, datePage: string | null = null): string {
+  return JSON.stringify({ type: 'result', is_error: false, total_cost_usd: cout, structured_output: { verdict, citation: verdict === 'insuffisant' ? '' : citation, date_page: datePage } });
 }
 
 export function creerMondeAuto(o: OptionsMonde = {}): MondeAuto {
