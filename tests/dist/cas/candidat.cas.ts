@@ -251,7 +251,8 @@ export default function candidat(ctx: ContexteSite): void {
         trouver(arbre, (n) => n.tag === 'li' && n.attrs['data-theme'] !== undefined && aClasse(n, 'tuile')).map((x) => x.attrs['data-theme']),
         ['logement', 'climat'],
       );
-      assert.equal(lien(arbre, 'Voir tous les candidats').attrs.href, '/candidats/');
+      // P-12 (10.2) : libellé avec le nombre calculé, vérifié en détail par accueil.cas.ts.
+      assert.equal(lien(arbre, /^Voir les \d+ candidats$/).attrs.href, '/candidats/');
       assert.ok(!/Données fictives|à des fins de test/.test(html), 'plus de chaîne du squelette');
     });
 
