@@ -66,7 +66,8 @@ export function verifierPerimetre(racine: string, executer: Executer): { ok: tru
       if (fichier === CORRESPONDANCES && signe === '-') noter('correspondances_existantes', fichier);
       if (/\btexte_source:/.test(corps)) noter('texte_source', fichier);
       if (gabarit && signe === '+') {
-        if (/[–—]/.test(corps)) noter('tiret', fichier);
+        // Tirets long et moyen écrits par échappements : la règle projet les interdit dans le dépôt (IN-02).
+        if (/[\u2013\u2014]/.test(corps)) noter('tiret', fichier);
         if (motsInterdits(corps, { exempterCitations: false }).length > 0) noter('mot_interdit', fichier);
       }
     }
