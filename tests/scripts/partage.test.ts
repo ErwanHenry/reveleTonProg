@@ -112,7 +112,7 @@ describe('scripts/partage.html', () => {
     assert.equal(ALT_PARTAGE, PROMESSE_PARTAGE);
   });
 
-  it('n\'emploie que des couleurs du site (valeurs lues dans base.css, aucune couleur écrite en dur)', () => {
+  it('n\'emploie que les couleurs figées de l\'image (charte v1), aucune couleur écrite en dur dans partage.html', () => {
     assert.ok(!/#[0-9a-f]{3,8}\b/i.test(html));
     assert.ok(!/rgb|hsl/i.test(html));
   });

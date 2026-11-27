@@ -42,15 +42,18 @@ const valeurRoot = (prop: string): string | undefined =>
     .flatMap((r) => r.declarations)
     .find((d) => d.prop === prop)?.valeur;
 
+// Contrat 10.2 (UI-SPEC §4.1) : palette de la charte D, valeurs en majuscules ; --bord-fort sort de la liste.
 const JETONS_COULEUR: Record<string, string> = {
-  '--fond': '#FAFAF8',
+  '--fond': '#FFFFFF',
   '--carte': '#FFFFFF',
-  '--panneau': '#F0EEE9',
-  '--encre': '#1F2328',
-  '--encre-douce': '#4D535B',
-  '--vide': '#575C63',
-  '--bord-fort': '#6B7078',
-  '--bord-carte': '#8A8F96',
+  '--panneau': '#F3F5FC',
+  '--encre': '#161A2B',
+  '--encre-douce': '#3B4263',
+  '--vide': '#3B4263',
+  '--bord-carte': '#7C83A3',
+  '--nuit': '#101C4C',
+  '--lien-fort': '#16308F',
+  '--rouge': '#C1121F',
 };
 
 const JETONS_TYPE: Record<string, string> = {
@@ -488,6 +491,242 @@ describe('styles : grille M1-08 09.1, cartes à leur hauteur', () => {
     const base = regles.filter((r) => r.fichier === 'base.css' && r.selecteur === '.signalement-intro').flatMap((r) => r.declarations);
     assert.deepEqual(base.map((d) => d.prop), ['font-size']);
     assert.equal(valeur('.pied .signalement-intro', 'margin'), '0 0 1rem');
-    assert.equal(valeur('.pied .signalement-intro', 'color'), 'var(--encre)');
+    assert.equal(valeur('.pied .signalement-intro', 'color'), 'var(--carte)');
+  });
+});
+
+describe('charte 10.2 : jetons et interdits', () => {
+  it('(f) la pile des titres est une pile de polices système', () => {
+    assert.equal(valeurRoot('--police-titres'), '"Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif');
+  });
+
+  it('(g) les trois rayons sont des jetons', () => {
+    assert.equal(valeurRoot('--rayon-carte'), '0.875rem');
+    assert.equal(valeurRoot('--rayon-bloc'), '0.625rem');
+    assert.equal(valeurRoot('--rayon-pastille'), '1.5rem');
+  });
+
+  it('--bord-fort et --picto-fond ne sont ni définis ni employés', () => {
+    assert.equal(valeurRoot('--bord-fort'), undefined);
+    assert.equal(valeurRoot('--picto-fond'), undefined);
+    for (const { fichier, texte } of sourcesCss) {
+      assert.ok(!/--bord-fort|--picto-fond/.test(texte), `${fichier} cite un jeton supprimé`);
+    }
+  });
+
+  it('(d) aucune casse forcée, aucun dégradé linéaire, aucune police ni ressource externe', () => {
+    for (const { fichier, texte } of sourcesCss) {
+      for (const interdit of [/text-transform:\s*uppercase/, /small-caps/, /linear-gradient/, /@font-face/, /url\(/, /@import/]) {
+        assert.ok(!interdit.test(texte), `${fichier} : ${interdit}`);
+      }
+      assert.ok(!/letter-spacing:\s*\+?(?:0?\.\d*[1-9]|[1-9])/.test(texte), `${fichier} : letter-spacing positif`);
+    }
+  });
+
+  it('(h) aucune couleur en dur hors :root et [data-theme], sauf le voile de la définition', () => {
+    for (const r of regles) {
+      if (r.selecteur === ':root' || r.selecteur.startsWith('[data-theme=')) continue;
+      for (const d of r.declarations) {
+        if (r.selecteur === '.definition::backdrop' && d.prop === 'background') {
+          assert.equal(d.valeur, 'rgba(22, 26, 43, 0.4)');
+          continue;
+        }
+        assert.ok(!/#[0-9a-f]{3,8}\b|rgba?\(/i.test(d.valeur), `${r.fichier} ${r.selecteur} { ${d.prop}: ${d.valeur} }`);
+      }
+    }
+  });
+});
+
+describe('charte 10.2 : titres et rouge', () => {
+  const R1 = 'main h2:not(.section-titre)::after';
+  const parSel = (sel: string): Regle | undefined => regles.find((r) => r.selecteur === sel);
+
+  it('(a) le rouge n\'a que trois emplois : R-1, R-2, R-3', () => {
+    const emplois = new Set(regles.filter((r) => r.declarations.some((d) => /var\(--rouge\)/.test(d.valeur))).map((r) => r.selecteur));
+    assert.deepEqual([...emplois].sort(), [R1, '.site-sous-titre', ':where(.hall-candidats, .hall-methode) a'].sort());
+  });
+
+  it('(b) le rouge ne touche ni mesure, ni carte, ni statut, ni titre de section ; filet R-1 exact', () => {
+    for (const r of regles) {
+      if (!r.declarations.some((d) => /var\(--rouge\)/.test(d.valeur))) continue;
+      const sel = r.selecteur.replace(/:not\(\.section-titre\)/g, '');
+      for (const interdit of ['.cellule', '.mesure', '.statut', '.ligne', '.vide', '.badge', '.pied', 'h1', '.section-titre']) {
+        assert.ok(!sel.includes(interdit), `${r.selecteur} emploie le rouge avec ${interdit}`);
+      }
+    }
+    const r1 = parSel(R1);
+    assert.ok(r1, 'règle R-1 absente');
+    assert.equal(decl(r1, 'content'), '""');
+    assert.equal(decl(r1, 'position'), 'absolute');
+    assert.equal(decl(r1, 'inline-size'), '4rem');
+    assert.equal(decl(r1, 'block-size'), '0.25rem');
+    assert.equal(decl(r1, 'inset-block-start'), 'calc(100% + 0.25rem)');
+    assert.equal(decl(r1, 'inset-inline-start'), '0');
+    assert.equal(decl(r1, 'background'), 'var(--rouge)');
+    assert.equal(decl(parSel('main h2:not(.section-titre)'), 'position'), 'relative');
+  });
+
+  it('(c) la police des titres va aux h1 et h2 seulement', () => {
+    assert.equal(decl(parSel('h1, h2'), 'font-family'), 'var(--police-titres)');
+    for (const r of regles) {
+      if (r.selecteur === ':root' || !r.declarations.some((d) => /--police-titres/.test(d.valeur))) continue;
+      for (const s of r.selecteur.split(/\s*,\s*/)) {
+        assert.ok(!/(^|[\s>])(h3|h4)$|\.mesure-titre/.test(s), `${s} reçoit la police des titres`);
+      }
+    }
+  });
+
+  it('(d) aucune couleur de texte à la couleur du thème (T-05)', () => {
+    for (const r of regles) {
+      for (const d of r.declarations) {
+        if (d.prop === 'color') assert.notEqual(d.valeur, 'var(--theme)', `${r.selecteur} { color: var(--theme) }`);
+      }
+    }
+  });
+
+  it('(e) en-tête et tuiles de la charte D', () => {
+    assert.equal(decl(parSel('.entete'), 'border-bottom'), '3px solid var(--nuit)');
+    const t = parSel('.tuile');
+    assert.equal(decl(t, 'border'), '2px solid var(--nuit)');
+    assert.equal(decl(t, 'border-radius'), 'var(--rayon-carte)');
+    assert.equal(decl(t, 'border-inline-start'), '8px solid var(--theme)');
+    assert.equal(decl(parSel('.tuile-lien'), 'font-size'), 'var(--t-titre)');
+  });
+});
+
+describe('charte 10.2 : contrôles et cartes', () => {
+  const premiere = (fichier: string, sel: string): Regle | undefined => regles.find((r) => r.fichier === fichier && r.selecteur === sel);
+  const parSel = (sel: string): Regle | undefined => regles.find((r) => r.fichier === 'base.css' && r.selecteur === sel);
+
+  it('(1) pastilles de niveau et d\'ordre : cadre, rayon, état choisi, jamais nowrap', () => {
+    for (const [fichier, base, choisi] of [
+      ['niveaux.css', '.niveau label', '.niveau input:checked + label'],
+      ['ordre.css', '.ordre-option label', '.ordre-option input:checked + label'],
+    ] as const) {
+      const p = premiere(fichier, base);
+      assert.equal(decl(p, 'border'), '2px solid var(--nuit)', base);
+      assert.equal(decl(p, 'border-radius'), 'var(--rayon-pastille)', base);
+      assert.equal(decl(p, 'color'), 'var(--nuit)', base);
+      assert.equal(decl(p, 'min-height'), '2.75rem', base);
+      const c = premiere(fichier, choisi);
+      assert.equal(decl(c, 'background'), 'var(--nuit)', choisi);
+      assert.equal(decl(c, 'border-color'), 'var(--nuit)', choisi);
+      assert.equal(decl(c, 'color'), 'var(--carte)', choisi);
+      for (const r of regles.filter((x) => x.fichier === fichier && x.selecteur.includes('label'))) {
+        assert.ok(!r.declarations.some((d) => d.prop === 'white-space' && d.valeur === 'nowrap'), `${r.selecteur} : nowrap`);
+      }
+    }
+  });
+
+  it('(2) .cellule : cadre unique sans couleur de thème ni état (règle 4)', () => {
+    const c = parSel('.cellule');
+    assert.equal(decl(c, 'border'), '2px solid var(--nuit)');
+    assert.equal(decl(c, 'border-radius'), 'var(--rayon-carte)');
+    assert.ok(!c?.declarations.some((d) => d.prop === 'border-top'), 'border-top sur .cellule');
+    assert.ok(!c?.declarations.some((d) => d.valeur.includes('var(--theme)')), 'var(--theme) sur .cellule');
+    for (const r of regles) {
+      if (!/\.cellule|\.vide/.test(r.selecteur)) continue;
+      assert.ok(!/data-etat|data-statut-relecture/.test(r.selecteur), `${r.selecteur} dépend de l'état`);
+    }
+  });
+
+  it('(3) nom du candidat en empattements', () => {
+    assert.equal(decl(parSel('.cellule-nom'), 'font-family'), 'var(--police-titres)');
+  });
+
+  it('(4) .vide sans boîte et hors forced-colors', () => {
+    const v = parSel('.vide');
+    assert.equal(decl(v, 'background'), 'none');
+    assert.equal(decl(v, 'border'), '0');
+    assert.equal(decl(v, 'padding'), '0');
+    assert.equal(decl(v, 'color'), 'var(--vide)');
+    assert.ok(!regles.some((r) => r.selecteur.split(/\s*,\s*/).includes('.vide') && decl(r, 'border') === '1px solid CanvasText'));
+  });
+
+  it('(5) « Ce qui me concerne » cadré', () => {
+    const r = premiere('niveaux.css', '.concerne-liste li');
+    const props = r?.declarations.map((d) => d.prop) ?? [];
+    assert.equal(decl(r, 'border'), '2px solid var(--nuit)');
+    assert.ok(props.indexOf('border') < props.indexOf('border-inline-start'));
+    assert.equal(decl(r, 'border-inline-start'), '8px solid var(--theme)');
+    assert.equal(decl(r, 'border-radius'), 'var(--rayon-bloc)');
+  });
+});
+
+describe('charte 10.2 : contenu sourcé et pied', () => {
+  const sel = (fichier: string, s: string): Regle | undefined => regles.find((r) => r.fichier === fichier && r.selecteur === s);
+  const props = (r: Regle | undefined): string[] => r?.declarations.map((d) => d.prop) ?? [];
+
+  it('(1) .mesure-titre : taille du corps, sans police propre, jamais rouge', () => {
+    const r = sel('base.css', '.mesure-titre');
+    assert.equal(decl(r, 'font-size'), 'var(--t-corps)');
+    assert.ok(!props(r).includes('font-family'));
+    assert.ok(!r?.declarations.some((d) => d.valeur.includes('--rouge')));
+  });
+
+  it('(2) .relecture en encre, graisse 600', () => {
+    const r = sel('base.css', '.relecture');
+    assert.equal(decl(r, 'color'), 'var(--encre)');
+    assert.equal(decl(r, 'font-weight'), '600');
+  });
+
+  it('(3) .source : encadré teinté à filet gauche, liens forts gras', () => {
+    const r = sel('base.css', '.source');
+    assert.equal(decl(r, 'background'), 'var(--panneau)');
+    assert.equal(decl(r, 'border-inline-start'), '4px solid var(--nuit)');
+    assert.equal(decl(r, 'border-radius'), 'var(--rayon-bloc)');
+    assert.equal(decl(r, 'padding'), '1rem');
+    assert.equal(decl(r, 'color'), 'var(--encre)');
+    assert.ok(!props(r).includes('border-top'));
+    const a = sel('base.css', '.source a');
+    assert.equal(decl(a, 'color'), 'var(--lien-fort)');
+    assert.equal(decl(a, 'font-weight'), '600');
+    assert.equal(decl(a, 'min-height'), '2.75rem');
+    assert.ok(regles.some((x) => x.fichier === 'base.css' && x.selecteur.split(/\s*,\s*/).includes('.source') && decl(x, 'border') === '1px solid CanvasText'));
+  });
+
+  it('(4) .statut : filet gauche, rayon, sans max-width', () => {
+    const r = sel('pages.css', '.statut');
+    const p = props(r);
+    assert.equal(decl(r, 'border'), '0');
+    assert.ok(p.indexOf('border') < p.indexOf('border-inline-start'));
+    assert.equal(decl(r, 'border-inline-start'), '4px solid var(--nuit)');
+    assert.equal(decl(r, 'border-radius'), 'var(--rayon-bloc)');
+    assert.ok(!p.includes('max-width'));
+  });
+
+  it('(5) encadrés repliables : cadre 2 px, rayon, jamais overflow hidden', () => {
+    for (const [fichier, d, interieur] of [['base.css', 'details.renonce', 'details.renonce ul'], ['enfant.css', 'details.mots-expliques', 'details.mots-expliques dl']] as const) {
+      const r = sel(fichier, d);
+      assert.equal(decl(r, 'border'), '2px solid var(--nuit)', d);
+      assert.equal(decl(r, 'border-radius'), 'var(--rayon-bloc)', d);
+      assert.equal(decl(sel(fichier, interieur), 'border-radius'), '0 0 0.5rem 0.5rem', interieur);
+    }
+    for (const r of regles.filter((x) => /details\./.test(x.selecteur))) {
+      assert.ok(!r.declarations.some((x) => x.prop === 'overflow' && x.valeur === 'hidden'), r.selecteur);
+    }
+  });
+
+  it('(6) .pied bleu nuit, texte blanc, liens blancs gras, focus blanc', () => {
+    const r = sel('base.css', '.pied');
+    assert.equal(decl(r, 'background'), 'var(--nuit)');
+    assert.equal(decl(r, 'color'), 'var(--carte)');
+    assert.equal(decl(r, 'border-top'), '0');
+    const a = sel('base.css', '.pied a');
+    assert.equal(decl(a, 'color'), 'var(--carte)');
+    assert.equal(decl(a, 'font-weight'), '600');
+    const f = sel('base.css', '.pied :focus-visible');
+    assert.equal(decl(f, 'outline-color'), 'var(--carte)');
+    assert.equal(decl(f, 'box-shadow'), '0 0 0 2px var(--nuit)');
+  });
+
+  it('(7) toute ombre portée est une règle de focus', () => {
+    for (const r of regles) {
+      if (r.declarations.some((d) => d.prop === 'box-shadow')) assert.ok(r.selecteur.includes('focus'), r.selecteur);
+    }
+  });
+
+  it('(8) .lignes : filet haut de 2 px bleu nuit', () => {
+    assert.equal(decl(sel('pages.css', '.lignes'), 'border-top'), '2px solid var(--nuit)');
   });
 });
