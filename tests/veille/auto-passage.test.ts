@@ -7,8 +7,9 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { RESULTATS_DEPLOIEMENT_AUTO } from '../../scripts/lib/deploiement/auto.ts';
-import { executerPassageAuto, SUITE_DEPLOIEMENT } from '../../scripts/lib/veille/auto.ts';
+import { CODES_SORTIE_AUTO, RESULTATS_DEPLOIEMENT_AUTO } from '../../scripts/lib/deploiement/auto.ts';
+import type { ResultatAuto as ResultatDeploiement } from '../../scripts/lib/deploiement/auto.ts';
+import { executerPassageAuto, lireResultat, SUITE_DEPLOIEMENT } from '../../scripts/lib/veille/auto.ts';
 import type { DependancesAuto, OptionsAuto } from '../../scripts/lib/veille/auto.ts';
 import { LIBELLES } from '../../scripts/lib/veille/alertes-auto.ts';
 import { CODES_ARRET, CODES_ISSUE } from '../../scripts/lib/veille/codes-auto.ts';
@@ -90,6 +91,18 @@ interface Suivi {
   deployer: { sha: string; phase: string }[];
   etat: number;
 }
+/**
+ * Format réel de `deploy-auto deployer` (CR-01, revue 10.3) : la dernière ligne est `resultat=<code> sha=<12 hex>`
+ * (scripts/lib/deploiement/auto.ts). Une ligne scriptée `resultat=<code>` nue reçoit le suffixe du commit déployé ;
+ * une ligne déjà suffixée est gardée telle quelle.
+ */
+const formatReel = (lignes: string[], sha: string): string[] => lignes.map((l) => (/^resultat=\w+$/.test(l) ? `${l} sha=${sha.slice(0, 12)}` : l));
+/** Code de sortie réel de deploy-auto pour la dernière ligne `resultat=` (1 pour un résultat inconnu, comme le repli). */
+const statusDe = (lignes: string[]): number => {
+  const r = /^resultat=(\w+)(?: sha=[0-9a-f]{12})?$/.exec(lignes[lignes.length - 1] ?? '')?.[1] ?? '';
+  return Object.hasOwn(CODES_SORTIE_AUTO, r) ? CODES_SORTIE_AUTO[r as ResultatDeploiement] : 1;
+};
+
 /** Dépendances du monde avec deploy:auto scripté ; relève l'état de l'automate au moment de chaque déploiement. */
 function scripter(m: MondeAuto, s: Scripts = {}, surcharge: Partial<DependancesAuto> = {}): { deps: DependancesAuto; suivi: Suivi } {
   const base = m.deps.executer;
@@ -103,12 +116,12 @@ function scripter(m: MondeAuto, s: Scripts = {}, surcharge: Partial<DependancesA
         let lignes: string[];
         if (a[1] === 'deployer') {
           suivi.deployer.push({ sha: a[2] ?? '', phase: lireEtatAuto(m.dossier).phase });
-          lignes = choisir(s.deployer ?? [['resultat=publie']], suivi.deployer.length - 1);
+          lignes = formatReel(choisir(s.deployer ?? [['resultat=publie']], suivi.deployer.length - 1), a[2] ?? '');
         } else {
           lignes = choisir(s.etat ?? [[`courant=${s.courant ?? m.shaOrigine()} restreint=oui`, 'resultat=etat_lu']], suivi.etat);
           suivi.etat++;
         }
-        return { status: 0, stdout: `${lignes.join('\n')}\n`, stderr: '' };
+        return { status: statusDe(lignes), stdout: `${lignes.join('\n')}\n`, stderr: '' };
       }
       return surcharge.executer !== undefined ? surcharge.executer(c, a, o) : base(c, a, o);
     },
@@ -470,6 +483,52 @@ describe('déploiement : retenue, reprise, état pousse_non_deploye', () => {
     assert.equal(r.code, 'deploiement_refuse');
     assert.equal(lireEtatAuto(m.dossier).phase, 'pousse_non_deploye');
   });
+});
+
+describe('contrat de la ligne resultat= de deploy:auto (CR-01)', () => {
+  const SHA12 = '0123456789ab';
+  it('lireResultat lit le format réel, avec ou sans suffixe sha, et refuse le reste', () => {
+    assert.equal(lireResultat(`resultat=publie sha=${SHA12}\n`, 0), 'publie');
+    assert.equal(lireResultat('resultat=etat_lu\n', 0), 'deploiement_refuse', 'etat_lu n\'est pas une issue de déploiement');
+    assert.equal(lireResultat('resultat=hors_ligne\n', 9), 'hors_ligne');
+    assert.equal(lireResultat(`du texte\nresultat=hors_ligne sha=${SHA12}\nresultat=smoke_echec_retour_ko sha=${SHA12}\n`, 5), 'smoke_echec_retour_ko', 'la dernière ligne compte');
+    assert.equal(lireResultat(`resultat=smoke_echec_retour_ok sha=${SHA12}`, 4), 'smoke_echec_retour_ok');
+    assert.equal(lireResultat(`resultat=publie sha=${SHA12} reste`, 0), 'deploiement_refuse', 'texte après le sha');
+    assert.equal(lireResultat('resultat=publie sha=0123', 0), 'deploiement_refuse', 'sha tronqué');
+    assert.equal(lireResultat(`  resultat=publie sha=${SHA12}`, 0), 'deploiement_refuse', 'ligne non ancrée');
+    assert.equal(lireResultat(`resultat=publie sha=${SHA12}`, 1), 'deploiement_refuse', 'succès annoncé avec un code de sortie d\'échec');
+    assert.equal(lireResultat(`resultat=smoke_echec_retour_ko sha=${SHA12}`, 0), 'smoke_echec_retour_ko', 'un échec annoncé est toujours cru');
+  });
+
+  const cas: [string, string, 'repos' | 'retenu', 0 | 3][] = [
+    [`resultat=publie sha=${SHA12}`, 'publie', 'repos', 0],
+    [`resultat=smoke_echec_retour_ko sha=${SHA12}`, 'smoke_echec_retour_ko', 'retenu', 3],
+    [`resultat=smoke_echec_retour_ok sha=${SHA12}`, 'smoke_echec_retour_ok', 'retenu', 3],
+  ];
+  for (const [ligne, code, phase, sortie] of cas) {
+    it(`deploy-auto écrit « ${ligne.replace(SHA12, '<12>')} » : ${code}, phase ${phase}, alerte au libellé de ${code}`, async () => {
+      const m = monde({ marqueurActif: true });
+      const sha = m.shaOrigine();
+      semerPousse(m, sha);
+      const { deps, suivi } = scripter(m, { courant: parent(m), deployer: [['déploiement en cours', ligne.replace(SHA12, sha.slice(0, 12))]] });
+      const r = await passer(m, deps);
+      assert.equal(r.code, code, JSON.stringify(r));
+      assert.equal(r.sortie, sortie);
+      assert.equal(lireEtatAuto(m.dossier).phase, phase);
+      assert.equal(suivi.deployer.length, 1);
+      const a = alertes(m);
+      assert.equal(a.length, 1);
+      assert.equal((a[0] as string).split('\n')[0], `Mise à jour autonome : ${LIBELLES[code as CodeAuto]}`);
+      assert.match(a[0] as string, new RegExp(`^code : ${code}$`, 'm'));
+      if (phase === 'retenu') {
+        // Aucune nouvelle tentative au passage suivant : la version cassée n'est jamais tenue pour publiée.
+        const r2 = await passer(m, deps);
+        assert.notEqual(r2.code, 'deja_en_ligne');
+        assert.equal(suivi.deployer.length, 1);
+        assert.equal(lireEtatAuto(m.dossier).empreinteTraitee, null, 'le jeu n\'est pas marqué traité');
+      }
+    });
+  }
 });
 
 describe('table des codes après commit et garde-fous du code', () => {

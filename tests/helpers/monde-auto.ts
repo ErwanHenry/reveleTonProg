@@ -212,7 +212,7 @@ export function creerMondeAuto(o: OptionsMonde = {}): MondeAuto {
     }
     if (commande === nodeReel && (args[0] ?? '').endsWith('scripts/deploy-auto.ts')) {
       const lignes = scripts.length > 1 ? (scripts.shift() as string[]) : (scripts[0] ?? [`courant=${shaOrigine()} restreint=oui`, 'resultat=etat_lu']);
-      const resultat = (/^resultat=(\w+)$/.exec(lignes[lignes.length - 1] ?? '')?.[1] ?? 'deploiement_refuse') as ResultatAuto;
+      const resultat = (/^resultat=(\w+)(?: sha=[0-9a-f]{12})?$/.exec(lignes[lignes.length - 1] ?? '')?.[1] ?? 'deploiement_refuse') as ResultatAuto;
       return { status: CODES_SORTIE_AUTO[resultat] ?? 1, stdout: `${lignes.join('\n')}\n`, stderr: '' };
     }
     const r = spawnSync(commande, args, {
