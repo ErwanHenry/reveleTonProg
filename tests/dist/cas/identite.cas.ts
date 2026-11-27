@@ -8,6 +8,7 @@ import fs from 'node:fs';
 import { aClasse, analyserHtml, texte, trouver } from '../../../scripts/lib/html.ts';
 import type { Noeud } from '../../../scripts/lib/html.ts';
 import * as identite from '../../../src/lib/identite.ts';
+import { initiales } from '../../../src/lib/initiales.ts';
 import { motsInterdits } from '../../../src/lib/content-core/rules/text/forbidden.ts';
 import { materialiserCorpusM1 } from '../../helpers/corpus-m1.ts';
 import type { ContexteSite } from '../contexte.ts';
@@ -58,7 +59,15 @@ export default function identiteSite(ctx: ContexteSite): void {
         assert.equal(nom.length, 1, `${r} : un seul a.site-nom`);
         const a = nom[0] as Noeud;
         assert.equal(a.attrs.href, '/', `${r} : lien vers l'accueil`);
-        assert.equal(txt(a), chaine('NOM_SITE'), `${r} : texte du lien d'accueil`);
+        // Le logo (P-06) est décoratif : il est mis à part, comme pour un lecteur d'écran. Le nom du lien reste exact.
+        assert.equal(norm(texte(a, (n) => aClasse(n, 'logo'))), chaine('NOM_SITE'), `${r} : texte du lien d'accueil hors logo`);
+        const premierEl = elements(a)[0] as Noeud | undefined;
+        assert.ok(premierEl && premierEl.tag === 'span' && aClasse(premierEl, 'logo'), `${r} : span.logo premier enfant du lien`);
+        assert.equal(premierEl.attrs['aria-hidden'], 'true', `${r} : logo décoratif`);
+        const logos = trouver(arbre, (n) => aClasse(n, 'logo'));
+        assert.equal(logos.length, 1, `${r} : exactement un .logo`);
+        const og = trouver(arbre, (n) => n.tag === 'meta' && n.attrs.property === 'og:site_name')[0];
+        assert.equal(txt(premierEl), initiales(String(og?.attrs.content)), `${r} : lettre du logo = initiales(og:site_name)`);
         const freres = elements(a.parent as Noeud);
         const suivant = freres[freres.indexOf(a) + 1];
         assert.ok(suivant && suivant.tag === 'p' && aClasse(suivant, 'site-sous-titre'), `${r} : p.site-sous-titre suit le nom`);
@@ -71,6 +80,14 @@ export default function identiteSite(ctx: ContexteSite): void {
         assert.ok(premier.tag === 'p' && aClasse(premier, 'pied-identite'), `${r} : p.pied-identite en tête du pied`);
         assert.equal(txt(premier), chaine('LIGNE_IDENTITE'), `${r} : texte de la ligne d'identité`);
       }
+    });
+
+    it('logo : initiale calculée depuis INITIALE_SITE, jamais écrite dans le gabarit', () => {
+      const base = fs.readFileSync(path.join(ctx.repoRoot, 'src/layouts/Base.astro'), 'utf8');
+      assert.ok(!/class="logo"[^>]*>\s*[A-ZÀ-Ý]\s*</.test(base), 'lettre du logo écrite en dur dans Base.astro');
+      assert.ok(base.includes('{INITIALE_SITE}'), 'Base.astro doit afficher {INITIALE_SITE}');
+      const id = fs.readFileSync(path.join(ctx.repoRoot, 'src/lib/identite.ts'), 'utf8');
+      assert.ok(!id.includes("INITIALE_SITE = '"), 'INITIALE_SITE écrit en littéral');
     });
 
     it('titres et og:site_name : le nom du site, jamais l\'ancien quand il diffère', () => {
