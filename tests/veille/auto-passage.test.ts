@@ -485,6 +485,49 @@ describe('déploiement : retenue, reprise, état pousse_non_deploye', () => {
   });
 });
 
+describe('--reprendre fait retraiter le jeu courant (CR-02)', () => {
+  it('à blanc, puis marqueur auto-actif, puis --reprendre : publié', async () => {
+    const m = avecPersonne();
+    const avant = m.shaOrigine();
+    const { deps, suivi } = scripter(m);
+    const r1 = await passer(m, deps);
+    assert.equal(r1.code, 'pret_a_blanc', JSON.stringify(r1));
+    assert.equal(lireEtatAuto(m.dossier).empreinteTraitee, m.empreinte);
+    writeFileSync(cheminsAuto(m.home, m.dossier).actif, 'actif\n', { mode: 0o600 });
+    const r2 = await passer(m, deps);
+    assert.equal(r2.code, 'rien_a_faire', 'sans --reprendre, le jeu vu à blanc reste traité');
+    const r3 = await passer(m, deps, { reprendre: true });
+    assert.equal(r3.code, 'publie', JSON.stringify(r3));
+    assert.notEqual(m.shaOrigine(), avant);
+    assert.equal(suivi.deployer.length, 1);
+    const e = lireEtatAuto(m.dossier);
+    assert.equal(e.phase, 'repos');
+    assert.equal(e.empreinteTraitee, m.empreinte);
+  });
+
+  it('arrêt définitif (doute des agents) puis --reprendre : le jeu est retraité', async () => {
+    const m = avecPersonne({ scenariosClaude: [{ stdout: sortieAgent('insuffisant', '') }, CONFIRME] });
+    const r1 = await passer(m);
+    assert.equal(r1.code, 'doute_agent', JSON.stringify(r1));
+    assert.equal((await passer(m)).code, 'rien_a_faire', 'arrêt définitif : jeu traité');
+    const r3 = await passer(m, m.deps, { reprendre: true });
+    assert.equal(r3.code, 'pret_a_blanc', JSON.stringify(r3));
+    assert.equal(alertes(m).length, 2, 'doute_agent puis pret_a_blanc');
+  });
+
+  it('commit poussé non déployé : --reprendre laisse passer la reprise de mise en ligne d\'abord', async () => {
+    const m = monde({ marqueurActif: true });
+    const sha = m.shaOrigine();
+    semerPousse(m, sha);
+    const { deps, suivi } = scripter(m, { courant: parent(m) });
+    const r = await passer(m, deps, { reprendre: true });
+    assert.equal(r.code, 'publie', JSON.stringify(r));
+    assert.equal(suivi.deployer.length, 1);
+    assert.equal(suivi.deployer[0]?.sha, sha, 'le commit en attente est celui qui est mis en ligne');
+    assert.equal(lireEtatAuto(m.dossier).empreinteTraitee, m.empreinte);
+  });
+});
+
 describe('contrat de la ligne resultat= de deploy:auto (CR-01)', () => {
   const SHA12 = '0123456789ab';
   it('lireResultat lit le format réel, avec ou sans suffixe sha, et refuse le reste', () => {

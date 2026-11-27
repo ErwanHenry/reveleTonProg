@@ -630,9 +630,14 @@ export async function executerPassageAuto(d: DependancesAuto, o: OptionsAuto = {
     p.etat.reportsVerrou = 0;
     // (3) Boîte d'envoi : les alertes en attente partent en premier.
     await vider(p);
-    // (4) --reprendre : sort de l'état retenu et fait retraiter le jeu.
-    if (o.reprendre === true && p.etat.phase === 'retenu') {
+    // (4) --reprendre : fait retraiter le jeu courant quel que soit l'état non transitoire (repos après un passage à
+    // blanc ou après un arrêt définitif, état retenu) en effaçant l'empreinte traitée. Un commit poussé mais non
+    // déployé garde la priorité : sa reprise de mise en ligne passe d'abord, l'option n'y change rien.
+    if (o.reprendre === true && p.etat.phase !== 'pousse_non_deploye') {
+      d.journal(`auto : --reprendre (phase ${p.etat.phase}) : le jeu courant sera retraité`);
       p.etat.phase = 'repos';
+      p.etat.sha = null;
+      p.etat.empreinteEnCours = null;
       p.etat.empreinteTraitee = null;
       p.etat.derniereAlerte = null;
     }
