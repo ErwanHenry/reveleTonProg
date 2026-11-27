@@ -8,6 +8,7 @@ import { lireCouverture } from '../../scripts/lib/couverture.ts';
 import {
   NOTE_GABARIT,
   RELECTEUR_AGENT,
+  CasesNonVerifiees,
   ecartsCouverture,
   ecrireCasesManquantes,
   ecrireCorrespondances,
@@ -33,6 +34,8 @@ function copie(): string {
   return racine;
 }
 const lire = (racine: string, rel: string): string => readFileSync(path.join(racine, rel), 'utf8');
+/** Personne examinée par les deux agents dans le passage simulé (WR-05). */
+const VERIFIE: ReadonlySet<string> = new Set(['jean-dupont']);
 
 function ficheFictive(statut: string, date: string, relu: boolean): string {
   return [
@@ -190,7 +193,7 @@ describe('cases des thèmes pilotes', () => {
     ajouterFiche(racine);
     const dir = path.join(racine, 'src/content/couverture');
     const avant = new Map(readdirSync(dir).map((f) => [f, readFileSync(path.join(dir, f), 'utf8')]));
-    const ecrites = ecrireCasesManquantes(racine, '2026-11-26');
+    const ecrites = ecrireCasesManquantes(racine, '2026-11-26', VERIFIE);
     assert.equal(ecrites.length, avant.size);
     assert.ok(ecrites.every((e) => e.candidat === 'jean-dupont'));
     for (const [f, ancien] of avant) {
@@ -199,7 +202,18 @@ describe('cases des thèmes pilotes', () => {
       assert.ok(nouveau.includes(bloc), f);
       assert.equal(nouveau.replace(bloc, ''), ancien, f);
     }
-    assert.deepEqual(ecrireCasesManquantes(racine, '2026-11-26'), []);
+    assert.deepEqual(ecrireCasesManquantes(racine, '2026-11-26', VERIFIE), []);
+  });
+
+  it('WR-05 : une case manquante pour une personne non examinée par les deux agents arrête tout, sans rien écrire', () => {
+    const racine = copie();
+    ajouterFiche(racine);
+    const dir = path.join(racine, 'src/content/couverture');
+    const avant = new Map(readdirSync(dir).map((f) => [f, readFileSync(path.join(dir, f), 'utf8')]));
+    for (const verifies of [new Set<string>(), new Set(['autre-personne'])]) {
+      assert.throws(() => ecrireCasesManquantes(racine, '2026-11-26', verifies), (e: unknown) => e instanceof CasesNonVerifiees && e.ids.join(',') === 'jean-dupont');
+      for (const [f, ancien] of avant) assert.equal(readFileSync(path.join(dir, f), 'utf8'), ancien, f);
+    }
   });
 });
 
@@ -246,7 +260,7 @@ describe('relireParAgent', () => {
     const racine = copie();
     ajouterFiche(racine);
     synchroniserCouverture(racine, { 'jean-dupont': ['https://exemple.invalid/a'] }, '2026-11-26');
-    const cases = ecrireCasesManquantes(racine, '2026-11-26');
+    const cases = ecrireCasesManquantes(racine, '2026-11-26', VERIFIE);
     const journalAvant = lire(racine, 'relecture/journal.jsonl').split('\n').filter(Boolean).length;
     const r = relireParAgent(racine, { cases, statuts: [{ candidat: 'jean-dupont', code: 'declare' }] }, '2026-11-26', maintenant);
     assert.deepEqual(r.ok ? r : r.messages, { ok: true, relus: cases.length + 1 });

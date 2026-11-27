@@ -46,9 +46,10 @@ const USAGE = `Usage : npm run veille -- [lancer] [--reference <ref>] [--sans-al
   lancer          un passage : jeu data.gouv lu, répétition à blanc dans le worktree de la veille, rapport daté,
                   alerte seulement s'il y a une sortie, une entrée, un retour ou une décision à prendre
   auto            passage de la mise à jour autonome des statuts ; à blanc tant que ~/.config/rtp/auto-actif n'existe pas ;
-                  arrêt immédiat par le fichier ~/.cache/rtp/veille/auto-desactive ; un passage à blanc marque le jeu comme
-                  traité : après création de auto-actif, le jeu déjà vu à blanc n'est republié qu'avec --reprendre ;
-                  --reprendre sort de l'état retenu ; --sonde-agent et --sonde-push vérifient l'agent et le moyen de push
+                  arrêt immédiat par le fichier ~/.cache/rtp/veille/auto-desactive ; un passage à blanc ou un arrêt définitif
+                  marque le jeu comme traité ; --reprendre efface cette marque et fait retraiter le jeu courant (après un
+                  passage à blanc, un arrêt définitif ou l'état retenu), sauf commit poussé non déployé, dont la mise en
+                  ligne est reprise d'abord ; --sonde-agent et --sonde-push vérifient l'agent et le moyen de push
                   sans rien écrire (exclusives) ; sortie 0, 1 ou 3 ; voir RUNBOOK « Mise à jour autonome des statuts »
   etat            dernier passage, dernière empreinte, dernier rapport, canaux configurés (oui ou non)
   decider         décision d'Erwan sur une personne (ligne de correspondances.yaml ou motif d'un désistement), tapée

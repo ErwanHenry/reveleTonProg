@@ -162,14 +162,36 @@ export function synchroniserCouverture(racine: string, urls: Record<string, stri
   return { ajoutes: ecarts.aAjouter, retires: ecarts.aRetirer };
 }
 
-/** Pour chaque thème, une case `programme_non_publie` pour toute personne du périmètre qui n'en a pas ; cases existantes intactes. */
-export function ecrireCasesManquantes(racine: string, date: string): { theme: string; candidat: string }[] {
+/** Case manquante pour une personne qu'aucun agent n'a examinée dans ce passage : cas réservé, jamais une écriture. */
+export class CasesNonVerifiees extends EcritureRefusee {
+  readonly ids: string[];
+  constructor(ids: string[]) {
+    super(`case de couverture manquante pour une personne non examinée par les deux agents dans ce passage : ${ids.join(', ')}`);
+    this.ids = ids;
+  }
+}
+
+/**
+ * Pour chaque thème, une case `programme_non_publie` pour toute personne du périmètre qui n'en a pas ; cases existantes
+ * intactes. WR-05 (revue 10.3) : seules les personnes de `verifies` (constat « programme non publié » confirmé par les
+ * deux agents dans ce passage) reçoivent une case ; une case manquante pour une autre personne arrête tout, avant toute
+ * écriture (CasesNonVerifiees).
+ */
+export function ecrireCasesManquantes(racine: string, date: string, verifies: ReadonlySet<string>): { theme: string; candidat: string }[] {
   const { ids, nomTri } = perimetre(racine);
   const col = new Intl.Collator('fr');
   const ecrites: { theme: string; candidat: string }[] = [];
   const sorties: [string, string][] = [];
   const dir = path.join(racine, DOSSIER_CASES);
-  for (const f of readdirSync(dir).filter((x) => x.endsWith('.yaml')).sort()) {
+  const fichiers = readdirSync(dir).filter((x) => x.endsWith('.yaml')).sort();
+  const nonVerifies = new Set<string>();
+  for (const f of fichiers) {
+    const doc = lireYamlPlafonne(readFileSync(path.join(dir, f), 'utf8'), f) as unknown as { cases?: { candidat: string }[] };
+    const presents = new Set((doc.cases ?? []).map((c) => c.candidat));
+    for (const i of ids) if (!presents.has(i) && !verifies.has(i)) nonVerifies.add(i);
+  }
+  if (nonVerifies.size > 0) throw new CasesNonVerifiees([...nonVerifies].sort());
+  for (const f of fichiers) {
     const fichier = path.join(dir, f);
     const original = readFileSync(fichier, 'utf8');
     const doc = lireYamlPlafonne(original, fichier) as unknown as { theme: string; cases?: { candidat: string }[] };

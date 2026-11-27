@@ -26,16 +26,23 @@ function fauxExecuter(): { executer: Executer; appels: string[][] } {
 }
 
 describe('codes fermés', () => {
-  it('24 arrêts, 4 issues, disjoints', () => {
-    assert.equal(CODES_ARRET.length, 24);
+  it('25 arrêts, 4 issues, disjoints', () => {
+    assert.equal(CODES_ARRET.length, 25);
     assert.equal(CODES_ISSUE.length, 4);
     for (const c of CODES_ISSUE) assert.ok(!(CODES_ARRET as readonly string[]).includes(c));
-    assert.equal(Object.keys(LIBELLES).length, 28);
+    assert.equal(Object.keys(LIBELLES).length, 29);
+  });
+  it('IN-03 : perimetre_ecriture n\'accuse pas l\'agent ; reprise sans marqueur dite « mode à blanc », pas « gel »', () => {
+    assert.doesNotMatch(LIBELLES.perimetre_ecriture, /agent/);
+    assert.match(LIBELLES.perimetre_ecriture, /automate/);
+    assert.match(LIBELLES.reprise_a_blanc, /mode à blanc/);
+    assert.doesNotMatch(LIBELLES.reprise_a_blanc, /gel/);
   });
   it('estCodeAuto et transitoires', () => {
     assert.ok(estCodeAuto('publie') && estCodeAuto('hors_ligne'));
     assert.ok(!estCodeAuto('autre') && !estCodeAuto(3));
-    assert.equal(CODES_TRANSITOIRES.length, 10);
+    assert.equal(CODES_TRANSITOIRES.length, 11);
+    assert.ok(CODES_TRANSITOIRES.includes('reprise_a_blanc'));
     assert.ok(!CODES_TRANSITOIRES.includes('doute_agent'));
   });
 });

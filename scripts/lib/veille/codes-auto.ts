@@ -28,6 +28,7 @@ export const CODES_ARRET = [
   'smoke_echec_retour_ko',
   'hors_ligne',
   'desactive',
+  'reprise_a_blanc',
 ] as const;
 
 export type CodeIssue = (typeof CODES_ISSUE)[number];
@@ -46,6 +47,7 @@ export const CODES_TRANSITOIRES: readonly CodeAuto[] = [
   'deploiement_refuse',
   'hors_ligne',
   'desactive',
+  'reprise_a_blanc',
 ];
 
 export function estCodeAuto(v: unknown): v is CodeAuto {

@@ -7,13 +7,14 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { RESULTATS_DEPLOIEMENT_AUTO } from '../../scripts/lib/deploiement/auto.ts';
-import { executerPassageAuto, SUITE_DEPLOIEMENT } from '../../scripts/lib/veille/auto.ts';
+import { CODES_SORTIE_AUTO, RESULTATS_DEPLOIEMENT_AUTO } from '../../scripts/lib/deploiement/auto.ts';
+import type { ResultatAuto as ResultatDeploiement } from '../../scripts/lib/deploiement/auto.ts';
+import { executerPassageAuto, lireResultat, SUITE_DEPLOIEMENT } from '../../scripts/lib/veille/auto.ts';
 import type { DependancesAuto, OptionsAuto } from '../../scripts/lib/veille/auto.ts';
 import { LIBELLES } from '../../scripts/lib/veille/alertes-auto.ts';
 import { CODES_ARRET, CODES_ISSUE } from '../../scripts/lib/veille/codes-auto.ts';
 import type { CodeAuto } from '../../scripts/lib/veille/codes-auto.ts';
-import { ETAT_AUTO_VIDE, ecrireEtatAuto, lireEtatAuto } from '../../scripts/lib/veille/etat-auto.ts';
+import { ETAT_AUTO_VIDE, cheminEtatAuto, ecrireEtatAuto, lireEtatAuto, lireReportsVerrou } from '../../scripts/lib/veille/etat-auto.ts';
 import { dossierVerrou } from '../../scripts/lib/veille/etat.ts';
 import { cheminsAuto } from '../../scripts/lib/veille/mode-auto.ts';
 import type { TexteSource } from '../../scripts/lib/veille/sources-texte.ts';
@@ -31,7 +32,9 @@ const statutReel = (): string => git(REPO_ROOT, ['status', '--porcelain']);
 const PHRASE = "Cette page officielle présente la personne et sa démarche pour l'élection présidentielle de deux mille vingt-sept.";
 const URL_S = 'https://exemple.test/s';
 const URL_C = 'https://jeanne2027.example/';
-const texte = (url: string): TexteSource => ({ ok: true, url, texte: `Titre de la page. ${PHRASE} Fin du texte.`, tronque: false });
+// WR-04 : le nom de famille de la personne vérifiée figure dans la source (personnes fictives seulement).
+const NOMS_PAGE = 'Page de Jeanne Duval ; mention de Essai Fictif.';
+const texte = (url: string): TexteSource => ({ ok: true, url, texte: `Titre de la page. ${NOMS_PAGE} ${PHRASE} Fin du texte.`, tronque: false });
 const TEXTES: Record<string, TexteSource> = { [URL_S]: texte(URL_S), [URL_C]: texte(URL_C) };
 const CONFIRME = { stdout: sortieAgent('confirme', PHRASE) };
 
@@ -90,6 +93,18 @@ interface Suivi {
   deployer: { sha: string; phase: string }[];
   etat: number;
 }
+/**
+ * Format réel de `deploy-auto deployer` (CR-01, revue 10.3) : la dernière ligne est `resultat=<code> sha=<12 hex>`
+ * (scripts/lib/deploiement/auto.ts). Une ligne scriptée `resultat=<code>` nue reçoit le suffixe du commit déployé ;
+ * une ligne déjà suffixée est gardée telle quelle.
+ */
+const formatReel = (lignes: string[], sha: string): string[] => lignes.map((l) => (/^resultat=\w+$/.test(l) ? `${l} sha=${sha.slice(0, 12)}` : l));
+/** Code de sortie réel de deploy-auto pour la dernière ligne `resultat=` (1 pour un résultat inconnu, comme le repli). */
+const statusDe = (lignes: string[]): number => {
+  const r = /^resultat=(\w+)(?: sha=[0-9a-f]{12})?$/.exec(lignes[lignes.length - 1] ?? '')?.[1] ?? '';
+  return Object.hasOwn(CODES_SORTIE_AUTO, r) ? CODES_SORTIE_AUTO[r as ResultatDeploiement] : 1;
+};
+
 /** Dépendances du monde avec deploy:auto scripté ; relève l'état de l'automate au moment de chaque déploiement. */
 function scripter(m: MondeAuto, s: Scripts = {}, surcharge: Partial<DependancesAuto> = {}): { deps: DependancesAuto; suivi: Suivi } {
   const base = m.deps.executer;
@@ -103,12 +118,12 @@ function scripter(m: MondeAuto, s: Scripts = {}, surcharge: Partial<DependancesA
         let lignes: string[];
         if (a[1] === 'deployer') {
           suivi.deployer.push({ sha: a[2] ?? '', phase: lireEtatAuto(m.dossier).phase });
-          lignes = choisir(s.deployer ?? [['resultat=publie']], suivi.deployer.length - 1);
+          lignes = formatReel(choisir(s.deployer ?? [['resultat=publie']], suivi.deployer.length - 1), a[2] ?? '');
         } else {
           lignes = choisir(s.etat ?? [[`courant=${s.courant ?? m.shaOrigine()} restreint=oui`, 'resultat=etat_lu']], suivi.etat);
           suivi.etat++;
         }
-        return { status: 0, stdout: `${lignes.join('\n')}\n`, stderr: '' };
+        return { status: statusDe(lignes), stdout: `${lignes.join('\n')}\n`, stderr: '' };
       }
       return surcharge.executer !== undefined ? surcharge.executer(c, a, o) : base(c, a, o);
     },
@@ -269,7 +284,7 @@ describe('passage : verrou, boîte d\'envoi, répétitions', () => {
     for (let i = 1; i <= 3; i++) {
       const r = await passer(m);
       assert.equal(r.code, 'verrou_pris');
-      assert.equal(lireEtatAuto(m.dossier).reportsVerrou, i);
+      assert.equal(lireReportsVerrou(m.dossier), i);
       assert.equal(alertes(m).length, i < 3 ? 0 : 1, `alertes après le report ${i}`);
     }
     assert.equal(m.appels().filter((a) => a.commande === 'git').length, 0, 'aucune action git tant que le verrou est tenu');
@@ -277,7 +292,7 @@ describe('passage : verrou, boîte d\'envoi, répétitions', () => {
     rmSync(verrou, { recursive: true, force: true });
     const r = await passer(m);
     assert.equal(r.code, 'rien_a_faire');
-    assert.equal(lireEtatAuto(m.dossier).reportsVerrou, 0);
+    assert.equal(lireReportsVerrou(m.dossier), 0);
   });
 
   it('Telegram en échec : l\'alerte va en boîte, puis part en premier au passage suivant', async () => {
@@ -437,13 +452,16 @@ describe('déploiement : retenue, reprise, état pousse_non_deploye', () => {
     assert.equal(lireEtatAuto(m2.dossier).empreinteTraitee, m2.empreinte);
   });
 
-  it('reprise sans marqueur ou pendant un gel : rien n\'est déployé, phase inchangée, alerte gel dédupliquée', async () => {
-    for (const o of [{ marqueurActif: false }, { marqueurActif: true, maintenant: '2026-12-12T09:00:00+01:00' }]) {
+  it('reprise sans marqueur (mode à blanc) ou pendant un gel : rien n\'est déployé, phase inchangée, alerte dédupliquée', async () => {
+    for (const [o, code] of [
+      [{ marqueurActif: false }, 'reprise_a_blanc'],
+      [{ marqueurActif: true, maintenant: '2026-12-12T09:00:00+01:00' }, 'gel'],
+    ] as const) {
       const m = monde(o);
       semerPousse(m, m.shaOrigine());
       const { deps, suivi } = scripter(m);
-      assert.equal((await passer(m, deps)).code, 'gel');
-      assert.equal((await passer(m, deps)).code, 'gel');
+      assert.equal((await passer(m, deps)).code, code);
+      assert.equal((await passer(m, deps)).code, code);
       assert.equal(suivi.deployer.length, 0);
       assert.equal(suivi.etat, 0, 'aucun appel à deploy-auto');
       assert.equal(lireEtatAuto(m.dossier).phase, 'pousse_non_deploye');
@@ -470,6 +488,170 @@ describe('déploiement : retenue, reprise, état pousse_non_deploye', () => {
     assert.equal(r.code, 'deploiement_refuse');
     assert.equal(lireEtatAuto(m.dossier).phase, 'pousse_non_deploye');
   });
+});
+
+describe('intention de poussée et état sous verrou (WR-09)', () => {
+  it('l\'intention poussee_en_cours est écrite avec le sha avant la poussée', async () => {
+    const m = avecPersonne({ marqueurActif: true });
+    const vu: { phase: string; sha: string | null }[] = [];
+    const base = m.deps.executer;
+    const { deps } = scripter(m, {}, {
+      executer: (c, a, o) => {
+        if (c === 'git' && a.includes('push')) {
+          const e = lireEtatAuto(m.dossier);
+          vu.push({ phase: e.phase, sha: e.sha });
+        }
+        return base(c, a, o);
+      },
+    });
+    const r = await passer(m, deps);
+    assert.equal(r.code, 'publie', JSON.stringify(r));
+    assert.equal(vu.length, 1);
+    assert.equal(vu[0]?.phase, 'poussee_en_cours');
+    assert.equal(vu[0]?.sha, r.sha);
+  });
+
+  it('arrêt brutal après une poussée réussie : le passage suivant reprend comme pousse_non_deploye et publie', async () => {
+    const m = monde({ marqueurActif: true });
+    const sha = m.shaOrigine();
+    ecrireEtatAuto(m.dossier, { ...ETAT_AUTO_VIDE, phase: 'poussee_en_cours', sha, empreinteEnCours: m.empreinte, fiches: ['jeanne-duval'], comptes: '1 entrée' });
+    const { deps, suivi } = scripter(m, { courant: parent(m) });
+    const r = await passer(m, deps);
+    assert.equal(r.code, 'publie', JSON.stringify(r));
+    assert.equal(suivi.deployer.length, 1);
+    assert.equal(suivi.deployer[0]?.sha, sha);
+    assert.equal(suivi.deployer[0]?.phase, 'pousse_non_deploye', 'intention résolue et écrite avant le déploiement');
+    assert.equal(lireEtatAuto(m.dossier).empreinteTraitee, m.empreinte);
+  });
+
+  it('intention non suivie d\'effet (commit absent d\'origin/main) : nettoyée, passage normal, rien déployé', async () => {
+    const m = monde({ marqueurActif: true });
+    ecrireEtatAuto(m.dossier, { ...ETAT_AUTO_VIDE, phase: 'poussee_en_cours', sha: 'f'.repeat(40), empreinteEnCours: m.empreinte });
+    const { deps, suivi } = scripter(m);
+    const r = await passer(m, deps);
+    assert.equal(r.code, 'rien_a_faire', JSON.stringify(r));
+    assert.equal(suivi.deployer.length, 0);
+    const e = lireEtatAuto(m.dossier);
+    assert.equal(e.phase, 'repos');
+    assert.equal(e.sha, null);
+    assert.equal(e.empreinteEnCours, null);
+  });
+
+  it('poussée en échec ambigu (réseau) : intention gardée, résolue au passage suivant qui publie', async () => {
+    const m = avecPersonne({ marqueurActif: true });
+    const s1 = scripter(m, {}, { executer: poussee(m, 128, 'fatal: Could not resolve host: exemple.invalid') });
+    const r1 = await passer(m, s1.deps);
+    assert.equal(r1.code, 'hors_ligne', JSON.stringify(r1));
+    assert.equal(lireEtatAuto(m.dossier).phase, 'poussee_en_cours');
+    const s2 = scripter(m);
+    const r2 = await passer(m, s2.deps);
+    assert.equal(r2.code, 'publie', JSON.stringify(r2));
+    assert.equal(s2.suivi.deployer.length, 1);
+  });
+
+  it('passage bloqué par le verrou : etat-auto.json n\'est jamais réécrit', async () => {
+    const m = monde({ marqueurActif: true });
+    semerPousse(m, m.shaOrigine());
+    const avant = readFileSync(cheminEtatAuto(m.dossier), 'utf8');
+    const verrou = dossierVerrou(m.dossier);
+    mkdirSync(verrou, { recursive: true });
+    writeFileSync(path.join(verrou, 'pid'), `${process.pid}\n`);
+    for (let i = 0; i < 3; i++) assert.equal((await passer(m)).code, 'verrou_pris');
+    assert.equal(readFileSync(cheminEtatAuto(m.dossier), 'utf8'), avant, 'état du détenteur intact');
+    writeFileSync(cheminsAuto(m.home, m.dossier).desactive, 'stop\n');
+    assert.equal((await passer(m)).code, 'desactive');
+    assert.equal(readFileSync(cheminEtatAuto(m.dossier), 'utf8'), avant, 'interrupteur sous verrou tenu : aucune écriture');
+    rmSync(verrou, { recursive: true, force: true });
+  });
+});
+
+describe('--reprendre fait retraiter le jeu courant (CR-02)', () => {
+  it('à blanc, puis marqueur auto-actif, puis --reprendre : publié', async () => {
+    const m = avecPersonne();
+    const avant = m.shaOrigine();
+    const { deps, suivi } = scripter(m);
+    const r1 = await passer(m, deps);
+    assert.equal(r1.code, 'pret_a_blanc', JSON.stringify(r1));
+    assert.equal(lireEtatAuto(m.dossier).empreinteTraitee, m.empreinte);
+    writeFileSync(cheminsAuto(m.home, m.dossier).actif, 'actif\n', { mode: 0o600 });
+    const r2 = await passer(m, deps);
+    assert.equal(r2.code, 'rien_a_faire', 'sans --reprendre, le jeu vu à blanc reste traité');
+    const r3 = await passer(m, deps, { reprendre: true });
+    assert.equal(r3.code, 'publie', JSON.stringify(r3));
+    assert.notEqual(m.shaOrigine(), avant);
+    assert.equal(suivi.deployer.length, 1);
+    const e = lireEtatAuto(m.dossier);
+    assert.equal(e.phase, 'repos');
+    assert.equal(e.empreinteTraitee, m.empreinte);
+  });
+
+  it('arrêt définitif (doute des agents) puis --reprendre : le jeu est retraité', async () => {
+    const m = avecPersonne({ scenariosClaude: [{ stdout: sortieAgent('insuffisant', '') }, CONFIRME] });
+    const r1 = await passer(m);
+    assert.equal(r1.code, 'doute_agent', JSON.stringify(r1));
+    assert.equal((await passer(m)).code, 'rien_a_faire', 'arrêt définitif : jeu traité');
+    const r3 = await passer(m, m.deps, { reprendre: true });
+    assert.equal(r3.code, 'pret_a_blanc', JSON.stringify(r3));
+    assert.equal(alertes(m).length, 2, 'doute_agent puis pret_a_blanc');
+  });
+
+  it('commit poussé non déployé : --reprendre laisse passer la reprise de mise en ligne d\'abord', async () => {
+    const m = monde({ marqueurActif: true });
+    const sha = m.shaOrigine();
+    semerPousse(m, sha);
+    const { deps, suivi } = scripter(m, { courant: parent(m) });
+    const r = await passer(m, deps, { reprendre: true });
+    assert.equal(r.code, 'publie', JSON.stringify(r));
+    assert.equal(suivi.deployer.length, 1);
+    assert.equal(suivi.deployer[0]?.sha, sha, 'le commit en attente est celui qui est mis en ligne');
+    assert.equal(lireEtatAuto(m.dossier).empreinteTraitee, m.empreinte);
+  });
+});
+
+describe('contrat de la ligne resultat= de deploy:auto (CR-01)', () => {
+  const SHA12 = '0123456789ab';
+  it('lireResultat lit le format réel, avec ou sans suffixe sha, et refuse le reste', () => {
+    assert.equal(lireResultat(`resultat=publie sha=${SHA12}\n`, 0), 'publie');
+    assert.equal(lireResultat('resultat=etat_lu\n', 0), 'deploiement_refuse', 'etat_lu n\'est pas une issue de déploiement');
+    assert.equal(lireResultat('resultat=hors_ligne\n', 9), 'hors_ligne');
+    assert.equal(lireResultat(`du texte\nresultat=hors_ligne sha=${SHA12}\nresultat=smoke_echec_retour_ko sha=${SHA12}\n`, 5), 'smoke_echec_retour_ko', 'la dernière ligne compte');
+    assert.equal(lireResultat(`resultat=smoke_echec_retour_ok sha=${SHA12}`, 4), 'smoke_echec_retour_ok');
+    assert.equal(lireResultat(`resultat=publie sha=${SHA12} reste`, 0), 'deploiement_refuse', 'texte après le sha');
+    assert.equal(lireResultat('resultat=publie sha=0123', 0), 'deploiement_refuse', 'sha tronqué');
+    assert.equal(lireResultat(`  resultat=publie sha=${SHA12}`, 0), 'deploiement_refuse', 'ligne non ancrée');
+    assert.equal(lireResultat(`resultat=publie sha=${SHA12}`, 1), 'deploiement_refuse', 'succès annoncé avec un code de sortie d\'échec');
+    assert.equal(lireResultat(`resultat=smoke_echec_retour_ko sha=${SHA12}`, 0), 'smoke_echec_retour_ko', 'un échec annoncé est toujours cru');
+  });
+
+  const cas: [string, string, 'repos' | 'retenu', 0 | 3][] = [
+    [`resultat=publie sha=${SHA12}`, 'publie', 'repos', 0],
+    [`resultat=smoke_echec_retour_ko sha=${SHA12}`, 'smoke_echec_retour_ko', 'retenu', 3],
+    [`resultat=smoke_echec_retour_ok sha=${SHA12}`, 'smoke_echec_retour_ok', 'retenu', 3],
+  ];
+  for (const [ligne, code, phase, sortie] of cas) {
+    it(`deploy-auto écrit « ${ligne.replace(SHA12, '<12>')} » : ${code}, phase ${phase}, alerte au libellé de ${code}`, async () => {
+      const m = monde({ marqueurActif: true });
+      const sha = m.shaOrigine();
+      semerPousse(m, sha);
+      const { deps, suivi } = scripter(m, { courant: parent(m), deployer: [['déploiement en cours', ligne.replace(SHA12, sha.slice(0, 12))]] });
+      const r = await passer(m, deps);
+      assert.equal(r.code, code, JSON.stringify(r));
+      assert.equal(r.sortie, sortie);
+      assert.equal(lireEtatAuto(m.dossier).phase, phase);
+      assert.equal(suivi.deployer.length, 1);
+      const a = alertes(m);
+      assert.equal(a.length, 1);
+      assert.equal((a[0] as string).split('\n')[0], `Mise à jour autonome : ${LIBELLES[code as CodeAuto]}`);
+      assert.match(a[0] as string, new RegExp(`^code : ${code}$`, 'm'));
+      if (phase === 'retenu') {
+        // Aucune nouvelle tentative au passage suivant : la version cassée n'est jamais tenue pour publiée.
+        const r2 = await passer(m, deps);
+        assert.notEqual(r2.code, 'deja_en_ligne');
+        assert.equal(suivi.deployer.length, 1);
+        assert.equal(lireEtatAuto(m.dossier).empreinteTraitee, null, 'le jeu n\'est pas marqué traité');
+      }
+    });
+  }
 });
 
 describe('table des codes après commit et garde-fous du code', () => {

@@ -6,3 +6,43 @@ suffixes:
   - senat.fr
   - elysee.fr
   - conseil-constitutionnel.fr
+# hôtes partagés (WR-10, revue 10.3) : réseaux sociaux, hébergeurs de pages, raccourcisseurs. Une source ou un lien
+# sur l'un d'eux (ou sur un de ses sous-domaines) n'est jamais classé candidat ni parti : la source vaut presse.
+hotes_partages:
+  - facebook.com
+  - fb.com
+  - instagram.com
+  - x.com
+  - twitter.com
+  - t.co
+  - threads.net
+  - bsky.app
+  - linkedin.com
+  - youtube.com
+  - youtu.be
+  - tiktok.com
+  - t.me
+  - telegram.me
+  - whatsapp.com
+  - wordpress.com
+  - blogspot.com
+  - over-blog.com
+  - canalblog.com
+  - github.io
+  - gitlab.io
+  - wixsite.com
+  - squarespace.com
+  - weebly.com
+  - jimdofree.com
+  - webflow.io
+  - netlify.app
+  - vercel.app
+  - pages.dev
+  - sites.google.com
+  - medium.com
+  - substack.com
+  - linktr.ee
+  - bit.ly
+  - tinyurl.com
+  - ow.ly
+  - goo.gl

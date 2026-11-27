@@ -118,7 +118,8 @@ export type Verdict = { verdict: 'confirme' | 'infirme' | 'insuffisant'; citatio
 export type CodeStatut = 'declare' | 'primaire' | 'pressenti' | 'empeche' | 'renonce';
 
 export type QuestionAgent =
-  | { genre: 'statut'; personne: string; code: CodeStatut; date: string }
+  /** `nomFamille` (WR-04) : nom de famille de la fiche ; s'il est donné, il doit figurer dans le texte de la source. */
+  | { genre: 'statut'; personne: string; code: CodeStatut; date: string; nomFamille?: string }
   | { genre: 'programme'; personne: string };
 
 /** Une phrase neutre par code du schéma des candidats (schemas/candidat.schema.json, champ statut.code). */
@@ -131,8 +132,31 @@ export const LIBELLES_CODE: Record<CodeStatut, string> = {
 };
 
 
+/**
+ * Bornes du bloc non fiable (WR-04, revue 10.3) : toute séquence qui ouvre ou ferme `donnees_non_fiables`, quelle que
+ * soit la casse, avec ou sans espaces, barre oblique ou attributs, est neutralisée dans les données (texte des pages,
+ * valeurs du jeu) avant d'entrer dans le prompt : une page ne peut pas refermer le bloc puis glisser des consignes.
+ */
+const BORNE_BLOC = /<\s*\/?\s*donn[eé]es[\s_-]*non[\s_-]*fiables(?:[^<>]*>)?/gi;
+export const BORNE_NEUTRALISEE = '[balise retirée]';
+export const neutraliserBornes = (s: string): string => s.replace(BORNE_BLOC, BORNE_NEUTRALISEE);
+
 /** Une valeur issue du jeu public tient sur une ligne et reste courte : elle ne peut pas porter de consigne longue. */
-const uneLigne = (s: string): string => s.replace(/[\u0000-\u001f\u007f<>]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120);
+const uneLigne = (s: string): string => neutraliserBornes(s).replace(/[\u0000-\u001f\u007f<>]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120);
+
+/** Séparateur des sources dans le bloc non fiable (constat « programme non publié », plusieurs pages lues). */
+export const SEPARATEUR_SOURCES = '\n\n=====\n\n';
+
+/**
+ * Budget de texte par source (WR-03) : chaque source reçoit sa part des 30 000 caractères (TEXTE_MAX), la première
+ * ne peut donc jamais effacer les suivantes. Les bornes du bloc sont neutralisées dans chaque source (WR-04).
+ */
+export function assemblerSources(textes: readonly string[]): { parts: string[]; texte: string } {
+  const n = Math.max(1, textes.length);
+  const part = Math.floor((TEXTE_MAX - SEPARATEUR_SOURCES.length * (n - 1)) / n);
+  const parts = textes.map((t) => neutraliserBornes(t).slice(0, part));
+  return { parts, texte: parts.join(SEPARATEUR_SOURCES) };
+}
 
 export function promptVerification(role: 'verificateur' | 'contradicteur', q: QuestionAgent, texte: string): string {
   const personne = uneLigne(q.personne);
@@ -143,12 +167,13 @@ export function promptVerification(role: 'verificateur' | 'contradicteur', q: Qu
   const consigneGenre =
     q.genre === 'statut'
       ? `Réponds « confirme » seulement si une phrase du texte le dit explicitement, et cite cette phrase mot pour mot. Réponds « infirme » si le texte dit explicitement le contraire, et cite le passage. Réponds « insuffisant » dans tous les autres cas.`
-      : `Réponds « confirme » si aucun programme électoral pour 2027 n'est présenté dans le texte. Réponds « infirme » si un programme est présenté, et cite le passage mot pour mot. Réponds « insuffisant » si le texte ne permet pas de trancher.`;
+      : `Réponds « confirme » si aucun programme électoral pour 2027 n'est présenté dans le texte, et cite mot pour mot un passage d'au moins ${CITATION_MIN_PROGRAMME} caractères, tiré d'une seule source (les sources sont séparées par =====), qui montre ce que la page présente. Réponds « infirme » si un programme est présenté, et cite le passage mot pour mot. Réponds « insuffisant » si le texte ne permet pas de trancher.`;
   const posture =
     role === 'contradicteur'
       ? `Tu es le contradicteur : cherche d'abord dans le texte ce qui contredit l'affirmation, puis conclus honnêtement. Tu ne connais aucune autre réponse que la tienne.`
       : `Tu es le vérificateur : lis le texte avec attention puis conclus honnêtement.`;
-  const corps = texte.length > TEXTE_MAX ? texte.slice(0, TEXTE_MAX) : texte;
+  const neutre = neutraliserBornes(texte);
+  const corps = neutre.length > TEXTE_MAX ? neutre.slice(0, TEXTE_MAX) : neutre;
   return [
     `Tu relis une source pour un site pédagogique, neutre et sourcé, sur l'élection présidentielle française de 2027.`,
     posture,
@@ -230,13 +255,42 @@ const normaliser = (s: string): string =>
     .trim()
     .toLocaleLowerCase('fr');
 
-/** Vrai si la citation (20 caractères au moins après normalisation) se retrouve mot pour mot dans le texte. */
-export function citationRetrouvee(citation: string, texte: string): boolean {
+/** Longueur minimale d'une citation de constat « programme non publié » (WR-03) : un passage, pas quelques mots. */
+export const CITATION_MIN_PROGRAMME = 40;
+const CITATION_MIN = 20;
+
+/** Vrai si la citation (`min` caractères au moins après normalisation, 20 par défaut) se retrouve mot pour mot dans le texte. */
+export function citationRetrouvee(citation: string, texte: string, min: number = CITATION_MIN): boolean {
   const c = normaliser(citation);
-  return c.length >= 20 && normaliser(texte).includes(c);
+  return c.length >= min && normaliser(texte).includes(c);
 }
 
-export type RaisonEchec = 'insuffisant' | 'infirme' | 'desaccord' | 'citation_introuvable' | 'sortie_invalide' | 'delai' | 'echec_processus';
+/** Forme de comparaison d'un nom : sans diacritiques, apostrophes et tirets unifiés, minuscules, espaces réduits. */
+const formeNom = (s: string): string =>
+  ` ${s
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .replace(/[‘’ʼ]/g, "'")
+    .replace(/[^\p{L}\p{N}']+/gu, ' ')
+    .trim()
+    .toLocaleLowerCase('fr')} `;
+
+/** Vrai si le nom de famille figure, en mots entiers, dans le texte de la source (WR-04). */
+export function nomDansTexte(nom: string, texte: string): boolean {
+  const n = formeNom(nom);
+  return n.trim() !== '' && formeNom(texte).includes(n);
+}
+
+export type RaisonEchec =
+  | 'insuffisant'
+  | 'infirme'
+  | 'desaccord'
+  | 'citation_introuvable'
+  | 'nom_absent'
+  | 'date_incoherente'
+  | 'sortie_invalide'
+  | 'delai'
+  | 'echec_processus';
 
 export type ResultatDouble =
   | { ok: true; citations: [string, string]; dates: [string | null, string | null]; coutUsd: number }
@@ -266,21 +320,33 @@ async function appeler(cfg: ConfigAgent, role: 'verificateur' | 'contradicteur',
  * Double vérification : un vérificateur puis un contradicteur (qui ne reçoit jamais la réponse du premier). Accepté
  * seulement si les deux disent la même chose avec une citation retrouvée dans le texte récupéré par le code ;
  * « ok » ne signifie que « confirmé ». Toute autre issue a une raison fermée.
+ *
+ * `texte` : une source (statut) ou plusieurs (constat de programme), chacune avec sa part du budget (WR-03). Une
+ * citation doit se retrouver dans UNE source, telle que l'agent l'a vue ; pour le constat de programme, elle fait au
+ * moins 40 caractères. Pour un statut (WR-04) : nom de famille présent dans la source (avant tout appel), et date de
+ * la page renvoyée par un agent, si présente, égale à la date du statut du jeu.
  */
-export async function verifierAvecDeuxAgents(o: { cfg: ConfigAgent; question: QuestionAgent; texte: string; lancer: Lanceur }): Promise<ResultatDouble> {
-  const texte = o.texte.length > TEXTE_MAX ? o.texte.slice(0, TEXTE_MAX) : o.texte;
-  const premier = await appeler(o.cfg, 'verificateur', o.question, texte, o.lancer);
+export async function verifierAvecDeuxAgents(o: { cfg: ConfigAgent; question: QuestionAgent; texte: string | readonly string[]; lancer: Lanceur }): Promise<ResultatDouble> {
+  const { parts, texte } = assemblerSources(typeof o.texte === 'string' ? [o.texte] : o.texte);
+  const q = o.question;
+  const min = q.genre === 'programme' ? CITATION_MIN_PROGRAMME : CITATION_MIN;
+  const retrouvee = (c: string): boolean => parts.some((t) => citationRetrouvee(c, t, min));
+  if (q.genre === 'statut' && q.nomFamille !== undefined && !parts.some((t) => nomDansTexte(q.nomFamille as string, t))) return { ok: false, raison: 'nom_absent', coutUsd: 0 };
+  const premier = await appeler(o.cfg, 'verificateur', q, texte, o.lancer);
   if (!premier.ok) return premier;
   if (premier.verdict.verdict === 'insuffisant') return { ok: false, raison: 'insuffisant', coutUsd: premier.coutUsd };
-  if (!citationRetrouvee(premier.verdict.citation, texte)) return { ok: false, raison: 'citation_introuvable', coutUsd: premier.coutUsd };
+  if (!retrouvee(premier.verdict.citation)) return { ok: false, raison: 'citation_introuvable', coutUsd: premier.coutUsd };
 
-  const second = await appeler(o.cfg, 'contradicteur', o.question, texte, o.lancer);
+  const second = await appeler(o.cfg, 'contradicteur', q, texte, o.lancer);
   const cout = premier.coutUsd + second.coutUsd;
   if (!second.ok) return { ok: false, raison: second.raison, coutUsd: cout };
   if (second.verdict.verdict === 'insuffisant') return { ok: false, raison: 'insuffisant', coutUsd: cout };
   if (second.verdict.verdict !== premier.verdict.verdict) return { ok: false, raison: 'desaccord', coutUsd: cout };
-  if (!citationRetrouvee(second.verdict.citation, texte)) return { ok: false, raison: 'citation_introuvable', coutUsd: cout };
+  if (!retrouvee(second.verdict.citation)) return { ok: false, raison: 'citation_introuvable', coutUsd: cout };
   if (premier.verdict.verdict === 'infirme') return { ok: false, raison: 'infirme', coutUsd: cout };
+  if (q.genre === 'statut' && [premier.verdict.date_page, second.verdict.date_page].some((d) => d !== null && d !== q.date)) {
+    return { ok: false, raison: 'date_incoherente', coutUsd: cout };
+  }
   return {
     ok: true,
     citations: [premier.verdict.citation, second.verdict.citation],

@@ -4,7 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { verifierPerimetre } from '../../scripts/lib/veille/perimetre-ecriture.ts';
+import { ligneRelectureAutorisee, verifierPerimetre } from '../../scripts/lib/veille/perimetre-ecriture.ts';
 import type { Executer } from '../../scripts/lib/veille/alertes.ts';
 
 const executer: Executer = (commande, args, options) => {
@@ -49,6 +49,10 @@ beforeEach(() => {
   git('commit', '-q', '-m', 'base');
 });
 
+const AGENT = "l'agent d'IA Claude";
+const relecture = (cible: string, relecteur = AGENT, action = 'marquer'): string =>
+  JSON.stringify({ horodatage: '2026-11-26T10:00:00.000Z', action, cible, relecteur, date: '2026-11-26', sha256: 'a'.repeat(64) });
+
 const raisonsDe = (): string[] => {
   const r = verifierPerimetre(racine, executer);
   return r.ok ? [] : r.raisons.map((x) => x.raison);
@@ -59,7 +63,7 @@ describe('verifierPerimetre', () => {
     ecrire('data/import/correspondances.yaml', `${BASE['data/import/correspondances.yaml']}  b:\n    id: c-d\n`);
     ecrire('src/content/candidats/c-d.yaml', 'id: c-d\n');
     ecrire('data/couverture-themes.yaml', `${BASE['data/couverture-themes.yaml']}  - id: c-d\n`);
-    ecrire('relecture/journal.jsonl', '{}\n{"a":1}\n');
+    ecrire('relecture/journal.jsonl', `{}\n${relecture('case:sante/c-d')}\n${relecture('statut:c-d')}\n`);
     ecrire('ids.lock', 'a-b\nc-d\n');
     ecrire('data/dataset-datagouv.yaml', 'x: 1\n');
     ecrire('data/import/2027etmoi-candidats-2026-11-26-abc.json', '{"texte":"extrêmement — enfin"}\n');
@@ -144,6 +148,47 @@ describe('verifierPerimetre', () => {
     renameSync(path.join(racine, 'src/content/candidats/a.yaml'), path.join(racine, 'src/content/candidats/b.yaml'));
     git('add', '-A', 'src/content/candidats');
     assert.ok(raisonsDe().includes('suppression'));
+  });
+
+  it('WR-06 : sous relecture/, seules des relectures de statut ou de case par l\'agent sont acceptées', () => {
+    assert.equal(ligneRelectureAutorisee(relecture('statut:c-d')), true);
+    assert.equal(ligneRelectureAutorisee(relecture('case:sante/c-d')), true);
+    assert.equal(ligneRelectureAutorisee(relecture('case:europe-et-monde/c-d')), true);
+    for (const l of [
+      relecture('mesure:c-d/sante-une-mesure'),
+      relecture('statut:c-d', 'Erwan Henry'),
+      relecture('statut:c-d', AGENT, 'retirer'),
+      relecture('case:sante'),
+      relecture('case:/c-d'),
+      relecture('statut:'),
+      relecture('statut:C D'),
+      relecture('source:c-d'),
+      '{}',
+      'pas du JSON',
+      '[1]',
+    ]) assert.equal(ligneRelectureAutorisee(l), false, l);
+  });
+
+  for (const [nom, ligne] of [
+    ['relecture d\'une mesure', relecture('mesure:a-b/sante-une-mesure')],
+    ['autre relecteur', relecture('statut:a-b', 'Erwan Henry')],
+    ['ligne illisible', 'pas du JSON'],
+  ] as const) {
+    it(`WR-06 : refuse une ligne ajoutée au journal de relecture (${nom})`, () => {
+      ecrire('relecture/journal.jsonl', `${BASE['relecture/journal.jsonl']}${relecture('statut:a-b')}\n${ligne}\n`);
+      indexer('relecture/journal.jsonl');
+      assert.deepEqual(raisonsDe(), ['relecture']);
+    });
+  }
+
+  it('WR-06 : refuse une ligne retirée du journal et tout autre fichier sous relecture/', () => {
+    ecrire('relecture/journal.jsonl', '');
+    indexer('relecture/journal.jsonl');
+    assert.deepEqual(raisonsDe(), ['relecture']);
+    git('reset', '-q', '--hard');
+    ecrire('relecture/notes.jsonl', `${relecture('statut:a-b')}\n`);
+    indexer('relecture/notes.jsonl');
+    assert.deepEqual(raisonsDe(), ['hors_liste']);
   });
 
   it('ne cite jamais le contenu des lignes dans ses raisons', () => {
