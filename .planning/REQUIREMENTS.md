@@ -175,10 +175,10 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 | VEI-04 | Phase 10.1 | Complete |
 | VEI-05 | Phase 10.1 | Complete |
 | VEI-06 | Phase 10.1 | Complete |
-| AUTO-01 | Phase 10.3 | Pending |
-| AUTO-02 | Phase 10.3 | Pending |
-| AUTO-03 | Phase 10.3 | Pending |
-| AUTO-04 | Phase 10.3 | Pending |
+| AUTO-01 | Phase 10.3 | Code livré (mise en service en attente) |
+| AUTO-02 | Phase 10.3 | Code livré (mise en service en attente) |
+| AUTO-03 | Phase 10.3 | Code livré (mise en service en attente) |
+| AUTO-04 | Phase 10.3 | Code livré (mise en service en attente) |
 
 **Coverage:**
 
