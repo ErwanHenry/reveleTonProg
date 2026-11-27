@@ -17,8 +17,9 @@
 //   8. tout ce qui a pu changer est rejoué (gel, tête, configuration, intégrité, empreinte de la build) ;
 //   9. envoi, etat, gel rejoué, activer, etat, test de fumée ; échec ou signal après activer : retour automatique vers
 //      la version exacte d'avant (retourAutomatique, partagé avec deploy:local).
-// Sortie : une dernière ligne `resultat=<résultat>` (liste fermée RESULTATS_DEPLOIEMENT_AUTO), masquée : ni hôte, ni
-// utilisateur, ni URL, ni chemin de clé. Codes : table CODES_SORTIE_AUTO.
+// Sortie : une dernière ligne `resultat=<résultat>` (liste fermée RESULTATS_DEPLOIEMENT_AUTO), suivie de ` sha=<12 hex>`
+// pour deployer, masquée : ni hôte, ni utilisateur, ni URL, ni chemin de clé. Lecture : lireLigneResultat. Codes :
+// table CODES_SORTIE_AUTO.
 //
 // Le processus qui tient la clé n'importe que des modules node: et des modules relatifs. ctx.construire et
 // ctx.apresActivation n'existent que pour les tests : la CLI ne les expose pas.
@@ -189,6 +190,25 @@ function proprete(texte: string, cfg: ConfigDeploiement | null, home: string): s
 }
 
 const sha12 = (sha: string | null): string => (sha === null ? '' : ` sha=${sha.slice(0, 12)}`);
+
+const LIGNE_RESULTAT = /^resultat=([a-z_]+)(?: sha=([0-9a-f]{12}))?$/;
+
+/**
+ * Lit la ligne de résultat écrite en fin de sortie par deploy:auto (CR-01) : `resultat=<résultat> sha=<12 hex>`
+ * (deployer) ou `resultat=<résultat>` (etat). Retient la dernière ligne de ce format exact dont le résultat est dans
+ * RESULTATS_DEPLOIEMENT_AUTO ; fins de ligne CRLF admises. Aucune ligne reconnue : null. Fonction pure, sans effet.
+ */
+export function lireLigneResultat(texte: string): { resultat: string; sha: string | null } | null {
+  let trouve: { resultat: string; sha: string | null } | null = null;
+  for (const brute of texte.split('\n')) {
+    const m = LIGNE_RESULTAT.exec(brute.endsWith('\r') ? brute.slice(0, -1) : brute);
+    if (m === null) continue;
+    const resultat = m[1] as string;
+    if (!(RESULTATS_DEPLOIEMENT_AUTO as readonly string[]).includes(resultat)) continue;
+    trouve = { resultat, sha: m[2] ?? null };
+  }
+  return trouve;
+}
 
 /**
  * Début commun au déploiement et à la lecture d'état : configuration automatique, Node 24, exécutables, rsync 3
