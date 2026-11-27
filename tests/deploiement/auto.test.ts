@@ -20,7 +20,7 @@ import { ETAPES, ecrireRecu, type Recu } from '../../scripts/lib/ci-local.ts';
 import { resoudreExecutables } from '../../scripts/lib/deploiement/executables.ts';
 import { appelerVerbe, envoyer, lireEtat } from '../../scripts/lib/deploiement/transport.ts';
 import { executer } from '../../scripts/deploy-auto.ts';
-import { executerDeploiementAuto, RESULTATS_DEPLOIEMENT_AUTO, type ContexteAuto } from '../../scripts/lib/deploiement/auto.ts';
+import { estHorsLigne, executerDeploiementAuto, RESULTATS_DEPLOIEMENT_AUTO, type ContexteAuto } from '../../scripts/lib/deploiement/auto.ts';
 import { HOTE_FACTICE, MOT_DE_PASSE_FACTICE, UTILISATEUR_FACTICE, creerFauxServeur, type FauxServeur, type OptionsFauxServeur } from '../helpers/faux-serveur.ts';
 
 const nettoyages: (() => void)[] = [];
@@ -467,6 +467,76 @@ describe('deploy:auto contre la vraie commande forcée en mode --auto', () => {
     const { code, texte, lignes } = await deployerAuto(b, { envelopper });
     assert.equal(code, 9, texte);
     assert.equal(derniereLigne(lignes), `resultat=hors_ligne sha=${b.S.slice(0, 12)}`);
+  });
+
+  // WR-07 : messages réels de ssh (OpenSSH, macOS et Linux) pour une panne réseau transitoire.
+  const PANNES_RESEAU = [
+    `ssh: Could not resolve hostname ${HOTE_FACTICE}: nodename nor servname provided, or not known`,
+    `ssh: Could not resolve hostname ${HOTE_FACTICE}: Temporary failure in name resolution`,
+    `ssh: connect to host ${HOTE_FACTICE} port 22: Connection timed out`,
+    `ssh: connect to host ${HOTE_FACTICE} port 22: Operation timed out`,
+    `ssh: connect to host ${HOTE_FACTICE} port 22: No route to host`,
+    `ssh: connect to host ${HOTE_FACTICE} port 22: Connection refused`,
+    `ssh: connect to host ${HOTE_FACTICE} port 22: Network is unreachable`,
+    `ssh: connect to host ${HOTE_FACTICE} port 22: Network is down`,
+    `ssh: connect to host ${HOTE_FACTICE} port 22: Host is down`,
+    'kex_exchange_identification: read: Connection reset by peer',
+    'kex_exchange_identification: Connection closed by remote host',
+    `Connection closed by ${HOTE_FACTICE} port 22`,
+    'ssh_exchange_identification: Connection closed by remote host',
+    'client_loop: send disconnect: Broken pipe',
+    `Connection to ${HOTE_FACTICE} port 22 timed out`,
+    'Connection timed out during banner exchange',
+  ];
+
+  it('WR-07 : estHorsLigne reconnaît les pannes réseau transitoires, pas les refus d\'authentification ni d\'hôte', () => {
+    for (const m of PANNES_RESEAU) assert.equal(estHorsLigne(m), true, m);
+    for (const m of [
+      `${UTILISATEUR_FACTICE}@${HOTE_FACTICE}: Permission denied (publickey).`,
+      'Host key verification failed.',
+      'refusé : mode auto : production seulement',
+      'échec : verrou occupé depuis 20 s',
+      '',
+    ]) {
+      assert.equal(estHorsLigne(m), false, m);
+    }
+  });
+
+  const ssh255 = (verbe: string, stderr: string) => (l: Lanceur): Lanceur => (x) =>
+    x.args.at(-1) === verbe && x.commande.endsWith('/ssh')
+      ? Promise.resolve({ code: 255, signal: null, stdout: '', stderr, dureeMs: 1, delaiDepasse: false })
+      : l(x);
+
+  for (const m of [
+    `ssh: connect to host ${HOTE_FACTICE} port 22: Connection refused`,
+    `ssh: connect to host ${HOTE_FACTICE} port 22: No route to host`,
+    'kex_exchange_identification: read: Connection reset by peer',
+    `Connection closed by ${HOTE_FACTICE} port 22`,
+  ]) {
+    it(`WR-07 : sonde en panne réseau (${m.replace(HOTE_FACTICE, '<hôte>')}) : code 9 hors_ligne, pas serveur_non_restreint`, async () => {
+      const b = banc();
+      recuVert(b);
+      const { code, texte, lignes } = await deployerAuto(b, { envelopper: ssh255('etat essai', m) });
+      assert.equal(code, 9, texte);
+      assert.equal(derniereLigne(lignes), `resultat=hors_ligne sha=${b.S.slice(0, 12)}`);
+      assert.equal(b.faux.journal('rsync').length, 0, 'aucun envoi');
+    });
+  }
+
+  it('WR-07 : etat production coupé (Broken pipe) après la sonde : code 9 hors_ligne', async () => {
+    const b = banc();
+    recuVert(b);
+    const { code, texte, lignes } = await deployerAuto(b, { envelopper: ssh255('etat production', 'client_loop: send disconnect: Broken pipe') });
+    assert.equal(code, 9, texte);
+    assert.equal(derniereLigne(lignes), `resultat=hors_ligne sha=${b.S.slice(0, 12)}`);
+  });
+
+  it('WR-07 : refus d\'authentification (255, Permission denied) à la sonde : reste serveur_non_restreint (code 6)', async () => {
+    const b = banc();
+    recuVert(b);
+    const { code, texte, lignes } = await deployerAuto(b, { envelopper: ssh255('etat essai', `${UTILISATEUR_FACTICE}@${HOTE_FACTICE}: Permission denied (publickey).`) });
+    assert.equal(code, 6, texte);
+    assert.equal(derniereLigne(lignes), `resultat=serveur_non_restreint sha=${b.S.slice(0, 12)}`);
   });
 
   it('fumée en échec : retour automatique vers la version d\'avant, code 4', { skip: !BASCULE && RAISON_MV }, async () => {

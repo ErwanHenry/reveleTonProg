@@ -131,7 +131,16 @@ const SIGNAUX = ['SIGINT', 'SIGTERM', 'SIGHUP'] as const;
 const NOMS_FIXES = ['git', 'bash', 'ssh', 'ssh-keygen', 'curl', 'jq', 'sandbox-exec', 'npm'];
 const CI_YML = fileURLToPath(new URL('../../../.github/workflows/ci.yml', import.meta.url));
 const DIRECT: AgentSsh = { socket: null };
-const HORS_LIGNE = /Could not resolve hostname|Network is unreachable|Operation timed out|Connection timed out/;
+/**
+ * Pannes réseau transitoires de ssh (code 255) : résolution de nom, route, délai, refus, coupure pendant l'échange de
+ * clés ou en cours de session (WR-07). Elles donnent hors_ligne (reprise au passage suivant), jamais
+ * serveur_non_restreint, qui est un arrêt définitif.
+ */
+const HORS_LIGNE =
+  /Could not resolve hostname|Temporary failure in name resolution|Name or service not known|nodename nor servname|Network is (?:unreachable|down)|No route to host|Host is (?:down|unreachable)|Connection (?:refused|reset|closed)|timed out|kex_exchange_identification|ssh_exchange_identification|Broken pipe/i;
+
+/** Vrai si le détail d'un échec ssh (code 255) décrit une panne réseau transitoire (hors_ligne). */
+export const estHorsLigne = (detail: string): boolean => HORS_LIGNE.test(detail);
 const utc = (d: Date): string => d.toISOString().replace(/\.\d{3}Z$/, 'Z');
 
 class FinAuto extends Error {
@@ -229,7 +238,7 @@ async function sonder(ctx: ContexteAuto, s: Session): Promise<void> {
   } catch (e) {
     if (!(e instanceof EchecVerbe)) throw e;
     if (e.codeBrut === 64) return;
-    if (e.codeBrut === 255 && HORS_LIGNE.test(e.detail)) throw new FinAuto('hors_ligne', 'serveur injoignable (connexion ssh impossible) : rien n\'a été envoyé');
+    if (e.codeBrut === 255 && estHorsLigne(e.detail)) throw new FinAuto('hors_ligne', 'serveur injoignable (connexion ssh impossible) : rien n\'a été envoyé');
     throw new FinAuto('serveur_non_restreint', `le serveur n'a pas refusé le verbe interdit à la clé automatique comme attendu (code ${e.codeBrut ?? 'aucun'}) : rien n'a été envoyé`);
   }
   throw new FinAuto('serveur_non_restreint', "le serveur a répondu au verbe interdit `etat essai` : la clé automatique n'est pas restreinte (--auto), rien n'a été envoyé");
@@ -243,7 +252,7 @@ async function etatProduction(ctx: ContexteAuto, s: Session, moment: string): Pr
     if (e === null || e.cible !== 'production') throw new FinAuto('deploiement_refuse', `réponse de etat illisible ${moment}`);
     return e.courant;
   } catch (e) {
-    if (e instanceof EchecVerbe && e.codeBrut === 255 && HORS_LIGNE.test(e.detail)) throw new FinAuto('hors_ligne', 'serveur injoignable (connexion ssh impossible)');
+    if (e instanceof EchecVerbe && e.codeBrut === 255 && estHorsLigne(e.detail)) throw new FinAuto('hors_ligne', 'serveur injoignable (connexion ssh impossible)');
     throw e;
   }
 }
