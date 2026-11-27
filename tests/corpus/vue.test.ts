@@ -20,6 +20,7 @@ import {
   themesLivres,
 } from '../../src/lib/corpus/vue.ts';
 import type { Candidat } from '../../src/lib/corpus/types.ts';
+import { initiales } from '../../src/lib/initiales.ts';
 import { dansPerimetre } from '../../src/lib/content-core/rules/equite.ts';
 import { TRAPPE_BROUILLON, materialiserCorpusM1, nettoyerCorpusM1 } from '../helpers/corpus-m1.ts';
 import { REPO_ROOT, SCHEMAS_DIR } from '../helpers/validate-yaml.ts';
@@ -457,5 +458,51 @@ describe('W1 : « (livré) » sur Méthode suit les thèmes visibles du build', 
     b.mesures = [];
     b.couverture = [];
     assert.deepEqual(themesLivres(livres, construireCorpus(b, 'production')), []);
+  });
+});
+
+describe('vue : thèmes à venir (P-05, 10.4)', () => {
+  it('production : un publié hors liste et un brouillon, dans l\'ordre des thèmes', () => {
+    const b = copie();
+    b.themes.find((t) => t.id === 'ecole')!.statut_relecture = 'brouillon';
+    assert.deepEqual(construireCorpus(b, 'production', ['logement']).themesAVenir, [
+      { id: 'ecole', nom: 'École' },
+      { id: 'climat', nom: 'Climat' },
+    ]);
+  });
+
+  it('production, liste de deux thèmes : seul le thème relu non publié reste à venir', () => {
+    assert.deepEqual(construireCorpus(copie(), 'production', ['logement', 'climat']).themesAVenir, [{ id: 'ecole', nom: 'École' }]);
+  });
+
+  it('préversion : liste vide', () => {
+    assert.deepEqual(construireCorpus(copie(), 'preview').themesAVenir, []);
+  });
+
+  it('seulement id et nom, jamais un thème à la fois visible et à venir', () => {
+    const c = construireCorpus(copie(), 'production', ['logement']);
+    assert.ok(c.themesAVenir.length > 0);
+    for (const t of c.themesAVenir) assert.deepEqual(Object.keys(t).sort(), ['id', 'nom']);
+    const visibles = new Set(c.themes.map((t) => t.theme.id));
+    assert.ok(c.themesAVenir.every((t) => !visibles.has(t.id)));
+  });
+
+  it('deux thèmes de même ordre sont départagés par id', () => {
+    const b = copie();
+    for (const t of b.themes) t.ordre = 1;
+    assert.deepEqual(construireCorpus(b, 'production', []).themesAVenir.map((t) => t.id), [...b.themes.map((t) => t.id)].sort((x, y) => x.localeCompare(y, 'fr')));
+  });
+});
+
+describe('vue : initiales des candidats (P-08, 10.4)', () => {
+  it('chaque candidat porte initiales(nomAffiche), jamais vide', () => {
+    const { candidats } = construireCorpus(copie(), 'preview');
+    assert.ok(candidats.length > 0);
+    for (const c of candidats) {
+      assert.equal(c.initiales, initiales(c.nomAffiche));
+      assert.notEqual(c.initiales, '');
+    }
+    assert.equal(candidats.find((c) => c.nomAffiche === 'Élise Érard')?.initiales, 'ÉÉ');
+    assert.equal(candidats.find((c) => c.nomAffiche === 'Paul de Villefranche')?.initiales, 'PV');
   });
 });
