@@ -70,7 +70,7 @@
 }
 
 /* Nom du site : Body 18/600 sur téléphone (contrat C1, tient sur la ligne des rubriques), Heading 24/600 dès 37.5em,
-   avec 8 px sous le sous-titre (sur téléphone, la hauteur est gardée pour laisser la première tuile au premier écran) */
+   avec 8 px sous le sous-titre (sur téléphone, la hauteur est gardée pour laisser le bouton du premier thème au premier écran) */
 @media (min-width: 37.5em) {
   .entete .site-nom {
     font-size: var(--t-titre);
@@ -102,26 +102,135 @@
   margin-top: 2rem;
 }
 
-/* Accueil (proposition 1 du lot B) : présentation, trois garanties, les thèmes, puis le lien vers la Méthode */
+/* Accueil : haut (surtitre, titre, présentation, bouton, bloc « 2027 »), trois garanties, les thèmes, puis le lien vers la Méthode */
 .hall-presentation,
 .garanties {
   max-width: 68ch;
 }
 
-.hall-presentation {
+/* R-5 : filet rouge du surtitre, même géométrie que R-2 */
+.hall-surtitre {
   margin: 0 0 0.5rem;
+  padding-inline-start: 0.5rem;
+  border-inline-start: 4px solid var(--rouge);
+  color: var(--nuit);
+  font-size: var(--t-label);
+  font-weight: 600;
 }
 
-/* Liste sans puces (role="list" garde la sémantique de liste dans Safari), en Label pour rester au premier écran */
-.garanties {
+.hall-presentation {
   margin: 0;
-  padding: 0;
+}
+
+/* Bouton principal : le thème du premier écran mobile (règle 7 de la charte). Jamais de rouge sur lui. */
+.hall-action {
+  margin: 1rem 0 0;
+}
+
+.bouton {
+  display: inline-flex;
+  align-items: center;
+  min-height: 3rem;
+  padding: 0.5rem 1.5rem;
+  background: var(--nuit);
+  color: var(--carte);
+  border-radius: var(--rayon-bloc);
+  font-size: var(--t-corps);
+  font-weight: 600;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+@media (hover: hover) {
+  .bouton:hover {
+    text-decoration: underline;
+    text-decoration-thickness: 3px;
+    text-underline-offset: 3px;
+  }
+}
+
+/* Bloc « 2027 » décoratif : absent sous 60em (aria-hidden dans le HTML, display: none ici) */
+.hall-annee {
+  display: none;
+}
+
+.hall-annee-chiffre {
+  margin: 0;
+  color: var(--nuit);
+  font-family: var(--police-titres);
+  font-size: var(--t-affiche);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.hall-annee-tours {
+  margin: 0.5rem 0 0;
+  color: var(--encre-douce);
+  font-size: var(--t-corps);
+}
+
+@media (min-width: 60em) {
+  .hall-tete {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: 3rem;
+    align-items: center;
+  }
+
+  .hall-tete h1 {
+    hyphens: manual;
+  }
+
+  /* R-6 : filet rouge du bloc « 2027 » */
+  .hall-annee {
+    display: block;
+    padding: 0.5rem 0 0.5rem 1.5rem;
+    border-inline-start: 4px solid var(--rouge);
+  }
+}
+
+/* Bande teintée des trois garanties : liste sans puces (role="list" garde la sémantique dans Safari) */
+.garanties {
+  margin: 1.5rem 0 2rem;
+  padding: 1rem;
+  background: var(--panneau);
+  border-radius: var(--rayon-bloc);
   list-style: none;
   font-size: var(--t-label);
 }
 
 .garanties li {
+  margin: 0 0 1rem;
+}
+
+.garanties li:last-child {
+  margin-bottom: 0;
+}
+
+/* R-7 : soulignement rouge des étiquettes de garanties */
+.garantie-titre {
+  display: block;
+  inline-size: fit-content;
   margin: 0 0 0.25rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 3px solid var(--rouge);
+  color: var(--nuit);
+  font-size: var(--t-corps);
+  font-weight: 600;
+}
+
+@media (min-width: 60em) {
+  .garanties {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.5rem;
+    padding: 1.5rem;
+    max-width: none;
+  }
+
+  .garanties li {
+    margin: 0;
+  }
 }
 
 /* Liens autonomes de l'accueil, hors de .lecteur depuis la proposition 1 : ils portent eux-mêmes leur cible de 44 px,
@@ -320,6 +429,11 @@ main:has(> .lecteur > .niveaux #niv-aine:checked) :is(.hall-candidats, .hall-met
   .lignes,
   .ligne {
     border-color: CanvasText;
+  }
+
+  .garanties,
+  .bouton {
+    border: 1px solid CanvasText;
   }
 }
 

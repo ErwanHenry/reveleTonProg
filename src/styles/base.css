@@ -37,6 +37,20 @@
   --rayon-pastille: 1.5rem;
 }
 
+/* P-09 : titre principal plus grand par paliers, 32 px inchangé sur téléphone pour laisser le bouton au premier écran.
+   Aucun vw ni clamp : le zoom du texte reste proportionnel (WCAG 1.4.4). */
+@media (min-width: 37.5em) {
+  :root {
+    --t-affiche: 2.5rem;
+  }
+}
+
+@media (min-width: 60em) {
+  :root {
+    --t-affiche: 3rem;
+  }
+}
+
 /* Une couleur dominante par thème (jamais par candidat ni par parti). Un thème sans règle garde --theme neutre. */
 [data-theme="logement"] { --theme: #A3401C; }
 [data-theme="travail"] { --theme: #8A5200; }

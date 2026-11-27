@@ -207,6 +207,18 @@ main:has(> .lecteur > .niveaux #niv-aine:checked) {
   font-size: var(--t-corps);
 }
 
+@media (min-width: 37.5em) {
+  main:has(> .lecteur > .niveaux #niv-aine:checked) {
+    --t-affiche: 2.75rem;
+  }
+}
+
+@media (min-width: 60em) {
+  main:has(> .lecteur > .niveaux #niv-aine:checked) {
+    --t-affiche: 3.25rem;
+  }
+}
+
 .lecteur:has(> .niveaux #niv-aine:checked) :is(a, button, label, summary):not(.terme) {
   min-height: 3rem;
 }
