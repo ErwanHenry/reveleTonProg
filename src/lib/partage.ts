@@ -1,3 +1,5 @@
+import { libellesTours } from './dates-tours.ts';
+
 // Textes de l'image de partage (proposition 6 du lot B, D-04). Source unique : la page de capture
 // scripts/partage.html (via scripts/partage.ts) et les balises og:image de src/layouts/Base.astro la lisent ici.
 // Aucun nom de site dans l'image : elle ne dépend donc pas du nom affiché (proposition 5) ; le nom est porté par
@@ -8,8 +10,8 @@
 // scripts/partage.ts --check refuse une image qui ne correspond plus au texte).
 export const PROMESSE_PARTAGE = 'Les programmes de la présidentielle 2027, expliqués et sourcés.';
 
-// Ligne au-dessus de la phrase, dates des deux tours (18 avril et 2 mai 2027).
-export const REPERE_PARTAGE = 'Élection présidentielle, 18 avril et 2 mai 2027';
+// Ligne au-dessus de la phrase : dates des deux tours, calculées depuis TOURS (src/lib/dates-tours.ts).
+export const REPERE_PARTAGE = libellesTours().repere;
 
 /** Texte alternatif de l'image (og:image:alt) : la phrase de l'image. */
 export const ALT_PARTAGE = PROMESSE_PARTAGE;
