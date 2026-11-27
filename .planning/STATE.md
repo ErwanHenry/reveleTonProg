@@ -61,6 +61,7 @@ Progress v1.1: [..........] 0/5 phases, 0 plans
 
 - Phase 10.1 inserted after Phase 10: Veille des candidatures (watchdog), demande d'Erwan du 2026-11-20 ; cadrage validé le même jour
 - Phase 10.2 inserted after Phase 10.1: Charte graphique D (bleu blanc rouge), choisie par Erwan le 2026-11-24 après un test A/B à l'aveugle par lecteurs simulés ; branche design/charte-d
+- Phase 10.4 inserted after Phase 10.3: Charte D, textes acceptés P-01 à P-10 (accord d'Erwan du 2026-11-27, « Oui, comme conseillé ») ; branche design/charte-d-textes
 - Phase 10.3 inserted 2026-11-26 : mise à jour autonome des statuts (niveau 2) ; 11 plans exécutés et vérifiés le 2026-11-27, code livré désactivé, mise en service (clé automatique, ligne authorized_keys, jeton de l'agent, moyen de push, veille installer, marqueur auto-actif) par la session principale avec l'accord d'Erwan
 
 ### Decisions

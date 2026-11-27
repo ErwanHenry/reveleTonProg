@@ -30,8 +30,9 @@ Détail complet : [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) ; exi
 - [x] **Phase 9.2: CI et déploiement depuis le Mac** (INSÉRÉE le 2026-11-18, premier déploiement local le 2026-11-19) : commandes locales de contrôle et de déploiement, mêmes gardes que le pipeline GitHub, confirmation humaine au clavier, clé dédiée
 - [ ] **Phase 10: Import de décembre** : analyseur plafonné, cohérence de l'instantané, import des statuts en pull request relue (10 au 13 décembre, gel du 13 au 15)
 - [x] **Phase 10.1: Veille des candidatures** (INSÉRÉE le 2026-11-20, demande d'Erwan) : veille planifiée des entrées et des désistements, rapport et alerte, décisions d'Erwan saisies par lui seul, branche d'import préparée sans push ; à livrer avant le 10 décembre
-- [ ] **Phase 10.2: Charte graphique D bleu blanc rouge** (INSÉRÉE le 2026-11-24, choix d'Erwan) : charte D appliquée aux pages Astro sans changer les textes ni les données, garde-fous verts, captures avant et après dans la PR
+- [x] **Phase 10.2: Charte graphique D bleu blanc rouge** (INSÉRÉE le 2026-11-24, choix d'Erwan) : charte D appliquée aux pages Astro sans changer les textes ni les données, garde-fous verts, captures avant et après dans la PR (fusionnée le 2026-11-27, PR #14 et #16)
 - [ ] **Phase 10.3: Mise à jour autonome des statuts** (INSÉRÉE le 2026-11-26, demande d'Erwan, niveau 2) : quand le jeu public change, statuts, entrées, sorties et cases de couverture sont importés, relus par agent d'IA et mis en ligne sans geste d'Erwan, avec alerte Telegram ; textes de mesures hors périmètre
+- [ ] **Phase 10.4: Charte D, textes acceptés P-01 à P-10** (INSÉRÉE le 2026-11-27, accord d'Erwan) : étiquettes des garanties, bloc 2027, numéros, bouton, thèmes à venir, logo, surtitre, initiales, h1 plus grand, image de partage, tout calculé depuis les données
 
 ## Piste 0 (Erwan, hors code)
 
@@ -306,6 +307,23 @@ Plans:
 - [x] 10.3-10-PLAN.md — `npm run veille -- auto`, sondes, lanceur launchd, sentinelles et gardes statiques (vague 5)
 - [x] 10.3-11-PLAN.md — RUNBOOK (mise en service, retrait de la clé), ADR-065, AUTO-01 à AUTO-04 (vague 6)
 
+### Phase 10.4: Charte D, textes acceptés P-01 à P-10 (INSÉRÉE)
+
+**Goal**: Les dix éléments de la maquette D qui ajoutent du texte, acceptés par Erwan le 2026-11-27 (« Oui, comme conseillé »), sont en ligne sur la charte D sans rien écrire en dur : dates des tours, thèmes et comptes viennent des données ; tous les garde-fous de la phase 10.2 restent verts.
+**Depends on**: Phase 10.2 (charte D fusionnée, PR #14 et #16)
+**Requirements**: CHA-05, CHA-06, CHA-07
+**Success Criteria** (what must be TRUE):
+
+  1. L'accueil montre les étiquettes des garanties, le bloc « 2027 » avec les dates des deux tours lues dans `src/lib/dates-tours.ts`, le surtitre, le bouton « Lire le thème … » et la pastille « Lire » au nom du thème lu dans les données, des tuiles numérotées et des tuiles pleines pour les thèmes à venir tirés des données ; l'en-tête porte un logo carré « R » ; les cartes de candidats portent des vignettes à initiales calculées depuis le nom, identiques pour tous.
+  2. Le titre principal est plus grand par des jetons de taille mis à jour avec leurs tests, le mode Gros caractères reste cohérent, et sur téléphone la tuile ou le bouton du thème reste au premier écran.
+  3. L'image de partage est régénérée aux couleurs de la charte D, seule image admise par check-dist, jamais chargée par le visiteur.
+  4. Aucun texte ni nombre écrit à la main là où la donnée existe (tests qui échoueraient sur un littéral) ; zéro JS ajouté, accessibilité AA, poids et Slow 4G simulé, CSP à empreintes et check-dist verts ; pas d'imitation de la charte de l'État ; PR avec captures avant et après, sans fusion ni déploiement.
+
+**Plans**: 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 10.4 to break down)
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -323,5 +341,6 @@ Plans:
 | 9.2 CI et déploiement depuis le Mac | v1.1 | 8/8 | Complete | 2026-11-19 |
 | 10. Import de décembre | v1.1 | 1/6 | In Progress|  |
 | 10.1 Veille des candidatures | v1.1 | 5/5 | Complete (Telegram et Healthchecks à configurer par Erwan) | 2026-11-20 |
-| 10.2 Charte graphique D bleu blanc rouge | v1.1 | 5/5 | Exécutée, PR ouverte, en attente de la validation d'Erwan |  |
+| 10.2 Charte graphique D bleu blanc rouge | v1.1 | 5/5 | Complete | 2026-11-27 |
 | 10.3 Mise à jour autonome des statuts | v1.1 | 11/11 | Code complet, mise en service en attente (clé, jeton, push, launchd) |  |
+| 10.4 Charte D, textes acceptés P-01 à P-10 | v1.1 | 0/? | Not started |  |
