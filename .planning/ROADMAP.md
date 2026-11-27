@@ -319,10 +319,14 @@ Plans:
   3. L'image de partage est régénérée aux couleurs de la charte D, seule image admise par check-dist, jamais chargée par le visiteur.
   4. Aucun texte ni nombre écrit à la main là où la donnée existe (tests qui échoueraient sur un littéral) ; zéro JS ajouté, accessibilité AA, poids et Slow 4G simulé, CSP à empreintes et check-dist verts ; pas d'imitation de la charte de l'État ; PR avec captures avant et après, sans fusion ni déploiement.
 
-**Plans**: 0 plans
+**Plans**: 5 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 10.4 to break down)
+- [ ] 10.4-01-PLAN.md : données calculées (initiales, textes des tours, thèmes à venir, initiale du site) et image de partage aux couleurs D (P-10)
+- [ ] 10.4-02-PLAN.md : haut de l'accueil (surtitre P-07, bloc 2027 P-02, bouton P-04, étiquettes des garanties P-01), titre par paliers (P-09), premier écran mobile sur le bouton
+- [ ] 10.4-03-PLAN.md : tuiles numérotées (P-03), pastille « Lire » (P-04), thèmes à venir en tuiles pleines (P-05), règle U-05
+- [ ] 10.4-04-PLAN.md : logo carré « R » (P-06) et vignettes à initiales (P-08)
+- [ ] 10.4-05-PLAN.md : clôture (textes visibles inchangés hors P-01 à P-08, recensement du rouge, garde, mesures, captures avant et après, renvois)
 
 ## Progress
 
