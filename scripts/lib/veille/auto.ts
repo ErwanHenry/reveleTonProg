@@ -36,7 +36,7 @@ import { ligneAmont } from './decider.ts';
 import { dossierVerrou, ecrirePrive, lireEtat } from './etat.ts';
 import { ID_CANDIDAT, idsPris, ligneCorrespondance } from './identite.ts';
 import type { LigneCorrespondanceAuto } from './identite.ts';
-import { ecartsCouverture, ecrireCasesManquantes, ecrireCorrespondances, relireParAgent, synchroniserCouverture } from './ecriture-auto.ts';
+import { CasesNonVerifiees, ecartsCouverture, ecrireCasesManquantes, ecrireCorrespondances, relireParAgent, synchroniserCouverture } from './ecriture-auto.ts';
 import { cheminsAuto, modeAuto } from './mode-auto.ts';
 import { verifierPerimetre } from './perimetre-ecriture.ts';
 import { miseAJourMecanique } from './preparer.ts';
@@ -363,7 +363,13 @@ async function executerPassage(
 
   // (11) Couverture et cases par gabarits, relecture par l'agent (cases d'abord, statuts ensuite).
   synchroniserCouverture(wt, urls, aujourdhui);
-  const cases = ecrireCasesManquantes(wt, aujourdhui);
+  let cases: { theme: string; candidat: string }[];
+  try {
+    cases = ecrireCasesManquantes(wt, aujourdhui, new Set(ecarts.aAjouter));
+  } catch (e) {
+    if (e instanceof CasesNonVerifiees) throw new Arret('controle_rouge', e.message, e.ids.flatMap(ficheValide));
+    throw e;
+  }
   const relecture = relireParAgent(
     wt,
     { cases, statuts: aVerifier.map((v) => ({ candidat: v.fiche, code: v.code })) },
