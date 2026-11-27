@@ -41,7 +41,11 @@ export interface OptionsMonde {
   scenariosClaude?: ScenarioClaude[];
   /** Textes des sources par URL ; une URL absente est inaccessible. */
   textes?: Record<string, TexteSource>;
-  ciLocal?: 'vert' | 'rouge' | 'verrou';
+  /**
+   * Faux ci:local : vert, rouge, verrou (verrou tenu par un processus vivant, message réel de ci-local, code 2) ou
+   * verrou_fini (code 2 et message réel, mais l'exécution qui tenait le verrou a fini avant la relecture : plus de verrou).
+   */
+  ciLocal?: 'vert' | 'rouge' | 'verrou' | 'verrou_fini';
   /** Sorties scriptées de `deploy-auto.ts etat` (une par appel, la dernière se répète). */
   deployAuto?: string[][];
   telegram?: boolean;
@@ -263,10 +267,14 @@ export function creerMondeAuto(o: OptionsMonde = {}): MondeAuto {
     if (commande === nodeReel && (args[0] ?? '').endsWith('scripts/ci-local.ts')) {
       const cwd = options?.cwd ?? depot;
       if (o.ciLocal === 'rouge') return { status: 1, stdout: '', stderr: 'étape en échec' };
-      if (o.ciLocal === 'verrou') {
-        mkdirSync(chemins.verrouCi, { recursive: true, mode: 0o700 });
-        writeFileSync(path.join(chemins.verrouCi, 'pid'), `${process.pid}\n`);
-        return { status: 2, stdout: '', stderr: 'une autre exécution tourne déjà' };
+      if (o.ciLocal === 'verrou' || o.ciLocal === 'verrou_fini') {
+        // Message réel de scripts/ci-local.ts (Sortie 2 sur VerrouPris de scripts/lib/ci-local.ts).
+        const message = `ci:local : une autre exécution tourne déjà (pid ${process.pid}, verrou ${chemins.verrouCi})`;
+        if (o.ciLocal === 'verrou') {
+          mkdirSync(chemins.verrouCi, { recursive: true, mode: 0o700 });
+          writeFileSync(path.join(chemins.verrouCi, 'pid'), `${process.pid}\n`);
+        }
+        return { status: 2, stdout: '', stderr: `${message}\n` };
       }
       const commit = sh(cwd, ['rev-parse', 'HEAD']);
       ecrireRecu(home, {

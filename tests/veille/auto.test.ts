@@ -3,9 +3,11 @@
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { readFileSync, readdirSync, statSync, writeFileSync, appendFileSync, existsSync, mkdirSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, writeFileSync, appendFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, utimesSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { preparerPassage, MAX_PERSONNES } from '../../scripts/lib/veille/auto.ts';
+import { MESSAGE_VERROU_CI, preparerPassage, MAX_PERSONNES, sortieVerrouCi, verrouTenu } from '../../scripts/lib/veille/auto.ts';
+import { executer as executerCiLocal } from '../../scripts/ci-local.ts';
 import type { Preparation } from '../../scripts/lib/veille/auto.ts';
 import { cheminsLocaux } from '../../scripts/lib/deploiement/config.ts';
 import { CODES_ARRET } from '../../scripts/lib/veille/codes-auto.ts';
@@ -425,6 +427,19 @@ describe('préparation : écriture, garde de périmètre, commit et ci:local', (
     assert.equal((await preparerPassage(m.deps, { mode: 'a_blanc' })).code, 'verrou_pris');
   });
 
+  it('WR-08 : verrou relâché avant la relecture, message réel de ci:local : verrou_pris, jamais ci_rouge', async () => {
+    const m = monde({ modifierAmont: nouvelle(), ciLocal: 'verrou_fini' });
+    assert.equal((await preparerPassage(m.deps, { mode: 'a_blanc' })).code, 'verrou_pris');
+  });
+
+  it('WR-08 : verrou tout juste créé, sans fichier pid : verrou_pris, ci:local non lancé', async () => {
+    const m = monde({ modifierAmont: nouvelle() });
+    mkdirSync(path.join(m.home, '.cache', 'rtp', 'ci', '.verrou'), { recursive: true });
+    const r = await preparerPassage(m.deps, { mode: 'a_blanc' });
+    assert.equal(r.code, 'verrou_pris');
+    assert.ok(!nomsAppels(m).some((l) => l.includes('ci-local.ts')));
+  });
+
   it('tous les codes d’arrêt renvoyés appartiennent à la liste fermée', () => {
     for (const c of ['motif_a_decider', 'date_au_mois', 'garde_volume', 'conflit_import', 'identite_ambigue', 'programme_signale', 'volume_anormal', 'doute_agent', 'source_inaccessible', 'controle_rouge', 'perimetre_ecriture', 'ci_rouge', 'verrou_pris', 'hors_ligne', 'main_non_deploye']) {
       assert.ok((CODES_ARRET as readonly string[]).includes(c), c);
@@ -432,3 +447,50 @@ describe('préparation : écriture, garde de périmètre, commit et ci:local', (
   });
 });
 
+describe('verrou de ci:local (WR-08)', () => {
+  const base = mkdtempSync(path.join(tmpdir(), 'rtp-verrou-ci-'));
+  after(() => rmSync(base, { recursive: true, force: true }));
+  let n = 0;
+  const dossier = (): string => path.join(base, `v${n++}`, '.verrou');
+
+  it('verrouTenu lit le verrou comme ci-local : pid vivant, ou dossier sans pid de moins d’une minute', () => {
+    const absent = dossier();
+    assert.equal(verrouTenu(absent), false);
+    const vivant = dossier();
+    mkdirSync(vivant, { recursive: true });
+    writeFileSync(path.join(vivant, 'pid'), `${process.pid}\n`);
+    assert.equal(verrouTenu(vivant), true);
+    const mort = dossier();
+    mkdirSync(mort, { recursive: true });
+    const fini = spawnSync(process.execPath, ['-e', '0']);
+    writeFileSync(path.join(mort, 'pid'), `${fini.pid}\n`);
+    assert.equal(verrouTenu(mort), false, 'pid d’un processus terminé');
+    const sansPid = dossier();
+    mkdirSync(sansPid, { recursive: true });
+    assert.equal(verrouTenu(sansPid), true, 'dossier sans pid tout juste créé');
+    const ancien = new Date(Date.now() - 5 * 60_000);
+    utimesSync(sansPid, ancien, ancien);
+    assert.equal(verrouTenu(sansPid), false, 'dossier sans pid abandonné depuis plus d’une minute');
+  });
+
+  it('sortieVerrouCi : message de ci-local, sinon verrou encore tenu ; autre sortie 2 sans verrou : non', () => {
+    assert.equal(sortieVerrouCi('ci:local : une autre exécution tourne déjà (pid 12, verrou /x)\n', dossier()), true);
+    assert.equal(sortieVerrouCi('Node 24 exigé (version actuelle v22.0.0)', dossier()), false);
+    const vivant = dossier();
+    mkdirSync(vivant, { recursive: true });
+    writeFileSync(path.join(vivant, 'pid'), `${process.pid}\n`);
+    assert.equal(sortieVerrouCi('', vivant), true);
+  });
+
+  it('contrat : le vrai ci-local sort en 2 avec le message reconnu quand son verrou est tenu', async () => {
+    const home = path.join(base, 'home');
+    const verrou = path.join(home, '.cache', 'rtp', 'ci', '.verrou');
+    mkdirSync(verrou, { recursive: true });
+    writeFileSync(path.join(verrou, 'pid'), `${process.pid}\n`);
+    const lignes: string[] = [];
+    const code = await executerCiLocal([], { home, racine: REPO_ROOT, versionNode: 'v24.12.0', ecrire: (l) => lignes.push(l) });
+    assert.equal(code, 2);
+    assert.match(lignes.join('\n'), MESSAGE_VERROU_CI);
+    assert.ok(existsSync(path.join(verrou, 'pid')), 'le verrou d’autrui est laissé en place');
+  });
+});

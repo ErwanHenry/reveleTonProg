@@ -11,7 +11,7 @@
 //   - le rapport local (noms, citations, coûts, raisons) reste hors dépôt, en 0600 ; le journal, les comptes et les
 //     fiches renvoyés ne contiennent que des identifiants de fiche et des nombres.
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { lireYamlPlafonne } from '../../../src/lib/content-core/yaml-plafonne.ts';
 import { evaluerGelAuto } from '../deploiement/gel-auto.ts';
@@ -400,7 +400,7 @@ async function executerPassage(
   // (14) ci:local complet sur ce commit exact, sauf si une exécution manuelle tient le verrou.
   if (verrouTenu(chemins.verrouCi)) throw new Arret('verrou_pris', 'ci:local est déjà en cours (verrou tenu)', j.fiches);
   const ci = d.executer(d.node, ['scripts/ci-local.ts'], { cwd: wt, timeoutMs: 60 * MIN, env });
-  if (ci.status === 2 && verrouTenu(chemins.verrouCi)) throw new Arret('verrou_pris', 'ci:local a trouvé le verrou tenu', j.fiches);
+  if (ci.status === 2 && sortieVerrouCi(`${ci.stdout}\n${ci.stderr}`, chemins.verrouCi)) throw new Arret('verrou_pris', 'ci:local a trouvé le verrou tenu', j.fiches);
   if (ci.status !== 0) throw new Arret('ci_rouge', `ci:local en échec (code ${String(ci.status)})`, j.fiches);
   const recu = verifierRecu(d.home, sha);
   if (!recu.ok) throw new Arret('ci_rouge', `reçu de ci:local refusé : ${recu.motif}`, j.fiches);
@@ -409,17 +409,49 @@ async function executerPassage(
   return { code: 'pret', sha, comptes: j.comptes, fiches: j.fiches, rapport: '', empreinte };
 }
 
-/** Verrou de ci:local : dossier contenant le pid d'un processus vivant. */
-function verrouTenu(dossier: string): boolean {
-  if (!existsSync(dossier)) return false;
+/**
+ * Message de scripts/ci-local.ts quand son verrou est pris (code de sortie 2) : `ci:local : ` suivi du message de
+ * VerrouPris (scripts/lib/ci-local.ts). Épinglé par un test de contrat qui lance le vrai `executer` de ci-local.
+ */
+export const MESSAGE_VERROU_CI = /^ci:local : une autre exécution tourne déjà /m;
+
+/** Délai pendant lequel ci-local tient pour pris un verrou encore sans fichier pid (prendreVerrou, scripts/lib/ci-local.ts). */
+const VERROU_SANS_PID_MS = MIN;
+
+/**
+ * Verrou de ci:local, lu comme ci-local le lit (WR-08) : dossier contenant le pid d'un processus vivant, ou dossier
+ * sans pid lisible créé il y a moins d'une minute (le détenteur n'a pas encore écrit son pid).
+ */
+export function verrouTenu(dossier: string, maintenant: number = Date.now()): boolean {
+  let creeLe: number;
   try {
-    const pid = Number.parseInt(readFileSync(path.join(dossier, 'pid'), 'utf8').trim(), 10);
-    if (!Number.isInteger(pid) || pid <= 0) return false;
+    creeLe = statSync(dossier).mtimeMs;
+  } catch {
+    return false;
+  }
+  let pid: number | null = null;
+  try {
+    const n = Number.parseInt(readFileSync(path.join(dossier, 'pid'), 'utf8').trim(), 10);
+    pid = Number.isInteger(n) && n > 0 ? n : null;
+  } catch {
+    pid = null;
+  }
+  if (pid === null) return maintenant - creeLe < VERROU_SANS_PID_MS;
+  try {
     process.kill(pid, 0);
     return true;
   } catch (e) {
     return (e as NodeJS.ErrnoException).code === 'EPERM';
   }
+}
+
+/**
+ * Sortie 2 de ci:local due au verrou (WR-08) : son message dédié (lu même si l'exécution manuelle qui tenait le verrou
+ * a fini entre-temps), ou, en cas d'ambiguïté (sortie illisible), un verrou encore tenu au sens de ci-local, y compris
+ * sans fichier pid. Le doute donne `verrou_pris`, transitoire, jamais `ci_rouge`.
+ */
+export function sortieVerrouCi(sortie: string, dossier: string, maintenant: number = Date.now()): boolean {
+  return MESSAGE_VERROU_CI.test(sortie) || verrouTenu(dossier, maintenant);
 }
 
 // ---------------------------------------------------------------------------------------------------------------
