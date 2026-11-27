@@ -6,6 +6,7 @@ import path from 'node:path';
 import { lireYamlPlafonne } from '../../../src/lib/content-core/yaml-plafonne.ts';
 import { lireCorrespondances } from '../datagouv.ts';
 import { typeSourceStatut } from './type-source.ts';
+import type { ReglesTypeSource } from './type-source.ts';
 import type { LigneAmont, TYPES_SOURCE } from './decider.ts';
 
 export const ID_CANDIDAT = /^[a-z][a-z0-9]*(-[a-z0-9]+)+$/;
@@ -132,14 +133,14 @@ export type RefusProgramme = { refus: 'programme_signale'; raison: string };
 export function ligneCorrespondance(
   ligne: LigneAmont & { liens?: Record<string, string> },
   pris: ReadonlySet<string>,
-  institutions: readonly string[],
+  regles: ReglesTypeSource,
 ): LigneCorrespondanceAuto | RefusIdentite | RefusProgramme {
   if (ligne.liens?.programme !== undefined && (ligne.statut === 'declare' || ligne.statut === 'primaire')) {
     return { refus: 'programme_signale', raison: 'le jeu amont signale un programme : cas réservé' };
   }
   const id = deriverIdentite(ligne, pris);
   if ('refus' in id) return id;
-  const entree: LigneCorrespondanceAuto['entree'] = { ...id, type_source_statut: typeSourceStatut(ligne, institutions) };
+  const entree: LigneCorrespondanceAuto['entree'] = { ...id, type_source_statut: typeSourceStatut(ligne, regles) };
   if (ligne.statut === 'renonce') entree.motif = 'non_candidat';
   return { idAmont: ligne.id, entree };
 }

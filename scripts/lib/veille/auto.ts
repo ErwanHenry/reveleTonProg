@@ -42,7 +42,7 @@ import { verifierPerimetre } from './perimetre-ecriture.ts';
 import { miseAJourMecanique } from './preparer.ts';
 import { lireConfigPush, preparerPush, pousserAvanceRapide } from './pousser.ts';
 import type { ExecuterEnv } from './pousser.ts';
-import { lireDomainesInstitutions } from './type-source.ts';
+import { lireReglesTypeSource } from './type-source.ts';
 import type { TexteSource } from './sources-texte.ts';
 
 /** Au plus 6 personnes par passage : au-delà, le jeu amont est trop surprenant pour être pris sans regard humain. */
@@ -282,10 +282,10 @@ async function executerPassage(
 
   // (5) Lignes de correspondances des personnes nouvelles, par règles fixes.
   const pris = idsPris(wt);
-  const institutions = lireDomainesInstitutions(wt);
+  const regles = lireReglesTypeSource(wt);
   const lignes: LigneCorrespondanceAuto[] = [];
   for (const x of classement.decisions.filter((y) => y.genre === 'correspondance')) {
-    const r = ligneCorrespondance(ligneAmont(octets, x.idAmont) as Parameters<typeof ligneCorrespondance>[0], pris, institutions);
+    const r = ligneCorrespondance(ligneAmont(octets, x.idAmont) as Parameters<typeof ligneCorrespondance>[0], pris, regles);
     if ('refus' in r) throw new Arret(r.refus, r.raison, []);
     pris.add(r.entree.id);
     lignes.push(r);
