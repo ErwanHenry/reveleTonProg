@@ -282,7 +282,7 @@ test.describe('charte 10.2 : contenu sourcé et pied', () => {
   });
 });
 
-// Recensement transversal (UI-SPEC §4.2, §4.3) : le rouge n'existe qu'aux trois emplois R-1, R-2, R-3, sans capitale
+// Recensement transversal (10.4-UI-SPEC.md §4.3) : le rouge n'existe qu'aux emplois de la liste fermée R-1 à R-8, sans capitale
 // forcée, sans dégradé (les radial-gradient à arrêts nets de la silhouette .picto sont des formes plates, pas des
 // dégradés), sans ombre hors focus, sur un exemplaire de chaque type de page, à deux largeurs.
 const TYPES_DE_PAGES: { nom: string; url: string }[] = [
@@ -316,6 +316,9 @@ async function releverCharte(page: Page): Promise<Releve> {
       if (pseudo === '::after' && h2) return 'R-1 h2::after';
       if (e.classList.contains('site-sous-titre')) return 'R-2 .site-sous-titre';
       if (e.closest('.hall-candidats, .hall-methode') && e.tagName === 'A') return 'R-3 lien d\'accueil';
+      if (e.classList.contains('hall-surtitre')) return 'R-5 .hall-surtitre';
+      if (e.classList.contains('hall-annee')) return 'R-6 .hall-annee';
+      if (e.classList.contains('garantie-titre')) return 'R-7 .garantie-titre';
       return `${e.tagName.toLowerCase()}${e.className && typeof e.className === 'string' ? '.' + e.className.trim().split(/\s+/).join('.') : ''}${pseudo}`;
     };
     const examiner = (e: Element, pseudo: string): void => {
@@ -355,6 +358,9 @@ const AUTORISES = [
   'backgroundColor|R-1 h2::after',
   'borderLeftColor|R-2 .site-sous-titre',
   "textDecorationColor|R-3 lien d'accueil",
+  'borderLeftColor|R-5 .hall-surtitre',
+  'borderLeftColor|R-6 .hall-annee',
+  'borderBottomColor|R-7 .garantie-titre',
 ];
 
 test.describe('charte 10.2 : recensement sur toutes les pages', () => {
@@ -363,11 +369,11 @@ test.describe('charte 10.2 : recensement sur toutes les pages', () => {
     { width: 375, height: 812 },
   ]) {
     for (const p of TYPES_DE_PAGES) {
-      test(`${p.nom} à ${taille.width} x ${taille.height} : rouge aux trois emplois, aucun interdit`, async ({ page }) => {
+      test(`${p.nom} à ${taille.width} x ${taille.height} : rouge en liste fermée, aucun interdit`, async ({ page }) => {
         await page.setViewportSize(taille);
         await page.goto(p.url);
         const r = await releverCharte(page);
-        for (const rouge of r.rouges) expect(AUTORISES, `rouge hors R-1, R-2, R-3 : ${rouge}`).toContain(rouge);
+        for (const rouge of r.rouges) expect(AUTORISES, `rouge hors liste fermée : ${rouge}`).toContain(rouge);
         expect(r.interdits, 'capitale forcée, espacement positif, dégradé ou ombre hors focus').toEqual([]);
       });
     }
@@ -382,5 +388,28 @@ test.describe('charte 10.2 : recensement sur toutes les pages', () => {
     expect(await lien.evaluate((e) => getComputedStyle(e).textDecorationThickness)).toBe('2px');
     await lien.hover();
     expect(await lien.evaluate((e) => getComputedStyle(e).textDecorationThickness)).toBe('3px');
+  });
+});
+
+test.describe('charte 10.4 : bloc 2027', () => {
+  const accueilUrl = premierePage((p) => p.url === '/', 'l’accueil').url;
+
+  test('à 1280 x 900 : décoratif, à droite du titre, sur la même rangée', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(accueilUrl);
+    const annee = page.locator('.hall-annee');
+    await expect(annee).toBeVisible();
+    await expect(annee).toHaveAttribute('aria-hidden', 'true');
+    const h1 = (await page.locator('main h1').boundingBox())!;
+    const a = (await annee.boundingBox())!;
+    expect(a.x, 'bord gauche du bloc à droite du bord droit du h1').toBeGreaterThanOrEqual(h1.x + h1.width);
+    const recouvre = a.y < h1.y + h1.height && h1.y < a.y + a.height;
+    expect(recouvre, 'même rangée de grille').toBe(true);
+  });
+
+  test('à 375 x 812 : display none', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto(accueilUrl);
+    expect(await page.locator('.hall-annee').evaluate((e) => getComputedStyle(e).display)).toBe('none');
   });
 });
