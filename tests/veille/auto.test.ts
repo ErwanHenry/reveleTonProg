@@ -389,6 +389,14 @@ describe('préparation : écriture, garde de périmètre, commit et ci:local', (
       },
     ],
     ['tiret long ajouté à la couverture', (wt) => appendFileSync(path.join(wt, 'data/couverture-themes.yaml'), '# note \u2014 parasite\n')],
+    [
+      'relecture d’une mesure ajoutée au journal (WR-06)',
+      (wt) =>
+        appendFileSync(
+          path.join(wt, 'relecture/journal.jsonl'),
+          `${JSON.stringify({ horodatage: '2026-11-26T09:00:00.000Z', action: 'marquer', cible: 'mesure:essai-fictif/sante-mesure-fictive', relecteur: "l'agent d'IA Claude", date: '2026-11-26', sha256: 'a'.repeat(64) })}\n`,
+        ),
+    ],
     ['archive ajoutée', (wt) => {
       mkdirSync(path.join(wt, 'archives'), { recursive: true });
       writeFileSync(path.join(wt, 'archives', 'parasite.txt'), 'x');
