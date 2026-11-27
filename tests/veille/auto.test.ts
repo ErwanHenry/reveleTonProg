@@ -11,7 +11,7 @@ import { cheminsLocaux } from '../../scripts/lib/deploiement/config.ts';
 import { CODES_ARRET } from '../../scripts/lib/veille/codes-auto.ts';
 import { ajouterMotif } from '../../scripts/lib/veille/decider.ts';
 import type { TexteSource } from '../../scripts/lib/veille/sources-texte.ts';
-import { creerMondeAuto, JETON_AGENT_SENTINELLE, sortieAgent } from '../helpers/monde-auto.ts';
+import { creerMondeAuto, FICHE_FICTIVE, FICTIF, JETON_AGENT_SENTINELLE, ligneFictive, lignePersonneFictive, sortieAgent } from '../helpers/monde-auto.ts';
 import type { JeuAmont, MondeAuto, OptionsMonde } from '../helpers/monde-auto.ts';
 import { REPO_ROOT } from '../helpers/validate-yaml.ts';
 
@@ -47,7 +47,9 @@ const nouvelle =
       ...surcharge,
     });
   };
-const declares = (j: JeuAmont): Ligne[] => j.candidats.filter((c) => c.statut === 'declare');
+// WR-11 (garde du projet) : les changements de statut inventés portent sur la personne fictive connue du monde simulé
+// (`essai-fictif`, tests/helpers/monde-auto.ts), jamais sur une personne réelle du jeu.
+const fictive = (j: JeuAmont): Ligne => lignePersonneFictive(j);
 const changerStatut = (c: Ligne, statut: string, date: string, url = URL_S): void => {
   c.statut = statut;
   c.source = { titre: 'Titre', url, date };
@@ -91,15 +93,15 @@ describe('préparation : arrêts avant tout calcul coûteux', () => {
   });
 
   it('désistement d’une personne connue sans motif : motif_a_decider, fiche citée', async () => {
-    const m = monde({ modifierAmont: (j) => changerStatut(declares(j)[0] as Ligne, 'renonce', '2026-11-18') });
+    const m = monde({ modifierAmont: (j) => changerStatut(fictive(j), 'renonce', '2026-11-18') });
     const r = await arret(m);
     assert.equal(r.code, 'motif_a_decider');
-    assert.deepEqual('fiches' in r ? r.fiches : [], ['jean-luc-melenchon']);
+    assert.deepEqual('fiches' in r ? r.fiches : [], [FICHE_FICTIVE]);
     assert.equal(m.fauxClaude.journal().length, 0);
   });
 
   it('statut amont daté au mois : date_au_mois', async () => {
-    const m = monde({ modifierAmont: (j) => changerStatut(declares(j)[0] as Ligne, 'primaire', '2027-01') });
+    const m = monde({ modifierAmont: (j) => changerStatut(fictive(j), 'primaire', '2027-01') });
     const r = await arret(m);
     assert.equal(r.code, 'date_au_mois');
   });
@@ -107,7 +109,8 @@ describe('préparation : arrêts avant tout calcul coûteux', () => {
   it(`plus de ${MAX_PERSONNES} personnes : volume_anormal`, async () => {
     const m = monde({
       modifierAmont: (j) => {
-        for (const c of declares(j).slice(0, MAX_PERSONNES + 1)) changerStatut(c, 'primaire', '2026-11-18');
+        // Personnes fictives nouvelles, en nombre : aucune ligne réelle n'est modifiée.
+        for (let i = 0; i <= MAX_PERSONNES; i++) j.candidats.push(ligneFictive({ id: `essai-volume-${i}`, nom: `Essai Volume${'a'.repeat(i + 1)}`, source: { titre: 'Annonce (fictive)', url: `https://exemple.test/essai-volume-${i}`, date: '2026-11-18' } }));
       },
     });
     const r = await arret(m);
@@ -121,7 +124,7 @@ describe('préparation : arrêts avant tout calcul coûteux', () => {
   });
 
   it('régression de date d’un statut : conflit_import', async () => {
-    const m = monde({ modifierAmont: (j) => changerStatut(declares(j)[0] as Ligne, 'primaire', '2020-01-01') });
+    const m = monde({ modifierAmont: (j) => changerStatut(fictive(j), 'primaire', '2020-01-01') });
     assert.equal((await arret(m)).code, 'conflit_import');
   });
 
@@ -322,18 +325,32 @@ describe('préparation : écriture, garde de périmètre, commit et ci:local', (
   });
 
   it('sortie d’une personne connue dont le motif est dans la table : couverture retirée, cases gardées, statut relu hors périmètre', async () => {
-    const m = monde({ modifierAmont: (j) => changerStatut(declares(j)[0] as Ligne, 'renonce', '2026-11-18', 'https://exemple.test/desistement') });
+    const m = monde({ modifierAmont: (j) => changerStatut(fictive(j), 'renonce', '2026-11-18', 'https://exemple.test/desistement') });
     const table = readFileSync(path.join(m.depot, 'data/import/correspondances.yaml'), 'utf8');
-    m.commitOrigine('data/import/correspondances.yaml', ajouterMotif(table, 'melenchon', 'non_candidat'), 'chore: motif décidé');
+    m.commitOrigine('data/import/correspondances.yaml', ajouterMotif(table, FICTIF, 'non_candidat'), 'chore: motif décidé');
     const r = await preparerPassage(m.deps, { mode: 'a_blanc' });
     assert.equal(r.code, 'pret', JSON.stringify(r));
     if (r.code !== 'pret') return;
-    assert.deepEqual(r.fiches, ['jean-luc-melenchon']);
+    assert.deepEqual(r.fiches, [FICHE_FICTIVE]);
     const couverture = readFileSync(path.join(m.worktree, 'data/couverture-themes.yaml'), 'utf8');
-    assert.doesNotMatch(couverture, /- id: jean-luc-melenchon\n/);
+    assert.doesNotMatch(couverture, /- id: essai-fictif\n/);
     assert.equal(m.fauxClaude.entrees().length, 2, 'un statut, deux agents, aucun constat de programme');
     const lignes = readFileSync(path.join(m.worktree, 'relecture/journal.jsonl'), 'utf8');
-    assert.match(lignes, /"cible":"statut:jean-luc-melenchon"/);
+    assert.match(lignes, /"cible":"statut:essai-fictif"/);
+  });
+
+  it('WR-05 : case manquante pour une personne connue non examinée par les agents : controle_rouge, aucune case écrite', async () => {
+    const m = monde({ modifierAmont: nouvelle() });
+    const rel = 'src/content/couverture/sante.yaml';
+    const avant = readFileSync(path.join(m.depot, rel), 'utf8');
+    const bloc = /^ {2}- candidat: essai-fictif\n(?: {4}.*\n)+/m;
+    assert.match(avant, bloc);
+    m.commitOrigine(rel, avant.replace(bloc, ''), 'test: case fictive retirée');
+    const r = await preparerPassage(m.deps, { mode: 'a_blanc' });
+    assert.equal(r.code, 'controle_rouge', JSON.stringify(r));
+    assert.ok('fiches' in r && r.fiches.includes(FICHE_FICTIVE), 'fiche citée');
+    assert.equal(git(m.worktree, ['status', '--porcelain']), '', 'écritures annulées');
+    assert.equal(git(m.worktree, ['rev-parse', 'HEAD']), git(m.depot, ['rev-parse', 'origin/main']), 'aucun commit');
   });
 
   it('constat de programme infirmé par les deux agents : programme_signale', async () => {
@@ -414,3 +431,4 @@ describe('préparation : écriture, garde de périmètre, commit et ci:local', (
     }
   });
 });
+

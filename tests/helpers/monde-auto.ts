@@ -21,6 +21,7 @@ import type { DependancesAuto } from '../../scripts/lib/veille/auto.ts';
 import type { TexteSource } from '../../scripts/lib/veille/sources-texte.ts';
 import { ecrireEtat, ETAT_VIDE } from '../../scripts/lib/veille/etat.ts';
 import { cheminsAuto } from '../../scripts/lib/veille/mode-auto.ts';
+import { ecrireCasesManquantes, relireParAgent, synchroniserCouverture } from '../../scripts/lib/veille/ecriture-auto.ts';
 import { creerFauxClaude, type FauxClaude, type ScenarioClaude } from './faux-claude.ts';
 import { REPO_ROOT } from './validate-yaml.ts';
 
@@ -74,7 +75,7 @@ export interface MondeAuto {
   /** Empreinte (sha256) du jeu amont gardé par la veille, et chemin de ses octets. */
   empreinte: string;
   amont: string;
-  /** Instantané et jeu de base (avant modification). */
+  /** Instantané pointé, tel quel (sans la ligne fictive, ajoutée au jeu simulé avant `modifierAmont`). */
   jeuDeBase: JeuAmont;
   detruire(): void;
 }
@@ -91,6 +92,76 @@ function configurerIdentite(depot: string): void {
   sh(depot, ['config', 'commit.gpgsign', 'false']);
 }
 
+// WR-11 (garde du projet) : le dépôt est public. Un changement de statut, un désistement ou une date inventés ne
+// portent jamais sur une personne réelle du jeu : ils portent sur `essai-fictif`, personne fictive connue du monde
+// simulé (ligne amont, ligne de correspondances, fiche relue, ligne de couverture, cases des thèmes pilotes et ids.lock,
+// écrits dans la copie temporaire seulement, par les gabarits de l'automate eux-mêmes).
+export const FICTIF = 'essai-fictif';
+export const FICHE_FICTIVE = 'essai-fictif';
+export const URL_FICTIVE = 'https://exemple.test/essai-fictif/annonce';
+
+/** Ligne amont fictive, complète : aucun champ recopié d'une ligne réelle. */
+export function ligneFictive(surcharge: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    id: FICTIF,
+    nom: 'Essai Fictif',
+    parti: '',
+    bloc: '',
+    statut: 'declare',
+    statut_detail: '',
+    source: { titre: 'Annonce (fictive)', url: URL_FICTIVE, date: '2026-10-01' },
+    propositions: [],
+    liens: {},
+    verifie_le: '2026-11-09',
+    ...surcharge,
+  };
+}
+
+/** Ligne amont fictive du jeu simulé (pour la modifier dans `modifierAmont`). */
+export const lignePersonneFictive = (jeu: JeuAmont): Record<string, unknown> => {
+  const l = jeu.candidats.find((c) => c.id === FICTIF);
+  if (l === undefined) throw new Error('ligne fictive absente du jeu simulé');
+  return l;
+};
+
+/** Ajoute la personne fictive connue au dépôt temporaire, dans l'état d'une personne déjà importée et relue. */
+function ajouterPersonneFictive(depot: string): void {
+  const table = path.join(depot, 'data', 'import', 'correspondances.yaml');
+  writeFileSync(table, `${readFileSync(table, 'utf8')}  ${FICTIF}:\n    id: ${FICHE_FICTIVE}\n    prenom: Essai\n    nom: Fictif\n    nom_tri: Fictif\n    type_source_statut: presse\n`);
+  writeFileSync(
+    path.join(depot, 'src', 'content', 'candidats', `${FICHE_FICTIVE}.yaml`),
+    [
+      'version_schema: 1',
+      `id: ${FICHE_FICTIVE}`,
+      'prenom: Essai',
+      'nom: Fictif',
+      'nom_tri: Fictif',
+      'parti: null',
+      'ids_externes:',
+      `  2027etmoi: ${FICTIF}`,
+      'statuts:',
+      '  - code: declare',
+      '    date: 2026-10-01',
+      '    source:',
+      '      type: presse',
+      '      titre: Annonce (fictive)',
+      `      url: ${URL_FICTIVE}`,
+      '      date_publication: 2026-10-01',
+      '      date_consultation: 2026-11-09',
+      '    statut_relecture: brouillon',
+      '',
+    ].join('\n'),
+  );
+  // Lancé depuis le dépôt réel (ses node_modules), mais n'écrit que dans la copie : --root vise le dépôt temporaire.
+  const ids = spawnSync(process.execPath, [path.join(REPO_ROOT, 'scripts', 'ids.ts'), '--root', depot, '--write'], { cwd: REPO_ROOT, encoding: 'utf8', env: envDeBase() });
+  if (ids.status !== 0) throw new Error(`ids.lock de la personne fictive : ${ids.stderr}`);
+  const date = '2026-11-10';
+  synchroniserCouverture(depot, { [FICHE_FICTIVE]: ['https://exemple.test/essai-fictif/'] }, date);
+  const cases = ecrireCasesManquantes(depot, date, new Set([FICHE_FICTIVE]));
+  const r = relireParAgent(depot, { cases, statuts: [{ candidat: FICHE_FICTIVE, code: 'declare' }] }, date, () => new Date('2026-11-10T10:00:00Z'));
+  if (!r.ok) throw new Error(`relecture de la personne fictive refusée : ${r.messages.join(' ; ')}`);
+}
+
 let gabaritChemin: string | null = null;
 function gabarit(): string {
   if (gabaritChemin !== null) return gabaritChemin;
@@ -104,6 +175,7 @@ function gabarit(): string {
     mkdirSync(path.dirname(path.join(depot, f)), { recursive: true });
     cpSync(src, path.join(depot, f), { dereference: false });
   }
+  ajouterPersonneFictive(depot);
   sh(depot, ['init', '-q', '-b', 'main']);
   configurerIdentite(depot);
   writeFileSync(path.join(depot, '.git', 'info', 'exclude'), 'node_modules\n');
@@ -145,6 +217,7 @@ export function creerMondeAuto(o: OptionsMonde = {}): MondeAuto {
   const jeuDeBase = JSON.parse(readFileSync(path.join(depot, relatif), 'utf8')) as JeuAmont;
   const jeu = JSON.parse(JSON.stringify(jeuDeBase)) as JeuAmont;
   jeu.mise_a_jour = '2026-11-20';
+  jeu.candidats.push(ligneFictive());
   o.modifierAmont?.(jeu);
   const octets = Buffer.from(`${JSON.stringify(jeu, null, 2)}\n`);
   const empreinte = sha256(octets);
