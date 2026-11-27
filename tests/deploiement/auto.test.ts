@@ -20,7 +20,7 @@ import { ETAPES, ecrireRecu, type Recu } from '../../scripts/lib/ci-local.ts';
 import { resoudreExecutables } from '../../scripts/lib/deploiement/executables.ts';
 import { appelerVerbe, envoyer, lireEtat } from '../../scripts/lib/deploiement/transport.ts';
 import { executer } from '../../scripts/deploy-auto.ts';
-import { executerDeploiementAuto, RESULTATS_DEPLOIEMENT_AUTO, type ContexteAuto } from '../../scripts/lib/deploiement/auto.ts';
+import { CODES_SORTIE_AUTO, estHorsLigne, executerDeploiementAuto, lireLigneResultat, RESULTATS_DEPLOIEMENT_AUTO, type ContexteAuto } from '../../scripts/lib/deploiement/auto.ts';
 import { HOTE_FACTICE, MOT_DE_PASSE_FACTICE, UTILISATEUR_FACTICE, creerFauxServeur, type FauxServeur, type OptionsFauxServeur } from '../helpers/faux-serveur.ts';
 
 const nettoyages: (() => void)[] = [];
@@ -336,6 +336,8 @@ describe('deploy:auto contre la vraie commande forcée en mode --auto', () => {
     assert.equal(b.faux.journal('ssh-add').length, 0);
     assert.equal(await courant(b), b.S);
     assert.equal(derniereLigne(lignes), `resultat=publie sha=${b.S.slice(0, 12)}`);
+    // CR-01 : la ligne réellement écrite se relit par lireLigneResultat (contrat avec la veille).
+    assert.deepEqual(lireLigneResultat(texte), { resultat: 'publie', sha: b.S.slice(0, 12) });
     const j = journal(b);
     assert.equal(j.length, 1);
     assert.deepEqual(
@@ -351,6 +353,7 @@ describe('deploy:auto contre la vraie commande forcée en mode --auto', () => {
     const { code, texte, lignes } = await deployerAuto(b);
     assert.equal(code, 6, texte);
     assert.equal(derniereLigne(lignes), `resultat=serveur_non_restreint sha=${b.S.slice(0, 12)}`);
+    assert.deepEqual(lireLigneResultat(texte), { resultat: 'serveur_non_restreint', sha: b.S.slice(0, 12) });
     assert.deepEqual(verbesSsh(b), ['etat essai']);
     assert.equal(b.faux.journal('rsync').length, 0, 'aucun envoi rsync');
   });
@@ -469,6 +472,76 @@ describe('deploy:auto contre la vraie commande forcée en mode --auto', () => {
     assert.equal(derniereLigne(lignes), `resultat=hors_ligne sha=${b.S.slice(0, 12)}`);
   });
 
+  // WR-07 : messages réels de ssh (OpenSSH, macOS et Linux) pour une panne réseau transitoire.
+  const PANNES_RESEAU = [
+    `ssh: Could not resolve hostname ${HOTE_FACTICE}: nodename nor servname provided, or not known`,
+    `ssh: Could not resolve hostname ${HOTE_FACTICE}: Temporary failure in name resolution`,
+    `ssh: connect to host ${HOTE_FACTICE} port 22: Connection timed out`,
+    `ssh: connect to host ${HOTE_FACTICE} port 22: Operation timed out`,
+    `ssh: connect to host ${HOTE_FACTICE} port 22: No route to host`,
+    `ssh: connect to host ${HOTE_FACTICE} port 22: Connection refused`,
+    `ssh: connect to host ${HOTE_FACTICE} port 22: Network is unreachable`,
+    `ssh: connect to host ${HOTE_FACTICE} port 22: Network is down`,
+    `ssh: connect to host ${HOTE_FACTICE} port 22: Host is down`,
+    'kex_exchange_identification: read: Connection reset by peer',
+    'kex_exchange_identification: Connection closed by remote host',
+    `Connection closed by ${HOTE_FACTICE} port 22`,
+    'ssh_exchange_identification: Connection closed by remote host',
+    'client_loop: send disconnect: Broken pipe',
+    `Connection to ${HOTE_FACTICE} port 22 timed out`,
+    'Connection timed out during banner exchange',
+  ];
+
+  it('WR-07 : estHorsLigne reconnaît les pannes réseau transitoires, pas les refus d\'authentification ni d\'hôte', () => {
+    for (const m of PANNES_RESEAU) assert.equal(estHorsLigne(m), true, m);
+    for (const m of [
+      `${UTILISATEUR_FACTICE}@${HOTE_FACTICE}: Permission denied (publickey).`,
+      'Host key verification failed.',
+      'refusé : mode auto : production seulement',
+      'échec : verrou occupé depuis 20 s',
+      '',
+    ]) {
+      assert.equal(estHorsLigne(m), false, m);
+    }
+  });
+
+  const ssh255 = (verbe: string, stderr: string) => (l: Lanceur): Lanceur => (x) =>
+    x.args.at(-1) === verbe && x.commande.endsWith('/ssh')
+      ? Promise.resolve({ code: 255, signal: null, stdout: '', stderr, dureeMs: 1, delaiDepasse: false })
+      : l(x);
+
+  for (const m of [
+    `ssh: connect to host ${HOTE_FACTICE} port 22: Connection refused`,
+    `ssh: connect to host ${HOTE_FACTICE} port 22: No route to host`,
+    'kex_exchange_identification: read: Connection reset by peer',
+    `Connection closed by ${HOTE_FACTICE} port 22`,
+  ]) {
+    it(`WR-07 : sonde en panne réseau (${m.replace(HOTE_FACTICE, '<hôte>')}) : code 9 hors_ligne, pas serveur_non_restreint`, async () => {
+      const b = banc();
+      recuVert(b);
+      const { code, texte, lignes } = await deployerAuto(b, { envelopper: ssh255('etat essai', m) });
+      assert.equal(code, 9, texte);
+      assert.equal(derniereLigne(lignes), `resultat=hors_ligne sha=${b.S.slice(0, 12)}`);
+      assert.equal(b.faux.journal('rsync').length, 0, 'aucun envoi');
+    });
+  }
+
+  it('WR-07 : etat production coupé (Broken pipe) après la sonde : code 9 hors_ligne', async () => {
+    const b = banc();
+    recuVert(b);
+    const { code, texte, lignes } = await deployerAuto(b, { envelopper: ssh255('etat production', 'client_loop: send disconnect: Broken pipe') });
+    assert.equal(code, 9, texte);
+    assert.equal(derniereLigne(lignes), `resultat=hors_ligne sha=${b.S.slice(0, 12)}`);
+  });
+
+  it('WR-07 : refus d\'authentification (255, Permission denied) à la sonde : reste serveur_non_restreint (code 6)', async () => {
+    const b = banc();
+    recuVert(b);
+    const { code, texte, lignes } = await deployerAuto(b, { envelopper: ssh255('etat essai', `${UTILISATEUR_FACTICE}@${HOTE_FACTICE}: Permission denied (publickey).`) });
+    assert.equal(code, 6, texte);
+    assert.equal(derniereLigne(lignes), `resultat=serveur_non_restreint sha=${b.S.slice(0, 12)}`);
+  });
+
   it('fumée en échec : retour automatique vers la version d\'avant, code 4', { skip: !BASCULE && RAISON_MV }, async () => {
     const b = banc();
     await mettreEnLigne(b, b.P);
@@ -491,6 +564,60 @@ describe('deploy:auto contre la vraie commande forcée en mode --auto', () => {
     const { code, texte, lignes } = await deployerAuto(b, { apresActivation });
     assert.equal(code, 5, texte);
     assert.equal(derniereLigne(lignes), `resultat=smoke_echec_retour_ko sha=${b.S.slice(0, 12)}`);
+    assert.deepEqual(lireLigneResultat(texte), { resultat: 'smoke_echec_retour_ko', sha: b.S.slice(0, 12) });
+  });
+
+  it('CR-01 : lireLigneResultat relit la sortie réelle de chaque issue jouée ici, code de sortie cohérent', async () => {
+    // Issues sans bascule (jouables partout) : gel au départ, serveur hors ligne, reçu absent.
+    const cas: { preparer: (b: Banc) => Partial<ContexteAuto> & { envelopper?: (l: Lanceur) => Lanceur }; attendu: string }[] = [
+      { preparer: () => ({ maintenant: () => new Date(EN_GEL.getTime()) }), attendu: 'gel' },
+      { preparer: (b) => (recuVert(b), { envelopper: ssh255('etat essai', 'ssh: connect to host x port 22: Connection refused') }), attendu: 'hors_ligne' },
+      { preparer: () => ({}), attendu: 'deploiement_refuse' },
+    ];
+    for (const c of cas) {
+      const b = banc();
+      const { code, texte } = await deployerAuto(b, c.preparer(b));
+      const lu = lireLigneResultat(texte);
+      assert.deepEqual(lu, { resultat: c.attendu, sha: b.S.slice(0, 12) }, texte);
+      assert.equal(CODES_SORTIE_AUTO[lu?.resultat as keyof typeof CODES_SORTIE_AUTO], code);
+    }
+  });
+});
+
+describe('CR-01 : lireLigneResultat (format de la ligne de résultat de deploy:auto)', () => {
+  const S12 = '0123456789ab';
+  it('forme deployer (avec sha) et forme etat (sans sha)', () => {
+    assert.deepEqual(lireLigneResultat(`resultat=publie sha=${S12}`), { resultat: 'publie', sha: S12 });
+    assert.deepEqual(lireLigneResultat('resultat=etat_lu'), { resultat: 'etat_lu', sha: null });
+    assert.deepEqual(lireLigneResultat(`Gel : non\nDéploiement fait\nresultat=smoke_echec_retour_ko sha=${S12}\n`), { resultat: 'smoke_echec_retour_ko', sha: S12 });
+    assert.deepEqual(lireLigneResultat(`a\r\nresultat=deja_en_ligne sha=${S12}\r\n`), { resultat: 'deja_en_ligne', sha: S12 });
+  });
+  it('dernière ligne reconnue retenue', () => {
+    assert.deepEqual(lireLigneResultat(`resultat=publie sha=${S12}\nresultat=hors_ligne sha=${S12}`), { resultat: 'hors_ligne', sha: S12 });
+    assert.deepEqual(lireLigneResultat(`resultat=hors_ligne sha=${S12}\nresultat=inconnu sha=${S12}`), { resultat: 'hors_ligne', sha: S12 });
+  });
+  it('tout écart au format exact : null', () => {
+    for (const t of [
+      '',
+      'rien',
+      'resultat=',
+      'resultat=inconnu',
+      `resultat=publie sha=${S12.toUpperCase()}`,
+      `resultat=publie sha=${S12}0`,
+      `resultat=publie sha=${S12.slice(0, 11)}`,
+      `resultat=publie  sha=${S12}`,
+      `resultat=publie sha=${S12} `,
+      ` resultat=publie sha=${S12}`,
+      `resultat=publie sha=`,
+      `xresultat=publie`,
+      `resultat=publie extra`,
+    ]) assert.equal(lireLigneResultat(t), null, JSON.stringify(t));
+  });
+  it('chaque résultat de la liste fermée se relit, avec et sans sha', () => {
+    for (const r of RESULTATS_DEPLOIEMENT_AUTO) {
+      assert.deepEqual(lireLigneResultat(`resultat=${r} sha=${S12}`), { resultat: r, sha: S12 });
+      assert.deepEqual(lireLigneResultat(`resultat=${r}`), { resultat: r, sha: null });
+    }
   });
 });
 
@@ -527,6 +654,17 @@ describe('CLI deploy:auto', () => {
     const l2: string[] = [];
     assert.equal(await executer(['etat'], { home, ecrire: (l) => l2.push(l) }), 2);
     assert.equal(l2.at(-1), 'resultat=config_absente');
+    assert.deepEqual(lireLigneResultat(l1.join('\n')), { resultat: 'config_absente', sha: SHA40.slice(0, 12) });
+    assert.deepEqual(lireLigneResultat(l2.join('\n')), { resultat: 'config_absente', sha: null });
+  });
+  it('CR-01 : stdout réel de la CLI (processus séparé, HOME temporaire vide) relu par lireLigneResultat', () => {
+    const home = temp('rtp-home-auto-cli3-');
+    const cli = path.join(import.meta.dirname, '..', '..', 'scripts', 'deploy-auto.ts');
+    for (const [argv, sha] of [[['deployer', SHA40], SHA40.slice(0, 12)], [['etat'], null]] as const) {
+      const r = spawnSync(process.execPath, [cli, ...argv], { encoding: 'utf8', env: { ...process.env, HOME: home } });
+      assert.equal(r.status, 2, r.stdout + r.stderr);
+      assert.deepEqual(lireLigneResultat(r.stdout), { resultat: 'config_absente', sha });
+    }
   });
   it('la CLI ne lit pas l\'entrée standard (aucun terminal requis)', () => {
     const t = readFileSync(path.join(import.meta.dirname, '..', '..', 'scripts', 'deploy-auto.ts'), 'utf8');

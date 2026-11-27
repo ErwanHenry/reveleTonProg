@@ -23,7 +23,10 @@
 #                   (10.3, D-04) : clé de la tâche planifiée du Mac, écrite avec la commande forcée « --auto »
 #                   (production seulement, retour limité à la version précédente). Exige --cle-publique et un
 #                   script installé qui porte le marqueur « # rtp-capacite: auto-v1 » (étape commande d'abord,
-#                   sinon code 4). Réappliquer l'étape utilisateur sans cette option retire la ligne (retrait)
+#                   sinon code 4). Réappliquer l'étape utilisateur sans cette option retire la ligne (retrait).
+#                   Tant qu'une ligne --auto reste dans authorized_keys, l'étape commande refuse (code 4) une source
+#                   sans ce marqueur, et la vérification de l'étape utilisateur signale « a faire » (non conforme)
+#                   une ligne --auto sous un script installé sans le marqueur (WR-02)
 #   --horodatage    suffixe des copies de sauvegarde (défaut : minute courante UTC)
 #
 # Étapes (exécutées dans cet ordre, quel que soit l'ordre de la liste) :
@@ -72,7 +75,8 @@
 # Codes de sortie : 0 succès (en vérification, même s'il reste des actions) ; 1 échec ou application incomplète
 # (fichier du serveur ou source absent, deploy dans un groupe privilégié, action restée à faire) ; 2 usage
 # (option, étape, racine, source ou horodatage invalide) ; 3 --appliquer sur la racine / sans être root ;
-# 4 entrée refusée (empreinte, adresse de ping, clé publique, ligne inconnue ou en double) ; 5 inode du Caddyfile
+# 4 entrée refusée (empreinte, adresse de ping, clé publique, ligne inconnue ou en double, commande forcée sans
+# le marqueur de capacité sous une ligne --auto) ; 5 inode du Caddyfile
 # changé pendant l'ajout ; 6 bloc d'essai ou public refusé (domaine réservé ou adresse introuvable) ;
 # 7 bloc public refusé : /srv/reveletonprog/current absent (déployer d'abord la cible production).
 set -euo pipefail
@@ -294,6 +298,34 @@ if [ -n "$CLE_AUTO_FICHIER" ]; then
   done <"$CLE_AUTO_FICHIER"
   [ "$n" -eq 1 ] || echec 4 "--cle-publique-auto : une ligne attendue"
   CLE_AUTO_DONNEE=1
+fi
+
+# Ligne --auto et capacité du script (WR-02) : un script sans le marqueur ignore son argument --auto et donnerait à
+# la clé sans phrase de passe l'essai et le retour arbitraire. ligne_auto_presente lit authorized_keys tel qu'il est.
+ligne_auto_presente() {
+  local ligne
+  [ -f "$CLES_AUTORISEES" ] || return 1
+  while IFS= read -r ligne || [ -n "$ligne" ]; do
+    case "$ligne" in "$PREFIXE_CLE_AUTO "*) return 0 ;; esac
+  done <"$CLES_AUTORISEES"
+  return 1
+}
+script_installe_capable() { grep -qxF -- "$MARQUEUR_CAPACITE" "$SBIN/rtp-deploy-command" 2>/dev/null; }
+
+# Étape commande : refusée (code 4, avant toute écriture, aussi en vérification) si la source n'a pas le marqueur
+# alors qu'une ligne --auto restera dans authorized_keys : demandée par --cle-publique-auto, ou déjà présente et non
+# retirée dans la même exécution (l'étape utilisateur passe avant l'étape commande et réécrit le fichier depuis
+# --cle-publique). Retirer d'abord la clé automatique pour revenir à un script sans --auto.
+if demandee commande && ! grep -qxF -- "$MARQUEUR_CAPACITE" "$SOURCE/ops/commande-deploiement.sh"; then
+  auto_restera=0
+  if [ "$CLE_AUTO_DONNEE" = 1 ]; then
+    auto_restera=1
+  elif ligne_auto_presente && ! { demandee utilisateur && [ -n "$CLES" ]; }; then
+    auto_restera=1
+  fi
+  if [ "$auto_restera" = 1 ]; then
+    echec 4 "ops/commande-deploiement.sh sans le marqueur « $MARQUEUR_CAPACITE » sous une ligne --auto de authorized_keys : retirer d'abord la clé automatique (étape utilisateur sans --cle-publique-auto)"
+  fi
 fi
 
 # Blocs du site : refusés tant qu'une adresse est un domaine réservé (le certificat ne pourrait pas être obtenu et
@@ -623,6 +655,8 @@ etape_import_caddy() {
   fi
 }
 
+AUTO_NON_CONFORME="ligne --auto présente, script installé sans le marqueur « $MARQUEUR_CAPACITE », non conforme : appliquer l'étape commande ou retirer la clé automatique"
+
 cles_autorisees_conformes() { # une à trois lignes (au plus deux manuelles, une automatique), préfixe exact, sans double
   local ligne n=0 reste corps vus=' ' manuelles=0 automatiques=0
   [ -f "$CLES_AUTORISEES" ] || return 1
@@ -688,7 +722,11 @@ etape_utilisateur() {
   nom=$(affiche "$CLES_AUTORISEES")
   if [ -n "$CLES" ]; then
     if [ -f "$CLES_AUTORISEES" ] && printf '%s' "$CLES" | cmp -s - "$CLES_AUTORISEES"; then
-      dire ok "$nom : une à trois lignes restreintes, à jour"
+      if ligne_auto_presente && ! script_installe_capable; then
+        dire 'a faire' "$nom : $AUTO_NON_CONFORME"
+      else
+        dire ok "$nom : une à trois lignes restreintes, à jour"
+      fi
     elif [ "$CLE_AUTO_DONNEE" = 1 ] && ! grep -qxF "$MARQUEUR_CAPACITE" "$SBIN/rtp-deploy-command" 2>/dev/null; then
       if verification; then
         dire 'a faire' "$nom : script installé sans --auto, appliquer d'abord l'étape commande"
@@ -706,7 +744,11 @@ etape_utilisateur() {
       dire fait "$nom : une à trois lignes restreintes écrites"
     fi
   elif cles_autorisees_conformes; then
-    dire ok "$nom : une à trois lignes restreintes"
+    if ligne_auto_presente && ! script_installe_capable; then
+      dire 'a faire' "$nom : $AUTO_NON_CONFORME"
+    else
+      dire ok "$nom : une à trois lignes restreintes"
+    fi
   else
     dire 'a faire' "$nom : absent ou non conforme, fournir --cle-publique"
   fi

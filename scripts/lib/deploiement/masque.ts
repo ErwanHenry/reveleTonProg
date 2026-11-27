@@ -7,6 +7,8 @@
 // (« Connection closed by <IP> port 22 »), que le fichier local ne connaît pas : toute adresse IPv4, et toute adresse
 // IPv6 entre crochets ou après by, from, to, host ou address, devient `<adresse>`.
 // 10.3, point 8 : un identifiant collé à un autre mot par `:`, `-`, `.` ou `/` (deploy:local, deploy-local.ts) n'est pas l'utilisateur.
+// IN-01 (revue 10.3) : deux formes collées restent masquées explicitement, le dossier personnel `/home/<utilisateur>`
+// et l'adresse `<utilisateur>@` (dont `ssh://<utilisateur>@`).
 // N'importe qu'un type du module relatif config.ts.
 import type { ConfigDeploiement } from './config.ts';
 
@@ -50,7 +52,10 @@ function masquerConfig(texte: string, cfg: Pick<ConfigDeploiement, 'hote' | 'uti
   }));
   if (cfg.utilisateur !== '') {
     // Utilisateur comme mot entier (bornes de mot, valeur échappée).
-    alternatives.push({ motif: `(?<![A-Za-z0-9_/.:-])${echapper(cfg.utilisateur)}(?![A-Za-z0-9_]|[:.-][A-Za-z0-9_])`, longueur: cfg.utilisateur.length, etiquette: '<utilisateur>' });
+    const fin = '(?![A-Za-z0-9_]|[:.-][A-Za-z0-9_])';
+    alternatives.push({ motif: `(?<![A-Za-z0-9_/.:-])${echapper(cfg.utilisateur)}${fin}`, longueur: cfg.utilisateur.length, etiquette: '<utilisateur>' });
+    // Dossier personnel du serveur (IN-01) : /home/deploy, /home/deploy/.ssh ; pas /home/deployeur.
+    alternatives.push({ motif: `/home/${echapper(cfg.utilisateur)}${fin}`, longueur: '/home/'.length + cfg.utilisateur.length, etiquette: '/home/<utilisateur>' });
   }
   if (alternatives.length === 0) return texte;
   alternatives.sort((a, b) => b.longueur - a.longueur);

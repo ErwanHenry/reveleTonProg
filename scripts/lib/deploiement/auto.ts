@@ -17,8 +17,9 @@
 //   8. tout ce qui a pu changer est rejoué (gel, tête, configuration, intégrité, empreinte de la build) ;
 //   9. envoi, etat, gel rejoué, activer, etat, test de fumée ; échec ou signal après activer : retour automatique vers
 //      la version exacte d'avant (retourAutomatique, partagé avec deploy:local).
-// Sortie : une dernière ligne `resultat=<résultat>` (liste fermée RESULTATS_DEPLOIEMENT_AUTO), masquée : ni hôte, ni
-// utilisateur, ni URL, ni chemin de clé. Codes : table CODES_SORTIE_AUTO.
+// Sortie : une dernière ligne `resultat=<résultat>` (liste fermée RESULTATS_DEPLOIEMENT_AUTO), suivie de ` sha=<12 hex>`
+// pour deployer, masquée : ni hôte, ni utilisateur, ni URL, ni chemin de clé. Lecture : lireLigneResultat. Codes :
+// table CODES_SORTIE_AUTO.
 //
 // Le processus qui tient la clé n'importe que des modules node: et des modules relatifs. ctx.construire et
 // ctx.apresActivation n'existent que pour les tests : la CLI ne les expose pas.
@@ -131,7 +132,16 @@ const SIGNAUX = ['SIGINT', 'SIGTERM', 'SIGHUP'] as const;
 const NOMS_FIXES = ['git', 'bash', 'ssh', 'ssh-keygen', 'curl', 'jq', 'sandbox-exec', 'npm'];
 const CI_YML = fileURLToPath(new URL('../../../.github/workflows/ci.yml', import.meta.url));
 const DIRECT: AgentSsh = { socket: null };
-const HORS_LIGNE = /Could not resolve hostname|Network is unreachable|Operation timed out|Connection timed out/;
+/**
+ * Pannes réseau transitoires de ssh (code 255) : résolution de nom, route, délai, refus, coupure pendant l'échange de
+ * clés ou en cours de session (WR-07). Elles donnent hors_ligne (reprise au passage suivant), jamais
+ * serveur_non_restreint, qui est un arrêt définitif.
+ */
+const HORS_LIGNE =
+  /Could not resolve hostname|Temporary failure in name resolution|Name or service not known|nodename nor servname|Network is (?:unreachable|down)|No route to host|Host is (?:down|unreachable)|Connection (?:refused|reset|closed)|timed out|kex_exchange_identification|ssh_exchange_identification|Broken pipe/i;
+
+/** Vrai si le détail d'un échec ssh (code 255) décrit une panne réseau transitoire (hors_ligne). */
+export const estHorsLigne = (detail: string): boolean => HORS_LIGNE.test(detail);
 const utc = (d: Date): string => d.toISOString().replace(/\.\d{3}Z$/, 'Z');
 
 class FinAuto extends Error {
@@ -181,6 +191,25 @@ function proprete(texte: string, cfg: ConfigDeploiement | null, home: string): s
 
 const sha12 = (sha: string | null): string => (sha === null ? '' : ` sha=${sha.slice(0, 12)}`);
 
+const LIGNE_RESULTAT = /^resultat=([a-z_]+)(?: sha=([0-9a-f]{12}))?$/;
+
+/**
+ * Lit la ligne de résultat écrite en fin de sortie par deploy:auto (CR-01) : `resultat=<résultat> sha=<12 hex>`
+ * (deployer) ou `resultat=<résultat>` (etat). Retient la dernière ligne de ce format exact dont le résultat est dans
+ * RESULTATS_DEPLOIEMENT_AUTO ; fins de ligne CRLF admises. Aucune ligne reconnue : null. Fonction pure, sans effet.
+ */
+export function lireLigneResultat(texte: string): { resultat: string; sha: string | null } | null {
+  let trouve: { resultat: string; sha: string | null } | null = null;
+  for (const brute of texte.split('\n')) {
+    const m = LIGNE_RESULTAT.exec(brute.endsWith('\r') ? brute.slice(0, -1) : brute);
+    if (m === null) continue;
+    const resultat = m[1] as string;
+    if (!(RESULTATS_DEPLOIEMENT_AUTO as readonly string[]).includes(resultat)) continue;
+    trouve = { resultat, sha: m[2] ?? null };
+  }
+  return trouve;
+}
+
 /**
  * Début commun au déploiement et à la lecture d'état : configuration automatique, Node 24, exécutables, rsync 3
  * (envoi seulement), clé sans phrase de passe. Toute anomalie : FinAuto config_absente.
@@ -229,7 +258,7 @@ async function sonder(ctx: ContexteAuto, s: Session): Promise<void> {
   } catch (e) {
     if (!(e instanceof EchecVerbe)) throw e;
     if (e.codeBrut === 64) return;
-    if (e.codeBrut === 255 && HORS_LIGNE.test(e.detail)) throw new FinAuto('hors_ligne', 'serveur injoignable (connexion ssh impossible) : rien n\'a été envoyé');
+    if (e.codeBrut === 255 && estHorsLigne(e.detail)) throw new FinAuto('hors_ligne', 'serveur injoignable (connexion ssh impossible) : rien n\'a été envoyé');
     throw new FinAuto('serveur_non_restreint', `le serveur n'a pas refusé le verbe interdit à la clé automatique comme attendu (code ${e.codeBrut ?? 'aucun'}) : rien n'a été envoyé`);
   }
   throw new FinAuto('serveur_non_restreint', "le serveur a répondu au verbe interdit `etat essai` : la clé automatique n'est pas restreinte (--auto), rien n'a été envoyé");
@@ -243,7 +272,7 @@ async function etatProduction(ctx: ContexteAuto, s: Session, moment: string): Pr
     if (e === null || e.cible !== 'production') throw new FinAuto('deploiement_refuse', `réponse de etat illisible ${moment}`);
     return e.courant;
   } catch (e) {
-    if (e instanceof EchecVerbe && e.codeBrut === 255 && HORS_LIGNE.test(e.detail)) throw new FinAuto('hors_ligne', 'serveur injoignable (connexion ssh impossible)');
+    if (e instanceof EchecVerbe && e.codeBrut === 255 && estHorsLigne(e.detail)) throw new FinAuto('hors_ligne', 'serveur injoignable (connexion ssh impossible)');
     throw e;
   }
 }

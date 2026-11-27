@@ -277,6 +277,12 @@ describe('masquer', () => {
       'deploy.ts',
       'deploy-production',
       'lancer fnm exec --using=24 npm run deploy:local',
+      'deploy:auto',
+      'npm run deploy:auto -- deployer',
+      'deploy-auto.ts',
+      'scripts/deploy-auto.ts',
+      'scripts/deploy.ts',
+      '/home/deployeur',
     ]) assert.equal(masquer(t, c), t);
     const usage = /const USAGE = `([^`]*)`/.exec(readFileSync(new URL('../../scripts/deploy-local.ts', import.meta.url), 'utf8'))?.[1];
     assert.ok(usage !== undefined && usage.includes('deploy:local'));
@@ -292,6 +298,20 @@ describe('masquer', () => {
     assert.equal(masquer('(deploy)', c), '(<utilisateur>)');
     assert.equal(masquer('deploy: Permission denied', c), '<utilisateur>: Permission denied');
     assert.equal(masquer('xdeploy-facticex', c), 'xdeploy-facticex');
+  });
+
+  it('IN-01 : utilisateur masqué dans /home/<utilisateur> et ssh://<utilisateur>@', () => {
+    const c = { hote: HOTE, utilisateur: 'deploy', url: null };
+    assert.equal(masquer('/home/deploy/.ssh/authorized_keys', c), '/home/<utilisateur>/.ssh/authorized_keys');
+    assert.equal(masquer('dossier /home/deploy', c), 'dossier /home/<utilisateur>');
+    assert.equal(masquer('dossier /home/deploy.', c), 'dossier /home/<utilisateur>.');
+    assert.equal(masquer('cd /home/deploy; ls', c), 'cd /home/<utilisateur>; ls');
+    assert.equal(masquer(`ssh://deploy@${HOTE}:22/srv`, c), 'ssh://<utilisateur>@<hôte>:22/srv');
+    assert.equal(masquer('ssh://deploy@[2001:db8::1]:22', c), 'ssh://<utilisateur>@[<adresse>]:22');
+    assert.equal(masquer('/home/deploy et deploy:local', c), '/home/<utilisateur> et deploy:local');
+    const f = { hote: HOTE, utilisateur: UTILISATEUR, url: URL_ESSAI };
+    assert.equal(masquer(`/home/${UTILISATEUR}/.ssh`, f), '/home/<utilisateur>/.ssh');
+    assert.equal(masquer(`ssh://${UTILISATEUR}@${HOTE}`, f), 'ssh://<utilisateur>@<hôte>');
   });
 
   it('valeurs vides ou nulles ignorées', () => {
