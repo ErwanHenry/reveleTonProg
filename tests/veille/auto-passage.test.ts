@@ -452,13 +452,16 @@ describe('déploiement : retenue, reprise, état pousse_non_deploye', () => {
     assert.equal(lireEtatAuto(m2.dossier).empreinteTraitee, m2.empreinte);
   });
 
-  it('reprise sans marqueur ou pendant un gel : rien n\'est déployé, phase inchangée, alerte gel dédupliquée', async () => {
-    for (const o of [{ marqueurActif: false }, { marqueurActif: true, maintenant: '2026-12-12T09:00:00+01:00' }]) {
+  it('reprise sans marqueur (mode à blanc) ou pendant un gel : rien n\'est déployé, phase inchangée, alerte dédupliquée', async () => {
+    for (const [o, code] of [
+      [{ marqueurActif: false }, 'reprise_a_blanc'],
+      [{ marqueurActif: true, maintenant: '2026-12-12T09:00:00+01:00' }, 'gel'],
+    ] as const) {
       const m = monde(o);
       semerPousse(m, m.shaOrigine());
       const { deps, suivi } = scripter(m);
-      assert.equal((await passer(m, deps)).code, 'gel');
-      assert.equal((await passer(m, deps)).code, 'gel');
+      assert.equal((await passer(m, deps)).code, code);
+      assert.equal((await passer(m, deps)).code, code);
       assert.equal(suivi.deployer.length, 0);
       assert.equal(suivi.etat, 0, 'aucun appel à deploy-auto');
       assert.equal(lireEtatAuto(m.dossier).phase, 'pousse_non_deploye');

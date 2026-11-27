@@ -1056,7 +1056,7 @@ Une alerte (notification macOS et Telegram) contient un libellé fixe, le code, 
 | `doute_agent` | relecture des agents non concluante | lire le rapport local |
 | `source_inaccessible` | source inaccessible (transitoire) | rien, nouvel essai |
 | `ci_rouge` | `ci:local` en échec, rien poussé | lire le rapport |
-| `perimetre_ecriture` | fichier modifié hors périmètre | lire le diff du commit local |
+| `perimetre_ecriture` | une écriture de l'automate sort du périmètre autorisé | lire le diff du commit local |
 | `main_a_avance` | `main` a avancé pendant le passage (transitoire) | rien, nouvel essai |
 | `push_echec` | push refusé (transitoire) | sonde `--sonde-push` |
 | `verrou_pris` | un autre passage ou `ci:local` en cours (transitoire) | attendre |
@@ -1067,6 +1067,7 @@ Une alerte (notification macOS et Telegram) contient un libellé fixe, le code, 
 | `smoke_echec_retour_ko` | fumée en échec et retour arrière en échec | intervention immédiate, voir « Retour arrière depuis le Mac » |
 | `hors_ligne` | réseau indisponible (transitoire) | rien |
 | `desactive` | interrupteur d'arrêt posé (sans alerte) | retirer l'interrupteur pour reprendre |
+| `reprise_a_blanc` | commit déjà poussé, marqueur d'activation absent : mode à blanc, mise en ligne en attente (transitoire) | recréer le marqueur, ou mise en ligne manuelle `deploy:local` |
 
 ### Mise en service (session principale, accord d'Erwan)
 

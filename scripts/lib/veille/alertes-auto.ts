@@ -27,7 +27,7 @@ export const LIBELLES: Record<CodeAuto, string> = {
   doute_agent: "relecture par l'agent d'IA Claude non concluante : rien n'est publié, voir le rapport local",
   source_inaccessible: 'une source est inaccessible : nouvel essai au prochain passage',
   ci_rouge: "la vérification complète (ci:local) a échoué : rien n'est poussé",
-  perimetre_ecriture: "l'agent a modifié un fichier hors du périmètre autorisé : rien n'est publié",
+  perimetre_ecriture: "une écriture de l'automate sort du périmètre autorisé : rien n'est publié",
   main_a_avance: "main a avancé pendant le passage : rien n'est poussé, nouvel essai au prochain passage",
   push_echec: "la poussée sur main a échoué : rien n'est publié",
   verrou_pris: 'un autre passage est en cours : celui-ci est reporté',
@@ -38,6 +38,7 @@ export const LIBELLES: Record<CodeAuto, string> = {
   smoke_echec_retour_ko: 'vérification après déploiement en échec et retour en arrière en échec : intervention humaine immédiate',
   hors_ligne: 'réseau indisponible : nouvel essai au prochain passage',
   desactive: "l'automate est désactivé par l'interrupteur d'arrêt",
+  reprise_a_blanc: "mode à blanc (marqueur d'activation absent) : la mise en ligne du commit déjà poussé attend l'activation",
 };
 
 export interface Alerte {

@@ -613,9 +613,11 @@ async function reprendreDeploiement(p: Passage, gel: { gele: boolean; motif: str
     return termine(p, 'rien_a_faire', 0, null, etat.rapport);
   }
   if (p.mode !== 'publier') {
-    d.journal(`auto : reprise du déploiement suspendue (${gel.gele ? gel.motif : "automate non activé"})`);
-    await alerter(p, { code: 'gel', empreinte: etat.empreinteEnCours, comptes: etat.comptes, sha, rapport: etat.rapport, fiches: etat.fiches, mode: 'a_blanc' });
-    return termine(p, 'gel', 3, sha, etat.rapport);
+    // IN-03 : un gel est un gel ; un marqueur d'activation absent (ou invalide) est le mode à blanc, pas un gel.
+    const code: CodeAuto = gel.gele ? 'gel' : 'reprise_a_blanc';
+    d.journal(`auto : reprise du déploiement suspendue (${gel.gele ? gel.motif : 'mode à blanc, automate non activé'})`);
+    await alerter(p, { code, empreinte: etat.empreinteEnCours, comptes: etat.comptes, sha, rapport: etat.rapport, fiches: etat.fiches, mode: 'a_blanc' });
+    return termine(p, code, 3, sha, etat.rapport);
   }
   const git = (args: string[], cwd: string): { status: number | null; stdout: string } => d.executer('git', args, { cwd, timeoutMs: 120_000 });
   if (git(['fetch', '--quiet', 'origin'], d.depot).status !== 0) return appliquerSuite(p, 'hors_ligne', sha);
