@@ -10,6 +10,7 @@ import { aClasse, analyserHtml, texte, trouver } from '../../../scripts/lib/html
 import type { Noeud } from '../../../scripts/lib/html.ts';
 import { materialiserCorpusM1 } from '../../helpers/corpus-m1.ts';
 import { REPO_ROOT } from '../../helpers/validate-yaml.ts';
+import { formatJourMois, libellesTours, TOURS } from '../../../src/lib/dates-tours.ts';
 import type { ContexteSite } from '../contexte.ts';
 
 const norm = (s: string): string => s.replace(/\s+/g, ' ').trim();
@@ -18,7 +19,7 @@ const elements = (n: Noeud): Noeud[] => n.enfants.filter((e): e is Noeud => type
 
 /** Jeton d'un enfant de main : balise, puis la classe qui le désigne s'il en a une connue. */
 function jeton(n: Noeud): string {
-  for (const c of ['hall-presentation', 'garanties', 'hall-candidats', 'hall-methode', 'tuiles', 'autres-themes', 'lecteur', 'hall-themes', 'hall-niveaux']) {
+  for (const c of ['hall-tete', 'hall-texte', 'hall-annee', 'hall-surtitre', 'hall-action', 'hall-presentation', 'garanties', 'hall-candidats', 'hall-methode', 'tuiles', 'autres-themes', 'lecteur', 'hall-themes', 'hall-niveaux']) {
     if (aClasse(n, c)) return `${n.tag}.${c}`;
   }
   return n.tag;
@@ -55,30 +56,39 @@ export default function accueil(ctx: ContexteSite): void {
     const m = main(outDir);
     const enfants = elements(m);
     const attendu = [
-      'h1',
-      'p.hall-presentation',
+      'div.hall-tete',
       'ul.garanties',
       'h2.hall-themes',
       'ul.tuiles',
       ...(attendueAutresThemes ? ['p.autres-themes'] : []),
       // Classe qui donne au lien sa cible de 44 et 48 px hors de .lecteur (WR-01 de la revue 09.1).
       'p.hall-candidats',
-      // Lien vers la Méthode après les thèmes : la première tuile reste au premier écran (e2e/accueil.spec.ts).
+      // Lien vers la Méthode après les thèmes.
       'p.hall-methode',
       'h2.hall-niveaux',
       'div.lecteur',
     ];
     assert.deepEqual(enfants.map(jeton), attendu);
-    assert.equal(txt(enfants[0] as Noeud), 'Les programmes de la présidentielle 2027, à votre niveau');
-    assert.equal(txt(enfants[3] as Noeud), 'Les thèmes');
-    const lienCandidats = trouver(enfants[attendu.length - 4] as Noeud, (n) => n.tag === 'a')[0];
+    // 10.4 : le haut de l'accueil est un bloc à deux enfants (texte, puis bloc « 2027 » décoratif).
+    const tete = enfants[0] as Noeud;
+    assert.deepEqual(elements(tete).map(jeton), ['div.hall-texte', 'div.hall-annee']);
+    const texteTete = elements(tete)[0] as Noeud;
+    assert.deepEqual(elements(texteTete).map(jeton), ['p.hall-surtitre', 'h1', 'p.hall-presentation', 'p.hall-action']);
+    assert.equal(txt(elements(texteTete)[1] as Noeud), 'Les programmes de la présidentielle 2027, à votre niveau');
+    const par = (cls: string): Noeud => {
+      const n = enfants.find((e) => aClasse(e, cls));
+      assert.ok(n, cls);
+      return n;
+    };
+    assert.equal(txt(par('hall-themes')), 'Les thèmes');
+    const lienCandidats = trouver(par('hall-candidats'), (n) => n.tag === 'a')[0];
     assert.equal(lienCandidats?.attrs.href, '/candidats/');
     // P-12 (10.2, décision d'Erwan du 2026-11-27) : le nombre est celui des personnes listées sur /candidats/ de la même
     // build. Les builds production et preview n'ont pas le même nombre : un nombre écrit à la main échoue sur l'une des deux.
     const nListe = trouver(analyserHtml(ctx.lire(outDir, 'candidats/index.html')), (n) => aClasse(n, 'ligne-nom')).length;
     assert.ok(nListe >= 2, `au moins deux personnes listées sur /candidats/ (${nListe})`);
     assert.equal(txt(lienCandidats as Noeud), `Voir les ${nListe} candidats`);
-    assert.equal(txt(enfants[attendu.length - 2] as Noeud), 'Quatre niveaux de lecture');
+    assert.equal(txt(par('hall-niveaux')), 'Quatre niveaux de lecture');
     return m;
   }
 
@@ -163,6 +173,71 @@ export default function accueil(ctx: ContexteSite): void {
       assert.equal(tuiles.length, 1);
       assert.ok(aClasse(tuiles[0] as Noeud, 'tuile-une'));
       assert.ok(txt(trouver(m, (n) => aClasse(n, 'autres-themes'))[0] as Noeud).length > 0);
+    });
+  });
+
+  describe('accueil 10.4 : surtitre, bloc 2027, bouton, garanties', () => {
+    /** Vérifie le bouton principal : un seul, dans p.hall-action, qui reprend le nom et l'adresse du premier lien de tuile. */
+    function verifierBouton(m: Noeud): void {
+      const boutons = trouver(m, (n) => n.tag === 'a' && aClasse(n, 'bouton'));
+      assert.equal(boutons.length, 1, 'un seul a.bouton dans main');
+      const bouton = boutons[0] as Noeud;
+      const action = trouver(m, (n) => n.tag === 'p' && aClasse(n, 'hall-action'))[0] as Noeud;
+      assert.ok(trouver(action, (n) => n === bouton).length === 1, 'le bouton est dans p.hall-action');
+      const lien = trouver(m, (n) => n.tag === 'a' && aClasse(n, 'tuile-lien'))[0] as Noeud;
+      assert.ok(lien, 'premier a.tuile-lien');
+      assert.equal(txt(bouton), `Lire le thème ${txt(lien)}`);
+      assert.equal(bouton.attrs.href, lien.attrs.href);
+    }
+
+    for (const cle of ['m1-production', 'm1-preview'] as const) {
+      it(`${cle} : surtitre et bloc 2027 calculés depuis TOURS`, () => {
+        const { outDir } = construit(cle);
+        const m = main(outDir);
+        const t = libellesTours();
+        const surtitre = txt(trouver(m, (n) => n.tag === 'p' && aClasse(n, 'hall-surtitre'))[0] as Noeud);
+        assert.equal(surtitre, t.surtitre);
+        for (const frag of [formatJourMois(TOURS[0].date), formatJourMois(TOURS[1].date), TOURS[0].date.slice(0, 4)]) {
+          assert.ok(surtitre.includes(frag), `surtitre contient ${frag}`);
+        }
+        const annee = trouver(m, (n) => n.tag === 'div' && aClasse(n, 'hall-annee'))[0] as Noeud;
+        assert.equal(annee.attrs['aria-hidden'], 'true');
+        const ps = elements(annee);
+        assert.equal(ps.length, 2);
+        assert.ok(ps.every((p) => p.tag === 'p'));
+        assert.deepEqual(ps.map(txt), [t.annee, t.bloc]);
+        assert.ok(txt(annee).includes(formatJourMois(TOURS[0].date)) && txt(annee).includes(formatJourMois(TOURS[1].date)));
+      });
+
+      it(`${cle} : garanties étiquetées et bouton du premier thème`, () => {
+        const { outDir } = construit(cle);
+        const m = main(outDir);
+        const ul = trouver(m, (n) => n.tag === 'ul' && aClasse(n, 'garanties'))[0] as Noeud;
+        const titres = elements(ul).map((li) => {
+          const premier = elements(li)[0] as Noeud;
+          assert.equal(premier.tag, 'strong');
+          assert.ok(aClasse(premier, 'garantie-titre'));
+          return txt(premier);
+        });
+        assert.deepEqual(titres, ['Sourcé', 'Sans classement', 'Sans traceur']);
+        verifierBouton(m);
+      });
+    }
+
+    it('un seul thème ouvert : le bouton mène à ce thème', () => {
+      const { outDir } = unTheme();
+      verifierBouton(main(outDir));
+    });
+
+    it('index.astro ne contient aucune date, aucun ordinal de tour, aucun « 2027 » isolé ni nom de thème dans le bouton', () => {
+      const src = fs.readFileSync(path.join(REPO_ROOT, 'src', 'pages', 'index.astro'), 'utf8');
+      assert.doesNotMatch(src, /\b(avril|mai)\b/);
+      assert.doesNotMatch(src, /1er tour|2d tour/);
+      assert.doesNotMatch(src, />\s*2027\s*</);
+      assert.doesNotMatch(src, /Lire le thème [A-ZÀ-Ý]/);
+      assert.match(src, /libellesTours\(\)/);
+      assert.match(src, /corpus\.themes\[0\]/);
+      assert.doesNotMatch(src, /set:html/);
     });
   });
 }

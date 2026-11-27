@@ -1,7 +1,8 @@
 ---
 import { NOM_SITE } from '../lib/identite.ts';
+import { libellesTours } from '../lib/dates-tours.ts';
 // Accueil : ce que le site est, pourquoi lui faire confiance, les thèmes publiés, le lien vers la Méthode, puis les quatre niveaux de lecture
-// (proposition 1 du lot B, audit B3 : les thèmes avant le sélecteur, pour qu'ils soient au premier écran).
+// (proposition 1 du lot B, audit B3 : les thèmes avant le sélecteur ; le bouton du haut donne le thème au premier écran).
 // Le sélecteur (.lecteur) reste un enfant direct de main : le mode « Gros caractères » s'applique à toute la page.
 import Base from '../layouts/Base.astro';
 import LecteurNiveaux from '../components/LecteurNiveaux.astro';
@@ -9,6 +10,10 @@ import TuileTheme from '../components/TuileTheme.astro';
 import { getCorpus } from '../lib/corpus/index.ts';
 
 const corpus = await getCorpus();
+// Surtitre (P-07) et bloc « 2027 » (P-02) : textes calculés depuis TOURS, jamais écrits à la main.
+const tours = libellesTours();
+// Premier thème visible, donc première tuile : bouton P-04, accès au thème du premier écran mobile (règle 7 de la charte).
+const premier = corpus.themes[0];
 const niveaux = [
   ['En bref', 'Une phrase par mesure.'],
   ['En détail', 'Le coût annoncé, le calendrier, ce que le texte ne précise pas et la citation du programme.'],
@@ -29,12 +34,24 @@ const lienCandidats = nCandidats >= 2 ? `Voir les ${nCandidats} candidats` : 'Vo
   miseAJour={corpus.miseAJourIndex()}
 >
   <main id="contenu" class="conteneur">
-    <h1>Les programmes de la présidentielle 2027, à votre niveau</h1>
-    <p class="hall-presentation">Ce site explique ce que proposent les candidats à l'élection présidentielle de 2027, un thème à la fois. Il ne prend jamais parti.</p>
+    <div class="hall-tete">
+      <div class="hall-texte">
+        <p class="hall-surtitre">{tours.surtitre}</p>
+        <h1>Les programmes de la présidentielle 2027, à votre niveau</h1>
+        <p class="hall-presentation">Ce site explique ce que proposent les candidats à l'élection présidentielle de 2027, un thème à la fois. Il ne prend jamais parti.</p>
+        {premier !== undefined && (
+          <p class="hall-action"><a class="bouton" href={`/themes/${premier.theme.id}/`}>Lire le thème {premier.theme.nom}</a></p>
+        )}
+      </div>
+      <div class="hall-annee" aria-hidden="true">
+        <p class="hall-annee-chiffre">{tours.annee}</p>
+        <p class="hall-annee-tours">{tours.bloc}</p>
+      </div>
+    </div>
     <ul class="garanties" role="list">
-      <li>Chaque mesure décrit ce que le candidat propose, sans jugement, et renvoie à son texte, daté et archivé.</li>
-      <li>Par défaut, les candidats sont classés par ordre alphabétique, jamais selon les sondages.</li>
-      <li>Aucun cookie, aucune publicité, aucun service extérieur.</li>
+      <li><strong class="garantie-titre">Sourcé</strong> Chaque mesure décrit ce que le candidat propose, sans jugement, et renvoie à son texte, daté et archivé.</li>
+      <li><strong class="garantie-titre">Sans classement</strong> Par défaut, les candidats sont classés par ordre alphabétique, jamais selon les sondages.</li>
+      <li><strong class="garantie-titre">Sans traceur</strong> Aucun cookie, aucune publicité, aucun service extérieur.</li>
     </ul>
     <h2 class="hall-themes">Les thèmes</h2>
     {corpus.themes.length === 0 ? (
@@ -51,8 +68,8 @@ const lienCandidats = nCandidats >= 2 ? `Voir les ${nCandidats} candidats` : 'Vo
         <p class="hall-candidats"><a href="/candidats/">{lienCandidats}</a></p>
       </>
     )}
-    {/* Libellé du lien vers la Méthode. Placé après les thèmes pour que la première tuile reste au
-        premier écran sur téléphone, y compris avec les polices plus larges de la CI (e2e/accueil.spec.ts). */}
+    {/* Libellé du lien vers la Méthode. Placé après les thèmes : l'accès au thème du premier écran mobile est le
+        bouton du haut, y compris avec les polices plus larges de la CI (e2e/accueil.spec.ts). */}
     <p class="hall-methode"><a href="/methode/">Comment nous travaillons</a></p>
     <h2 class="hall-niveaux">Quatre niveaux de lecture</h2>
     <LecteurNiveaux contexte={{ type: 'hall' }} mesures={[]} rappel={false}>
