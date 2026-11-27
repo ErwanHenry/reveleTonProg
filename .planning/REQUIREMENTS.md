@@ -87,6 +87,13 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 - [x] **VEI-05**: Une commande prépare la branche d'import locale (import réel, pointeur, dates, contrôles, corps de pull request) sans pousser et refuse pendant un gel ; un import réel ne casse plus de test à compteur en dur
 - [x] **VEI-06**: Installation, retrait, pannes et lecture du rapport sont au RUNBOOK, gardés par un test de documentation
 
+### Charte graphique D (ajoutées le 2026-11-24, choix d'Erwan après le test A/B des maquettes)
+
+- [ ] **CHA-01**: Toutes les pages appliquent la charte D (fond blanc, bleu nuit pour la structure, titres à empattements de polices système, casse normale, pastilles et cadres nets, encadrés de source teintés), sans imitation de la charte de l'État (ni Marianne, ni bloc « République française », ni drapeau, cocarde ou filet tricolore)
+- [ ] **CHA-02**: Le rouge reste un accent (filet, soulignement, numéro), jamais en aplat, sur un titre de mesure ni sur un état lié à un candidat ; toutes les cartes de candidats ont le même cadre, avec ou sans programme ; zones à toucher d'au moins 44 px
+- [ ] **CHA-03**: Aucun texte publié, aucune donnée ni structure de données ne change ; aucun JS, police, script externe ni dépendance npm ajoutés ; tout texte public nouveau est soumis à Erwan avant mise en ligne
+- [ ] **CHA-04**: Tous les garde-fous restent verts (npm test, npm run e2e avec axe AA, sans JS, 320 px, poids et Slow 4G simulé, check-dist et CSP à empreintes, CI GitHub), contrastes du texte au moins 4,5:1, et la pull request montre des captures avant et après sur bureau et mobile
+
 ### Dette de l'audit v1.0
 
 - [x] **DETTE-01**: En preview, la phrase de couverture ne présente pas des brouillons comme des positions publiées (W3)
@@ -168,6 +175,10 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 | VEI-04 | Phase 10.1 | Complete |
 | VEI-05 | Phase 10.1 | Complete |
 | VEI-06 | Phase 10.1 | Complete |
+| CHA-01 | Phase 10.2 | Pending |
+| CHA-02 | Phase 10.2 | Pending |
+| CHA-03 | Phase 10.2 | Pending |
+| CHA-04 | Phase 10.2 | Pending |
 
 **Coverage:**
 

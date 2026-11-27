@@ -44,6 +44,7 @@
 
 .niveaux legend {
   margin-bottom: 0.5rem;
+  color: var(--nuit);
   padding: 0;
   font-size: var(--t-label);
   font-weight: 600;
@@ -82,13 +83,14 @@ html[data-js-niveau] .aide-sansjs {
   display: flex;
   flex: 1;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: center;
+  gap: 0.25rem;
   min-height: 2.75rem;
-  padding: 0.5rem 1rem;
+  padding: 0.5rem;
   background: var(--carte);
-  color: var(--encre);
-  border: 2px solid var(--bord-fort);
-  border-radius: 4px;
+  color: var(--nuit);
+  border: 2px solid var(--nuit);
+  border-radius: var(--rayon-pastille);
   font-size: var(--t-label);
   font-weight: 600;
   line-height: 1.2;
@@ -116,9 +118,9 @@ html[data-js-niveau] .aide-sansjs {
 }
 
 .niveau input:checked + label {
-  background: var(--encre);
+  background: var(--nuit);
   color: var(--carte);
-  border-color: var(--encre);
+  border-color: var(--nuit);
 }
 
 .niveau input:checked + label::before {
@@ -135,6 +137,12 @@ html[data-js-niveau] .aide-sansjs {
   .niveaux {
     display: flex;
     flex-wrap: wrap;
+  }
+
+  .niveau label {
+    justify-content: flex-start;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
   }
 
   .niveaux .aide {
@@ -169,9 +177,9 @@ html[data-js-niveau] .aide-sansjs {
 
 .concerne-liste li {
   background: var(--carte);
-  border: 1px solid var(--bord-carte);
+  border: 2px solid var(--nuit);
   border-inline-start: 8px solid var(--theme);
-  border-radius: 4px;
+  border-radius: var(--rayon-bloc);
 }
 
 .concerne-liste a {
@@ -212,6 +220,7 @@ main:has(> .lecteur > .niveaux #niv-aine:checked) {
   margin: 0 0 2rem;
   padding: 1rem;
   background: var(--panneau);
+  border-radius: var(--rayon-bloc);
 }
 
 @media (forced-colors: active) {

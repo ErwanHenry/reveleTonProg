@@ -1,8 +1,9 @@
 // Image de partage (proposition 6 du lot B, D-04) : public/partage.png, 1200 x 630, copiée telle quelle à la racine du
 // dist par Astro. Capture par le Chromium de @playwright/test (déjà une dépendance de développement, aucune autre)
 // de scripts/partage.html, remplie avec la phrase de src/lib/partage.ts, le domaine de config/site.yml et les
-// couleurs de src/styles/base.css (--fond, --encre, --encre-douce) : jamais une couleur de thème ni de parti, polices
-// du système. L'image ne contient pas le nom du site, donc elle ne dépend pas du nom affiché.
+// couleurs de la charte v1 (fond, encre, encre douce), figées ici pour que changer la charte du site ne rende pas
+// l'image périmée (la régénérer aux couleurs de la charte D est la proposition P-10, hors de la phase 10.2) : jamais
+// une couleur de thème ni de parti, polices du système. L'image ne contient pas le nom du site, donc elle ne dépend pas du nom affiché.
 //
 // Le fichier n'est PAS identique octet pour octet d'une machine à l'autre (rendu des polices du système) : le fichier
 // versionné est la référence, régénéré seulement quand le texte, le domaine ou les couleurs changent. Pour que
@@ -25,26 +26,22 @@ import { loadSiteConfig } from '../src/lib/site-config.ts';
 const RACINE_DEPOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FICHIER = path.join(RACINE_DEPOT, 'public/partage.png');
 const SOURCE = path.join(RACINE_DEPOT, 'scripts/partage.html');
-const BASE_CSS = path.join(RACINE_DEPOT, 'src/styles/base.css');
 const SIGNATURE_PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 const CLE_SOURCE = 'Source';
 
 const echapper = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-function jeton(css: string, nom: string): string {
-  const v = new RegExp(`--${nom}:\\s*(#[0-9A-Fa-f]{6})\\s*;`).exec(css)?.[1];
-  if (v === undefined) throw new Error(`--${nom} introuvable dans src/styles/base.css`);
-  return v;
-}
+export const COULEUR_FOND_PARTAGE = '#FAFAF8';
+export const COULEUR_ENCRE_PARTAGE = '#1F2328';
+export const COULEUR_ENCRE_DOUCE_PARTAGE = '#4D535B';
 
-/** HTML de la page de capture, repères remplis : phrase, domaine (config/site.yml) et couleurs (base.css). */
+/** HTML de la page de capture, repères remplis : phrase, domaine (config/site.yml) et couleurs figées de la charte v1. */
 export function htmlRempli(): string {
-  const css = fs.readFileSync(BASE_CSS, 'utf8');
   const domaine = loadSiteConfig(RACINE_DEPOT, {}).domaine;
   const valeurs: Record<string, string> = {
-    FOND: jeton(css, 'fond'),
-    ENCRE: jeton(css, 'encre'),
-    ENCRE_DOUCE: jeton(css, 'encre-douce'),
+    FOND: COULEUR_FOND_PARTAGE,
+    ENCRE: COULEUR_ENCRE_PARTAGE,
+    ENCRE_DOUCE: COULEUR_ENCRE_DOUCE_PARTAGE,
     REPERE: echapper(REPERE_PARTAGE),
     PROMESSE: echapper(PROMESSE_PARTAGE),
     DOMAINE: echapper(domaine),

@@ -15,9 +15,9 @@ import { parseArgs } from 'node:util';
 import { deflateSync } from 'node:zlib';
 
 /** Couleur principale du site (--encre de src/styles/base.css). */
-export const COULEUR_ICONE = '#1F2328';
+export const COULEUR_ICONE = '#161A2B';
 /** Couleur claire du site (--fond de src/styles/base.css). */
-export const COULEUR_FOND_ICONE = '#FAFAF8';
+export const COULEUR_FOND_ICONE = '#FFFFFF';
 
 const COTE = 32;
 /** Carré intérieur clair : de la colonne (et ligne) DEBUT à FIN comprises. */
