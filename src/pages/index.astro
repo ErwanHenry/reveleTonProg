@@ -17,6 +17,11 @@ const niveaux = [
 ] as const;
 // Un seul thème ouvert (cas de l'ouverture) : sa tuile occupe toute la ligne et une phrase annonce les suivants.
 const unSeulTheme = corpus.themes.length === 1;
+// Lien vers /candidats/ (proposition P-12 de la phase 10.2, décision d'Erwan du 2026-11-27) : le nombre est celui de la
+// liste de /candidats/ (corpus.candidats), calculé à la construction, jamais écrit à la main. Sous deux personnes, le
+// libellé d'avant reste (aucun texte nouveau pour ce cas).
+const nCandidats = corpus.candidats.length;
+const lienCandidats = nCandidats >= 2 ? `Voir les ${nCandidats} candidats` : 'Voir tous les candidats';
 ---
 <Base
   titre={`${NOM_SITE} : les programmes de la présidentielle 2027`}
@@ -43,7 +48,7 @@ const unSeulTheme = corpus.themes.length === 1;
           {corpus.themes.map((vue) => <TuileTheme vue={vue} une={unSeulTheme} />)}
         </ul>
         {unSeulTheme && <p class="autres-themes">Les autres thèmes seront publiés après relecture.</p>}
-        <p class="hall-candidats"><a href="/candidats/">Voir tous les candidats</a></p>
+        <p class="hall-candidats"><a href="/candidats/">{lienCandidats}</a></p>
       </>
     )}
     {/* Libellé du lien vers la Méthode. Placé après les thèmes pour que la première tuile reste au
