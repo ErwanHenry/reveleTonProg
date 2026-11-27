@@ -24,10 +24,11 @@ const niveaux = [
 // Un seul thème connu (cas de l'ouverture) : sa tuile occupe toute la ligne et une phrase annonce les suivants.
 // Dès qu'une tuile à venir existe (U-05), elle dit déjà « Publié après relecture » : ni tuile pleine largeur ni phrase.
 const unSeulTheme = corpus.themes.length === 1 && corpus.themesAVenir.length === 0;
-// Lien vers /candidats/ (proposition P-12 de la phase 10.2, décision d'Erwan du 2026-11-27) : le nombre est celui de la
-// liste de /candidats/ (corpus.candidats), calculé à la construction, jamais écrit à la main. Sous deux personnes, le
-// libellé d'avant reste (aucun texte nouveau pour ce cas).
-const nCandidats = corpus.candidats.length;
+// Lien vers /candidats/ (proposition P-12 de la phase 10.2, décision d'Erwan du 2026-11-27) : le nombre est celui des
+// candidatures du périmètre (dernier statut retenu declare ou primaire, PERIMETRE_EQUITE, même règle que l'équité et les
+// pages thème), calculé à la construction, jamais écrit à la main. Une personne qui ne se présente pas reste listée sur
+// /candidats/ mais n'est pas comptée. Sous deux candidatures, le libellé d'avant reste (aucun texte nouveau pour ce cas).
+const nCandidats = corpus.perimetre.size;
 const lienCandidats = nCandidats >= 2 ? `Voir les ${nCandidats} candidats` : 'Voir tous les candidats';
 ---
 <Base
