@@ -25,6 +25,7 @@
     "relecture": "node scripts/relecture.ts",
     "ci:local": "node scripts/ci-local.ts",
     "deploy:local": "node scripts/deploy-local.ts",
+    "deploy:auto": "node scripts/deploy-auto.ts",
     "veille": "node scripts/veille.ts"
   },
   "dependencies": {

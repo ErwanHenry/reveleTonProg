@@ -271,13 +271,22 @@ describe('veille preparer', () => {
 });
 
 describe('code de la veille', () => {
-  it('aucun appel à git push, gh pr create ni gh pr merge (les commandes sont seulement imprimées pour Erwan)', () => {
-    const dir = path.join(REPO_ROOT, 'scripts', 'lib', 'veille');
-    for (const f of [...readdirSync(dir).map((n) => path.join(dir, n)), path.join(REPO_ROOT, 'scripts', 'veille.ts')]) {
+  const dir = path.join(REPO_ROOT, 'scripts', 'lib', 'veille');
+  const fichiers = (): string[] => [...readdirSync(dir).map((n) => path.join(dir, n)), path.join(REPO_ROOT, 'scripts', 'veille.ts')];
+  it('aucun appel à gh pr create ni gh pr merge, et git push seulement dans pousser.ts (les commandes sont sinon imprimées pour Erwan)', () => {
+    for (const f of fichiers()) {
       const t = readFileSync(f, 'utf8');
       assert.doesNotMatch(t, /executer\(\s*'gh'/, f);
-      assert.doesNotMatch(t, /\[\s*'push'/, f);
+      if (path.basename(f) !== 'pousser.ts') assert.doesNotMatch(t, /\[\s*'push'/, f);
       assert.doesNotMatch(t, /'pr',\s*'(create|merge)'/, f);
+    }
+  });
+  it('pousser.ts, seule exemption : ni --force, ni refspec forcée, ni -f ; "push" absent des autres fichiers', () => {
+    const t = readFileSync(path.join(dir, 'pousser.ts'), 'utf8');
+    assert.doesNotMatch(t, /--force|'\+|'-f'/);
+    for (const f of fichiers()) {
+      if (path.basename(f) === 'pousser.ts') continue;
+      assert.doesNotMatch(readFileSync(f, 'utf8'), /'push'/, f);
     }
   });
 });

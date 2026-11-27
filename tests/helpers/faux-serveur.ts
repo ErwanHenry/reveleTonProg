@@ -76,6 +76,12 @@ export interface OptionsFauxServeur {
   exigerCle?: boolean;
   /** Nombre de chargements de la clé (ssh-add -t) acceptés ; les suivants échouent (phrase de passe refusée). */
   chargementsAdmis?: number;
+  /**
+   * 10.3 : la commande forcée est lancée avec --auto, comme la ligne authorized_keys de la clé automatique ; le faux
+   * ssh refuse alors (255, « Permission denied (publickey) ») un appel qui n'a pas `-o IdentityAgent=none` et un
+   * `-i` vers un fichier lisible, comme une clé directe sans agent.
+   */
+  modeAuto?: boolean;
 }
 
 const quote = (s: string): string => `'${s.replace(/'/g, `'\\''`)}'`;
@@ -159,14 +165,19 @@ exit 0
     path.join(bin, 'ssh'),
     `#!/bin/sh
 ${journal('ssh')}
+AGENT_NONE=0
+CLE_LISIBLE=0
 while [ $# -gt 0 ]; do
   case "$1" in
-    -F|-i|-o|-l) shift 2 ;;
+    -i) [ -r "$2" ] && CLE_LISIBLE=1; shift 2 ;;
+    -o) [ "$2" = "IdentityAgent=none" ] && AGENT_NONE=1; shift 2 ;;
+    -F|-l) shift 2 ;;
     -*) echo "ssh factice : option inattendue $1" >&2; exit 255 ;;
     *) break ;;
   esac
 done
 [ $# -ge 2 ] || { echo "ssh factice : destination et commande attendues" >&2; exit 255; }
+${o.modeAuto === true ? `[ "$AGENT_NONE" = 1 ] && [ "$CLE_LISIBLE" = 1 ] || { echo "$1: Permission denied (publickey)." >&2; exit 255; }` : ''}
 ${o.exigerCle === true ? `[ -f ${quote(fichierCleChargee)} ] || { echo "$1: Permission denied (publickey)." >&2; exit 255; }` : ''}
 shift
 CMD="$*"
@@ -178,7 +189,7 @@ case "$ECHEC_ACTIVER:$CMD" in
 esac
 exec env -i PATH=${quote(pathServeur)} LC_ALL=C RTP_BASE=${quote(base)} RTP_RRSYNC=${quote(path.join(serveur, 'rrsync'))} \\
   SSH_ORIGINAL_COMMAND="$CMD" FAUX_RSYNC_SOURCE="\${FAUX_RSYNC_SOURCE:-}" \\
-  bash ${quote(SCRIPT)}
+  bash ${quote(SCRIPT)}${o.modeAuto === true ? ' --auto' : ''}
 `,
   );
 

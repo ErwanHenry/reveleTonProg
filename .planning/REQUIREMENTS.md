@@ -94,6 +94,13 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 - [ ] **CHA-03**: Aucun texte publié, aucune donnée ni structure de données ne change ; aucun JS, police, script externe ni dépendance npm ajoutés ; tout texte public nouveau est soumis à Erwan avant mise en ligne
 - [ ] **CHA-04**: Tous les garde-fous restent verts (npm test, npm run e2e avec axe AA, sans JS, 320 px, poids et Slow 4G simulé, check-dist et CSP à empreintes, CI GitHub), contrastes du texte au moins 4,5:1, et la pull request montre des captures avant et après sur bureau et mobile
 
+### Mise à jour autonome des statuts (ajoutées le 2026-11-26, D-01 à D-04)
+
+- [ ] **AUTO-01**: Un passage planifié détecte un changement de statut amont, l'écrit par règles fixes et gabarits, le fait relire par deux agents sans outil, passe `ci:local` complet, pousse en avance rapide et déploie, sans toucher un texte de mesure
+- [ ] **AUTO-02**: L'automate s'arrête avec une alerte à code fermé au moindre doute (cas réservés, gel, retenue du 10 au 15 décembre 2026, contrôle rouge) et livre désactivé : à blanc tant que le marqueur d'activation est absent
+- [ ] **AUTO-03**: La clé de déploiement automatique est distincte et restreinte côté serveur par `--auto`, installée après la mise à jour du script serveur, avec une sonde de restriction
+- [ ] **AUTO-04**: Aucun secret ne fuit, un interrupteur d'arrêt existe et la procédure de retrait de la clé automatique est au RUNBOOK, gardée par un test de documentation
+
 ### Dette de l'audit v1.0
 
 - [x] **DETTE-01**: En preview, la phrase de couverture ne présente pas des brouillons comme des positions publiées (W3)
@@ -179,6 +186,10 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 | CHA-02 | Phase 10.2 | Pending |
 | CHA-03 | Phase 10.2 | Pending |
 | CHA-04 | Phase 10.2 | Pending |
+| AUTO-01 | Phase 10.3 | Code livré (mise en service en attente) |
+| AUTO-02 | Phase 10.3 | Code livré (mise en service en attente) |
+| AUTO-03 | Phase 10.3 | Code livré (mise en service en attente) |
+| AUTO-04 | Phase 10.3 | Code livré (mise en service en attente) |
 
 **Coverage:**
 

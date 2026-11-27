@@ -14,10 +14,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'yaml';
 import { EXCLUSIONS_DEPLOY, GARDES_DEPLOIEMENT } from '../../scripts/lib/deploiement/deployer.ts';
+import { EXCLUSIONS_AUTO, GARDES_AUTO } from '../../scripts/lib/deploiement/auto.ts';
 import { loadSiteConfig } from '../../src/lib/site-config.ts';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const CLI = path.join(ROOT, 'scripts', 'deploy-local.ts');
+const CLI_AUTO = path.join(ROOT, 'scripts', 'deploy-auto.ts');
 const DOSSIER = path.join(ROOT, 'scripts', 'lib', 'deploiement');
 const lire = (f: string): string => readFileSync(f, 'utf8');
 const rel = (f: string): string => path.relative(ROOT, f).split(path.sep).join('/');
@@ -206,5 +208,67 @@ describe('identifiants de revue et valeurs du serveur dans le code', () => {
       assert.doesNotMatch(t, /\b(?:25[0-5]|2[0-4]\d|1?\d?\d)(?:\.(?:25[0-5]|2[0-4]\d|1?\d?\d)){3}\b/, `adresse IPv4 dans ${rel(f)}`);
       assert.ok(!t.toLowerCase().includes(domaine.toLowerCase()), `domaine du site dans ${rel(f)}`);
     }
+  });
+});
+
+describe('deploy:auto (10.3)', () => {
+  const vus = new Set<string>();
+  const nus: string[] = [];
+  const aVoir = [CLI_AUTO];
+  while (aVoir.length > 0) {
+    const f = aVoir.pop() as string;
+    if (vus.has(f)) continue;
+    vus.add(f);
+    for (const s of specificateurs(lire(f))) {
+      if (s.startsWith('.')) {
+        const cible = path.resolve(path.dirname(f), s);
+        assert.ok(existsSync(cible), `${rel(f)} importe ${s}, introuvable`);
+        aVoir.push(cible);
+      } else {
+        nus.push(`${rel(f)} -> ${s}`);
+      }
+    }
+  }
+
+  it('graphe d\'imports : seulement des modules node: et des chemins relatifs, rien de scripts/lib/veille', () => {
+    assert.ok([...vus].map(rel).includes('scripts/lib/deploiement/auto.ts'));
+    assert.deepEqual(nus.filter((n) => !(n.split(' -> ')[1] ?? '').startsWith('node:')), []);
+    assert.deepEqual([...vus].filter((f) => f.includes(`${path.sep}veille${path.sep}`) || f.includes(`${path.sep}node_modules${path.sep}`)), []);
+  });
+
+  it('aucun agent ssh ni terminal dans le code propre à deploy:auto', () => {
+    // agent.ts (cleChiffree) et retour.ts (verrou) sont partagés avec deploy:local ; ce qui compte est que le code
+    // de deploy:auto n'ouvre jamais d'agent et ne lit jamais de terminal.
+    for (const f of [CLI_AUTO, path.join(DOSSIER, 'auto.ts'), path.join(DOSSIER, 'gel-auto.ts')]) {
+      const t = lire(f);
+      assert.doesNotMatch(t, /ouvrirAgent|assurerCle|confirmerSurTerminal|\/dev\/tty|ssh-add|process\.stdin/, rel(f));
+    }
+  });
+
+  it('Dependances de deploy:auto : ni confirmation, ni construction, ni crochet de test', () => {
+    const m = /export interface Dependances \{([\s\S]*?)\n\}/.exec(lire(CLI_AUTO));
+    assert.ok(m, 'interface Dependances introuvable');
+    const champs = [...(m[1] as string).matchAll(/^\s*([A-Za-z_$][\w$]*)\??\s*:/gm)].map((x) => x[1] as string);
+    assert.deepEqual(champs.sort(), ['ecrire', 'home', 'lancer', 'maintenant', 'racine']);
+  });
+
+  it('process.env n\'est jamais lu par deploy:auto (envDeBase seulement) ; deploy:auto n\'a pas de confirmation par décision D-04', () => {
+    for (const f of [CLI_AUTO, path.join(DOSSIER, 'auto.ts'), path.join(DOSSIER, 'gel-auto.ts')]) {
+      assert.doesNotMatch(lire(f), /\bprocess\.env\b/, rel(f));
+    }
+  });
+
+  it('parité : chaque garde du déploiement manuel a son équivalent automatique ou une exclusion écrite', () => {
+    const manuelles = GARDES_DEPLOIEMENT.map((g) => g.etapeCi).sort();
+    const auto = [...GARDES_AUTO.map((g) => g.etapeCi), ...EXCLUSIONS_AUTO.map((x) => x.etapeCi)].sort();
+    assert.deepEqual(auto, manuelles);
+    for (const g of GARDES_AUTO) assert.ok(g.auto.trim().length > 20, g.etapeCi);
+    for (const x of EXCLUSIONS_AUTO) assert.ok(x.raison.trim().length > 20, x.etapeCi);
+  });
+
+  it('script npm deploy:auto présent, deploy:local inchangé', () => {
+    const pkg = JSON.parse(lire(path.join(ROOT, 'package.json'))) as { scripts: Record<string, string> };
+    assert.equal(pkg.scripts['deploy:auto'], 'node scripts/deploy-auto.ts');
+    assert.equal(pkg.scripts['deploy:local'], 'node scripts/deploy-local.ts');
   });
 });

@@ -288,11 +288,11 @@ Un fichier YAML refusé (alias en excès, clé en double, racine qui n'est pas u
 
 Ce que `--check` (et donc `npm test`) range en information, jamais en écart : une source ou une date différente pour un statut inchangé, dans les deux sens, y compris une date amont qui recule (le producteur corrige une date vers le passé). La fiche garde son entrée, l'outil la dit « inchangée » et le rapport la montre sous « Dérives de source (information) » : l'outil et la CI disent la même chose. Après un import sans conflit, deux écarts seulement peuvent encore rendre la pull request rouge, chacun avec son issue : le pointeur `data/dataset-datagouv.yaml` pas mis à jour (liste de contrôle de l'import de décembre, point 1) ; une fiche dont `ids_externes.2027etmoi` n'est plus une clé de la table (clé amont renommée : Erwan met à jour `ids_externes.2027etmoi` de cette fiche dans le commit de la table). Toute autre ligne d'écart : s'arrêter et la montrer à Erwan.
 
-Un statut qui change s'ajoute à la fin de `statuts[]` (historique en ajout seul, jamais de réécriture d'une ancienne entrée). Pour une nouvelle personne, ajouter une ligne à la main dans `correspondances.yaml`, jamais par découpage automatique du nom. Les champs `bloc`, `propositions` et `statut_detail` du jeu amont n'entrent jamais dans `src/content/`. L'attribution de la source (data.gouv.fr, licence) reste dans `data/import/`. Les changements de décembre suivent la procédure « Import de décembre (10 au 13 décembre 2026) ».
+Un statut qui change s'ajoute à la fin de `statuts[]` (historique en ajout seul, jamais de réécriture d'une ancienne entrée). Pour une nouvelle personne, la ligne de `correspondances.yaml` est écrite soit par Erwan (`npm run veille -- decider`), soit par l'automate de mise à jour autonome des statuts selon des règles fixes (D-02 du 2026-11-26, section « Mise à jour autonome des statuts ») ; jamais par un agent interactif. Les champs `bloc`, `propositions` et `statut_detail` du jeu amont n'entrent jamais dans `src/content/`. L'attribution de la source (data.gouv.fr, licence) reste dans `data/import/`. Les changements de décembre suivent la procédure « Import de décembre (10 au 13 décembre 2026) ».
 
 ### Import de décembre (10 au 13 décembre 2026)
 
-À suivre à la lettre, dans l'ordre. Règles décidées par Erwan le 2026-11-13 (réponse « Tout par défaut » à sept questions) ; elles sont reprises ici telles quelles. **Aucun agent n'écrit jamais une entrée sur une personne** : prénom, nom, nom de tri, type de source, motif de renoncement, case de couverture ne sont décidés et écrits que par Erwan. Un agent n'en propose pas non plus.
+À suivre à la lettre, dans l'ordre. Règles décidées par Erwan le 2026-11-13 (réponse « Tout par défaut » à sept questions) ; elles sont reprises ici telles quelles. **Aucun agent interactif n'écrit une entrée sur une personne** : prénom, nom, nom de tri, type de source, motif de renoncement, case de couverture sont décidés par Erwan, ou, depuis D-02 (2026-11-26) et la délégation du 2026-11-24, écrits par l'automate de mise à jour autonome des statuts selon des règles fixes et relus par l'agent d'IA Claude (D-03), avec une alerte à Erwan qui peut corriger après coup. Un motif de renoncement d'une personne déjà connue reste une décision d'Erwan.
 
 **Conditions de départ.** Toutes doivent être vraies avant l'étape 1, sinon l'import ne commence pas.
 
@@ -611,6 +611,7 @@ Règle d'exploitation décidée par Erwan le 2026-11-13, écrite ici et tenue pa
 - **Seule exception** : un retrait d'urgence, par la voie existante (`retrait_urgence` coché et justification écrite, voir « Gel des scrutins et retrait d'urgence » et « Retrait d'urgence d'une mesure (moins d'une heure) »).
 - **Run en attente** : un déploiement encore en attente d'approbation au début du gel est rejeté par Erwan dans l'interface (« Review deployments »), jamais approuvé. Vérifier avec `gh run list --branch main --status waiting` le dimanche 13 décembre 2026 à 18:00, puis la liste doit rester vide.
 - **Import non terminé à 18:00** : il est reporté après le gel (à partir du 16 décembre 2026), selon « Replis » dans « Import de décembre (10 au 13 décembre 2026) ».
+- **Automate** : la mise à jour autonome des statuts est retenue du 10 décembre 2026 00:00 au 15 décembre 2026 à 23:59 (section « Mise à jour autonome des statuts »), ce qui contient ce gel.
 - **Fenêtres de 2027** : celles de `scripts/garde-gel.ts` (17 au 19 avril 2027 et 1er au 3 mai 2027) ne changent pas. Ce gel de décembre est une règle écrite plus le bouton d'approbation d'Erwan : la garde technique ne coupe que le job `deploy` et ne peut pas empêcher une fusion. Le test `tests/repo/docs.test.ts` fait échouer la CI si cette section disparaît ou si les fenêtres de 2027 changent.
 
 ### Hôte technique (essai)
@@ -935,11 +936,14 @@ Phase 10.1, demande d'Erwan du 2026-11-20 : sortir les candidats qui se désiste
 
 Deux fois par jour, à 8 h et à 19 h (heure du Mac), `launchd` lance la veille sur le Mac d'Erwan ; un passage manqué pendant la veille du Mac est rattrapé au réveil, pas un Mac éteint. Un passage : récupère `origin` en lecture ; aligne son propre worktree détaché (`~/.cache/rtp/veille/arbre`) sur `origin/main` ; télécharge le jeu data.gouv « statuts sourcés » (seule source, décision du 2026-11-20 ; le Conseil constitutionnel viendra dans une phase ultérieure, avant fin février 2027) ; garde les octets sous `amont/<sha256>.json` ; si l'empreinte est déjà connue, s'arrête là ; sinon lance `import:datagouv -- --dry-run --format json` dans son worktree, classe les changements et écrit un rapport daté. Il n'écrit jamais dans le dossier de travail d'Erwan, ne crée aucune branche, ne pousse rien, n'ouvre aucune pull request.
 
+Après chaque passage, le même lanceur exécute `npm run veille -- auto`, la mise à jour autonome des statuts (voir « Mise à jour autonome des statuts ») ; sans le marqueur d'activation, elle s'arrête au commit local, sans rien publier. Un passage à blanc marque le jeu comme traité : après création du marqueur `auto-actif`, le jeu déjà vu à blanc n'est republié qu'avec `npm run veille -- auto --reprendre`, qui efface cette marque et fait retraiter le jeu courant.
+
 Le jeu amont change d'octets sans changer `mise_a_jour` : la veille dédoublonne sur l'empreinte SHA-256, jamais sur la date.
 
 | Commande | Effet |
 |---|---|
 | `npm run veille` | un passage (sous-commande `lancer` par défaut) ; `--sans-alerte` pour un essai, `--reference <ref>` pour suivre une autre référence |
+| `npm run veille -- auto` | mise à jour autonome des statuts ; `--reprendre`, `--sans-alerte`, `--sonde-agent`, `--sonde-push` |
 | `npm run veille -- etat` | dernier passage, dernière empreinte, dernier rapport, canaux configurés (oui ou non, jamais la valeur) |
 | `npm run veille -- decider <id-amont>` | décision d'Erwan sur une personne, tapée dans un terminal (voir plus bas) |
 | `npm run veille -- preparer` | branche d'import locale, jamais poussée (voir plus bas) |
@@ -988,6 +992,8 @@ La première alerte arrive au premier passage (aucune empreinte connue) s'il y a
 2. Dans ce worktree, pour chaque personne listée : `npm run veille -- decider <id-amont>`. La commande affiche les faits amont et le texte amont non relu, puis demande l'identifiant de fiche, le prénom, le nom, `nom_tri`, le type de source et, pour un désistement, le motif (`retrait`, `elimine_primaire`, `ralliement`, `non_candidat`) ; pour une personne déjà dans la table, seulement le motif. Rien n'est prérempli. Elle relit la table modifiée, montre l'entrée et n'écrit qu'après « oui ». Sans terminal de contrôle (tâche planifiée, agent, processus détaché), elle refuse avant toute autre action (code 3) ; dans le dossier de travail principal ou hors d'une branche `import/…`, elle refuse aussi.
 3. `npm run veille -- preparer` à nouveau : corps de pull request écrit sous `~/.cache/rtp/veille/pr/` (résumé et rapport, sans texte amont non relu) ; commit des décisions ; import réel ; pointeur `data/dataset-datagouv.yaml`, dates de `data/import/ATTRIBUTION.md` et de `LICENSE` ; contrôles `--check`, `ids -- --check`, `validate --mode production` ; commit de l'import (statuts en `brouillon`). Il imprime ce qui reste à décider ou à relire et les commandes de push et de pull request, sans les lancer. Code 4 si un contrôle échoue.
 4. Sur la branche, par un agent d'IA puis revérifié par un second agent (délégation d'Erwan du 2026-11-24) : cases de couverture des thèmes publiés avant toute relecture d'une entrée, `data/couverture-themes.yaml` et cases des thèmes pilotes pour chaque nouvelle personne du périmètre (liste de contrôle de l'import, points 6 et 7), relecture des statuts (`npm run relecture -- marquer statut <candidat> --relecteur "l'agent d'IA Claude"`, `--hors-perimetre` pour une sortie), textes qui annoncent un compte.
+Quand l'automate est activé, il fait lui-même ces écritures pour les cas simples (règles fixes, deux agents sans outil, ci:local complet) et les cas réservés restent à Erwan.
+
 5. Erwan pousse et ouvre la pull request (ou le demande à un agent), la relit et la fusionne ; le déploiement suit la procédure habituelle. En décembre 2026, la procédure « Import de décembre » s'applique telle quelle ; la veille sert à la répétition du matin.
 
 ### Pannes
@@ -1004,7 +1010,133 @@ La première alerte arrive au premier passage (aucune empreinte connue) s'il y a
 
 ### Règle pour les agents
 
-Un agent peut lancer `npm run veille`, `etat` et `preparer`, lire les rapports et en résumer les comptes. Il ne lance jamais `decider` (ni par un pseudo-terminal), n'écrit aucune ligne de `correspondances.yaml`, aucun motif, aucune case de couverture, aucun statut relu, et ne pousse la branche d'import que sur demande écrite d'Erwan.
+Un agent peut lancer `npm run veille`, `etat` et `preparer`, lire les rapports et en résumer les comptes. Il ne lance jamais `decider` (ni par un pseudo-terminal), n'écrit aucune ligne de `correspondances.yaml`, aucun motif, aucune case de couverture, aucun statut relu, et ne pousse la branche d'import que sur demande écrite d'Erwan. Les lignes de `correspondances.yaml` écrites par règles fixes le sont par l'automate, jamais par un agent interactif.
+
+## Mise à jour autonome des statuts
+
+Phase 10.3, demandes d'Erwan du 2026-11-24 et du 2026-11-26 : les quatre gestes manuels qui suivent un changement de statut amont (décider, préparer, relire, publier) sont faits par une tâche planifiée sur le Mac, avec des contrôles qui s'arrêtent au moindre doute (ADR-065). Livrée désactivée : tant que le marqueur d'activation est absent, l'automate travaille à blanc.
+
+### Ce que fait l'automate
+
+- **D-01** : la mise à jour des statuts de personnes est publiée sans relecture humaine préalable, mais seulement si tous les contrôles passent.
+- **D-02** : l'identité d'une personne est décidée par des règles fixes, jamais par un agent ; un cas ambigu s'arrête avec une alerte.
+- **D-03** : deux agents `claude -p` sans outil relisent chaque écriture ; une citation que le code ne retrouve pas dans la source arrête le passage.
+- Statut : le nom de famille de la fiche doit figurer dans la source, et la date de page renvoyée par un agent, si elle est donnée, doit être le jour du statut du jeu ; sinon `doute_agent`. Le texte des pages entre dans le prompt avec toute borne du bloc de données non fiables neutralisée.
+- Constat « programme non publié » : c'est un constat d'absence, donc une appréciation de l'agent, doublée d'un second agent, jamais une preuve. Il ne porte que sur les pages lues (site de campagne, site du parti, source du statut), listées dans `urls_consultees` ; chaque page a sa part du texte lu, et la citation exigée (au moins 40 caractères, retrouvée dans une de ces pages) prouve que la page a été lue, pas qu'aucun programme n'existe ailleurs.
+- **D-04** : la clé de déploiement automatique est distincte, restreinte côté serveur par `--auto`, et la publication est retenue du 10 décembre 2026 00:00 au 15 décembre 2026 à 23:59.
+
+Portée exacte de `--auto` côté serveur : production seulement ; l'envoi note son commit dans `.dernier-envoi-production` (hors de la zone d'envoi) ; `activer` n'accepte que ce commit (revue WR-01) ; `retour` n'accepte que la version immédiatement précédente ; `etat` en lecture. La clé peut donc toujours envoyer puis activer un arbre qu'elle fournit : c'est le risque résiduel accepté, détecté par l'alerte de chaque publication.
+
+Un passage (lancé par le lanceur launchd, `lancer` puis `auto`) : verrou ; worktree dédié `~/.cache/rtp/veille/auto` aligné sur `origin/main` ; répétition à blanc de l'import ; cas réservés (motif à décider, date au mois, volume, conflit, identité ambiguë, programme signalé) qui s'arrêtent avec une alerte ; identité par règles fixes ; deux agents sans outil ; écriture des fichiers par gabarits ; garde de périmètre (seuls les fichiers attendus ont changé) ; commit local ; `ci:local` complet ; push en avance rapide sur `main` (sans pull request, parce qu'une fusion change le SHA du reçu) ; `deploy:auto` ; alerte du résultat.
+
+Tant que le marqueur `~/.config/rtp/auto-actif` est absent, le passage s'arrête au commit local testé (code `pret_a_blanc`). Un passage à blanc marque le jeu comme traité : après création du marqueur, `npm run veille -- auto --reprendre` republie le jeu déjà vu.
+
+`--reprendre` efface la marque « jeu traité » et fait retraiter le jeu courant, quel que soit l'état non transitoire : repos après un passage à blanc, arrêt définitif (`ci_rouge`, `controle_rouge`, `doute_agent` et les autres codes non transitoires du tableau) ou état `retenu`. Seule exception : un commit poussé mais non déployé (`pousse_non_deploye`) garde la priorité ; sa mise en ligne est reprise d'abord, sans nouveau commit, et l'option n'y change rien. L'automate ne touche jamais un texte de mesure, une source citée ni `archives/`.
+
+Frontière de confiance (IN-04) : l'automate exécute le code de `origin/main` (import, `ci:local`, validation, `deploy:auto`) dans son worktree dédié, sous le compte d'Erwan, avec la clé de déploiement automatique, la configuration de l'agent et le moyen de push à portée dans `~/.config/rtp/`. Tout commit sur `main`, quelle que soit la session qui le pousse, est donc du code de confiance, exécuté au passage suivant. Mesures en place : une seule personne pousse sur `main` ; clé restreinte côté serveur par `--auto` ; push en avance rapide seulement, sans forçage ; agents sans outil ; alerte à chaque publication ; interrupteur d'arrêt. Risque accepté : un commit erroné ou malveillant sur `main` agirait avec ces moyens ; la protection de `main` côté GitHub (avance rapide seulement, auteurs limités) reste à envisager.
+
+Commandes : `npm run veille -- auto [--reprendre] [--sans-alerte] [--sonde-agent] [--sonde-push]`, `npm run veille -- etat`, `npm run deploy:auto -- etat` (lecture) ; `npm run deploy:auto -- deployer <sha>` n'est appelé que par l'automate. Codes de sortie de `auto` : 0 (passage terminé sans arrêt), 3 (arrêt avec alerte, voir le tableau), 1 (exception inattendue, alerte `controle_rouge`), 2 (usage ou configuration locale invalide). Les sondes impriment des lignes fixes : `agent : ok` ou `agent : ko`, `push : ok` ou `push : ko`.
+
+### Codes et alertes
+
+Une alerte (notification macOS et Telegram) contient un libellé fixe, le code, le mode, des comptes, un SHA court, des identifiants de fiche et le chemin du rapport local. Jamais de nom complet, jamais de texte produit par un agent. Un arrêt transitoire est retenté au passage suivant ; un arrêt définitif marque le jeu comme traité, et seul `--reprendre` (après correction) le fait retraiter. L'état `retenu` (après un échec de mise en ligne) attend un examen puis `--reprendre`.
+
+| Code | Sens | Ce que fait Erwan |
+|---|---|---|
+| `publie` | mise à jour publiée et mise en ligne | rien, lire le rapport |
+| `pret_a_blanc` | passage à blanc réussi, rien publié | lire le rapport et le commit local |
+| `rien_a_faire` | aucune différence avec l'état en ligne | rien |
+| `deja_en_ligne` | le commit poussé est déjà en ligne | rien |
+| `gel` | gel ou retenue en cours (transitoire) | rien, attendre la fin du gel |
+| `main_non_deploye` | le dernier commit de `main` n'est pas en ligne (transitoire) | mise en ligne manuelle `deploy:local` d'abord |
+| `motif_a_decider` | désistement d'une personne connue sans motif | `npm run veille -- decider` |
+| `date_au_mois` | date de source donnée au mois seulement | décider la date |
+| `garde_volume` | trop de changements | relire le rapport |
+| `conflit_import` | conflit avec une décision existante | relire, trancher |
+| `identite_ambigue` | identité ambiguë | écrire la ligne de `correspondances.yaml` à la main |
+| `volume_anormal` | volume amont anormal | vérifier la source |
+| `programme_signale` | programme signalé par la source | examiner, rien n'est publié |
+| `controle_rouge` | contrôle du dépôt rouge, ou exception | lire le rapport et le journal |
+| `doute_agent` | relecture des agents non concluante | lire le rapport local |
+| `source_inaccessible` | source inaccessible (transitoire) | rien, nouvel essai |
+| `ci_rouge` | `ci:local` en échec, rien poussé | lire le rapport |
+| `perimetre_ecriture` | une écriture de l'automate sort du périmètre autorisé | lire le diff du commit local |
+| `main_a_avance` | `main` a avancé pendant le passage (transitoire) | rien, nouvel essai |
+| `push_echec` | push refusé (transitoire) | sonde `--sonde-push` |
+| `verrou_pris` | un autre passage ou `ci:local` en cours (transitoire) | attendre |
+| `config_absente` | configuration locale absente ou invalide (transitoire) | refaire l'étape concernée de la mise en service |
+| `serveur_non_restreint` | clé automatique non restreinte côté serveur | reprendre les étapes 3 et 4 de la mise en service |
+| `deploiement_refuse` | déploiement refusé avant activation (transitoire) | lire `deploy:auto -- etat` |
+| `smoke_echec_retour_ok` | fumée en échec, retour arrière réussi | examiner puis `--reprendre` |
+| `smoke_echec_retour_ko` | fumée en échec et retour arrière en échec | intervention immédiate, voir « Retour arrière depuis le Mac » |
+| `hors_ligne` | réseau indisponible (transitoire) | rien |
+| `desactive` | interrupteur d'arrêt posé (sans alerte) | retirer l'interrupteur pour reprendre |
+| `reprise_a_blanc` | commit déjà poussé, marqueur d'activation absent : mode à blanc, mise en ligne en attente (transitoire) | recréer le marqueur, ou mise en ligne manuelle `deploy:local` |
+
+### Mise en service (session principale, accord d'Erwan)
+
+Faite par la session principale, jamais par l'exécuteur de la phase. Avant chaque écriture serveur, la commande et son retour arrière sont montrés à Erwan et attendent son accord explicite. Les valeurs ci-dessous sont factices (`exemple.invalid`).
+
+1. Clé automatique : `ssh-keygen -t ed25519 -N '' -C rtp-deploy-auto -f ~/.config/rtp/rtp-deploy-auto`, puis `chmod 600 ~/.config/rtp/rtp-deploy-auto`.
+2. `~/.config/rtp/deploiement-auto.env` (0600) : `RTP_CIBLE=production`, les mêmes clés que `deploiement.env` (hôte `exemple.invalid`), `RTP_CLE` vers la clé automatique et `RTP_URL` (la fumée n'est jamais sautée en automatique).
+3. Mise à jour du script serveur : `ops/installer-serveur.sh --etape commande --appliquer`, puis contrôle `grep -x '# rtp-capacite: auto-v1' /usr/local/sbin/rtp-deploy-command`. Retour arrière : réappliquer l'étape commande depuis le commit précédent.
+4. Seulement ensuite : `ops/installer-serveur.sh --etape utilisateur --cle-publique <clés actuelles> --cle-publique-auto ~/.config/rtp/rtp-deploy-auto.pub --appliquer`. La ligne posée est `restrict,command="/usr/local/sbin/rtp-deploy-command --auto" ssh-ed25519 <clé factice> rtp-deploy-auto`. Retour arrière : la même commande sans `--cle-publique-auto`.
+5. `npm run deploy:auto -- etat` doit afficher `restreint=oui`.
+6. Jeton de l'agent : Erwan tape `claude setup-token`. `~/.config/rtp/agent-claude.env` (0600) : `RTP_CLAUDE=/usr/local/bin/claude`, `CLAUDE_CODE_OAUTH_TOKEN=<jeton>` (ou la variante clé d'API `ANTHROPIC_API_KEY=<clé>`), `RTP_AGENT_BUDGET_USD=<montant>`. Puis `npm run veille -- auto --sonde-agent` doit afficher `agent : ok`.
+7. Moyen de push, créé avec Erwan : clé de déploiement GitHub en écriture limitée au dépôt, ou jeton fin `contents: write` sur ce seul dépôt. `~/.config/rtp/push-auto.env` (0600) : `RTP_PUSH_DEPOT`, `RTP_PUSH_CLE` et `RTP_PUSH_KNOWN_HOSTS`, ou `RTP_PUSH_JETON`. Puis `npm run veille -- auto --sonde-push` doit afficher `push : ok`.
+8. `npm run veille -- installer` (régénère le lanceur qui enchaîne `auto`), puis `launchctl kickstart gui/$(id -u)/fr.reveletonprog.veille`.
+9. Au moins deux passages à blanc, lus avec Erwan : alerte `pret_a_blanc`, rapport, diff du commit local dans `~/.cache/rtp/veille/auto`.
+10. En dernier, avec l'accord d'Erwan : `touch ~/.config/rtp/auto-actif`, puis `npm run veille -- auto --reprendre` (le jeu vu à blanc est retraité et publié). Après le premier push, vérifier `gh run list --status waiting` (le déploiement GitHub ne doit pas rester en attente d'approbation sans raison).
+
+Après un échec de mise en ligne d'un commit déjà poussé, la garde `main_non_deploye` bloque l'automate : faire d'abord la mise en ligne manuelle `deploy:local`.
+
+Ne jamais réinstaller un script serveur sans le marqueur `# rtp-capacite: auto-v1` tant qu'une ligne `--auto` existe dans `authorized_keys` ; l'installateur le refuse et `--verifier` le signale.
+
+### Interrupteur d'arrêt
+
+`touch ~/.cache/rtp/veille/auto-desactive` arrête tout passage avant toute action, sans alerte. Retirer le fichier pour reprendre. Retirer `~/.config/rtp/auto-actif` ramène au mode à blanc.
+
+### Retirer la clé automatique
+
+1. Poser l'interrupteur : `touch ~/.cache/rtp/veille/auto-desactive`.
+2. `rm ~/.config/rtp/auto-actif`.
+3. Réappliquer l'étape utilisateur sans la clé automatique : `ops/installer-serveur.sh --etape utilisateur --cle-publique <clés actuelles> --appliquer`. La ligne `--auto` disparaît ; contrôler sur le serveur que `authorized_keys` n'en contient plus.
+4. Supprimer `~/.config/rtp/rtp-deploy-auto`, `~/.config/rtp/rtp-deploy-auto.pub`, `deploiement-auto.env`, `push-auto.env` et `agent-claude.env`.
+5. Révoquer le moyen de push sur GitHub et le jeton de l'agent (depuis le compte, pour celui de `claude setup-token`).
+6. L'automate reste désactivé par l'interrupteur. Pour arrêter aussi la veille : `npm run veille -- retirer`, puis `launchctl print gui/$(id -u)/fr.reveletonprog.veille` pour vérifier qu'elle n'est plus chargée.
+
+Tant que la ligne `--auto` n'a pas disparu d'`authorized_keys` (étape 3), ne jamais réinstaller un script serveur sans le marqueur `# rtp-capacite: auto-v1` ; l'installateur le refuse et `--verifier` le signale.
+
+### Pannes
+
+- `hors_ligne` : reprise seule au passage suivant.
+- `verrou_pris` : un `ci:local` ou un `deploy:local` manuel est en cours ; attendre sa fin.
+- `main_a_avance` : rien à faire, nouvel essai au passage suivant.
+- Phase `poussee_en_cours` (lue par `npm run veille -- etat`) : intention écrite avant chaque push, avec le commit ; un passage interrompu (Mac en veille, arrêt brutal) la laisse en place et le passage suivant la résout seul : commit présent sur `origin/main`, reprise de la mise en ligne comme `pousse_non_deploye` ; commit absent, intention nettoyée. Un passage bloqué par le verrou n'écrit jamais l'état de l'automate : il compte ses reports à part et alerte au troisième.
+- `pousse_non_deploye` qui dure : `npm run veille -- etat` et `npm run deploy:auto -- etat`, puis mise en ligne manuelle si besoin.
+- `retenu` après une fumée en échec : examiner la version en ligne, puis `npm run veille -- auto --reprendre`.
+- Arrêt définitif (`ci_rouge`, `controle_rouge`, `doute_agent`, par exemple après un e2e instable ou un `npm ci` en échec réseau) : corriger la cause, puis `npm run veille -- auto --reprendre` fait retraiter le jeu courant.
+- `serveur_non_restreint` : reprendre les étapes 3 puis 4 de la mise en service.
+- Worktree `~/.cache/rtp/veille/auto` abîmé : `git worktree remove --force ~/.cache/rtp/veille/auto` ; le passage suivant le recrée.
+- Coût de l'agent : lu dans le rapport local de `~/.cache/rtp/veille/rapports-auto/` ; ajuster `RTP_AGENT_BUDGET_USD`.
+
+### Questions à confirmer par Erwan
+
+Sept réponses par défaut sont appliquées, à confirmer :
+
+1. Retenue de l'automate du 10 décembre 2026 00:00 au 15 décembre 2026 à 23:59 (autour de l'import de décembre).
+2. Contenu des alertes : comptes, code, SHA court, identifiants de fiche, chemin du rapport.
+3. `aucun_site` et programme signalé : arrêt avec alerte, rien n'est publié.
+4. Désistement sans motif d'une personne connue : réservé à Erwan.
+5. Deux voies d'authentification de l'agent : jeton `claude setup-token` ou clé d'API.
+6. Moyen de push : clé de déploiement ou jeton fin.
+7. Livré désactivé : marqueur `auto-actif` créé en dernier.
+
+Écarts connus : nom de tri de Lagarde, type de source de Retailleau. Risque résiduel accepté : la clé automatique n'a pas de phrase de passe et permet d'activer un envoi arbitraire en production ; elle est limitée par `--auto` côté serveur et chaque publication déclenche une alerte.
+
+### Règle pour les agents
+
+Un agent interactif ne crée ni `auto-actif` ni la clé, ne lance pas `deploy:auto -- deployer`, ne modifie aucun fichier de `~/.config/rtp/`. Il peut lancer `npm run veille -- etat` et `npm run deploy:auto -- etat` seulement si Erwan le demande.
 
 ## Incidents fréquents
 

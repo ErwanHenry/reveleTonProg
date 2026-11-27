@@ -26,13 +26,14 @@ import { chmodSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { envDeBase, type Lanceur, type Resultat } from '../processus.ts';
-import type { Agent } from './agent.ts';
 import type { ConfigDeploiement } from './config.ts';
 import type { Executables } from './executables.ts';
 import { Sortie } from './gardes.ts';
 import { masquer } from './masque.ts';
 
 export type Cible = 'essai' | 'production';
+/** Agent ssh : socket d'un agent éphémère, ou null pour une clé lue directement (IdentityAgent=none, deploy:auto). */
+export type AgentSsh = { socket: string | null };
 export type Verbe = 'etat' | 'activer' | 'retour';
 export type VarianteRsync = 'rsync3' | 'openrsync' | 'inconnue';
 
@@ -118,12 +119,12 @@ function detail(r: Resultat, cfg: CfgSsh): string {
 }
 
 /** Options ssh épinglées (mêmes que ci.yml, plus -F /dev/null et l'agent éphémère). */
-export function optionsSsh(cfg: Pick<ConfigDeploiement, 'cle' | 'knownHosts'>, agent: Pick<Agent, 'socket'>): string[] {
+export function optionsSsh(cfg: Pick<ConfigDeploiement, 'cle' | 'knownHosts'>, agent: AgentSsh): string[] {
   return [
     '-F', '/dev/null',
     '-i', cfg.cle,
     '-o', 'IdentitiesOnly=yes',
-    '-o', `IdentityAgent=${agent.socket}`,
+    '-o', `IdentityAgent=${agent.socket ?? 'none'}`,
     '-o', 'BatchMode=yes',
     '-o', 'StrictHostKeyChecking=yes',
     '-o', `UserKnownHostsFile=${cfg.knownHosts}`,
@@ -138,7 +139,7 @@ export function optionsSsh(cfg: Pick<ConfigDeploiement, 'cle' | 'knownHosts'>, a
  */
 export async function appelerVerbe(
   cfg: CfgSsh,
-  agent: Pick<Agent, 'socket'>,
+  agent: AgentSsh,
   exe: Executables,
   verbe: Verbe,
   args: string[],
@@ -221,7 +222,7 @@ export function exigerRsync3(variante: VarianteRsync): void {
  */
 export async function envoyer(
   cfg: CfgSsh,
-  agent: Pick<Agent, 'socket'>,
+  agent: AgentSsh,
   exe: Executables,
   dist: string,
   cible: string,

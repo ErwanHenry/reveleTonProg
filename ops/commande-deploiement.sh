@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# rtp-capacite: auto-v1
 # Commande forcée de la clé de déploiement (Phase 8, D-09 ; HEB-02, HEB-10, HEB-11).
 #
 # Installée en /usr/local/sbin/rtp-deploy-command (root:root 0755) par le script d'installation du serveur, lancée
@@ -7,9 +8,21 @@
 # Seule entrée : SSH_ORIGINAL_COMMAND (la commande demandée par le client). Elle n'est jamais passée à un shell :
 # filtre de caractères, découpage en jetons, contrôle de chaque jeton, puis exécution d'une commande fixe.
 #
+# Mode --auto (10.3, D-04) : la clé de la tâche planifiée du Mac (sans phrase de passe) utilise la ligne
+#   restrict,command="/usr/local/sbin/rtp-deploy-command --auto" ssh-ed25519 ... rtp-deploy-auto
+# L'argument vient de authorized_keys (écrit par root), jamais du client. Il limite la commande à la production,
+# aux quatre verbes ci-dessous, le retour à la version immédiatement précédente (sans sha, ou avec son sha), et
+# activer au seul sha du dernier envoi reçu pour la production (fichier $RTP_BASE/.dernier-envoi-production, écrit
+# par le verbe d'envoi) : une version déjà rangée ne peut pas être rebasculée par activer sans être renvoyée.
+# Portée réelle : la clé peut toujours envoyer puis activer un arbre dont version.json porte le sha demandé ; la
+# restriction est « production seulement, sans suppression, sans retour au-delà de la précédente ».
+# Tout autre premier argument, ou plus d'un argument, est refusé (64) avant toute lecture de SSH_ORIGINAL_COMMAND.
+# Le marqueur « rtp-capacite » de la deuxième ligne est lue par l'installateur avant d'écrire la ligne --auto.
+#
 # Verbes acceptés, tout le reste est refusé (code 64) :
 #   rsync --server <options> . <cible>/<sha>/   envoi dans incoming/<cible>/<sha>/ par rrsync -wo -no-del -munge
 #   activer <cible> <sha>                       vérifie l'envoi, le range dans releases/<sha>/, bascule current
+#                                               (en --auto : <sha> doit être celui du dernier envoi, sinon 64)
 #   retour <cible> [<sha>]                      rebascule current sur la version précédente (ou sur <sha>)
 #   etat <cible>                                version courante, nombre de versions, espace libre
 # <cible> : essai (racine $RTP_BASE/essai) ou production (racine $RTP_BASE).
@@ -19,6 +32,7 @@
 # résolve aussi dans le montage du conteneur Caddy), .historique en ajout seul (lignes « <ISO 8601 UTC> <sha> »).
 # Les envois arrivent dans $RTP_BASE/incoming/<cible>/<sha>/ : rsync n'écrit jamais dans l'arbre servi, seul
 # activer y range une version vérifiée. Verrou $RTP_BASE/.verrou (flock -w 20) autour de activer et retour.
+# Chaque envoi accepté note son sha dans $RTP_BASE/.dernier-envoi-<cible>, hors de incoming/ (rrsync n'y écrit pas).
 #
 # Sortie : une ligne sur stdout, lue par les workflows.
 #   active cible=<cible> courant=<sha> versions=<n>
@@ -52,13 +66,16 @@ RE_DEST='^(essai|production)/[0-9a-f]{40}/?$'
 RE_OPTION='^--?[A-Za-z0-9][A-Za-z0-9._=,+-]*$'
 RE_ENTIER='^[0-9]+$'
 
+AUTO=0
 VERBE=refuse
 CIBLE=""
 SHA=""
 RACINE=""
 
 journal() { # verbe cible sha code ; les valeurs sont déjà contrôlées, aucun échappement JSON nécessaire
-  logger -t rtp-deploy "{\"verbe\":\"$1\",\"cible\":\"$2\",\"sha\":\"$3\",\"code\":$4}" >/dev/null 2>&1 || true
+  local auto=false
+  [ "$AUTO" -eq 1 ] && auto=true
+  logger -t rtp-deploy "{\"verbe\":\"$1\",\"cible\":\"$2\",\"sha\":\"$3\",\"code\":$4,\"auto\":$auto}" >/dev/null 2>&1 || true
 }
 
 refuser() {
@@ -71,6 +88,20 @@ echouer() { # code message
   echo "échec : $2" >&2
   journal "$VERBE" "$CIBLE" "$SHA" "$1"
   exit "$1"
+}
+
+exiger_production() { # mode --auto : production seulement
+  [ "$AUTO" -eq 0 ] || [ "$1" = "production" ] || refuser "mode auto : production seulement"
+}
+
+exiger_dernier_envoi() { # mode --auto : activer seulement le sha du dernier envoi de la cible (WR-01)
+  [ "$AUTO" -eq 1 ] || return 0
+  local dernier=""
+  if [ -f "$BASE/.dernier-envoi-$CIBLE" ] && [ ! -L "$BASE/.dernier-envoi-$CIBLE" ]; then
+    IFS= read -r dernier <"$BASE/.dernier-envoi-$CIBLE" || true
+  fi
+  [[ $dernier =~ $RE_SHA ]] && [ "$dernier" = "$SHA" ] ||
+    refuser "mode auto : activer limité à la version du dernier envoi (un retour passe par retour)"
 }
 
 choisir_racine() {
@@ -183,6 +214,7 @@ verbe_envoi() {
   [ "${t[1]}" = "--server" ] || refuser "rsync : --server attendu"
   dest=${t[$((n - 1))]}
   [[ $dest =~ $RE_DEST ]] || refuser "rsync : destination hors <cible>/<sha>/"
+  exiger_production "${dest%%/*}"
   [ "${t[$((n - 2))]}" = "." ] || refuser "rsync : source « . » attendue"
   i=2
   while [ "$i" -lt $((n - 2)) ]; do
@@ -200,6 +232,9 @@ verbe_envoi() {
   nettoyer_incoming
   garde_espace
   mkdir -p "$BASE/incoming/$CIBLE"
+  # Dernier envoi de la cible : seul sha que le mode --auto pourra activer (WR-01). Noté avant rrsync, qui remplace
+  # ce processus ; un envoi interrompu laisse un sha sans arbre, que activer refuse (65) s'il n'est pas déjà rangé.
+  printf '%s\n' "$SHA" >"$BASE/.dernier-envoi-$CIBLE" || echouer 1 "dernier envoi impossible à noter"
   journal envoi "$CIBLE" "$SHA" 0
   # rrsync relit SSH_ORIGINAL_COMMAND et enferme l'écriture dans incoming/ (écriture seule, sans suppression).
   # -munge (rrsync de rsync 3.2.x) fait ajouter --munge-links côté serveur : un lien symbolique reçu est préfixé
@@ -250,6 +285,10 @@ verbe_retour() {
   local demande=$1 vise ancien
   courant
   if [ -n "$demande" ]; then
+    if [ "$AUTO" -eq 1 ]; then
+      trouver_precedent
+      [ -n "$PRECEDENT" ] && [ "$demande" = "$PRECEDENT" ] || refuser "mode auto : retour limité à la version précédente"
+    fi
     [ -d "$RACINE/releases/$demande" ] || echouer 66 "version absente : releases/$demande"
     vise=$demande
   else
@@ -275,6 +314,12 @@ verbe_etat() {
   echo "etat cible=$CIBLE courant=$COURANT versions=$VERSIONS libre_mio=$LIBRE"
 }
 
+if [ "$#" -eq 1 ] && [ "$1" = "--auto" ]; then
+  AUTO=1
+elif [ "$#" -ne 0 ]; then
+  refuser "argument de commande forcée inconnu"
+fi
+
 commande=${SSH_ORIGINAL_COMMAND:-}
 [[ $commande =~ $RE_COMMANDE ]] || refuser "caractères non autorisés ou commande vide"
 t=()
@@ -288,9 +333,11 @@ case "${t[0]}" in
     ;;
   activer)
     [ "$n" -eq 3 ] || refuser "usage : activer <cible> <sha>"
+    exiger_production "${t[1]}"
     choisir_racine "${t[1]}"
     [[ ${t[2]} =~ $RE_SHA ]] || refuser "sha invalide"
     SHA=${t[2]}
+    exiger_dernier_envoi
     VERBE=activer
     verrouiller
     nettoyer_incoming
@@ -298,6 +345,7 @@ case "${t[0]}" in
     ;;
   retour)
     [ "$n" -eq 2 ] || [ "$n" -eq 3 ] || refuser "usage : retour <cible> [<sha>]"
+    exiger_production "${t[1]}"
     choisir_racine "${t[1]}"
     demande=""
     if [ "$n" -eq 3 ]; then
@@ -311,6 +359,7 @@ case "${t[0]}" in
     ;;
   etat)
     [ "$n" -eq 2 ] || refuser "usage : etat <cible>"
+    exiger_production "${t[1]}"
     choisir_racine "${t[1]}"
     VERBE=etat
     nettoyer_incoming

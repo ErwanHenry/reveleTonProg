@@ -290,7 +290,21 @@ Plans:
   3. La mise en ligne automatique utilise une clé dédiée sans phrase de passe, restreinte côté serveur ; chaque publication déclenche test de fumée, retour automatique en cas d'échec et alerte Telegram.
   4. Aucun secret dans le dépôt ni dans les journaux ; procédure de retrait de la clé automatique au RUNBOOK, gardée par un test de documentation.
 
-**Plans**: à planifier
+**Plans**: 11 plans en 6 vagues, exécutés et vérifiés le 2026-11-27 (code livré désactivé ; mise en service par la session principale avec l'accord d'Erwan, RUNBOOK « Mise à jour autonome des statuts »)
+
+Plans:
+
+- [x] 10.3-01-PLAN.md — Masque de deploy:local corrigé, README sans compte en dur, règle D-02 au RUNBOOK (vague 1)
+- [x] 10.3-02-PLAN.md — Commande forcée `--auto`, installateur `--cle-publique-auto` avec marqueur de capacité, faux serveur en mode auto (vague 1)
+- [x] 10.3-03-PLAN.md — Agent `claude -p` sans outil, double vérification à citation retrouvée, textes des sources, lecteur strict commun (vague 1)
+- [x] 10.3-04-PLAN.md — Règles fixes d'identité et de type de source (D-02), oracle sur les lignes réelles (vague 1)
+- [x] 10.3-05-PLAN.md — Codes fermés, alertes et boîte d'envoi, état et mode de l'automate, push en avance rapide (vague 2)
+- [x] 10.3-06-PLAN.md — `deploy:auto` : clé directe, sonde de restriction, gels, fumée, retour automatique, parité des gardes (vague 2)
+- [x] 10.3-07-PLAN.md — Écriture par gabarits (couverture, cases, relecture par marquer) et garde de périmètre d'écriture (vague 2)
+- [x] 10.3-08-PLAN.md — Préparation d'un passage jusqu'au commit testé par ci:local, cas réservés (vague 3)
+- [x] 10.3-09-PLAN.md — Passage complet : à blanc, publication, reprise, état retenu, alertes (vague 4)
+- [x] 10.3-10-PLAN.md — `npm run veille -- auto`, sondes, lanceur launchd, sentinelles et gardes statiques (vague 5)
+- [x] 10.3-11-PLAN.md — RUNBOOK (mise en service, retrait de la clé), ADR-065, AUTO-01 à AUTO-04 (vague 6)
 
 ## Progress
 
@@ -310,3 +324,4 @@ Plans:
 | 10. Import de décembre | v1.1 | 1/6 | In Progress|  |
 | 10.1 Veille des candidatures | v1.1 | 5/5 | Complete (Telegram et Healthchecks à configurer par Erwan) | 2026-11-20 |
 | 10.2 Charte graphique D bleu blanc rouge | v1.1 | 5/5 | Exécutée, PR ouverte, en attente de la validation d'Erwan |  |
+| 10.3 Mise à jour autonome des statuts | v1.1 | 11/11 | Code complet, mise en service en attente (clé, jeton, push, launchd) |  |

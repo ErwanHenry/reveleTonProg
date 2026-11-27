@@ -648,7 +648,7 @@ describe('ops/installer-serveur.sh : étape utilisateur à deux clés au plus', 
     const f = deuxCles(b);
     const a = lancer(b, ['--appliquer', '--etape', 'utilisateur', '--cle-publique', f]);
     assert.equal(a.status, 0, a.stdout + a.stderr);
-    assert.deepEqual(ligneCles(a), ['[fait] /home/deploy/.ssh/authorized_keys : une ou deux lignes restreintes écrites']);
+    assert.deepEqual(ligneCles(a), ['[fait] /home/deploy/.ssh/authorized_keys : une à trois lignes restreintes écrites']);
     assert.equal(fs.readFileSync(ak(b), 'utf8'), `${PREFIXE} ${CLE}\n${PREFIXE} ${CLE_MAC}\n`);
     assert.equal(mode(ak(b)), 0o644);
     assert.ok(lireJournal(b, 'chown').split('\n').includes(`root:root ${ak(b)}`), 'authorized_keys doit appartenir à root');
@@ -657,13 +657,13 @@ describe('ops/installer-serveur.sh : étape utilisateur à deux clés au plus', 
     const encore = lancer(b, ['--appliquer', '--etape', 'utilisateur', '--cle-publique', f]);
     assert.equal(encore.status, 0, encore.stdout + encore.stderr);
     assert.deepEqual(faits(encore), []);
-    assert.deepEqual(ligneCles(encore), ['[ok] /home/deploy/.ssh/authorized_keys : une ou deux lignes restreintes, à jour']);
+    assert.deepEqual(ligneCles(encore), ['[ok] /home/deploy/.ssh/authorized_keys : une à trois lignes restreintes, à jour']);
     assert.deepEqual(instantane(b.racine), avant);
 
     const v = lancer(b, ['--verifier', '--etape', 'utilisateur']);
     assert.equal(v.status, 0, v.stderr);
     assert.deepEqual(afaire(v), []);
-    assert.deepEqual(ligneCles(v), ['[ok] /home/deploy/.ssh/authorized_keys : une ou deux lignes restreintes']);
+    assert.deepEqual(ligneCles(v), ['[ok] /home/deploy/.ssh/authorized_keys : une à trois lignes restreintes']);
     const vf = lancer(b, ['--verifier', '--etape', 'utilisateur', '--cle-publique', f]);
     assert.deepEqual(afaire(vf), []);
   });
@@ -676,7 +676,7 @@ describe('ops/installer-serveur.sh : étape utilisateur à deux clés au plus', 
     assert.equal(lancer(b, ['--appliquer', '--etape', 'utilisateur', '--cle-publique', deuxCles(b)]).status, 0);
     // Vérification avec la seule clé de GitHub : le fichier diffère, il y a une action à faire.
     const vg = lancer(b, ['--verifier', '--etape', 'utilisateur', '--cle-publique', b.cle]);
-    assert.deepEqual(afaire(vg), ['[a faire] /home/deploy/.ssh/authorized_keys : écrire une ou deux lignes restreintes (commande forcée)']);
+    assert.deepEqual(afaire(vg), ['[a faire] /home/deploy/.ssh/authorized_keys : écrire une à trois lignes restreintes (commande forcée)']);
     const a = lancer(b, ['--appliquer', '--etape', 'utilisateur', '--cle-publique', b.cle]);
     assert.equal(a.status, 0, a.stdout + a.stderr);
     assert.equal(fs.readFileSync(ak(b), 'utf8'), `${PREFIXE} ${CLE}\n`);
@@ -708,6 +708,192 @@ describe('ops/installer-serveur.sh : étape utilisateur à deux clés au plus', 
       assert.equal(v.status, 0, `${nom} : ${v.stderr}`);
       assert.deepEqual(afaire(v), ['[a faire] /home/deploy/.ssh/authorized_keys : absent ou non conforme, fournir --cle-publique'], nom);
     }
+  });
+});
+
+// 10.3, D-04 : troisième ligne, la clé automatique, restreinte par « --auto », seulement si le script installé la comprend.
+describe('ops/installer-serveur.sh : clé automatique (10.3, D-04)', () => {
+  const CLE_AUTO = `ssh-ed25519 ${crypto.randomBytes(51).toString('base64')} rtp-deploy-auto`;
+  const PREFIXE_AUTO = 'restrict,command="/usr/local/sbin/rtp-deploy-command --auto"';
+  const ak = (b: Banc): string => path.join(b.racine, 'home/deploy/.ssh/authorized_keys');
+  const installe = (b: Banc): string => path.join(b.racine, 'usr/local/sbin/rtp-deploy-command');
+  const fichier = (b: Banc, nom: string, contenu: string): string => {
+    const f = path.join(path.dirname(b.cle), nom);
+    ecrire(f, contenu);
+    return f;
+  };
+  /** Banc dont la source de la commande forcée porte le marqueur de capacité, tout appliqué (commande installée). */
+  const prepare = (avecMarqueur = true): Banc => {
+    const b = banc();
+    ecrire(
+      path.join(b.source, 'ops/commande-deploiement.sh'),
+      `#!/usr/bin/env bash\n${avecMarqueur ? '# rtp-capacite: auto-v1\n' : ''}echo commande factice\n`,
+      0o755,
+    );
+    assert.equal(appliquerTout(b).status, 0);
+    return b;
+  };
+  const args = (b: Banc, cles: string, auto?: string): string[] => [
+    '--appliquer', '--etape', 'utilisateur', '--cle-publique', cles, ...(auto === undefined ? [] : ['--cle-publique-auto', auto]),
+  ];
+
+  it('écrit la ligne --auto après une ou deux lignes manuelles, quand le script installé porte le marqueur', () => {
+    const b = prepare();
+    const manuelles = fichier(b, 'deux.pub', `${CLE}\n${CLE_MAC}\n`);
+    const auto = fichier(b, 'auto.pub', `${CLE_AUTO}\n`);
+    const r = lancer(b, args(b, manuelles, auto));
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    assert.equal(fs.readFileSync(ak(b), 'utf8'), `${PREFIXE} ${CLE}\n${PREFIXE} ${CLE_MAC}\n${PREFIXE_AUTO} ${CLE_AUTO}\n`);
+    assert.equal(mode(ak(b)), 0o644);
+    const une = fichier(b, 'une.pub', `${CLE}\n`);
+    assert.equal(lancer(b, args(b, une, auto)).status, 0);
+    assert.equal(fs.readFileSync(ak(b), 'utf8'), `${PREFIXE} ${CLE}\n${PREFIXE_AUTO} ${CLE_AUTO}\n`);
+  });
+
+  it('refuse (code 4) si le script installé n’a pas le marqueur ou est absent, sans rien écrire', () => {
+    const auto = (b: Banc): string => fichier(b, 'auto.pub', `${CLE_AUTO}\n`);
+    const sansMarqueur = prepare(false);
+    const avant = instantane(sansMarqueur.racine);
+    const r = lancer(sansMarqueur, args(sansMarqueur, sansMarqueur.cle, auto(sansMarqueur)));
+    assert.equal(r.status, 4);
+    assert.match(r.stderr, /appliquer d'abord l'étape commande/);
+    assert.deepEqual(instantane(sansMarqueur.racine), avant);
+
+    const absent = prepare();
+    fs.rmSync(installe(absent));
+    const avantAbsent = instantane(absent.racine);
+    assert.equal(lancer(absent, args(absent, absent.cle, auto(absent))).status, 4);
+    assert.deepEqual(instantane(absent.racine), avantAbsent);
+  });
+
+  it('refuse (code 4, rien écrit) deux lignes, une ligne non ed25519, une clé identique à une clé manuelle', () => {
+    const b = prepare();
+    const avant = instantane(b.racine);
+    const manuelles = fichier(b, 'deux.pub', `${CLE}\n${CLE_MAC}\n`);
+    for (const mauvais of [
+      `${CLE_AUTO}\n${CLE_TROIS}\n`,
+      'ssh-rsa AAAAB3Nza truc\n',
+      `${CLE}\n`,
+      `${CLE_CORPS} autre-commentaire\n`,
+      `${CLE_MAC}\n`,
+      '',
+    ]) {
+      const auto = fichier(b, 'mauvaise-auto.pub', mauvais);
+      const r = lancer(b, args(b, manuelles, auto));
+      assert.equal(r.status, 4, JSON.stringify(mauvais));
+    }
+    assert.deepEqual(instantane(b.racine), avant);
+  });
+
+  it('refuse l’option sans --cle-publique (code 2, usage)', () => {
+    const b = prepare();
+    const auto = fichier(b, 'auto.pub', `${CLE_AUTO}\n`);
+    const r = lancer(b, ['--appliquer', '--etape', 'utilisateur', '--cle-publique-auto', auto]);
+    assert.equal(r.status, 2);
+  });
+
+  it('retrait : réappliquer sans --cle-publique-auto remet exactement les lignes de --cle-publique', () => {
+    const b = prepare();
+    const manuelles = fichier(b, 'deux.pub', `${CLE}\n${CLE_MAC}\n`);
+    const auto = fichier(b, 'auto.pub', `${CLE_AUTO}\n`);
+    assert.equal(lancer(b, args(b, manuelles, auto)).status, 0);
+    assert.match(fs.readFileSync(ak(b), 'utf8'), /--auto/);
+    const r = lancer(b, args(b, manuelles));
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    assert.equal(fs.readFileSync(ak(b), 'utf8'), `${PREFIXE} ${CLE}\n${PREFIXE} ${CLE_MAC}\n`);
+  });
+
+  /** Remplace la source de la commande forcée par un ancien script, sans le marqueur de capacité. */
+  const sourceSansMarqueur = (b: Banc): void => {
+    ecrire(path.join(b.source, 'ops/commande-deploiement.sh'), '#!/usr/bin/env bash\necho ancienne commande\n', 0o755);
+  };
+
+  it('WR-02 : étape commande refusée (code 4, rien écrit, aussi en vérification) pour une source sans marqueur sous une ligne --auto', () => {
+    const b = prepare();
+    const auto = fichier(b, 'auto.pub', `${CLE_AUTO}\n`);
+    assert.equal(lancer(b, args(b, b.cle, auto)).status, 0);
+    assert.match(fs.readFileSync(ak(b), 'utf8'), /--auto/);
+    sourceSansMarqueur(b);
+    const avant = instantane(b.racine);
+    for (const m of ['--appliquer', '--verifier']) {
+      const r = lancer(b, [m, '--etape', 'commande']);
+      assert.equal(r.status, 4, `${m} : ${r.stdout}${r.stderr}`);
+      assert.match(r.stderr, /sans le marqueur « # rtp-capacite: auto-v1 » sous une ligne --auto/);
+      assert.equal(faits(r).length, 0);
+    }
+    // Demande explicite de la ligne --auto dans la même exécution : refus aussi.
+    assert.equal(
+      lancer(b, ['--appliquer', '--etape', 'utilisateur,commande', '--cle-publique', b.cle, '--cle-publique-auto', auto]).status,
+      4,
+    );
+    assert.deepEqual(instantane(b.racine), avant);
+    assert.match(fs.readFileSync(installe(b), 'utf8'), /^# rtp-capacite: auto-v1$/m, 'le script installé reste celui qui comprend --auto');
+  });
+
+  it('WR-02 : --cle-publique-auto demandée avec une source sans marqueur : étape commande refusée (code 4) même sans ligne en place', () => {
+    const b = prepare();
+    sourceSansMarqueur(b);
+    const auto = fichier(b, 'auto.pub', `${CLE_AUTO}\n`);
+    const avant = instantane(b.racine);
+    const r = lancer(b, ['--appliquer', '--etape', 'commande', '--cle-publique', b.cle, '--cle-publique-auto', auto]);
+    assert.equal(r.status, 4, r.stdout + r.stderr);
+    assert.deepEqual(instantane(b.racine), avant);
+  });
+
+  it('WR-02 : sans ligne --auto, ou si la même exécution la retire, un script sans marqueur s’installe', () => {
+    const sans = prepare();
+    sourceSansMarqueur(sans);
+    const r = lancer(sans, ['--appliquer', '--etape', 'commande']);
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    assert.match(fs.readFileSync(installe(sans), 'utf8'), /ancienne commande/);
+
+    const retrait = prepare();
+    const auto = fichier(retrait, 'auto.pub', `${CLE_AUTO}\n`);
+    assert.equal(lancer(retrait, args(retrait, retrait.cle, auto)).status, 0);
+    sourceSansMarqueur(retrait);
+    const r2 = lancer(retrait, ['--appliquer', '--etape', 'utilisateur,commande', '--cle-publique', retrait.cle]);
+    assert.equal(r2.status, 0, r2.stdout + r2.stderr);
+    assert.equal(fs.readFileSync(ak(retrait), 'utf8'), `${PREFIXE} ${CLE}\n`);
+    assert.match(fs.readFileSync(installe(retrait), 'utf8'), /ancienne commande/);
+  });
+
+  it('WR-02 : vérification d’une ligne --auto sous un script installé sans marqueur : « a faire » (non conforme), avec ou sans --cle-publique', () => {
+    const b = prepare();
+    const auto = fichier(b, 'auto.pub', `${CLE_AUTO}\n`);
+    assert.equal(lancer(b, args(b, b.cle, auto)).status, 0);
+    const v0 = lancer(b, ['--verifier', '--etape', 'utilisateur', '--cle-publique', b.cle, '--cle-publique-auto', auto]);
+    assert.deepEqual(afaire(v0), [], 'script à jour : rien à faire');
+    // Ancien script remis en place hors de l'installateur (copie à la main, restauration).
+    fs.writeFileSync(installe(b), '#!/usr/bin/env bash\necho ancienne commande\n');
+    const attendu = [
+      '[a faire] /home/deploy/.ssh/authorized_keys : ligne --auto présente, script installé sans le marqueur « # rtp-capacite: auto-v1 », non conforme : appliquer l\'étape commande ou retirer la clé automatique',
+    ];
+    const v1 = lancer(b, ['--verifier', '--etape', 'utilisateur']);
+    assert.equal(v1.status, 0, v1.stderr);
+    assert.deepEqual(afaire(v1), attendu);
+    const v2 = lancer(b, ['--verifier', '--etape', 'utilisateur', '--cle-publique', b.cle, '--cle-publique-auto', auto]);
+    assert.equal(v2.status, 0, v2.stderr);
+    assert.deepEqual(afaire(v2), attendu);
+    // En application sans --cle-publique, l'action reste à faire : code 1 (application incomplète).
+    assert.equal(lancer(b, ['--appliquer', '--etape', 'utilisateur']).status, 1);
+    // Retirer la ligne --auto rend le tout conforme.
+    assert.equal(lancer(b, args(b, b.cle)).status, 0);
+    assert.deepEqual(afaire(lancer(b, ['--verifier', '--etape', 'utilisateur'])), []);
+  });
+
+  it('vérification : trois lignes dont une --auto sont conformes ; deux lignes --auto ou trois manuelles non', () => {
+    const b = prepare();
+    const nonConforme = ['[a faire] /home/deploy/.ssh/authorized_keys : absent ou non conforme, fournir --cle-publique'];
+    const verifie = (contenu: string): string[] => {
+      fs.writeFileSync(ak(b), contenu);
+      const v = lancer(b, ['--verifier', '--etape', 'utilisateur']);
+      assert.equal(v.status, 0, v.stderr);
+      return afaire(v);
+    };
+    assert.deepEqual(verifie(`${PREFIXE} ${CLE}\n${PREFIXE} ${CLE_MAC}\n${PREFIXE_AUTO} ${CLE_AUTO}\n`), []);
+    assert.deepEqual(verifie(`${PREFIXE} ${CLE}\n${PREFIXE_AUTO} ${CLE_AUTO}\n${PREFIXE_AUTO} ${CLE_TROIS}\n`), nonConforme);
+    assert.deepEqual(verifie(`${PREFIXE} ${CLE}\n${PREFIXE_AUTO} ${CLE_CORPS}\n${PREFIXE_AUTO} ${CLE_CORPS}\n`), nonConforme);
+    assert.deepEqual(verifie(`${PREFIXE} ${CLE}\n${PREFIXE_AUTO} ${CLE}\n`), nonConforme);
   });
 });
 

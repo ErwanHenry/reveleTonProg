@@ -3,7 +3,7 @@
 // le vrai ~/.config/rtp n'est jamais lu. Valeurs factices seulement (exemple.invalid).
 import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { chmodSync, mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { Sortie } from '../../scripts/lib/deploiement/gardes.ts';
@@ -137,6 +137,7 @@ describe('lireConfig : fichier valide', () => {
     const home = '/tmp/rtp-home-x';
     assert.deepEqual(cheminsLocaux(home), {
       config: '/tmp/rtp-home-x/.config/rtp/deploiement.env',
+      configAuto: '/tmp/rtp-home-x/.config/rtp/deploiement-auto.env',
       recus: '/tmp/rtp-home-x/.cache/rtp/ci',
       journal: '/tmp/rtp-home-x/.local/state/rtp/deploiements.jsonl',
       verrou: '/tmp/rtp-home-x/.cache/rtp/deploiement/.verrou',
@@ -264,6 +265,53 @@ describe('masquer', () => {
 
   it('utilisateur pris comme mot entier seulement', () => {
     assert.equal(masquer('xdeploy-facticex reste', cfg), 'xdeploy-facticex reste');
+  });
+
+  it('10.3 point 8 : les noms de commandes ne sont pas pris pour l\'utilisateur', () => {
+    const c = { hote: HOTE, utilisateur: 'deploy', url: null };
+    for (const t of [
+      'deploy:local',
+      'npm run deploy:local',
+      'deploy-local.ts',
+      'scripts/deploy-local.ts',
+      'deploy.ts',
+      'deploy-production',
+      'lancer fnm exec --using=24 npm run deploy:local',
+      'deploy:auto',
+      'npm run deploy:auto -- deployer',
+      'deploy-auto.ts',
+      'scripts/deploy-auto.ts',
+      'scripts/deploy.ts',
+      '/home/deployeur',
+    ]) assert.equal(masquer(t, c), t);
+    const usage = /const USAGE = `([^`]*)`/.exec(readFileSync(new URL('../../scripts/deploy-local.ts', import.meta.url), 'utf8'))?.[1];
+    assert.ok(usage !== undefined && usage.includes('deploy:local'));
+    assert.equal(masquer(usage, c), usage);
+  });
+
+  it('10.3 point 8 : l\'utilisateur seul reste masqué', () => {
+    const c = { hote: HOTE, utilisateur: 'deploy', url: null };
+    assert.equal(masquer(`deploy@${HOTE}`, c), '<utilisateur>@<hôte>');
+    assert.equal(masquer('compte deploy refusé', c), 'compte <utilisateur> refusé');
+    assert.equal(masquer('utilisateur deploy.', c), 'utilisateur <utilisateur>.');
+    assert.equal(masquer('utilisateur deploy. Suite', c), 'utilisateur <utilisateur>. Suite');
+    assert.equal(masquer('(deploy)', c), '(<utilisateur>)');
+    assert.equal(masquer('deploy: Permission denied', c), '<utilisateur>: Permission denied');
+    assert.equal(masquer('xdeploy-facticex', c), 'xdeploy-facticex');
+  });
+
+  it('IN-01 : utilisateur masqué dans /home/<utilisateur> et ssh://<utilisateur>@', () => {
+    const c = { hote: HOTE, utilisateur: 'deploy', url: null };
+    assert.equal(masquer('/home/deploy/.ssh/authorized_keys', c), '/home/<utilisateur>/.ssh/authorized_keys');
+    assert.equal(masquer('dossier /home/deploy', c), 'dossier /home/<utilisateur>');
+    assert.equal(masquer('dossier /home/deploy.', c), 'dossier /home/<utilisateur>.');
+    assert.equal(masquer('cd /home/deploy; ls', c), 'cd /home/<utilisateur>; ls');
+    assert.equal(masquer(`ssh://deploy@${HOTE}:22/srv`, c), 'ssh://<utilisateur>@<hôte>:22/srv');
+    assert.equal(masquer('ssh://deploy@[2001:db8::1]:22', c), 'ssh://<utilisateur>@[<adresse>]:22');
+    assert.equal(masquer('/home/deploy et deploy:local', c), '/home/<utilisateur> et deploy:local');
+    const f = { hote: HOTE, utilisateur: UTILISATEUR, url: URL_ESSAI };
+    assert.equal(masquer(`/home/${UTILISATEUR}/.ssh`, f), '/home/<utilisateur>/.ssh');
+    assert.equal(masquer(`ssh://${UTILISATEUR}@${HOTE}`, f), 'ssh://<utilisateur>@<hôte>');
   });
 
   it('valeurs vides ou nulles ignorées', () => {
