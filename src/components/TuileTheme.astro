@@ -7,7 +7,7 @@ import type { VueTheme } from '../lib/corpus/index.ts';
 
 interface Props {
   vue: VueTheme;
-  /** Rang de la tuile dans la liste rendue (1 pour la première), calculé par la page. Jamais `theme.ordre`, qui a des trous. */
+  /** Rang de la tuile dans la liste rendue (1 pour la première), calculé par la page. Jamais le champ d ordre des données, qui a des trous. */
   rang: number;
   /** Seule tuile de l'accueil (un seul thème connu) : elle occupe toute la ligne de la grille. */
   une?: boolean;

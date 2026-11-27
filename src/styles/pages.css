@@ -257,6 +257,7 @@ main:has(> .lecteur > .niveaux #niv-aine:checked) :is(.hall-candidats, .hall-met
 
 .hall-themes + .tuiles {
   margin-top: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
 }
 
 /* Un seul thème ouvert : la tuile occupe toute la ligne, même habillage */
@@ -305,6 +306,67 @@ main:has(> .lecteur > .niveaux #niv-aine:checked) :is(.hall-candidats, .hall-met
 .tuile-compte {
   color: var(--encre-douce);
   font-size: var(--t-label);
+}
+
+/* R-4 : numéro de rang de la tuile (élément du flux, en tête de la colonne) ; gris sur une tuile à venir */
+.tuile-num {
+  font-size: var(--t-label);
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--rouge);
+  font-variant-numeric: tabular-nums;
+}
+
+.tuile-avenir .tuile-num {
+  color: var(--encre-douce);
+}
+
+/* Pastille « Lire » : décorative, la tuile entière est la cible du lien. Jamais de rouge. */
+.tuile-lire {
+  margin-top: auto;
+  padding: 0.25rem 1rem;
+  background: var(--nuit);
+  color: var(--carte);
+  border-radius: var(--rayon-pastille);
+  font-size: var(--t-label);
+  font-weight: 600;
+}
+
+/* Thème connu, pas encore publié : tuile pleine et lisible (règle 8), sans lien, sans couleur de thème */
+.tuile-avenir {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-height: 0;
+  padding: 1rem 1.5rem;
+  background: var(--panneau);
+  border: 2px solid var(--bord-carte);
+  border-radius: var(--rayon-carte);
+  color: var(--encre);
+  overflow-wrap: break-word;
+}
+
+.tuile-avenir-nom {
+  margin: 0;
+  font-family: var(--police-titres);
+  font-size: var(--t-titre);
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--encre);
+}
+
+.tuile-avenir-etat {
+  margin: 0;
+  font-size: var(--t-label);
+  color: var(--encre-douce);
+}
+
+@media (min-width: 37.5em) {
+  .tuile-avenir {
+    min-height: 6rem;
+    padding: 1.5rem;
+  }
 }
 
 /* Accueil : les quatre niveaux, toujours tous visibles */
@@ -425,6 +487,7 @@ main:has(> .lecteur > .niveaux #niv-aine:checked) :is(.hall-candidats, .hall-met
 
 @media (forced-colors: active) {
   .tuile,
+  .tuile-avenir,
   .statut,
   .lignes,
   .ligne {
@@ -432,7 +495,8 @@ main:has(> .lecteur > .niveaux #niv-aine:checked) :is(.hall-candidats, .hall-met
   }
 
   .garanties,
-  .bouton {
+  .bouton,
+  .tuile-lire {
     border: 1px solid CanvasText;
   }
 }

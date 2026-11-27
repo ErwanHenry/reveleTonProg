@@ -541,12 +541,14 @@ describe('charte 10.2 : titres et rouge', () => {
   const R1 = 'main h2:not(.section-titre)::after';
   const parSel = (sel: string): Regle | undefined => regles.find((r) => r.selecteur === sel);
 
-  it('(a) le rouge est en liste fermée : R-1 à R-3, R-5 (surtitre), R-6 (bloc 2027), R-7 (étiquettes de garanties)', () => {
+  it('(a) le rouge est en liste fermée : R-1 à R-3, R-5 (surtitre), R-6 (bloc 2027), R-7 (étiquettes de garanties), R-4 (numéros des tuiles)', () => {
     const emplois = new Set(regles.filter((r) => r.declarations.some((d) => /var\(--rouge\)/.test(d.valeur))).map((r) => r.selecteur));
     assert.deepEqual(
       [...emplois].sort(),
-      [R1, '.site-sous-titre', ':where(.hall-candidats, .hall-methode) a', '.hall-surtitre', '.hall-annee', '.garantie-titre'].sort(),
+      [R1, '.site-sous-titre', ':where(.hall-candidats, .hall-methode) a', '.hall-surtitre', '.hall-annee', '.garantie-titre', '.tuile-num'].sort(),
     );
+    assert.equal(decl(parSel('.tuile-num'), 'color'), 'var(--rouge)');
+    assert.equal(decl(parSel('.tuile-avenir .tuile-num'), 'color'), 'var(--encre-douce)');
     assert.equal(decl(parSel('.hall-surtitre'), 'border-inline-start'), '4px solid var(--rouge)');
     const annee = regles.filter((r) => r.selecteur === '.hall-annee').flatMap((r) => r.declarations);
     assert.equal(annee.find((d) => d.prop === 'border-inline-start')?.valeur, '4px solid var(--rouge)');
@@ -788,18 +790,37 @@ describe('10.4 : haut de l\'accueil, aplats, contraste forcé', () => {
     );
     assert.deepEqual(
       [...sels].sort(),
-      ['.skip-link', '.pied', '.niveau input:checked + label', '.ordre-option input:checked + label', '.bouton'].sort(),
+      ['.skip-link', '.pied', '.niveau input:checked + label', '.ordre-option input:checked + label', '.bouton', '.tuile-lire'].sort(),
     );
   });
 
-  it('contraste forcé : bande des garanties et bouton gardent un cadre', () => {
-    for (const cle of ['.garanties', '.bouton']) {
+  it('contraste forcé : bande des garanties, bouton et pastille gardent un cadre, tuile à venir un cadre de texte', () => {
+    const tav = reglesMedia.find((x) => x.media.some((m) => /forced-colors:\s*active/.test(m)) && x.selecteur.split(/\s*,\s*/).includes('.tuile-avenir'));
+    assert.ok(tav, 'règle forced-colors pour .tuile-avenir');
+    assert.equal(tav.declarations.find((d) => d.prop === 'border-color')?.valeur, 'CanvasText');
+    for (const cle of ['.garanties', '.bouton', '.tuile-lire']) {
       const r = reglesMedia.find(
         (x) => x.media.some((m) => /forced-colors:\s*active/.test(m)) && x.selecteur.split(/\s*,\s*/).includes(cle),
       );
       assert.ok(r, `règle forced-colors pour ${cle}`);
       assert.equal(r.declarations.find((d) => d.prop === 'border')?.valeur, '1px solid CanvasText');
     }
+  });
+
+  it('tuiles à venir pleines (règle 8)', () => {
+    const r = regles.find((x) => x.selecteur === '.tuile-avenir');
+    assert.ok(r, '.tuile-avenir');
+    assert.equal(decl(r, 'background'), 'var(--panneau)');
+    assert.equal(decl(r, 'border'), '2px solid var(--bord-carte)');
+    assert.equal(decl(r, 'border-radius'), 'var(--rayon-carte)');
+    for (const x of regles.filter((y) => y.selecteur.includes('.tuile-avenir'))) {
+      for (const d of x.declarations) {
+        assert.doesNotMatch(d.valeur, /dashed|dotted|var\(--theme\)/, `${x.selecteur} ${d.prop}`);
+      }
+    }
+    const nom = regles.find((x) => x.selecteur === '.tuile-avenir-nom');
+    assert.equal(decl(nom, 'font-size'), 'var(--t-titre)');
+    assert.equal(decl(nom, 'font-family'), 'var(--police-titres)');
   });
 
   it('le titre du haut de l\'accueil garde la césure manuelle (hyphens: manual)', () => {

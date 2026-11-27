@@ -319,6 +319,7 @@ async function releverCharte(page: Page): Promise<Releve> {
       if (e.classList.contains('hall-surtitre')) return 'R-5 .hall-surtitre';
       if (e.classList.contains('hall-annee')) return 'R-6 .hall-annee';
       if (e.classList.contains('garantie-titre')) return 'R-7 .garantie-titre';
+      if (e.classList.contains('tuile-num') && e.closest('li.tuile') !== null) return 'R-4 .tuile-num';
       return `${e.tagName.toLowerCase()}${e.className && typeof e.className === 'string' ? '.' + e.className.trim().split(/\s+/).join('.') : ''}${pseudo}`;
     };
     const examiner = (e: Element, pseudo: string): void => {
@@ -361,6 +362,7 @@ const AUTORISES = [
   'borderLeftColor|R-5 .hall-surtitre',
   'borderLeftColor|R-6 .hall-annee',
   'borderBottomColor|R-7 .garantie-titre',
+  'color|R-4 .tuile-num',
 ];
 
 test.describe('charte 10.2 : recensement sur toutes les pages', () => {
@@ -412,4 +414,47 @@ test.describe('charte 10.4 : bloc 2027', () => {
     await page.goto(accueilUrl);
     expect(await page.locator('.hall-annee').evaluate((e) => getComputedStyle(e).display)).toBe('none');
   });
+});
+
+/** Valeur d'un jeton de couleur de base.css, en rgb(...) comme le rend le navigateur. */
+function jetonRgb(nom: string): string {
+  const css = readFileSync('src/styles/base.css', 'utf8');
+  const m = new RegExp(`${nom}:\\s*#([0-9A-Fa-f]{6})`).exec(css);
+  if (m === null) throw new Error(`jeton ${nom} introuvable dans base.css`);
+  const h = m[1] as string;
+  return `rgb(${parseInt(h.slice(0, 2), 16)}, ${parseInt(h.slice(2, 4), 16)}, ${parseInt(h.slice(4, 6), 16)})`;
+}
+
+test.describe('charte 10.4 : tuiles à venir', () => {
+  const accueilUrl = premierePage((p) => p.url === '/', 'l’accueil').url;
+  for (const taille of [
+    { width: 375, height: 812 },
+    { width: 1280, height: 900 },
+  ]) {
+    test(`tuiles à venir : pleines, sans lien, numéro gris, sans débordement à ${taille.width} x ${taille.height}`, async ({ page }) => {
+      await page.setViewportSize(taille);
+      await page.goto(accueilUrl);
+      const panneau = jetonRgb('--panneau');
+      const rouge = jetonRgb('--rouge');
+      const tuiles = page.locator('ul.tuiles > li');
+      const debordent = await tuiles.evaluateAll((els) => els.filter((e) => e.scrollWidth > e.clientWidth).length);
+      expect(debordent, 'tuile qui déborde horizontalement').toBe(0);
+      const venir = page.locator('li.tuile-avenir');
+      const n = await venir.count();
+      console.log(`tuiles à venir : ${n}`);
+      if (n === 0) return;
+      for (let i = 0; i < n; i++) {
+        const li = venir.nth(i);
+        const r = await li.evaluate((e) => {
+          const cs = getComputedStyle(e);
+          const num = getComputedStyle(e.querySelector('.tuile-num')!);
+          return { style: cs.borderTopStyle, fond: cs.backgroundColor, numero: num.color, liens: e.querySelectorAll('a').length };
+        });
+        expect(r.style).toBe('solid');
+        expect(r.fond).toBe(panneau);
+        expect(r.numero).not.toBe(rouge);
+        expect(r.liens).toBe(0);
+      }
+    });
+  }
 });
