@@ -541,11 +541,11 @@ describe('charte 10.2 : titres et rouge', () => {
   const R1 = 'main h2:not(.section-titre)::after';
   const parSel = (sel: string): Regle | undefined => regles.find((r) => r.selecteur === sel);
 
-  it('(a) le rouge est en liste fermée : R-1 à R-3, R-5 (surtitre), R-6 (bloc 2027), R-7 (étiquettes de garanties), R-4 (numéros des tuiles)', () => {
+  it('(a) le rouge est en liste fermée : R-1 à R-3, R-5 (surtitre), R-6 (bloc 2027), R-7 (étiquettes de garanties), R-4 (numéros des tuiles), R-8 (filet bas du logo)', () => {
     const emplois = new Set(regles.filter((r) => r.declarations.some((d) => /var\(--rouge\)/.test(d.valeur))).map((r) => r.selecteur));
     assert.deepEqual(
       [...emplois].sort(),
-      [R1, '.site-sous-titre', ':where(.hall-candidats, .hall-methode) a', '.hall-surtitre', '.hall-annee', '.garantie-titre', '.tuile-num'].sort(),
+      [R1, '.site-sous-titre', ':where(.hall-candidats, .hall-methode) a', '.hall-surtitre', '.hall-annee', '.garantie-titre', '.tuile-num', '.logo'].sort(),
     );
     assert.equal(decl(parSel('.tuile-num'), 'color'), 'var(--rouge)');
     assert.equal(decl(parSel('.tuile-avenir .tuile-num'), 'color'), 'var(--encre-douce)');
@@ -553,6 +553,7 @@ describe('charte 10.2 : titres et rouge', () => {
     const annee = regles.filter((r) => r.selecteur === '.hall-annee').flatMap((r) => r.declarations);
     assert.equal(annee.find((d) => d.prop === 'border-inline-start')?.valeur, '4px solid var(--rouge)');
     assert.equal(decl(parSel('.garantie-titre'), 'border-bottom'), '3px solid var(--rouge)');
+    assert.equal(decl(parSel('.logo'), 'border-bottom'), '4px solid var(--rouge)');
   });
 
   it('(b) le rouge ne touche ni mesure, ni carte, ni statut, ni titre de section ; filet R-1 exact', () => {
@@ -790,7 +791,7 @@ describe('10.4 : haut de l\'accueil, aplats, contraste forcé', () => {
     );
     assert.deepEqual(
       [...sels].sort(),
-      ['.skip-link', '.pied', '.niveau input:checked + label', '.ordre-option input:checked + label', '.bouton', '.tuile-lire'].sort(),
+      ['.skip-link', '.pied', '.niveau input:checked + label', '.ordre-option input:checked + label', '.bouton', '.tuile-lire', '.logo'].sort(),
     );
   });
 
@@ -798,7 +799,7 @@ describe('10.4 : haut de l\'accueil, aplats, contraste forcé', () => {
     const tav = reglesMedia.find((x) => x.media.some((m) => /forced-colors:\s*active/.test(m)) && x.selecteur.split(/\s*,\s*/).includes('.tuile-avenir'));
     assert.ok(tav, 'règle forced-colors pour .tuile-avenir');
     assert.equal(tav.declarations.find((d) => d.prop === 'border-color')?.valeur, 'CanvasText');
-    for (const cle of ['.garanties', '.bouton', '.tuile-lire']) {
+    for (const cle of ['.garanties', '.bouton', '.tuile-lire', '.logo']) {
       const r = reglesMedia.find(
         (x) => x.media.some((m) => /forced-colors:\s*active/.test(m)) && x.selecteur.split(/\s*,\s*/).includes(cle),
       );
@@ -868,6 +869,47 @@ describe('10.4 : titre principal par paliers (P-09)', () => {
         if (!/^--t-/.test(d.prop)) continue;
         assert.ok(!/vw|vh|clamp|calc/.test(d.valeur) && !/(?<!r)em\b/.test(d.valeur), `${r.selecteur} { ${d.prop}: ${d.valeur} }`);
       }
+    }
+  });
+});
+
+describe('10.4 : vignettes à initiales (P-08) et logo (P-06)', () => {
+  it('vignettes à initiales : plus de silhouette, une seule apparence pour tous', () => {
+    for (const r of regles.filter((x) => x.selecteur.includes('.picto'))) {
+      for (const d of r.declarations) assert.doesNotMatch(d.valeur, /radial-gradient/, `${r.selecteur} ${d.prop}`);
+    }
+    const p = regles.find((x) => x.selecteur === '.picto');
+    assert.ok(p, '.picto');
+    assert.equal(decl(p, 'width'), '3.5rem');
+    assert.equal(decl(p, 'height'), '3.5rem');
+    assert.equal(decl(p, 'background'), 'var(--panneau)');
+    assert.equal(decl(p, 'border'), '2px solid var(--nuit)');
+    assert.equal(decl(p, 'border-radius'), '50%');
+    assert.equal(decl(p, 'color'), 'var(--nuit)');
+    assert.equal(decl(p, 'font-size'), 'var(--t-label)');
+    assert.notEqual(decl(p, 'white-space'), 'nowrap');
+    const g = regles.find((x) => x.selecteur === '.lecteur:has(> .niveaux #niv-aine:checked) .picto');
+    assert.ok(g, 'règle Gros caractères de .picto');
+    assert.equal(decl(g, 'width'), '4rem');
+    assert.equal(decl(g, 'height'), '4rem');
+  });
+
+  it('logo : lettre blanche dans un carré bleu nuit à filet rouge bas, rien qui évoque un drapeau', () => {
+    const l = regles.filter((x) => x.selecteur === '.logo');
+    assert.equal(l.length, 1, 'une seule règle .logo');
+    const r = l[0];
+    assert.equal(decl(r, 'background'), 'var(--nuit)');
+    assert.equal(decl(r, 'color'), 'var(--carte)');
+    assert.equal(decl(r, 'border-radius'), 'var(--rayon-bloc)');
+    assert.equal(decl(r, 'inline-size'), '2.25rem');
+    assert.equal(decl(r, 'block-size'), '2.25rem');
+    assert.equal(decl(r, 'font-size'), 'var(--t-titre)');
+    const bordures = (r?.declarations ?? []).filter((d) => d.prop.startsWith('border') && d.prop !== 'border-radius');
+    assert.deepEqual(bordures.map((d) => d.prop), ['border-bottom'], 'seul le filet rouge bas');
+    for (const x of regles.filter((y) => y.selecteur.includes('.logo') && y !== r)) {
+      // Seule exception : le cadre du contraste forcé (couleur système, sans effet hors de ce mode).
+      const autres = x.declarations.filter((d) => (d.prop.startsWith('background') || d.prop.startsWith('border')) && !(d.prop === 'border' && d.valeur === '1px solid CanvasText'));
+      assert.deepEqual(autres, [], `${x.selecteur} change le logo`);
     }
   });
 });

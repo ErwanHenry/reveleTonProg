@@ -227,6 +227,11 @@ main:has(> .lecteur > .niveaux #niv-aine:checked) {
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
 }
 
+.lecteur:has(> .niveaux #niv-aine:checked) .picto {
+  width: 4rem;
+  height: 4rem;
+}
+
 .lecteur:has(> .niveaux #niv-aine:checked) .concerne-aine {
   display: block;
   margin: 0 0 2rem;

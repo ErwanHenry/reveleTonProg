@@ -113,6 +113,13 @@ test.describe('charte 10.2 : cartes et pastilles', () => {
       });
     }, [...COTES]);
     expect(cartes.length).toBeGreaterThan(0);
+    // Aucune initiale ne déborde de sa vignette, au niveau par défaut puis en Gros caractères.
+    const debords = () => page.evaluate(() => [...document.querySelectorAll('.picto')].filter((e) => e.scrollWidth > e.clientWidth || e.scrollHeight > e.clientHeight).length);
+    expect(await debords(), 'initiales qui débordent (niveau par défaut)').toBe(0);
+    await page.locator('#niv-aine').check();
+    expect(await debords(), 'initiales qui débordent (Gros caractères)').toBe(0);
+    expect(await page.locator('.picto').first().evaluate((e) => getComputedStyle(e).width)).toBe('64px');
+    await page.locator('#niv-resume').check();
     // Le corpus m1 n'a parfois que des cartes sans mesure sur ce thème : la comparaison vaut pour toutes les sortes présentes.
     console.log(`cartes : ${cartes.filter((c) => c.sorte === 'mesure').length} avec mesure, ${cartes.filter((c) => c.sorte === 'vide').length} sans programme`);
     const ref = cartes[0]!;
@@ -283,8 +290,7 @@ test.describe('charte 10.2 : contenu sourcé et pied', () => {
 });
 
 // Recensement transversal (10.4-UI-SPEC.md §4.3) : le rouge n'existe qu'aux emplois de la liste fermée R-1 à R-8, sans capitale
-// forcée, sans dégradé (les radial-gradient à arrêts nets de la silhouette .picto sont des formes plates, pas des
-// dégradés), sans ombre hors focus, sur un exemplaire de chaque type de page, à deux largeurs.
+// forcée, sans dégradé (la vignette .picto est un aplat à initiales, sans dessin), sans ombre hors focus, sur un exemplaire de chaque type de page, à deux largeurs.
 const TYPES_DE_PAGES: { nom: string; url: string }[] = [
   ['accueil', (p: { url: string }) => p.url === '/'],
   ['liste des thèmes', (p: { url: string }) => p.url === '/themes/'],
@@ -320,6 +326,7 @@ async function releverCharte(page: Page): Promise<Releve> {
       if (e.classList.contains('hall-annee')) return 'R-6 .hall-annee';
       if (e.classList.contains('garantie-titre')) return 'R-7 .garantie-titre';
       if (e.classList.contains('tuile-num') && e.closest('li.tuile') !== null) return 'R-4 .tuile-num';
+      if (e.classList.contains('logo')) return 'R-8 .logo';
       return `${e.tagName.toLowerCase()}${e.className && typeof e.className === 'string' ? '.' + e.className.trim().split(/\s+/).join('.') : ''}${pseudo}`;
     };
     const examiner = (e: Element, pseudo: string): void => {
@@ -363,6 +370,7 @@ const AUTORISES = [
   'borderLeftColor|R-6 .hall-annee',
   'borderBottomColor|R-7 .garantie-titre',
   'color|R-4 .tuile-num',
+  'borderBottomColor|R-8 .logo',
 ];
 
 test.describe('charte 10.2 : recensement sur toutes les pages', () => {
@@ -455,6 +463,37 @@ test.describe('charte 10.4 : tuiles à venir', () => {
         expect(r.numero).not.toBe(rouge);
         expect(r.liens).toBe(0);
       }
+    });
+  }
+});
+
+test.describe('charte 10.4 : logo', () => {
+  const accueilUrl = premierePage((p) => p.url === '/', 'l’accueil').url;
+  for (const taille of [
+    { width: 375, height: 812 },
+    { width: 1280, height: 900 },
+  ]) {
+    test(`logo : lettre dans un carré bleu nuit à filet rouge bas, hors du nom accessible à ${taille.width} x ${taille.height}`, async ({ page }) => {
+      await page.setViewportSize(taille);
+      await page.goto(accueilUrl);
+      const logo = page.locator('.entete .logo');
+      await expect(logo).toHaveCount(1);
+      const r = await logo.evaluate((e) => {
+        const cs = getComputedStyle(e);
+        const b = e.getBoundingClientRect();
+        return {
+          l: b.width, h: b.height, fond: cs.backgroundColor, texte: cs.color, bas: cs.borderBottomColor,
+          autres: [cs.borderTopWidth, cs.borderLeftWidth, cs.borderRightWidth],
+        };
+      });
+      expect(r.l).toBe(36);
+      expect(r.h).toBe(36);
+      expect(r.fond).toBe(jetonRgb('--nuit'));
+      expect(r.texte).toBe(jetonRgb('--carte'));
+      expect(r.bas).toBe(jetonRgb('--rouge'));
+      expect(r.autres).toEqual(['0px', '0px', '0px']);
+      const nomSite = await page.locator('meta[property="og:site_name"]').getAttribute('content');
+      await expect(page.locator('.entete').getByRole('link', { name: nomSite!, exact: true })).toHaveCount(1);
     });
   }
 });
