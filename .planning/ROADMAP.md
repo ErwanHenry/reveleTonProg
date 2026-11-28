@@ -322,11 +322,11 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
-- [ ] 10.4-01-PLAN.md : données calculées (initiales, textes des tours, thèmes à venir, initiale du site) et image de partage aux couleurs D (P-10)
-- [ ] 10.4-02-PLAN.md : haut de l'accueil (surtitre P-07, bloc 2027 P-02, bouton P-04, étiquettes des garanties P-01), titre par paliers (P-09), premier écran mobile sur le bouton
-- [ ] 10.4-03-PLAN.md : tuiles numérotées (P-03), pastille « Lire » (P-04), thèmes à venir en tuiles pleines (P-05), règle U-05
-- [ ] 10.4-04-PLAN.md : logo carré « R » (P-06) et vignettes à initiales (P-08)
-- [ ] 10.4-05-PLAN.md : clôture (textes visibles inchangés hors P-01 à P-08, recensement du rouge, garde, mesures, captures avant et après, renvois)
+- [x] 10.4-01-PLAN.md : données calculées (initiales, textes des tours, thèmes à venir, initiale du site) et image de partage aux couleurs D (P-10)
+- [x] 10.4-02-PLAN.md : haut de l'accueil (surtitre P-07, bloc 2027 P-02, bouton P-04, étiquettes des garanties P-01), titre par paliers (P-09), premier écran mobile sur le bouton
+- [x] 10.4-03-PLAN.md : tuiles numérotées (P-03), pastille « Lire » (P-04), thèmes à venir en tuiles pleines (P-05), règle U-05
+- [x] 10.4-04-PLAN.md : logo carré « R » (P-06) et vignettes à initiales (P-08)
+- [x] 10.4-05-PLAN.md : clôture (textes visibles inchangés hors P-01 à P-08, recensement du rouge, garde, mesures, captures avant et après, renvois)
 
 ## Progress
 
@@ -347,4 +347,4 @@ Plans:
 | 10.1 Veille des candidatures | v1.1 | 5/5 | Complete (Telegram et Healthchecks à configurer par Erwan) | 2026-11-20 |
 | 10.2 Charte graphique D bleu blanc rouge | v1.1 | 5/5 | Complete | 2026-11-27 |
 | 10.3 Mise à jour autonome des statuts | v1.1 | 11/11 | Code complet, mise en service en attente (clé, jeton, push, launchd) |  |
-| 10.4 Charte D, textes acceptés P-01 à P-10 | v1.1 | 0/? | Not started |  |
+| 10.4 Charte D, textes acceptés P-01 à P-10 | v1.1 | 5/5 | Exécutée, PR ouverte, en attente d'Erwan |  |
