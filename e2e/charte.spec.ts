@@ -383,6 +383,7 @@ test.describe('charte 10.2 : recensement sur toutes les pages', () => {
         await page.setViewportSize(taille);
         await page.goto(p.url);
         const r = await releverCharte(page);
+        console.log(`recensement ${p.nom} ${taille.width} : ${r.rouges.map((x) => x.split('|')[1]!.split(' ')[0]).sort().join(', ') || 'aucun'}`);
         for (const rouge of r.rouges) expect(AUTORISES, `rouge hors liste fermée : ${rouge}`).toContain(rouge);
         expect(r.interdits, 'capitale forcée, espacement positif, dégradé ou ombre hors focus').toEqual([]);
       });
