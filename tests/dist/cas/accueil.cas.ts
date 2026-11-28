@@ -10,6 +10,8 @@ import { aClasse, analyserHtml, texte, trouver } from '../../../scripts/lib/html
 import type { Noeud } from '../../../scripts/lib/html.ts';
 import { materialiserCorpusM1 } from '../../helpers/corpus-m1.ts';
 import { REPO_ROOT } from '../../helpers/validate-yaml.ts';
+import { LIBELLES_STATUT } from '../../../src/lib/corpus/vue.ts';
+import { PERIMETRE_EQUITE } from '../../../src/lib/content-core/rules/config.ts';
 import type { ContexteSite } from '../contexte.ts';
 
 const norm = (s: string): string => s.replace(/\s+/g, ' ').trim();
@@ -73,11 +75,15 @@ export default function accueil(ctx: ContexteSite): void {
     assert.equal(txt(enfants[3] as Noeud), 'Les thèmes');
     const lienCandidats = trouver(enfants[attendu.length - 4] as Noeud, (n) => n.tag === 'a')[0];
     assert.equal(lienCandidats?.attrs.href, '/candidats/');
-    // P-12 (10.2, décision d'Erwan du 2026-11-27) : le nombre est celui des personnes listées sur /candidats/ de la même
-    // build. Les builds production et preview n'ont pas le même nombre : un nombre écrit à la main échoue sur l'une des deux.
-    const nListe = trouver(analyserHtml(ctx.lire(outDir, 'candidats/index.html')), (n) => aClasse(n, 'ligne-nom')).length;
-    assert.ok(nListe >= 2, `au moins deux personnes listées sur /candidats/ (${nListe})`);
-    assert.equal(txt(lienCandidats as Noeud), `Voir les ${nListe} candidats`);
+    // P-12 (10.2, décision d'Erwan du 2026-11-27) : le nombre est celui des candidatures du périmètre (declare ou primaire)
+    // parmi les personnes listées sur /candidats/ de la même build, jamais celui de toute la liste : Luc Retiré, qui ne se
+    // présente pas, y est listé sans être compté. Production et preview n'ont pas le même nombre : un nombre écrit à la
+    // main échoue sur l'une des deux.
+    const statuts = trouver(analyserHtml(ctx.lire(outDir, 'candidats/index.html')), (n) => aClasse(n, 'ligne-statut')).map(txt);
+    const nPerimetre = statuts.filter((t) => PERIMETRE_EQUITE.some((code) => t.startsWith(LIBELLES_STATUT[code]))).length;
+    assert.ok(statuts.some((t) => t.startsWith(LIBELLES_STATUT.renonce)), 'la fixture liste une personne qui ne se présente pas');
+    assert.ok(nPerimetre >= 2 && nPerimetre < statuts.length, `périmètre ${nPerimetre} sur ${statuts.length} personnes listées`);
+    assert.equal(txt(lienCandidats as Noeud), `Voir les ${nPerimetre} candidats`);
     assert.equal(txt(enfants[attendu.length - 2] as Noeud), 'Quatre niveaux de lecture');
     return m;
   }
@@ -95,7 +101,7 @@ export default function accueil(ctx: ContexteSite): void {
       it(`${cle} : le nombre du lien vers /candidats/ vient des données, jamais d'un littéral dans la page`, () => {
         const src = fs.readFileSync(path.join(REPO_ROOT, 'src', 'pages', 'index.astro'), 'utf8');
         assert.ok(!/Voir les \d+ candidats/.test(src), 'nombre écrit à la main dans index.astro');
-        assert.match(src, /const nCandidats = corpus\.candidats\.length;/);
+        assert.match(src, /const nCandidats = corpus\.perimetre\.size;/);
       });
 
       it(`${cle} : trois garanties, dont l'ordre alphabétique jamais selon les sondages et la source datée sans jugement ; lien vers la Méthode`, () => {
