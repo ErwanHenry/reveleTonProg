@@ -1,12 +1,12 @@
 // Image de partage (proposition 6 du lot B, D-04) : public/partage.png, 1200 x 630, copiée telle quelle à la racine du
 // dist par Astro. Capture par le Chromium de @playwright/test (déjà une dépendance de développement, aucune autre)
-// de scripts/partage.html, remplie avec la phrase de src/lib/partage.ts, le domaine de config/site.yml et les
-// couleurs de la charte v1 (fond, encre, encre douce), figées ici pour que changer la charte du site ne rende pas
-// l'image périmée (la régénérer aux couleurs de la charte D est la proposition P-10, hors de la phase 10.2) : jamais
-// une couleur de thème ni de parti, polices du système. L'image ne contient pas le nom du site, donc elle ne dépend pas du nom affiché.
+// de scripts/partage.html, remplie avec la phrase de src/lib/partage.ts, le domaine de config/site.yml et les jetons
+// de la charte D lus dans src/styles/base.css (--fond, --nuit, --encre-douce, --rouge, --police-titres) : aucune
+// couleur n'est écrite ici ni dans le gabarit, jamais une couleur de thème ni de parti. L'image ne contient pas le
+// nom du site, donc elle ne dépend pas du nom affiché.
 //
 // Le fichier n'est PAS identique octet pour octet d'une machine à l'autre (rendu des polices du système) : le fichier
-// versionné est la référence, régénéré seulement quand le texte, le domaine ou les couleurs changent. Pour que
+// versionné est la référence, régénéré quand le texte, le domaine ou ces jetons changent. Pour que
 // « --check » reste fiable sans navigateur ni police (la CI ne lance pas Chromium), le PNG porte un morceau tEXt
 // « Source » avec l'empreinte SHA-256 du HTML rempli ; --check compare cette empreinte, la signature, les dimensions
 // 1200 x 630 et le poids (LIMITES.partage), jamais les pixels. Aucun horodatage dans le PNG.
@@ -31,17 +31,46 @@ const CLE_SOURCE = 'Source';
 
 const echapper = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-export const COULEUR_FOND_PARTAGE = '#FAFAF8';
-export const COULEUR_ENCRE_PARTAGE = '#1F2328';
-export const COULEUR_ENCRE_DOUCE_PARTAGE = '#4D535B';
+const CSS_BASE = path.join(RACINE_DEPOT, 'src/styles/base.css');
 
-/** HTML de la page de capture, repères remplis : phrase, domaine (config/site.yml) et couleurs figées de la charte v1. */
+const JETONS = [
+  ['FOND', '--fond', 'couleur'],
+  ['NUIT', '--nuit', 'couleur'],
+  ['ENCRE_DOUCE', '--encre-douce', 'couleur'],
+  ['ROUGE', '--rouge', 'couleur'],
+  ['POLICE_TITRES', '--police-titres', 'police'],
+] as const;
+
+/**
+ * Valeurs des jetons de la charte dans le premier bloc :root de base.css. Un jeton absent ou invalide est refusé :
+ * la valeur est insérée telle quelle dans le <style> du gabarit, sans échappement, donc jamais de < { } ni ;.
+ */
+export function jetonsCharte(css: string = fs.readFileSync(CSS_BASE, 'utf8')): {
+  FOND: string;
+  NUIT: string;
+  ENCRE_DOUCE: string;
+  ROUGE: string;
+  POLICE_TITRES: string;
+} {
+  const sansCommentaires = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const racine = /:root\s*\{([^}]*)\}/.exec(sansCommentaires)?.[1] ?? '';
+  const out: Record<string, string> = {};
+  for (const [cle, nom, genre] of JETONS) {
+    const m = new RegExp(`(?:^|[\\s{;])${nom}\\s*:\\s*([^;]+);`).exec(racine);
+    if (m === null) throw new Error(`partage : jeton ${nom} introuvable dans src/styles/base.css`);
+    const valeur = m[1]!.trim();
+    const valide = genre === 'couleur' ? /^#[0-9A-Fa-f]{6}$/.test(valeur) : /^[A-Za-z0-9 ",-]+$/.test(valeur);
+    if (!valide) throw new Error(`partage : jeton ${nom} invalide dans src/styles/base.css : ${JSON.stringify(valeur)}`);
+    out[cle] = valeur;
+  }
+  return out as ReturnType<typeof jetonsCharte>;
+}
+
+/** HTML de la page de capture, repères remplis : phrase, domaine (config/site.yml) et jetons de la charte D. */
 export function htmlRempli(): string {
   const domaine = loadSiteConfig(RACINE_DEPOT, {}).domaine;
   const valeurs: Record<string, string> = {
-    FOND: COULEUR_FOND_PARTAGE,
-    ENCRE: COULEUR_ENCRE_PARTAGE,
-    ENCRE_DOUCE: COULEUR_ENCRE_DOUCE_PARTAGE,
+    ...jetonsCharte(),
     REPERE: echapper(REPERE_PARTAGE),
     PROMESSE: echapper(PROMESSE_PARTAGE),
     DOMAINE: echapper(domaine),
@@ -133,6 +162,15 @@ const USAGE = `Usage : node scripts/partage.ts [--check] [--sortie <fichier>]
 `;
 
 async function main(): Promise<void> {
+  try {
+    await executer();
+  } catch (e) {
+    process.stderr.write(`${e instanceof Error ? e.message : String(e)}\n`);
+    process.exit(1);
+  }
+}
+
+async function executer(): Promise<void> {
   let valeurs: { check?: boolean; sortie?: string };
   try {
     ({ values: valeurs } = parseArgs({

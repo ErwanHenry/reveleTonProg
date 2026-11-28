@@ -37,6 +37,20 @@
   --rayon-pastille: 1.5rem;
 }
 
+/* P-09 : titre principal plus grand par paliers, 32 px inchangé sur téléphone pour laisser le bouton au premier écran.
+   Aucun vw ni clamp : le zoom du texte reste proportionnel (WCAG 1.4.4). */
+@media (min-width: 37.5em) {
+  :root {
+    --t-affiche: 2.5rem;
+  }
+}
+
+@media (min-width: 60em) {
+  :root {
+    --t-affiche: 3rem;
+  }
+}
+
 /* Une couleur dominante par thème (jamais par candidat ni par parti). Un thème sans règle garde --theme neutre. */
 [data-theme="logement"] { --theme: #A3401C; }
 [data-theme="travail"] { --theme: #8A5200; }
@@ -194,11 +208,30 @@ a {
 .site-nom {
   display: inline-flex;
   align-items: center;
+  gap: 0.5rem;
   min-height: 2.75rem;
   font-family: var(--police-titres);
   font-size: var(--t-corps);
   font-weight: 600;
   text-decoration: none;
+}
+
+/* Logo (P-06, R-8) : une lettre dans un carré bleu nuit à filet rouge bas. Jamais drapeau, cocarde, Marianne ni
+   filet tricolore (D-03). Décoratif : aria-hidden dans le balisage. */
+.logo {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  inline-size: 2.25rem;
+  block-size: 2.25rem;
+  background: var(--nuit);
+  color: var(--carte);
+  border-bottom: 4px solid var(--rouge);
+  border-radius: var(--rayon-bloc);
+  font-family: var(--police-titres);
+  font-size: var(--t-titre);
+  font-weight: 600;
+  line-height: 1;
 }
 
 @media (hover: hover) {
@@ -413,15 +446,21 @@ main:has(> .lecteur > .niveaux #niv-aine:checked) details.acces-candidats :is(a,
 
 /* Pictogramme neutre, identique pour tous les candidats (dessiné en CSS) */
 .picto {
+  /* Vignette à initiales identique pour tous (P-08, règle 4) : même forme, même couleur, décorative. */
   flex: none;
-  width: 3rem;
-  height: 3rem;
+  display: grid;
+  place-items: center;
+  width: 3.5rem;
+  height: 3.5rem;
   border: 2px solid var(--nuit);
   border-radius: 50%;
-  background:
-    radial-gradient(circle at 50% 36%, var(--nuit) 0 0.5rem, transparent 0.5rem),
-    radial-gradient(ellipse at 50% 100%, var(--nuit) 0 1.25rem, transparent 1.25rem),
-    var(--panneau);
+  background: var(--panneau);
+  color: var(--nuit);
+  font-size: var(--t-label);
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+  white-space: normal;
 }
 
 /* Mesure */
@@ -613,7 +652,8 @@ details.renonce li + li {
   .cellule,
   .source,
   details.renonce,
-  .couverture {
+  .couverture,
+  .logo {
     border: 1px solid CanvasText;
   }
 }

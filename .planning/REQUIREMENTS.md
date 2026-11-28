@@ -89,10 +89,13 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 
 ### Charte graphique D (ajoutées le 2026-11-24, choix d'Erwan après le test A/B des maquettes)
 
-- [ ] **CHA-01**: Toutes les pages appliquent la charte D (fond blanc, bleu nuit pour la structure, titres à empattements de polices système, casse normale, pastilles et cadres nets, encadrés de source teintés), sans imitation de la charte de l'État (ni Marianne, ni bloc « République française », ni drapeau, cocarde ou filet tricolore)
-- [ ] **CHA-02**: Le rouge reste un accent (filet, soulignement, numéro), jamais en aplat, sur un titre de mesure ni sur un état lié à un candidat ; toutes les cartes de candidats ont le même cadre, avec ou sans programme ; zones à toucher d'au moins 44 px
-- [ ] **CHA-03**: Aucun texte publié, aucune donnée ni structure de données ne change ; aucun JS, police, script externe ni dépendance npm ajoutés ; tout texte public nouveau est soumis à Erwan avant mise en ligne
-- [ ] **CHA-04**: Tous les garde-fous restent verts (npm test, npm run e2e avec axe AA, sans JS, 320 px, poids et Slow 4G simulé, check-dist et CSP à empreintes, CI GitHub), contrastes du texte au moins 4,5:1, et la pull request montre des captures avant et après sur bureau et mobile
+- [x] **CHA-01**: Toutes les pages appliquent la charte D (fond blanc, bleu nuit pour la structure, titres à empattements de polices système, casse normale, pastilles et cadres nets, encadrés de source teintés), sans imitation de la charte de l'État (ni Marianne, ni bloc « République française », ni drapeau, cocarde ou filet tricolore)
+- [x] **CHA-02**: Le rouge reste un accent (filet, soulignement, numéro), jamais en aplat, sur un titre de mesure ni sur un état lié à un candidat ; toutes les cartes de candidats ont le même cadre, avec ou sans programme ; zones à toucher d'au moins 44 px
+- [x] **CHA-03**: Aucun texte publié, aucune donnée ni structure de données ne change ; aucun JS, police, script externe ni dépendance npm ajoutés ; tout texte public nouveau est soumis à Erwan avant mise en ligne
+- [x] **CHA-04**: Tous les garde-fous restent verts (npm test, npm run e2e avec axe AA, sans JS, 320 px, poids et Slow 4G simulé, check-dist et CSP à empreintes, CI GitHub), contrastes du texte au moins 4,5:1, et la pull request montre des captures avant et après sur bureau et mobile
+- [ ] **CHA-05**: Les textes P-01 à P-08 acceptés par Erwan le 2026-11-27 sont en ligne (étiquettes des garanties, bloc 2027, numéros de tuiles, bouton et pastille « Lire », thèmes à venir, logo « R », surtitre, vignettes à initiales), chacun calculé depuis les données ou la configuration quand une donnée existe (dates des tours, thèmes, comptes, initiales), jamais écrit à la main
+- [ ] **CHA-06**: Le titre principal est plus grand par des jetons de taille mis à jour avec leurs tests (P-09), le mode Gros caractères reste cohérent et le premier écran mobile garde l'accès au thème ; l'image de partage est aux couleurs de la charte D (P-10)
+- [ ] **CHA-07**: Tous les garde-fous de CHA-04 restent verts après P-01 à P-10, et la pull request montre des captures avant et après sur bureau et mobile, sans fusion ni déploiement par Claude
 
 ### Mise à jour autonome des statuts (ajoutées le 2026-11-26, D-01 à D-04)
 
@@ -182,10 +185,13 @@ Les exigences v1.0 (53, toutes validées) sont archivées dans `milestones/v1.0-
 | VEI-04 | Phase 10.1 | Complete |
 | VEI-05 | Phase 10.1 | Complete |
 | VEI-06 | Phase 10.1 | Complete |
-| CHA-01 | Phase 10.2 | Pending |
-| CHA-02 | Phase 10.2 | Pending |
-| CHA-03 | Phase 10.2 | Pending |
-| CHA-04 | Phase 10.2 | Pending |
+| CHA-01 | Phase 10.2 | Complete |
+| CHA-02 | Phase 10.2 | Complete |
+| CHA-03 | Phase 10.2 | Complete |
+| CHA-04 | Phase 10.2 | Complete |
+| CHA-05 | Phase 10.4 | Pending |
+| CHA-06 | Phase 10.4 | Pending |
+| CHA-07 | Phase 10.4 | Pending |
 | AUTO-01 | Phase 10.3 | Code livré (mise en service en attente) |
 | AUTO-02 | Phase 10.3 | Code livré (mise en service en attente) |
 | AUTO-03 | Phase 10.3 | Code livré (mise en service en attente) |

@@ -2,6 +2,7 @@
 // Module PUR : ni `astro:content` ni `node:` (testable seul, importable par toute page ou composant).
 // Le mode est un paramètre : seul `index.ts` lit l'environnement. Aucune horloge : toutes les dates
 // viennent des données.
+import { initiales } from '../initiales.ts';
 import { estOuvert } from '../publication-ouverture.ts';
 import { dansPerimetre, statutLePlusRecent, statutRetenu } from '../content-core/rules/equite.ts';
 import type {
@@ -70,6 +71,8 @@ export type Contexte = { type: 'theme'; id: string } | { type: 'candidat'; id: s
 export interface VueCandidat {
   id: string;
   nomAffiche: string;
+  /** Initiales du nom affiché, même règle pour tous (vignette décorative, P-08). */
+  initiales: string;
   parti: string | null;
   rang: number;
   perimetre: boolean;
@@ -137,6 +140,11 @@ export interface PageCandidat {
 export interface Corpus {
   mode: Mode;
   themes: VueTheme[];
+  /**
+   * Thèmes du corpus non visibles dans ce mode, triés comme les thèmes visibles. Seuls l'id et le nom sortent :
+   * aucune mesure, aucun compte, aucune date. Vide en préversion. Affichés sur l'accueil seulement.
+   */
+  themesAVenir: readonly { id: string; nom: string }[];
   candidats: VueCandidat[];
   /** Toutes les mesures visibles dans ce mode, sur les thèmes visibles. */
   mesures: VueMesure[];
@@ -265,10 +273,14 @@ function badgeDe(statut: StatutRelecture): string | null {
 export function construireCorpus(brut: Brut, mode: Mode, themesOuverts?: ReadonlySet<string> | readonly string[]): Corpus {
   const production = mode === 'production';
 
+  const parOrdre = (a: { ordre: number; id: string }, b: { ordre: number; id: string }): number => a.ordre - b.ordre || collator.compare(a.id, b.id);
   const themesVisibles = brut.themes
     .filter((t) => !production || (t.statut_relecture === 'publie' && (themesOuverts === undefined || estOuvert(themesOuverts, t.id))))
-    .sort((a, b) => a.ordre - b.ordre || collator.compare(a.id, b.id));
+    .sort(parOrdre);
   const idsThemesVisibles = new Set(themesVisibles.map((t) => t.id));
+  const themesAVenir = production
+    ? brut.themes.filter((t) => !idsThemesVisibles.has(t.id)).sort(parOrdre).map((t) => ({ id: t.id, nom: t.nom }))
+    : [];
 
   const sources = new Map(brut.sources.map((s) => [s.id, s] as const));
   const glossaire = new Map(brut.glossaire.map((g) => [g.id, g] as const));
@@ -284,9 +296,11 @@ export function construireCorpus(brut: Brut, mode: Mode, themesOuverts?: Readonl
     .map((c, rang) => {
       const statutRecent = statutLePlusRecent(c.statuts) as unknown as StatutEntree | undefined;
       if (statutRecent === undefined) throw new Error(`candidat « ${c.id} » sans statut (le schéma exige au moins un statut)`);
+      const nomAffiche = `${c.prenom} ${c.nom}`;
       return {
         id: c.id,
-        nomAffiche: `${c.prenom} ${c.nom}`,
+        nomAffiche,
+        initiales: initiales(nomAffiche),
         parti: c.parti,
         rang,
         // Même définition que le statut affiché et que le validateur (ADR-041).
@@ -405,6 +419,7 @@ export function construireCorpus(brut: Brut, mode: Mode, themesOuverts?: Readonl
   return {
     mode,
     themes,
+    themesAVenir,
     candidats,
     mesures,
     perimetre,

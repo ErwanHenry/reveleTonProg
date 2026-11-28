@@ -1,22 +1,29 @@
 ---
 import { NOM_SITE } from '../lib/identite.ts';
+import { libellesTours } from '../lib/dates-tours.ts';
 // Accueil : ce que le site est, pourquoi lui faire confiance, les thèmes publiés, le lien vers la Méthode, puis les quatre niveaux de lecture
-// (proposition 1 du lot B, audit B3 : les thèmes avant le sélecteur, pour qu'ils soient au premier écran).
+// (proposition 1 du lot B, audit B3 : les thèmes avant le sélecteur ; le bouton du haut donne le thème au premier écran).
 // Le sélecteur (.lecteur) reste un enfant direct de main : le mode « Gros caractères » s'applique à toute la page.
 import Base from '../layouts/Base.astro';
 import LecteurNiveaux from '../components/LecteurNiveaux.astro';
 import TuileTheme from '../components/TuileTheme.astro';
+import TuileAVenir from '../components/TuileAVenir.astro';
 import { getCorpus } from '../lib/corpus/index.ts';
 
 const corpus = await getCorpus();
+// Surtitre (P-07) et bloc « 2027 » (P-02) : textes calculés depuis TOURS, jamais écrits à la main.
+const tours = libellesTours();
+// Premier thème visible, donc première tuile : bouton P-04, accès au thème du premier écran mobile (règle 7 de la charte).
+const premier = corpus.themes[0];
 const niveaux = [
   ['En bref', 'Une phrase par mesure.'],
   ['En détail', 'Le coût annoncé, le calendrier, ce que le texte ne précise pas et la citation du programme.'],
   ['Pour les enfants', 'Des mots simples, avec les mots difficiles expliqués.'],
   ['Gros caractères', 'Un texte plus grand et les thèmes qui touchent souvent les retraités en premier.'],
 ] as const;
-// Un seul thème ouvert (cas de l'ouverture) : sa tuile occupe toute la ligne et une phrase annonce les suivants.
-const unSeulTheme = corpus.themes.length === 1;
+// Un seul thème connu (cas de l'ouverture) : sa tuile occupe toute la ligne et une phrase annonce les suivants.
+// Dès qu'une tuile à venir existe (U-05), elle dit déjà « Publié après relecture » : ni tuile pleine largeur ni phrase.
+const unSeulTheme = corpus.themes.length === 1 && corpus.themesAVenir.length === 0;
 // Lien vers /candidats/ (proposition P-12 de la phase 10.2, décision d'Erwan du 2026-11-27) : le nombre est celui des
 // candidatures du périmètre (dernier statut retenu declare ou primaire, PERIMETRE_EQUITE, même règle que l'équité et les
 // pages thème), calculé à la construction, jamais écrit à la main. Une personne qui ne se présente pas reste listée sur
@@ -30,30 +37,48 @@ const lienCandidats = nCandidats >= 2 ? `Voir les ${nCandidats} candidats` : 'Vo
   miseAJour={corpus.miseAJourIndex()}
 >
   <main id="contenu" class="conteneur">
-    <h1>Les programmes de la présidentielle 2027, à votre niveau</h1>
-    <p class="hall-presentation">Ce site explique ce que proposent les candidats à l'élection présidentielle de 2027, un thème à la fois. Il ne prend jamais parti.</p>
+    <div class="hall-tete">
+      <div class="hall-texte">
+        <p class="hall-surtitre">{tours.surtitre}</p>
+        <h1>Les programmes de la présidentielle 2027, à votre niveau</h1>
+        <p class="hall-presentation">Ce site explique ce que proposent les candidats à l'élection présidentielle de 2027, un thème à la fois. Il ne prend jamais parti.</p>
+        {premier !== undefined && (
+          <p class="hall-action"><a class="bouton" href={`/themes/${premier.theme.id}/`}>Lire le thème {premier.theme.nom}</a></p>
+        )}
+      </div>
+      <div class="hall-annee" aria-hidden="true">
+        <p class="hall-annee-chiffre">{tours.annee}</p>
+        <p class="hall-annee-tours">{tours.bloc}</p>
+      </div>
+    </div>
     <ul class="garanties" role="list">
-      <li>Chaque mesure décrit ce que le candidat propose, sans jugement, et renvoie à son texte, daté et archivé.</li>
-      <li>Par défaut, les candidats sont classés par ordre alphabétique, jamais selon les sondages.</li>
-      <li>Aucun cookie, aucune publicité, aucun service extérieur.</li>
+      <li><strong class="garantie-titre">Sourcé</strong> Chaque mesure décrit ce que le candidat propose, sans jugement, et renvoie à son texte, daté et archivé.</li>
+      <li><strong class="garantie-titre">Sans classement</strong> Par défaut, les candidats sont classés par ordre alphabétique, jamais selon les sondages.</li>
+      <li><strong class="garantie-titre">Sans traceur</strong> Aucun cookie, aucune publicité, aucun service extérieur.</li>
     </ul>
     <h2 class="hall-themes">Les thèmes</h2>
     {corpus.themes.length === 0 ? (
       <>
         <p>Aucun thème publié pour le moment.</p>
+        {corpus.themesAVenir.length > 0 && (
+          <ul class="tuiles">
+            {corpus.themesAVenir.map((theme, i) => <TuileAVenir theme={theme} rang={i + 1} />)}
+          </ul>
+        )}
         <p class="hall-candidats"><a href="/candidats/">Consulter la liste des candidats</a></p>
       </>
     ) : (
       <>
         <ul class="tuiles">
-          {corpus.themes.map((vue) => <TuileTheme vue={vue} une={unSeulTheme} />)}
+          {corpus.themes.map((vue, i) => <TuileTheme vue={vue} rang={i + 1} une={unSeulTheme} />)}
+          {corpus.themesAVenir.map((theme, i) => <TuileAVenir theme={theme} rang={corpus.themes.length + i + 1} />)}
         </ul>
         {unSeulTheme && <p class="autres-themes">Les autres thèmes seront publiés après relecture.</p>}
         <p class="hall-candidats"><a href="/candidats/">{lienCandidats}</a></p>
       </>
     )}
-    {/* Libellé du lien vers la Méthode. Placé après les thèmes pour que la première tuile reste au
-        premier écran sur téléphone, y compris avec les polices plus larges de la CI (e2e/accueil.spec.ts). */}
+    {/* Libellé du lien vers la Méthode. Placé après les thèmes : l'accès au thème du premier écran mobile est le
+        bouton du haut, y compris avec les polices plus larges de la CI (e2e/accueil.spec.ts). */}
     <p class="hall-methode"><a href="/methode/">Comment nous travaillons</a></p>
     <h2 class="hall-niveaux">Quatre niveaux de lecture</h2>
     <LecteurNiveaux contexte={{ type: 'hall' }} mesures={[]} rappel={false}>

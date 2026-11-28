@@ -113,6 +113,13 @@ test.describe('charte 10.2 : cartes et pastilles', () => {
       });
     }, [...COTES]);
     expect(cartes.length).toBeGreaterThan(0);
+    // Aucune initiale ne déborde de sa vignette, au niveau par défaut puis en Gros caractères.
+    const debords = () => page.evaluate(() => [...document.querySelectorAll('.picto')].filter((e) => e.scrollWidth > e.clientWidth || e.scrollHeight > e.clientHeight).length);
+    expect(await debords(), 'initiales qui débordent (niveau par défaut)').toBe(0);
+    await page.locator('#niv-aine').check();
+    expect(await debords(), 'initiales qui débordent (Gros caractères)').toBe(0);
+    expect(await page.locator('.picto').first().evaluate((e) => getComputedStyle(e).width)).toBe('64px');
+    await page.locator('#niv-resume').check();
     // Le corpus m1 n'a parfois que des cartes sans mesure sur ce thème : la comparaison vaut pour toutes les sortes présentes.
     console.log(`cartes : ${cartes.filter((c) => c.sorte === 'mesure').length} avec mesure, ${cartes.filter((c) => c.sorte === 'vide').length} sans programme`);
     const ref = cartes[0]!;
@@ -282,9 +289,8 @@ test.describe('charte 10.2 : contenu sourcé et pied', () => {
   });
 });
 
-// Recensement transversal (UI-SPEC §4.2, §4.3) : le rouge n'existe qu'aux trois emplois R-1, R-2, R-3, sans capitale
-// forcée, sans dégradé (les radial-gradient à arrêts nets de la silhouette .picto sont des formes plates, pas des
-// dégradés), sans ombre hors focus, sur un exemplaire de chaque type de page, à deux largeurs.
+// Recensement transversal (10.4-UI-SPEC.md §4.3) : le rouge n'existe qu'aux emplois de la liste fermée R-1 à R-8, sans capitale
+// forcée, sans dégradé (la vignette .picto est un aplat à initiales, sans dessin), sans ombre hors focus, sur un exemplaire de chaque type de page, à deux largeurs.
 const TYPES_DE_PAGES: { nom: string; url: string }[] = [
   ['accueil', (p: { url: string }) => p.url === '/'],
   ['liste des thèmes', (p: { url: string }) => p.url === '/themes/'],
@@ -316,6 +322,11 @@ async function releverCharte(page: Page): Promise<Releve> {
       if (pseudo === '::after' && h2) return 'R-1 h2::after';
       if (e.classList.contains('site-sous-titre')) return 'R-2 .site-sous-titre';
       if (e.closest('.hall-candidats, .hall-methode') && e.tagName === 'A') return 'R-3 lien d\'accueil';
+      if (e.classList.contains('hall-surtitre')) return 'R-5 .hall-surtitre';
+      if (e.classList.contains('hall-annee')) return 'R-6 .hall-annee';
+      if (e.classList.contains('garantie-titre')) return 'R-7 .garantie-titre';
+      if (e.classList.contains('tuile-num') && e.closest('li.tuile') !== null) return 'R-4 .tuile-num';
+      if (e.classList.contains('logo')) return 'R-8 .logo';
       return `${e.tagName.toLowerCase()}${e.className && typeof e.className === 'string' ? '.' + e.className.trim().split(/\s+/).join('.') : ''}${pseudo}`;
     };
     const examiner = (e: Element, pseudo: string): void => {
@@ -355,6 +366,11 @@ const AUTORISES = [
   'backgroundColor|R-1 h2::after',
   'borderLeftColor|R-2 .site-sous-titre',
   "textDecorationColor|R-3 lien d'accueil",
+  'borderLeftColor|R-5 .hall-surtitre',
+  'borderLeftColor|R-6 .hall-annee',
+  'borderBottomColor|R-7 .garantie-titre',
+  'color|R-4 .tuile-num',
+  'borderBottomColor|R-8 .logo',
 ];
 
 test.describe('charte 10.2 : recensement sur toutes les pages', () => {
@@ -363,11 +379,12 @@ test.describe('charte 10.2 : recensement sur toutes les pages', () => {
     { width: 375, height: 812 },
   ]) {
     for (const p of TYPES_DE_PAGES) {
-      test(`${p.nom} à ${taille.width} x ${taille.height} : rouge aux trois emplois, aucun interdit`, async ({ page }) => {
+      test(`${p.nom} à ${taille.width} x ${taille.height} : rouge en liste fermée, aucun interdit`, async ({ page }) => {
         await page.setViewportSize(taille);
         await page.goto(p.url);
         const r = await releverCharte(page);
-        for (const rouge of r.rouges) expect(AUTORISES, `rouge hors R-1, R-2, R-3 : ${rouge}`).toContain(rouge);
+        console.log(`recensement ${p.nom} ${taille.width} : ${r.rouges.map((x) => x.split('|')[1]!.split(' ')[0]).sort().join(', ') || 'aucun'}`);
+        for (const rouge of r.rouges) expect(AUTORISES, `rouge hors liste fermée : ${rouge}`).toContain(rouge);
         expect(r.interdits, 'capitale forcée, espacement positif, dégradé ou ombre hors focus').toEqual([]);
       });
     }
@@ -382,5 +399,134 @@ test.describe('charte 10.2 : recensement sur toutes les pages', () => {
     expect(await lien.evaluate((e) => getComputedStyle(e).textDecorationThickness)).toBe('2px');
     await lien.hover();
     expect(await lien.evaluate((e) => getComputedStyle(e).textDecorationThickness)).toBe('3px');
+  });
+});
+
+test.describe('charte 10.4 : bloc 2027', () => {
+  const accueilUrl = premierePage((p) => p.url === '/', 'l’accueil').url;
+
+  test('à 1280 x 900 : décoratif, à droite du titre, sur la même rangée', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(accueilUrl);
+    const annee = page.locator('.hall-annee');
+    await expect(annee).toBeVisible();
+    await expect(annee).toHaveAttribute('aria-hidden', 'true');
+    const h1 = (await page.locator('main h1').boundingBox())!;
+    const a = (await annee.boundingBox())!;
+    expect(a.x, 'bord gauche du bloc à droite du bord droit du h1').toBeGreaterThanOrEqual(h1.x + h1.width);
+    const recouvre = a.y < h1.y + h1.height && h1.y < a.y + a.height;
+    expect(recouvre, 'même rangée de grille').toBe(true);
+  });
+
+  test('à 375 x 812 : display none', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto(accueilUrl);
+    expect(await page.locator('.hall-annee').evaluate((e) => getComputedStyle(e).display)).toBe('none');
+  });
+});
+
+/** Valeur d'un jeton de couleur de base.css, en rgb(...) comme le rend le navigateur. */
+function jetonRgb(nom: string): string {
+  const css = readFileSync('src/styles/base.css', 'utf8');
+  const m = new RegExp(`${nom}:\\s*#([0-9A-Fa-f]{6})`).exec(css);
+  if (m === null) throw new Error(`jeton ${nom} introuvable dans base.css`);
+  const h = m[1] as string;
+  return `rgb(${parseInt(h.slice(0, 2), 16)}, ${parseInt(h.slice(2, 4), 16)}, ${parseInt(h.slice(4, 6), 16)})`;
+}
+
+test.describe('charte 10.4 : tuiles à venir', () => {
+  const accueilUrl = premierePage((p) => p.url === '/', 'l’accueil').url;
+  for (const taille of [
+    { width: 375, height: 812 },
+    { width: 1280, height: 900 },
+  ]) {
+    test(`tuiles à venir : pleines, sans lien, numéro gris, sans débordement à ${taille.width} x ${taille.height}`, async ({ page }) => {
+      await page.setViewportSize(taille);
+      await page.goto(accueilUrl);
+      const panneau = jetonRgb('--panneau');
+      const rouge = jetonRgb('--rouge');
+      const tuiles = page.locator('ul.tuiles > li');
+      const debordent = await tuiles.evaluateAll((els) => els.filter((e) => e.scrollWidth > e.clientWidth).length);
+      expect(debordent, 'tuile qui déborde horizontalement').toBe(0);
+      const venir = page.locator('li.tuile-avenir');
+      const n = await venir.count();
+      console.log(`tuiles à venir : ${n}`);
+      if (n === 0) return;
+      for (let i = 0; i < n; i++) {
+        const li = venir.nth(i);
+        const r = await li.evaluate((e) => {
+          const cs = getComputedStyle(e);
+          const num = getComputedStyle(e.querySelector('.tuile-num')!);
+          return { style: cs.borderTopStyle, fond: cs.backgroundColor, numero: num.color, liens: e.querySelectorAll('a').length };
+        });
+        expect(r.style).toBe('solid');
+        expect(r.fond).toBe(panneau);
+        expect(r.numero).not.toBe(rouge);
+        expect(r.liens).toBe(0);
+      }
+    });
+  }
+});
+
+test.describe('charte 10.4 : logo', () => {
+  const accueilUrl = premierePage((p) => p.url === '/', 'l’accueil').url;
+  for (const taille of [
+    { width: 375, height: 812 },
+    { width: 1280, height: 900 },
+  ]) {
+    test(`logo : lettre dans un carré bleu nuit à filet rouge bas, hors du nom accessible à ${taille.width} x ${taille.height}`, async ({ page }) => {
+      await page.setViewportSize(taille);
+      await page.goto(accueilUrl);
+      const logo = page.locator('.entete .logo');
+      await expect(logo).toHaveCount(1);
+      const r = await logo.evaluate((e) => {
+        const cs = getComputedStyle(e);
+        const b = e.getBoundingClientRect();
+        return {
+          l: b.width, h: b.height, fond: cs.backgroundColor, texte: cs.color, bas: cs.borderBottomColor,
+          autres: [cs.borderTopWidth, cs.borderLeftWidth, cs.borderRightWidth],
+        };
+      });
+      expect(r.l).toBe(36);
+      expect(r.h).toBe(36);
+      expect(r.fond).toBe(jetonRgb('--nuit'));
+      expect(r.texte).toBe(jetonRgb('--carte'));
+      expect(r.bas).toBe(jetonRgb('--rouge'));
+      expect(r.autres).toEqual(['0px', '0px', '0px']);
+      const nomSite = await page.locator('meta[property="og:site_name"]').getAttribute('content');
+      await expect(page.locator('.entete').getByRole('link', { name: nomSite!, exact: true })).toHaveCount(1);
+    });
+  }
+});
+
+test.describe('charte 10.4 : en-tête avec logo sur téléphone', () => {
+  // Avec le logo (P-06), nom et rubriques tiennent sur une ligne à 375 px ; plus étroit, les rubriques descendent
+  // ensemble sur leur propre ligne, côte à côte, jamais empilées l'une sous l'autre.
+  const mesure = (page: Page) =>
+    page.evaluate(() => {
+      const nom = document.querySelector('.site-nom')!.getBoundingClientRect();
+      const liens = [...document.querySelectorAll('.nav-principale a')].map((a) => a.getBoundingClientRect());
+      return {
+        nomHaut: Math.round(nom.top),
+        hauts: liens.map((r) => Math.round(r.top)),
+        defile: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      };
+    });
+
+  test('375 px : nom et rubriques sur la même ligne', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto('/');
+    const m = await mesure(page);
+    expect(m.hauts.length).toBeGreaterThanOrEqual(2);
+    for (const h of m.hauts) expect(Math.abs(h - m.nomHaut), `rubrique à ${h}, nom à ${m.nomHaut}`).toBeLessThanOrEqual(4);
+    expect(m.defile).toBe(false);
+  });
+
+  test('320 px : rubriques côte à côte, sans défilement horizontal', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 640 });
+    await page.goto('/');
+    const m = await mesure(page);
+    expect(new Set(m.hauts).size, `hauteurs des rubriques : ${m.hauts.join(', ')}`).toBe(1);
+    expect(m.defile).toBe(false);
   });
 });

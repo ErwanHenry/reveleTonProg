@@ -1,5 +1,5 @@
 ---
-import { LIGNE_IDENTITE, MARQUEUR_SONDE, NOM_SITE, SOUS_TITRE } from '../lib/identite.ts';
+import { INITIALE_SITE, LIGNE_IDENTITE, MARQUEUR_SONDE, NOM_SITE, SOUS_TITRE } from '../lib/identite.ts';
 import '../styles/base.css';
 import '../styles/pages.css';
 import baseCss from '../styles/base.css?raw';
@@ -66,7 +66,7 @@ const urlImage = urlCanonique !== undefined && Astro.site ? new URL(`/${FICHIER_
     <header class="entete">
       <div class="conteneur entete-ligne">
         <div class="site-identite">
-          <a class="site-nom" href="/">{NOM_SITE}</a>
+          <a class="site-nom" href="/"><span class="logo" aria-hidden="true">{INITIALE_SITE}</span>{NOM_SITE}</a>
           <p class="site-sous-titre">{SOUS_TITRE}</p>
         </div>
         <nav class="nav-principale" aria-label="Navigation principale">

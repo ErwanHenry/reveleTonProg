@@ -11,13 +11,15 @@
 */
 
 /*
-  En-tête (proposition 5 du lot B) : nom du site et rubriques sur la première ligne, sous-titre sur toute la largeur
-  dessous. .site-identite (nom puis sous-titre dans le DOM) s'efface de la grille. Colonnes « auto » : elles se
-  réduisent jusqu'au mot le plus long, sans défilement horizontal à 320 px ni à 160 %.
+  En-tête (proposition 5 du lot B, retouché en 10.4) : nom du site et rubriques sur la première ligne, sous-titre sur
+  toute la largeur dessous. .site-identite (nom puis sous-titre dans le DOM) s'efface du flux. Boîte flexible qui passe
+  à la ligne : quand les rubriques ne tiennent pas à côté du nom (logo P-06 sur un téléphone étroit), elles descendent
+  ensemble sur leur propre ligne, côte à côte, au lieu de s'empiler à droite du nom. Sans défilement horizontal à 320 px
+  ni à 160 %.
 */
 .entete .entete-ligne {
-  display: grid;
-  grid-template-columns: auto auto;
+  display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   column-gap: 0.5rem;
@@ -28,19 +30,17 @@
 }
 
 .entete .site-nom {
-  grid-column: 1;
-  grid-row: 1;
+  order: 1;
 }
 
 .entete .nav-principale {
-  grid-column: 2;
-  grid-row: 1;
+  order: 2;
 }
 
 /* Sous-titre : Label, encre douce, sous le nom */
 .site-sous-titre {
-  grid-column: 1 / -1;
-  grid-row: 2;
+  order: 3;
+  flex-basis: 100%;
   margin: 0;
   padding-inline-start: 0.5rem;
   border-inline-start: 4px solid var(--rouge);
@@ -48,10 +48,12 @@
   font-size: var(--t-label);
 }
 
+/* Rubriques resserrées sur téléphone (10.4) : avec le logo, nom et rubriques tiennent encore sur une ligne à 375 px ;
+   la cible garde 44 px de haut. Espacement d'origine dès 37.5em. */
 .nav-principale ul {
   display: flex;
   flex-wrap: wrap;
-  gap: 0 0.5rem;
+  gap: 0;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -61,7 +63,7 @@
   display: inline-flex;
   align-items: center;
   min-height: 2.75rem;
-  padding-inline: 0.5rem;
+  padding-inline: 0.25rem;
   font-size: var(--t-label);
 }
 
@@ -70,7 +72,7 @@
 }
 
 /* Nom du site : Body 18/600 sur téléphone (contrat C1, tient sur la ligne des rubriques), Heading 24/600 dès 37.5em,
-   avec 8 px sous le sous-titre (sur téléphone, la hauteur est gardée pour laisser la première tuile au premier écran) */
+   avec 8 px sous le sous-titre (sur téléphone, la hauteur est gardée pour laisser le bouton du premier thème au premier écran) */
 @media (min-width: 37.5em) {
   .entete .site-nom {
     font-size: var(--t-titre);
@@ -80,7 +82,12 @@
     margin-bottom: 0.5rem;
   }
 
+  .nav-principale ul {
+    gap: 0 0.5rem;
+  }
+
   .nav-principale a {
+    padding-inline: 0.5rem;
     font-weight: 600;
   }
 
@@ -102,26 +109,135 @@
   margin-top: 2rem;
 }
 
-/* Accueil (proposition 1 du lot B) : présentation, trois garanties, les thèmes, puis le lien vers la Méthode */
+/* Accueil : haut (surtitre, titre, présentation, bouton, bloc « 2027 »), trois garanties, les thèmes, puis le lien vers la Méthode */
 .hall-presentation,
 .garanties {
   max-width: 68ch;
 }
 
-.hall-presentation {
+/* R-5 : filet rouge du surtitre, même géométrie que R-2 */
+.hall-surtitre {
   margin: 0 0 0.5rem;
+  padding-inline-start: 0.5rem;
+  border-inline-start: 4px solid var(--rouge);
+  color: var(--nuit);
+  font-size: var(--t-label);
+  font-weight: 600;
 }
 
-/* Liste sans puces (role="list" garde la sémantique de liste dans Safari), en Label pour rester au premier écran */
-.garanties {
+.hall-presentation {
   margin: 0;
-  padding: 0;
+}
+
+/* Bouton principal : le thème du premier écran mobile (règle 7 de la charte). Jamais de rouge sur lui. */
+.hall-action {
+  margin: 1rem 0 0;
+}
+
+.bouton {
+  display: inline-flex;
+  align-items: center;
+  min-height: 3rem;
+  padding: 0.5rem 1.5rem;
+  background: var(--nuit);
+  color: var(--carte);
+  border-radius: var(--rayon-bloc);
+  font-size: var(--t-corps);
+  font-weight: 600;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+@media (hover: hover) {
+  .bouton:hover {
+    text-decoration: underline;
+    text-decoration-thickness: 3px;
+    text-underline-offset: 3px;
+  }
+}
+
+/* Bloc « 2027 » décoratif : absent sous 60em (aria-hidden dans le HTML, display: none ici) */
+.hall-annee {
+  display: none;
+}
+
+.hall-annee-chiffre {
+  margin: 0;
+  color: var(--nuit);
+  font-family: var(--police-titres);
+  font-size: var(--t-affiche);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.hall-annee-tours {
+  margin: 0.5rem 0 0;
+  color: var(--encre-douce);
+  font-size: var(--t-corps);
+}
+
+@media (min-width: 60em) {
+  .hall-tete {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: 3rem;
+    align-items: center;
+  }
+
+  .hall-tete h1 {
+    hyphens: manual;
+  }
+
+  /* R-6 : filet rouge du bloc « 2027 » */
+  .hall-annee {
+    display: block;
+    padding: 0.5rem 0 0.5rem 1.5rem;
+    border-inline-start: 4px solid var(--rouge);
+  }
+}
+
+/* Bande teintée des trois garanties : liste sans puces (role="list" garde la sémantique dans Safari) */
+.garanties {
+  margin: 1.5rem 0 2rem;
+  padding: 1rem;
+  background: var(--panneau);
+  border-radius: var(--rayon-bloc);
   list-style: none;
   font-size: var(--t-label);
 }
 
 .garanties li {
+  margin: 0 0 1rem;
+}
+
+.garanties li:last-child {
+  margin-bottom: 0;
+}
+
+/* R-7 : soulignement rouge des étiquettes de garanties */
+.garantie-titre {
+  display: block;
+  inline-size: fit-content;
   margin: 0 0 0.25rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 3px solid var(--rouge);
+  color: var(--nuit);
+  font-size: var(--t-corps);
+  font-weight: 600;
+}
+
+@media (min-width: 60em) {
+  .garanties {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.5rem;
+    padding: 1.5rem;
+    max-width: none;
+  }
+
+  .garanties li {
+    margin: 0;
+  }
 }
 
 /* Liens autonomes de l'accueil, hors de .lecteur depuis la proposition 1 : ils portent eux-mêmes leur cible de 44 px,
@@ -148,6 +264,7 @@ main:has(> .lecteur > .niveaux #niv-aine:checked) :is(.hall-candidats, .hall-met
 
 .hall-themes + .tuiles {
   margin-top: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
 }
 
 /* Un seul thème ouvert : la tuile occupe toute la ligne, même habillage */
@@ -196,6 +313,67 @@ main:has(> .lecteur > .niveaux #niv-aine:checked) :is(.hall-candidats, .hall-met
 .tuile-compte {
   color: var(--encre-douce);
   font-size: var(--t-label);
+}
+
+/* R-4 : numéro de rang de la tuile (élément du flux, en tête de la colonne) ; gris sur une tuile à venir */
+.tuile-num {
+  font-size: var(--t-label);
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--rouge);
+  font-variant-numeric: tabular-nums;
+}
+
+.tuile-avenir .tuile-num {
+  color: var(--encre-douce);
+}
+
+/* Pastille « Lire » : décorative, la tuile entière est la cible du lien. Jamais de rouge. */
+.tuile-lire {
+  margin-top: auto;
+  padding: 0.25rem 1rem;
+  background: var(--nuit);
+  color: var(--carte);
+  border-radius: var(--rayon-pastille);
+  font-size: var(--t-label);
+  font-weight: 600;
+}
+
+/* Thème connu, pas encore publié : tuile pleine et lisible (règle 8), sans lien, sans couleur de thème */
+.tuile-avenir {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-height: 0;
+  padding: 1rem 1.5rem;
+  background: var(--panneau);
+  border: 2px solid var(--bord-carte);
+  border-radius: var(--rayon-carte);
+  color: var(--encre);
+  overflow-wrap: break-word;
+}
+
+.tuile-avenir-nom {
+  margin: 0;
+  font-family: var(--police-titres);
+  font-size: var(--t-titre);
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--encre);
+}
+
+.tuile-avenir-etat {
+  margin: 0;
+  font-size: var(--t-label);
+  color: var(--encre-douce);
+}
+
+@media (min-width: 37.5em) {
+  .tuile-avenir {
+    min-height: 6rem;
+    padding: 1.5rem;
+  }
 }
 
 /* Accueil : les quatre niveaux, toujours tous visibles */
@@ -316,10 +494,17 @@ main:has(> .lecteur > .niveaux #niv-aine:checked) :is(.hall-candidats, .hall-met
 
 @media (forced-colors: active) {
   .tuile,
+  .tuile-avenir,
   .statut,
   .lignes,
   .ligne {
     border-color: CanvasText;
+  }
+
+  .garanties,
+  .bouton,
+  .tuile-lire {
+    border: 1px solid CanvasText;
   }
 }
 

@@ -442,7 +442,7 @@ describe('finitions 09.1 : contrat CSS', () => {
     }
     assert.deepEqual(
       trouvees.map((t) => t.selecteur).sort(),
-      ['.niveau:hover label', '.ordre-option:hover label', '.site-nom:hover', 'a:hover'],
+      ['.bouton:hover', '.niveau:hover label', '.ordre-option:hover label', '.site-nom:hover', 'a:hover'],
     );
     for (const t of trouvees) assert.ok(t.media, `${t.selecteur} hors @media (hover: hover)`);
   });
@@ -541,16 +541,26 @@ describe('charte 10.2 : titres et rouge', () => {
   const R1 = 'main h2:not(.section-titre)::after';
   const parSel = (sel: string): Regle | undefined => regles.find((r) => r.selecteur === sel);
 
-  it('(a) le rouge n\'a que trois emplois : R-1, R-2, R-3', () => {
+  it('(a) le rouge est en liste fermée : R-1 à R-3, R-5 (surtitre), R-6 (bloc 2027), R-7 (étiquettes de garanties), R-4 (numéros des tuiles), R-8 (filet bas du logo)', () => {
     const emplois = new Set(regles.filter((r) => r.declarations.some((d) => /var\(--rouge\)/.test(d.valeur))).map((r) => r.selecteur));
-    assert.deepEqual([...emplois].sort(), [R1, '.site-sous-titre', ':where(.hall-candidats, .hall-methode) a'].sort());
+    assert.deepEqual(
+      [...emplois].sort(),
+      [R1, '.site-sous-titre', ':where(.hall-candidats, .hall-methode) a', '.hall-surtitre', '.hall-annee', '.garantie-titre', '.tuile-num', '.logo'].sort(),
+    );
+    assert.equal(decl(parSel('.tuile-num'), 'color'), 'var(--rouge)');
+    assert.equal(decl(parSel('.tuile-avenir .tuile-num'), 'color'), 'var(--encre-douce)');
+    assert.equal(decl(parSel('.hall-surtitre'), 'border-inline-start'), '4px solid var(--rouge)');
+    const annee = regles.filter((r) => r.selecteur === '.hall-annee').flatMap((r) => r.declarations);
+    assert.equal(annee.find((d) => d.prop === 'border-inline-start')?.valeur, '4px solid var(--rouge)');
+    assert.equal(decl(parSel('.garantie-titre'), 'border-bottom'), '3px solid var(--rouge)');
+    assert.equal(decl(parSel('.logo'), 'border-bottom'), '4px solid var(--rouge)');
   });
 
   it('(b) le rouge ne touche ni mesure, ni carte, ni statut, ni titre de section ; filet R-1 exact', () => {
     for (const r of regles) {
       if (!r.declarations.some((d) => /var\(--rouge\)/.test(d.valeur))) continue;
       const sel = r.selecteur.replace(/:not\(\.section-titre\)/g, '');
-      for (const interdit of ['.cellule', '.mesure', '.statut', '.ligne', '.vide', '.badge', '.pied', 'h1', '.section-titre']) {
+      for (const interdit of ['.cellule', '.mesure', '.statut', '.ligne', '.vide', '.badge', '.pied', 'h1', '.section-titre', '.picto', '.bouton', '.tuile-lire', '.tuile-avenir']) {
         assert.ok(!sel.includes(interdit), `${r.selecteur} emploie le rouge avec ${interdit}`);
       }
     }
@@ -728,5 +738,178 @@ describe('charte 10.2 : contenu sourcé et pied', () => {
 
   it('(8) .lignes : filet haut de 2 px bleu nuit', () => {
     assert.equal(decl(sel('pages.css', '.lignes'), 'border-top'), '2px solid var(--nuit)');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 10.4 : haut de l'accueil, aplats de bleu nuit, titre principal par paliers (P-09)
+// ---------------------------------------------------------------------------
+
+/** Règles avec la pile de préludes @media qui les enveloppent (même parcours que le test du survol). */
+const reglesMedia: { fichier: string; selecteur: string; media: string[]; declarations: { prop: string; valeur: string }[] }[] = [];
+for (const { fichier, texte } of sourcesCss) {
+  const pile: string[] = [];
+  let prelude = '';
+  let corps = '';
+  let dedans = false;
+  for (const c of texte) {
+    if (c === '{') {
+      const p = prelude.trim().replace(/\s+/g, ' ');
+      pile.push(p);
+      prelude = '';
+      dedans = !p.startsWith('@');
+      corps = '';
+    } else if (c === '}') {
+      if (dedans) {
+        const selecteur = pile[pile.length - 1] ?? '';
+        const declarations = corps
+          .split(';')
+          .map((d) => d.trim())
+          .filter((d) => d !== '')
+          .map((d) => {
+            const i = d.indexOf(':');
+            return { prop: d.slice(0, i).trim().toLowerCase(), valeur: d.slice(i + 1).trim() };
+          });
+        reglesMedia.push({ fichier, selecteur, media: pile.slice(0, -1).filter((x) => x.startsWith('@media')), declarations });
+      }
+      pile.pop();
+      dedans = false;
+      prelude = '';
+      corps = '';
+    } else if (dedans) corps += c;
+    else if (c === ';') prelude = '';
+    else prelude += c;
+  }
+}
+
+describe('10.4 : haut de l\'accueil, aplats, contraste forcé', () => {
+  it('aplats de bleu nuit en liste fermée', () => {
+    const sels = new Set(
+      regles
+        .filter((r) => r.declarations.some((d) => (d.prop === 'background' || d.prop === 'background-color') && d.valeur === 'var(--nuit)'))
+        .map((r) => r.selecteur),
+    );
+    assert.deepEqual(
+      [...sels].sort(),
+      ['.skip-link', '.pied', '.niveau input:checked + label', '.ordre-option input:checked + label', '.bouton', '.tuile-lire', '.logo'].sort(),
+    );
+  });
+
+  it('contraste forcé : bande des garanties, bouton et pastille gardent un cadre, tuile à venir un cadre de texte', () => {
+    const tav = reglesMedia.find((x) => x.media.some((m) => /forced-colors:\s*active/.test(m)) && x.selecteur.split(/\s*,\s*/).includes('.tuile-avenir'));
+    assert.ok(tav, 'règle forced-colors pour .tuile-avenir');
+    assert.equal(tav.declarations.find((d) => d.prop === 'border-color')?.valeur, 'CanvasText');
+    for (const cle of ['.garanties', '.bouton', '.tuile-lire', '.logo']) {
+      const r = reglesMedia.find(
+        (x) => x.media.some((m) => /forced-colors:\s*active/.test(m)) && x.selecteur.split(/\s*,\s*/).includes(cle),
+      );
+      assert.ok(r, `règle forced-colors pour ${cle}`);
+      assert.equal(r.declarations.find((d) => d.prop === 'border')?.valeur, '1px solid CanvasText');
+    }
+  });
+
+  it('tuiles à venir pleines (règle 8)', () => {
+    const r = regles.find((x) => x.selecteur === '.tuile-avenir');
+    assert.ok(r, '.tuile-avenir');
+    assert.equal(decl(r, 'background'), 'var(--panneau)');
+    assert.equal(decl(r, 'border'), '2px solid var(--bord-carte)');
+    assert.equal(decl(r, 'border-radius'), 'var(--rayon-carte)');
+    for (const x of regles.filter((y) => y.selecteur.includes('.tuile-avenir'))) {
+      for (const d of x.declarations) {
+        assert.doesNotMatch(d.valeur, /dashed|dotted|var\(--theme\)/, `${x.selecteur} ${d.prop}`);
+      }
+    }
+    const nom = regles.find((x) => x.selecteur === '.tuile-avenir-nom');
+    assert.equal(decl(nom, 'font-size'), 'var(--t-titre)');
+    assert.equal(decl(nom, 'font-family'), 'var(--police-titres)');
+  });
+
+  it('le titre du haut de l\'accueil garde la césure manuelle (hyphens: manual)', () => {
+    const r = regles.find((x) => x.selecteur === '.hall-tete h1');
+    assert.ok(r, '.hall-tete h1');
+    assert.equal(r.declarations.find((d) => d.prop === 'hyphens')?.valeur, 'manual');
+  });
+});
+
+describe('10.4 : titre principal par paliers (P-09)', () => {
+  const GROS = 'main:has(> .lecteur > .niveaux #niv-aine:checked)';
+  const MQ37 = '@media (min-width: 37.5em)';
+  const MQ60 = '@media (min-width: 60em)';
+  const jeton = (sel: string, media: string | null): string | undefined => {
+    const r = reglesMedia.filter((x) => x.selecteur === sel && (media === null ? x.media.length === 0 : x.media.join(' ') === media));
+    return r.flatMap((x) => x.declarations).find((d) => d.prop === '--t-affiche')?.valeur;
+  };
+  const rem = (v: string | undefined): number => Number.parseFloat(v ?? 'NaN');
+
+  it('paliers du jeton --t-affiche : 2, 2.5, 3 rem ; Gros caractères 2.25, 2.75, 3.25 rem', () => {
+    assert.equal(JETONS_TYPE['--t-affiche'], '2rem');
+    assert.equal(valeurRoot('--t-affiche'), '2rem');
+    assert.equal(jeton(':root', MQ37), '2.5rem');
+    assert.equal(jeton(':root', MQ60), '3rem');
+    assert.equal(jeton(GROS, null), '2.25rem');
+    assert.equal(jeton(GROS, MQ37), '2.75rem');
+    assert.equal(jeton(GROS, MQ60), '3.25rem');
+    for (const [n, g] of [[jeton(':root', null), jeton(GROS, null)], [jeton(':root', MQ37), jeton(GROS, MQ37)], [jeton(':root', MQ60), jeton(GROS, MQ60)]] as const) {
+      assert.ok(rem(g) > rem(n), `Gros caractères (${g}) plus grand que normal (${n})`);
+    }
+  });
+
+  it('seules :root et la règle Gros caractères posent un jeton --t-*, et sous media seulement --t-affiche', () => {
+    for (const r of reglesMedia) {
+      const jetons = r.declarations.filter((d) => /^--t-/.test(d.prop));
+      if (jetons.length === 0) continue;
+      assert.ok(r.selecteur === ':root' || r.selecteur === GROS, `${r.selecteur} pose un jeton --t-*`);
+      if (r.media.length > 0) assert.deepEqual(jetons.map((d) => d.prop), ['--t-affiche'], `${r.selecteur} sous media`);
+    }
+  });
+
+  it('aucune valeur de jeton --t-* ne dépend de la fenêtre (vw, vh, clamp, calc, em seul)', () => {
+    for (const r of reglesMedia) {
+      for (const d of r.declarations) {
+        if (!/^--t-/.test(d.prop)) continue;
+        assert.ok(!/vw|vh|clamp|calc/.test(d.valeur) && !/(?<!r)em\b/.test(d.valeur), `${r.selecteur} { ${d.prop}: ${d.valeur} }`);
+      }
+    }
+  });
+});
+
+describe('10.4 : vignettes à initiales (P-08) et logo (P-06)', () => {
+  it('vignettes à initiales : plus de silhouette, une seule apparence pour tous', () => {
+    for (const r of regles.filter((x) => x.selecteur.includes('.picto'))) {
+      for (const d of r.declarations) assert.doesNotMatch(d.valeur, /radial-gradient/, `${r.selecteur} ${d.prop}`);
+    }
+    const p = regles.find((x) => x.selecteur === '.picto');
+    assert.ok(p, '.picto');
+    assert.equal(decl(p, 'width'), '3.5rem');
+    assert.equal(decl(p, 'height'), '3.5rem');
+    assert.equal(decl(p, 'background'), 'var(--panneau)');
+    assert.equal(decl(p, 'border'), '2px solid var(--nuit)');
+    assert.equal(decl(p, 'border-radius'), '50%');
+    assert.equal(decl(p, 'color'), 'var(--nuit)');
+    assert.equal(decl(p, 'font-size'), 'var(--t-label)');
+    assert.notEqual(decl(p, 'white-space'), 'nowrap');
+    const g = regles.find((x) => x.selecteur === '.lecteur:has(> .niveaux #niv-aine:checked) .picto');
+    assert.ok(g, 'règle Gros caractères de .picto');
+    assert.equal(decl(g, 'width'), '4rem');
+    assert.equal(decl(g, 'height'), '4rem');
+  });
+
+  it('logo : lettre blanche dans un carré bleu nuit à filet rouge bas, rien qui évoque un drapeau', () => {
+    const l = regles.filter((x) => x.selecteur === '.logo');
+    assert.equal(l.length, 1, 'une seule règle .logo');
+    const r = l[0];
+    assert.equal(decl(r, 'background'), 'var(--nuit)');
+    assert.equal(decl(r, 'color'), 'var(--carte)');
+    assert.equal(decl(r, 'border-radius'), 'var(--rayon-bloc)');
+    assert.equal(decl(r, 'inline-size'), '2.25rem');
+    assert.equal(decl(r, 'block-size'), '2.25rem');
+    assert.equal(decl(r, 'font-size'), 'var(--t-titre)');
+    const bordures = (r?.declarations ?? []).filter((d) => d.prop.startsWith('border') && d.prop !== 'border-radius');
+    assert.deepEqual(bordures.map((d) => d.prop), ['border-bottom'], 'seul le filet rouge bas');
+    for (const x of regles.filter((y) => y.selecteur.includes('.logo') && y !== r)) {
+      // Seule exception : le cadre du contraste forcé (couleur système, sans effet hors de ce mode).
+      const autres = x.declarations.filter((d) => (d.prop.startsWith('background') || d.prop.startsWith('border')) && !(d.prop === 'border' && d.valeur === '1px solid CanvasText'));
+      assert.deepEqual(autres, [], `${x.selecteur} change le logo`);
+    }
   });
 });

@@ -26,7 +26,7 @@ const corpus = await getCorpus();
       </>
     ) : (
       <ul class="tuiles">
-        {corpus.themes.map((vue) => <TuileTheme vue={vue} />)}
+        {corpus.themes.map((vue, i) => <TuileTheme vue={vue} rang={i + 1} />)}
       </ul>
     )}
   </main>

@@ -10,9 +10,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { LIMITES } from '../../scripts/lib/check-dist.ts';
 import { analyserHtml, texte, trouver } from '../../scripts/lib/html.ts';
-import { ajouterTexte, empreinteSource, htmlRempli, lireDimensions, lireTexte, problemesImage } from '../../scripts/partage.ts';
+import { ajouterTexte, empreinteSource, htmlRempli, jetonsCharte, lireDimensions, lireTexte, problemesImage } from '../../scripts/partage.ts';
 import { motsInterdits } from '../../src/lib/content-core/rules/text/forbidden.ts';
 import { ALT_PARTAGE, HAUTEUR_PARTAGE, LARGEUR_PARTAGE, PROMESSE_PARTAGE, REPERE_PARTAGE } from '../../src/lib/partage.ts';
+import { libellesTours } from '../../src/lib/dates-tours.ts';
 import { loadSiteConfig } from '../../src/lib/site-config.ts';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -112,8 +113,58 @@ describe('scripts/partage.html', () => {
     assert.equal(ALT_PARTAGE, PROMESSE_PARTAGE);
   });
 
-  it('n\'emploie que les couleurs figées de l\'image (charte v1), aucune couleur écrite en dur dans partage.html', () => {
+  const base = fs.readFileSync(path.join(ROOT, 'src/styles/base.css'), 'utf8');
+  const racine = /:root\s*\{([^}]*)\}/.exec(base)![1]!;
+  const jeton = (nom: string): string => new RegExp(`${nom}:\\s*([^;]+);`).exec(racine)![1]!.trim();
+
+  it('couleurs lues dans base.css, aucune couleur écrite en dur dans partage.html ni dans partage.ts', () => {
     assert.ok(!/#[0-9a-f]{3,8}\b/i.test(html));
     assert.ok(!/rgb|hsl/i.test(html));
+    assert.ok(!/#[0-9a-f]{3,8}\b/i.test(fs.readFileSync(path.join(ROOT, 'scripts/partage.ts'), 'utf8')));
+    const rempli = htmlRempli();
+    for (const nom of ['--fond', '--nuit', '--encre-douce', '--rouge', '--police-titres']) {
+      assert.ok(rempli.includes(jeton(nom)), `${nom} : ${jeton(nom)}`);
+    }
+  });
+
+  it('chaque couleur, fond, filet ou contour du gabarit est un repère {{ }}', () => {
+    const style = /<style>([\s\S]*?)<\/style>/.exec(html)![1]!;
+    const declarations = [...style.matchAll(/([a-z-]+)\s*:\s*([^;]+);/g)];
+    let controlees = 0;
+    for (const [, prop, valeur] of declarations) {
+      if (/^(color|background|background-color|outline)$/.test(prop!) || prop!.startsWith('border')) {
+        controlees++;
+        assert.match(valeur!, /\{\{[A-Z_]+\}\}/, `${prop}: ${valeur}`);
+      }
+    }
+    assert.ok(controlees >= 5, `${controlees} déclarations contrôlées`);
+    for (const r of ['FOND', 'NUIT', 'ENCRE_DOUCE', 'ROUGE', 'POLICE_TITRES']) assert.ok(html.includes(`{{${r}}}`), r);
+    assert.ok(!html.includes('{{ENCRE}}'));
+  });
+
+  it('le repère de l\'image est calculé depuis TOURS', () => {
+    assert.equal(REPERE_PARTAGE, libellesTours().repere);
+  });
+});
+
+describe('jetonsCharte', () => {
+  it('lit les cinq valeurs de la vraie base.css', () => {
+    const j = jetonsCharte();
+    assert.match(j.FOND, /^#[0-9A-F]{6}$/i);
+    assert.match(j.NUIT, /^#[0-9A-F]{6}$/i);
+    assert.match(j.ENCRE_DOUCE, /^#[0-9A-F]{6}$/i);
+    assert.match(j.ROUGE, /^#[0-9A-F]{6}$/i);
+    assert.ok(j.POLICE_TITRES.includes('serif'));
+  });
+  it('refuse un jeton absent en le nommant', () => {
+    assert.throws(() => jetonsCharte(':root { --fond: #FFFFFF; }'), /--nuit/);
+  });
+  it('refuse une couleur qui n\'est pas #rrggbb', () => {
+    const css = ':root { --fond: #FFFFFF; --nuit: #101C4C; --encre-douce: #3B4263; --rouge: red; --police-titres: serif; }';
+    assert.throws(() => jetonsCharte(css), /--rouge/);
+  });
+  it('refuse une police qui sortirait du style', () => {
+    const css = ':root { --fond: #FFFFFF; --nuit: #101C4C; --encre-douce: #3B4263; --rouge: #C1121F; --police-titres: x</style>; }';
+    assert.throws(() => jetonsCharte(css), /--police-titres/);
   });
 });

@@ -53,6 +53,9 @@ export default function squelette(ctx: ContexteSite): void {
     const hall = ctx.lire(outDir, 'index.html');
     assert.match(hall, /Aucun thème publié pour le moment\./);
     assert.match(hall, /<a[^>]*href="\/candidats\/"[^>]*>Consulter la liste des candidats<\/a>/);
+    // 10.4 : aucun bouton sans thème.
+    assert.doesNotMatch(hall, /class="bouton"/);
+    assert.doesNotMatch(hall, /class="hall-action"/);
     const liste = ctx.lire(outDir, 'candidats/index.html');
     assert.match(liste, /Aucun candidat à afficher pour le moment\./);
     assert.match(liste, /<a[^>]*href="\/"[^>]*>Revenir à l'accueil<\/a>/);
