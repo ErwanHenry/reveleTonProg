@@ -11,13 +11,15 @@
 */
 
 /*
-  En-tête (proposition 5 du lot B) : nom du site et rubriques sur la première ligne, sous-titre sur toute la largeur
-  dessous. .site-identite (nom puis sous-titre dans le DOM) s'efface de la grille. Colonnes « auto » : elles se
-  réduisent jusqu'au mot le plus long, sans défilement horizontal à 320 px ni à 160 %.
+  En-tête (proposition 5 du lot B, retouché en 10.4) : nom du site et rubriques sur la première ligne, sous-titre sur
+  toute la largeur dessous. .site-identite (nom puis sous-titre dans le DOM) s'efface du flux. Boîte flexible qui passe
+  à la ligne : quand les rubriques ne tiennent pas à côté du nom (logo P-06 sur un téléphone étroit), elles descendent
+  ensemble sur leur propre ligne, côte à côte, au lieu de s'empiler à droite du nom. Sans défilement horizontal à 320 px
+  ni à 160 %.
 */
 .entete .entete-ligne {
-  display: grid;
-  grid-template-columns: auto auto;
+  display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   column-gap: 0.5rem;
@@ -28,19 +30,17 @@
 }
 
 .entete .site-nom {
-  grid-column: 1;
-  grid-row: 1;
+  order: 1;
 }
 
 .entete .nav-principale {
-  grid-column: 2;
-  grid-row: 1;
+  order: 2;
 }
 
 /* Sous-titre : Label, encre douce, sous le nom */
 .site-sous-titre {
-  grid-column: 1 / -1;
-  grid-row: 2;
+  order: 3;
+  flex-basis: 100%;
   margin: 0;
   padding-inline-start: 0.5rem;
   border-inline-start: 4px solid var(--rouge);
@@ -48,10 +48,12 @@
   font-size: var(--t-label);
 }
 
+/* Rubriques resserrées sur téléphone (10.4) : avec le logo, nom et rubriques tiennent encore sur une ligne à 375 px ;
+   la cible garde 44 px de haut. Espacement d'origine dès 37.5em. */
 .nav-principale ul {
   display: flex;
   flex-wrap: wrap;
-  gap: 0 0.5rem;
+  gap: 0;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -61,7 +63,7 @@
   display: inline-flex;
   align-items: center;
   min-height: 2.75rem;
-  padding-inline: 0.5rem;
+  padding-inline: 0.25rem;
   font-size: var(--t-label);
 }
 
@@ -80,7 +82,12 @@
     margin-bottom: 0.5rem;
   }
 
+  .nav-principale ul {
+    gap: 0 0.5rem;
+  }
+
   .nav-principale a {
+    padding-inline: 0.5rem;
     font-weight: 600;
   }
 

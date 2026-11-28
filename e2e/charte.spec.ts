@@ -498,3 +498,35 @@ test.describe('charte 10.4 : logo', () => {
     });
   }
 });
+
+test.describe('charte 10.4 : en-tête avec logo sur téléphone', () => {
+  // Avec le logo (P-06), nom et rubriques tiennent sur une ligne à 375 px ; plus étroit, les rubriques descendent
+  // ensemble sur leur propre ligne, côte à côte, jamais empilées l'une sous l'autre.
+  const mesure = (page: Page) =>
+    page.evaluate(() => {
+      const nom = document.querySelector('.site-nom')!.getBoundingClientRect();
+      const liens = [...document.querySelectorAll('.nav-principale a')].map((a) => a.getBoundingClientRect());
+      return {
+        nomHaut: Math.round(nom.top),
+        hauts: liens.map((r) => Math.round(r.top)),
+        defile: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      };
+    });
+
+  test('375 px : nom et rubriques sur la même ligne', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto('/');
+    const m = await mesure(page);
+    expect(m.hauts.length).toBeGreaterThanOrEqual(2);
+    for (const h of m.hauts) expect(Math.abs(h - m.nomHaut), `rubrique à ${h}, nom à ${m.nomHaut}`).toBeLessThanOrEqual(4);
+    expect(m.defile).toBe(false);
+  });
+
+  test('320 px : rubriques côte à côte, sans défilement horizontal', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 640 });
+    await page.goto('/');
+    const m = await mesure(page);
+    expect(new Set(m.hauts).size, `hauteurs des rubriques : ${m.hauts.join(', ')}`).toBe(1);
+    expect(m.defile).toBe(false);
+  });
+});
